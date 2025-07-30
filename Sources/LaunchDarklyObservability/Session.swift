@@ -1,47 +1,19 @@
 import Foundation
-import Combine
 import Shared
 
-public struct SessionInfo {
-    public let sessionId: String
-    public let startTime: TimeInterval
-    
-    public init(
-        sessionId: String = UUID().uuidString,
-        startTime: TimeInterval = Date.now.timeIntervalSince1970) {
-        self.sessionId = sessionId
-        self.startTime = startTime
-    }
+public protocol Session: Sendable {
+    var sessionInfo: SessionInfo { get async }
+    var sessionContext: SessionContext { get async }
+    var sessionId: String { get async }
+    func start() async
 }
 
-public struct SessionContext: Encodable, Sendable {
-    public let sessionId: String
-    public let sessionDuration: TimeInterval
-    
-    init(sessionId: String, sessionDuration: TimeInterval = .zero) {
-        self.sessionId = sessionId
-        self.sessionDuration = sessionDuration
-    }
-}
-
-public struct Options {
-    public enum Environment: String, Hashable {
-        case debug
-    }
-    let sessionTimeout: TimeInterval
-    let environment: Environment
-    
-    public init(sessionTimeout: TimeInterval = 30 * 60 * 1000, environment: Options.Environment = .debug) {
-        self.sessionTimeout = sessionTimeout
-        self.environment = environment
-    }
-}
-
-public actor SessionManager {
+public actor DefaultSession: Session {
     private enum AttributesKey {
         static let sessionId = "session.id"
         static let sessionStartTime = "session.start_time"
     }
+    
     public private(set) var sessionInfo: SessionInfo {
         didSet {
             sessionContext = SessionContext(
@@ -50,8 +22,7 @@ public actor SessionManager {
             )
         }
     }
-    private var cancellables = Set<AnyCancellable>()
-    private var backgroundTime: TimeInterval = .zero
+    private var backgroundTime: TimeInterval?
     private let options: Options
     public var sessionAttributes: [String: String] {
         [
@@ -60,6 +31,8 @@ public actor SessionManager {
         ]
     }
     public private(set) var sessionContext: SessionContext
+    
+    public var sessionId: String { sessionInfo.sessionId }
     
     public init(
         sessionInfo: SessionInfo = .init(),
@@ -70,7 +43,7 @@ public actor SessionManager {
         self.sessionContext = .init(sessionId: sessionInfo.sessionId)
     }
     
-    public func start() {
+    public func start() async {
         Task {
             await handleAppBackground()
         }
@@ -87,12 +60,15 @@ public actor SessionManager {
     
     private func handleAppForeground() async {
         for await _ in NotificationCenter.default.notifications(for: UIApplication.didBecomeActiveNotification) {
+            guard let backgroundTime else {
+                return
+            }
             let timeInBackground = Date.now.timeIntervalSince1970 - backgroundTime
             if timeInBackground >= options.sessionTimeout {
                 print("🕐 App was in background for >\(options.sessionTimeout / 60000) minutes, resetting session")
                 resetSession()
             }
-            backgroundTime = .zero
+            self.backgroundTime = nil
         }
     }
     
@@ -108,25 +84,3 @@ public actor SessionManager {
         }
     }
 }
-
-struct SceneBasedLifeCycle: OptionSet {
-    let rawValue: Int
-    
-    static let unattached = SceneBasedLifeCycle(rawValue: 1 << 0)
-    static let foregroundInactive = SceneBasedLifeCycle(rawValue: 1 << 1)
-    static let foregroundActive = SceneBasedLifeCycle(rawValue: 1 << 2)
-    static let background = SceneBasedLifeCycle(rawValue: 1 << 3)
-    static let suspended = SceneBasedLifeCycle(rawValue: 1 << 4)
-}
-
-struct AppBasedLifeCycle: OptionSet {
-    let rawValue: Int
-    
-    static let notRunning = AppBasedLifeCycle(rawValue: 1 << 0)
-    static let inactive = AppBasedLifeCycle(rawValue: 1 << 1)
-    static let active = AppBasedLifeCycle(rawValue: 1 << 2)
-    static let background = AppBasedLifeCycle(rawValue: 1 << 3)
-    static let suspended = AppBasedLifeCycle(rawValue: 1 << 4)
-}
-
-
