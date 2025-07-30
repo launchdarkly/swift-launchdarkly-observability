@@ -6,8 +6,21 @@ import Foundation
 
 import SignPostIntegration
 
+public struct TracecerExporterConfiguration {
+    let url: URL
+    let projectId: String
+    let timeout: TimeInterval
+    
+    public init(url: URL, projectId: String, timeout: TimeInterval = 5000) {
+        self.url = url
+        self.projectId = projectId
+        self.timeout = timeout
+    }
+}
 
 
+
+/*
 public actor InstrumentationManager {
     private let openTelemetry: OpenTelemetry
     private let tracerProvider: TracerProvider
@@ -23,9 +36,21 @@ public actor InstrumentationManager {
         openTelemetry: OpenTelemetry = OpenTelemetry.instance,
         sessionManager: SessionManager = SessionManager()
     ) {
-        let url = URL(string: "https://otel.observability.app.launchdarkly.com:4318/v1/traces")!
+        
+        // MARK: - Traces
+        
+        var urlComponents = URLComponents()
+        urlComponents.host = "otel.observability.app.launchdarkly.com"
+        urlComponents.scheme = "https"
+        urlComponents.port = 4318
+        
+        
+        
+//        let tracesUrl = URL(string: "https://otel.observability.app.launchdarkly.com:4318/v1/traces")!
+        urlComponents.path = "/v1/traces"
+        let tracesUrl = urlComponents.url!
         let otlpHttpTraceExporter = OtlpHttpTraceExporter(
-            endpoint: url,
+            endpoint: tracesUrl,
             envVarHeaders: [
                 ("X-LaunchDarkly-Project", "sdk-465cf811-71a3-42ee-8a9f-e325b6ed3a26")
             ]
@@ -66,6 +91,37 @@ public actor InstrumentationManager {
             baggagePropagator: W3CBaggagePropagator()
         )
         
+        // MARK: - Logs
+        
+//        let configuration = ClientConnection.Configuration.default(target: .hostAndPort("localhost", 4317),
+//                                                                   eventLoopGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1))
+        urlComponents.path = "/v1/logs"
+        let logsUrl = urlComponents.url!
+        let httpLogExporter = OtlpHttpLogExporter(
+            endpoint: logsUrl,
+            envVarHeaders: [
+                ("X-LaunchDarkly-Project", "sdk-465cf811-71a3-42ee-8a9f-e325b6ed3a26")
+            ]
+        )
+        
+        OpenTelemetry.registerLoggerProvider(
+            loggerProvider: LoggerProviderBuilder()
+                .with(
+                    processors: [
+                        BatchLogRecordProcessor(
+                            logRecordExporter: httpLogExporter
+                        )
+                    ]
+                )
+                .with(
+                    resource: resource
+                )
+                .build()
+        )
+        
+        
+            
+        
         self.serviceName = serviceName
         self.serviceVersion = serviceVersion
         self.openTelemetry = openTelemetry
@@ -81,8 +137,21 @@ public actor InstrumentationManager {
         }
     }
     
-    private func getTracer() -> Tracer {
+    func tracer() -> Tracer {
         tracerProvider.get(instrumentationName: serviceName, instrumentationVersion: serviceVersion)
+    }
+    
+    func logger() -> Logger {
+//        openTelemetry.loggerProvider
+//            .loggerBuilder(instrumentationScopeName: serviceName)
+//            .setEventDomain("device")
+//            .build()
+        openTelemetry.loggerProvider.get(instrumentationScopeName: serviceName)
+    }
+    
+    func sessionId() async -> String { await sessionManager.sessionId }
+    func activeSpan() async -> (any Span)? {
+        openTelemetry.contextProvider.activeSpan
     }
     
     let sampleKey = "sampleKey"
@@ -92,7 +161,7 @@ public actor InstrumentationManager {
 // TODO: Remove test code
 extension InstrumentationManager {
     public func createSpans() {
-        let tracer = getTracer()
+        let tracer = tracer()
         let parentSpan1 = tracer.spanBuilder(spanName: "main").setSpanKind(spanKind: .client).startSpan()
         parentSpan1.setAttribute(key: sampleKey, value: sampleValue)
 //        ("X-LaunchDarkly-Project", "sdk-465cf811-71a3-42ee-8a9f-e325b6ed3a26")
@@ -116,10 +185,11 @@ extension InstrumentationManager {
     }
 
     func doWork() {
-        let tracer = getTracer()
+        let tracer = tracer()
         let childSpan = tracer.spanBuilder(spanName: "doWork").setSpanKind(spanKind: .client).startSpan()
         childSpan.setAttribute(key: sampleKey, value: sampleValue)
         Thread.sleep(forTimeInterval: Double.random(in: 0 ..< 10) / 100)
         childSpan.end()
     }
 }
+*/

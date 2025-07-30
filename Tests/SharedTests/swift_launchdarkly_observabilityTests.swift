@@ -24,3 +24,5 @@ func appLifeCycleObserver() async throws {
 public extension UIApplication {
     nonisolated static let test: Notification.Name = .init("test")
 }
+
+
