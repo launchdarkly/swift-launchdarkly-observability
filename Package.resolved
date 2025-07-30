@@ -1,5 +1,5 @@
 {
-  "originHash" : "b0dd30a2516c12c7f5c50d70139b2bce280f5b73ce9ef769ea20b1e71d0bfa51",
+  "originHash" : "870d6c4ba6d9737ea99c0fb12df6ec523e9cd21cf0d6331d0e8a819fd4359048",
   "pins" : [
     {
       "identity" : "grpc-swift",
