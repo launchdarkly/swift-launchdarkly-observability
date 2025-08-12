@@ -14,24 +14,32 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "LaunchDarklyObservability",
+            name: "Instrumentation",
             dependencies: [
-                "Shared",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
                 .product(name: "StdoutExporter", package: "opentelemetry-swift"),
-                .product(name: "SignPostIntegration", package: "opentelemetry-swift"),
+            ]
+        ),
+        .testTarget(
+            name: "InstrumentationTests",
+            dependencies: ["Instrumentation"]
+        ),
+        .target(
+            name: "LaunchDarklyObservability",
+            dependencies: [
+                "Instrumentation",
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
+                .product(name: "StdoutExporter", package: "opentelemetry-swift"),
+                .product(name: "ResourceExtension", package: "opentelemetry-swift"),
             ]
         ),
         .testTarget(
             name: "LaunchDarklyObservabilityTests",
             dependencies: ["LaunchDarklyObservability"]
         ),
-        .target(name: "Shared"),
-        .testTarget(
-            name: "SharedTests",
-            dependencies: ["Shared"]
-        )
     ]
 )

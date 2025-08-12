@@ -1,22 +1,26 @@
 import Testing
-import UIKit
-@testable import LaunchDarklyObservability
+import OpenTelemetrySdk
+import OpenTelemetryApi
+import LaunchDarklyObservability
 
-
-struct SessionManagerTests {
-    @Test
-    func foregroundWhenTimeOutHandling() async throws {
-        let sut = SessionManager(options: .init(sessionTimeout: 0.5))
-        await sut.start()
-        let oldContext = await sut.sessionContext
-        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
-        try await wait(for: 1.0)
-        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
-        let newContext = await sut.sessionContext
-        #expect(newContext.sessionId != oldContext.sessionId)
-    }
+struct ObservabilityClientTests {
+    let sut = ObservabilityClient(
+        configuration: Configuration(
+            otlpEndpoint: "http://127.0.0.1:4318",
+            isDebug: true
+        )
+    )
     
-    func wait(for time: TimeInterval) async throws {
-        try await Task.sleep(for: .seconds(time))
+    @Test func tracer() async throws {
+        let span = sut
+            .spanBuilder(spanName: "Push: details")
+            .setSpanKind(spanKind: .client)
+            .startSpan()
+        defer { span.end() }
+        let random = Int.random(in: 1..<10)
+        
+        try await wait(for: 1)
+        
+        #expect(random > 0)
     }
 }
