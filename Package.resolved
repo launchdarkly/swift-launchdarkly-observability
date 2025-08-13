@@ -1,6 +1,15 @@
 {
-  "originHash" : "b0dd30a2516c12c7f5c50d70139b2bce280f5b73ce9ef769ea20b1e71d0bfa51",
+  "originHash" : "f2564ee6e15b21e669394735573a2008b6f66c4e166bc9399ce5ebe116c1c05d",
   "pins" : [
+    {
+      "identity" : "datacompression",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mw99/DataCompression",
+      "state" : {
+        "revision" : "5ab15951321b08b74511601cbd0497667649d70b",
+        "version" : "3.8.0"
+      }
+    },
     {
       "identity" : "grpc-swift",
       "kind" : "remoteSourceControl",
@@ -11,12 +20,21 @@
       }
     },
     {
+      "identity" : "ios-client-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/launchdarkly/ios-client-sdk.git",
+      "state" : {
+        "revision" : "66d26f7f77ea30d55fd41c360a04915734e1e3ba",
+        "version" : "9.15.0"
+      }
+    },
+    {
       "identity" : "opentelemetry-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/open-telemetry/opentelemetry-swift",
       "state" : {
-        "revision" : "ef63c346d05f4fa7c9ca883f92631fd139eb2cfe",
-        "version" : "1.17.1"
+        "revision" : "ed2b110d2bb4516e9c73df86c56a7836f5068666",
+        "version" : "2.0.0"
       }
     },
     {
@@ -89,6 +107,15 @@
       "state" : {
         "revision" : "84b1d494118d63629a785230135f82991f02329e",
         "version" : "3.13.2"
+      }
+    },
+    {
+      "identity" : "swift-eventsource",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LaunchDarkly/swift-eventsource.git",
+      "state" : {
+        "revision" : "57051701c58a93603ffa2051f8e9cf0c8cff7814",
+        "version" : "3.3.0"
       }
     },
     {

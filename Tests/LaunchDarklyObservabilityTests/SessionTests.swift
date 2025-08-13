@@ -1,5 +1,5 @@
 import Testing
-@testable import LaunchDarklyObservability
+@testable import Client
 import UIKit.UIApplication
 
 struct SessionTests {

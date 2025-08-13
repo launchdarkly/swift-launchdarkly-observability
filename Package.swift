@@ -7,12 +7,27 @@ let package = Package(
     products: [
         .library(
             name: "LaunchDarklyObservability",
-            targets: ["LaunchDarklyObservability"]),
+            targets: ["Client", "LaunchDarklyObservability", "ObservabilityPlugins"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/open-telemetry/opentelemetry-swift", from: "1.0.0"),
+        .package(url: "https://github.com/open-telemetry/opentelemetry-swift", from: "2.0.0"),
+        .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", from: "9.15.0"),
     ],
     targets: [
+        .target(name: "Shared"),
+        .testTarget(
+            name: "SharedTests",
+            dependencies: [
+                "Shared"
+            ]
+        ),
+        .target(
+            name: "ObserveAPI",
+            dependencies: [
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+            ]
+        ),
         .target(
             name: "Instrumentation",
             dependencies: [
@@ -29,6 +44,21 @@ let package = Package(
         .target(
             name: "LaunchDarklyObservability",
             dependencies: [
+                "ObserveAPI",
+                "Client",
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+            ]
+        ),
+        .testTarget(
+            name: "LaunchDarklyObservabilityTests",
+            dependencies: ["LaunchDarklyObservability"]
+        ),
+        .target(
+            name: "Client",
+            dependencies: [
+                "Shared",
+                "ObserveAPI",
                 "Instrumentation",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
@@ -37,9 +67,17 @@ let package = Package(
                 .product(name: "ResourceExtension", package: "opentelemetry-swift"),
             ]
         ),
-        .testTarget(
-            name: "LaunchDarklyObservabilityTests",
-            dependencies: ["LaunchDarklyObservability"]
-        ),
+        .target(
+            name: "ObservabilityPlugins",
+            dependencies: [
+                "Client",
+                "LaunchDarklyObservability",
+                "Instrumentation",
+                "Shared",
+                .product(name: "ResourceExtension", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
+            ]
+        )
     ]
 )
