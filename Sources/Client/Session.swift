@@ -2,13 +2,13 @@ import UIKit.UIApplication
 import Instrumentation
 import Combine
 
-public final class Session {
+final class Session {
     private var id: String
     private var startTime: Date
     private var backgroundTime: Date?
     private var options: SessionOptions
     private var cancellables = Set<AnyCancellable>()
-    public var sessionAttributes: [String: String] {
+    var sessionAttributes: [String: String] {
         [
             "session.id": id,
             "session.start_time": String(format: "%.0f", startTime.timeIntervalSince1970)
@@ -16,14 +16,14 @@ public final class Session {
     }
     private var appState = AppLifecycleState.unattached
     
-    public var sessionInfo: SessionInfo {
+    var sessionInfo: SessionInfo {
         .init(
             id: id,
             startTime: startTime
         )
     }
     
-    public init(
+    init(
         id: String = UUID().uuidString,
         startTime: Date = Date.now,
         options: SessionOptions
@@ -33,7 +33,19 @@ public final class Session {
         self.options = options
     }
     
-    public func start(
+    func onWillTerminate(
+        _ handler: (@Sendable () -> Void)?,
+    ) {
+        NotificationCenter.default.publisher(for: UIApplication.willTerminateNotification)
+        .subscribe(on: RunLoop.main)
+        .receive(on: RunLoop.main)
+        .sink { _ in
+            handler?()
+        }
+        .store(in: &cancellables)
+    }
+    
+    func start(
         onWillEndSession: (@Sendable (_ sessionId: String) -> Void)?,
         onDidStartSession: (@Sendable (_ sessionId: String) -> Void)?
     ) {
@@ -41,12 +53,7 @@ public final class Session {
         
         Publishers.MergeMany(
             NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification),
-            NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification),
-// Keeping this as reference
-//          NotificationCenter.default.publisher(for: UIApplication.didFinishLaunchingNotification),
-//          NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification),
-//          NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification),
-//          NotificationCenter.default.publisher(for: UIApplication.willTerminateNotification)
+            NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
         )
         .subscribe(on: RunLoop.main)
         .receive(on: RunLoop.main)
@@ -55,14 +62,11 @@ public final class Session {
             let oldAppState = self.appState
             let newState = update(state: oldAppState, message: notification.name)
             self.appState = newState
-            print("Old State: \(oldAppState), New State: \(newState)")
             switch newState {
             case .foregroundActive:
                 guard AppLifecycleState.notInForeground.contains(oldAppState), let backgroundTime = self.backgroundTime else { return }
                 let timeInBackground = Date.now.timeIntervalSince1970 - backgroundTime.timeIntervalSince1970
                 if timeInBackground >= self.options.timeout {
-//                    print("🕐 App was in background for > \(options.timeout / 60) minutes, resetting session")
-                    print(String(format: "🕐 App was in background for > $.2f minutes, resetting session", options.timeout / 60))
                     onWillEndSession(self.sessionInfo.id)
                     self.resetSession()
                     onDidStartSession(self.sessionInfo.id)
