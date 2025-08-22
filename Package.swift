@@ -7,47 +7,65 @@ let package = Package(
     products: [
         .library(
             name: "LaunchDarklyObservability",
-            targets: ["Client", "LaunchDarklyObservability", "ObservabilityPlugins"]),
+            targets: ["LaunchDarklyObservability", "Client", "Plugin"]),
     ],
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift", from: "2.0.0"),
         .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", from: "9.15.0"),
+        .package(url: "https://github.com/kstenerud/KSCrash.git", .upToNextMajor(from: "2.3.0")),
     ],
     targets: [
-        .target(name: "Shared"),
-        .testTarget(
-            name: "SharedTests",
-            dependencies: [
-                "Shared"
-            ]
-        ),
+        .target(name: "Common"),
         .target(
-            name: "ObserveAPI",
+            name: "Interfaces",
             dependencies: [
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
             ]
         ),
         .target(
-            name: "Instrumentation",
+            name: "API",
             dependencies: [
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "ResourceExtension", package: "opentelemetry-swift"),
+            ]
+        ),
+        .target(
+            name: "Client",
+            dependencies: [
+                "API",
+                "Interfaces",
+                "Common",
+                "CrashReporter",
+                "CrashReporterLive",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
                 .product(name: "StdoutExporter", package: "opentelemetry-swift"),
+                .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift"),
             ]
         ),
-        .testTarget(
-            name: "InstrumentationTests",
-            dependencies: ["Instrumentation"]
+        .target(
+            name: "Plugin",
+            dependencies: [
+                "API",
+                "Interfaces",
+                "Client",
+                "LaunchDarklyObservability",
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+            ]
         ),
         .target(
             name: "LaunchDarklyObservability",
             dependencies: [
-                "ObserveAPI",
+                "API",
+                "Interfaces",
                 "Client",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
             ]
         ),
         .testTarget(
@@ -55,28 +73,16 @@ let package = Package(
             dependencies: ["LaunchDarklyObservability"]
         ),
         .target(
-            name: "Client",
-            dependencies: [
-                "Shared",
-                "ObserveAPI",
-                "Instrumentation",
-                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
-                .product(name: "StdoutExporter", package: "opentelemetry-swift"),
-                .product(name: "ResourceExtension", package: "opentelemetry-swift"),
-            ]
+            name: "CrashReporter"
         ),
         .target(
-            name: "ObservabilityPlugins",
+            name: "CrashReporterLive",
             dependencies: [
-                "Client",
-                "LaunchDarklyObservability",
-                "Instrumentation",
-                "Shared",
-                .product(name: "ResourceExtension", package: "opentelemetry-swift"),
+                "CrashReporter",
+                "Common",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "Installations", package: "KSCrash")
             ]
         )
     ]

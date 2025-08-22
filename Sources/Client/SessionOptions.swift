@@ -1,3 +1,5 @@
+import Foundation
+
 public struct SessionOptions: Sendable {
     let timeout: TimeInterval
     let isDebug: Bool
