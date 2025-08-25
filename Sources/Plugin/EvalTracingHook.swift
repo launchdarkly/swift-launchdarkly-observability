@@ -1,9 +1,9 @@
 import Foundation
 import LaunchDarkly
-import OpenTelemetryApi
+@preconcurrency import OpenTelemetryApi
 import OpenTelemetrySdk
-import Instrumentation
-import Shared
+import Client
+import Common
 
 public final class EvalTracingHook: @unchecked Sendable, Hook {
     private let lock: NSLock = NSLock()
@@ -24,8 +24,12 @@ public final class EvalTracingHook: @unchecked Sendable, Hook {
         guard withSpans else { return seriesData }
         
         
-        let tracer = TracerFacade(configuration: .init(serviceName: Self.INSTRUMENTATION_NAME))
-        guard let activeSpan = tracer.currentSpan else { return seriesData }
+        let tracer = OpenTelemetry.instance.tracerProvider.get(
+            instrumentationName: EvalTracingHook.INSTRUMENTATION_NAME,
+            instrumentationVersion: "1.0.0"
+        )
+        
+        guard let activeSpan = OpenTelemetry.instance.contextProvider.activeSpan else { return seriesData }
         let builder = tracer
             .spanBuilder(spanName: seriesContext.methodName)
             .setParent(activeSpan)
@@ -73,8 +77,7 @@ public final class EvalTracingHook: @unchecked Sendable, Hook {
             resourceAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_VARIATION_INDEX] = .double(Double(index))
         }
         
-        let tracer = TracerFacade(configuration: .init(serviceName: Self.INSTRUMENTATION_NAME))
-        guard let current = tracer.currentSpan else { return seriesData }
+        guard let current = OpenTelemetry.instance.contextProvider.activeSpan else { return seriesData }
         
         current.addEvent(name: Self.EVENT_NAME, attributes: resourceAttributes)
         
