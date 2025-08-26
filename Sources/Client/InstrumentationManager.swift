@@ -15,9 +15,11 @@ private let metricsPath = "/v1/metrics"
 public final class InstrumentationManager {
     private let sdkKey: String
     private let options: Options
-    private let otelLogger: Logger?
+    let otelLogger: Logger?
     let otelTracer: Tracer?
-    private let otelMeter: (any Meter)?
+    let otelBatchLogRecordProcessor: BatchLogRecordProcessor?
+    let otelMeter: (any Meter)?
+    private let sessionManager: SessionManager
     
     private var cachedGauges = AtomicDictionary<String, DoubleGauge>()
     private var cachedCounters = AtomicDictionary<String, DoubleCounter>()
@@ -25,11 +27,12 @@ public final class InstrumentationManager {
     private var cachedHistograms = AtomicDictionary<String, DoubleHistogram>()
     private var cachedUpDownCounters = AtomicDictionary<String, DoubleUpDownCounter>()
     
-    public init(sdkKey: String, options: Options) {
+    public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
         self.sdkKey = sdkKey
         self.options = options
+        self.sessionManager = sessionManager
         
-        URL(string: options.otlpEndpoint)
+        let processorAndProvider = URL(string: options.otlpEndpoint)
             .flatMap { $0.appending(path: logsPath) }
             .map { url in
                 OtlpHttpLogExporter(
@@ -41,24 +44,28 @@ public final class InstrumentationManager {
                 /// Using the default values from OpenTelemetry for Swift
                 /// For reference check:
                 /// https://github.com/open-telemetry/opentelemetry-swift/blob/main/Sources/OpenTelemetrySdk/Logs/Processors/BatchLogRecordProcessor.swift
-                LoggerProviderBuilder().with(
+                let processor = BatchLogRecordProcessor(
+                    logRecordExporter: exporter,
+                    scheduleDelay: 5,
+                    exportTimeout: 30,
+                    maxQueueSize: 2048,
+                    maxExportBatchSize: 512
+                )
+                let provider = LoggerProviderBuilder().with(
                     processors: [
-                        BatchLogRecordProcessor(
-                            logRecordExporter: exporter,
-                            scheduleDelay: 5,
-                            exportTimeout: 30,
-                            maxQueueSize: 2048,
-                            maxExportBatchSize: 512
-                        )
+                        processor
                     ]
                 )
                 .with(resource: Resource(attributes: options.resourceAttributes))
                 .build()
+                return (processor, provider)
             }
-            .map { loggerProvider in
+            .map { (arg0)  in
+                let (processor, loggerProvider) = arg0
                 OpenTelemetry.registerLoggerProvider(
                     loggerProvider: loggerProvider
                 )
+                return (processor, loggerProvider)
             }
 
         URL(string: options.otlpEndpoint)
@@ -123,6 +130,7 @@ public final class InstrumentationManager {
                 )
             }
 
+        self.otelBatchLogRecordProcessor = processorAndProvider?.0
         self.otelLogger =  OpenTelemetry.instance.loggerProvider.get(
             instrumentationScopeName: options.serviceName
         )
@@ -185,6 +193,11 @@ public final class InstrumentationManager {
     }
     
     func recordLog(message: String, severity: Severity, attributes: [String: AttributeValue]) {
+        var attributes = attributes
+        let sessionId = sessionManager.sessionInfo.id
+        if !sessionId.isEmpty {
+            attributes[SemanticConvention.highlightSessionId.rawValue] = .string(sessionId)
+        }
         otelLogger?.logRecordBuilder()
                     .setBody(.string(message))
                     .setTimestamp(.now)
@@ -194,6 +207,7 @@ public final class InstrumentationManager {
     }
     
     func recordError(error: Error, attributes: [String: AttributeValue]) {
+        var attributes = attributes
         let builder = otelTracer?.spanBuilder(spanName: "highlight.error")
         
         if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
@@ -203,6 +217,13 @@ public final class InstrumentationManager {
         attributes.forEach {
             builder?.setAttribute(key: $0.key, value: $0.value)
         }
+        
+        let sessionId = sessionManager.sessionInfo.id
+        if !sessionId.isEmpty {
+            builder?.setAttribute(key: SemanticConvention.highlightSessionId.rawValue, value: sessionId)
+            attributes[SemanticConvention.highlightSessionId.rawValue] = .string(sessionId)
+        }
+        
         
         let span = builder?.startSpan()
         span?.setAttributes(attributes)

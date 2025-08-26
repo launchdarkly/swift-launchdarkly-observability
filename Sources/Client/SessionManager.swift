@@ -1,7 +1,7 @@
 import UIKit.UIApplication
 import Combine
 
-final class SessionManager {
+public final class SessionManager {
     private var id: String
     private var startTime: Date
     private var backgroundTime: Date?

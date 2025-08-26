@@ -17,6 +17,7 @@ public final class ObservabilityClient: Observe {
     
     private var cachedSpans = AtomicDictionary<String, Span>()
     private var task: Task<Void, Never>?
+    private let crashReporter: CrashReporter
     private let urlSessionInstrumentation: URLSessionInstrumentation
     
     private var onWillEndSession: (_ sessionId: String) -> Void {
@@ -31,10 +32,23 @@ public final class ObservabilityClient: Observe {
     }
     
     public init(sdkKey: String, resource: Resource, options: Options) {
-        self.instrumentationManager = .init(sdkKey: sdkKey, options: options)
-        self.sessionManager = SessionManager(options: .init(timeout: options.sessionBackgroundTimeout))
+        let sessionManager = SessionManager(options: .init(timeout: options.sessionBackgroundTimeout))
+        self.instrumentationManager = .init(sdkKey: sdkKey, options: options, sessionManager: sessionManager)
+        self.sessionManager = sessionManager
         self.resource = resource
         self.options = options
+        
+        let crashReporter = CrashReporter.otelReporter(
+            logger: instrumentationManager.otelLogger,
+            otelBatchLogRecordProcessor: instrumentationManager.otelBatchLogRecordProcessor
+        ) {
+            
+        }
+        self.crashReporter = crashReporter
+        defer {
+            try? crashReporter.install()
+            crashReporter.logPendingCrashReports()
+        }
         
         self.urlSessionInstrumentation = URLSessionInstrumentation(
             configuration: URLSessionInstrumentationConfiguration(
@@ -47,22 +61,22 @@ public final class ObservabilityClient: Observe {
             onDidStartSession: onDidStartSession
         )
         
-        let serviceName = options.serviceName
+        
+        /*
         self.task = Task {
             do {
-                let crashReporter = CrashReporter.build(
-                    logRecordBuilder: OpenTelemetry.instance.loggerProvider.get(
-                        instrumentationScopeName: serviceName
-                    ).logRecordBuilder()
+                let crashReporter = CrashReporter.otelReporter(
+                    logger: instrumentationManager.otelLogger,
+                    otelBatchLogRecordProcessor: instrumentationManager.otelBatchLogRecordProcessor
                 )
                 try await crashReporter.install()
                 try await crashReporter.logCrashReports()
             } catch let error {
                 print("installation failed with error: \(error)")
                 // Crash reporter failed to install
-                
             }
         }
+        */
     }
     
     public func recordMetric(metric: Metric) {
@@ -103,14 +117,22 @@ public final class ObservabilityClient: Observe {
 }
 
 extension ObservabilityClient {
+    // NOTE: we are not creating spans for app life cycle
     private func didStartSession(_ id: String) {
-        let span = instrumentationManager.startSpan(name: "app.session.started", attributes: [:])
+        /*
+        let span = instrumentationManager.startSpan(
+            name: "app.session.started",
+            attributes: [:]
+        )
         cachedSpans[id] = span
+         */
     }
     
     private func willEndSession(_ id: String) {
+        /*
         guard let span = cachedSpans[id] else { return }
         span.end()
+         */
     }
     
 }
