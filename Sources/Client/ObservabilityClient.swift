@@ -60,23 +60,6 @@ public final class ObservabilityClient: Observe {
             onWillEndSession: onWillEndSession,
             onDidStartSession: onDidStartSession
         )
-        
-        
-        /*
-        self.task = Task {
-            do {
-                let crashReporter = CrashReporter.otelReporter(
-                    logger: instrumentationManager.otelLogger,
-                    otelBatchLogRecordProcessor: instrumentationManager.otelBatchLogRecordProcessor
-                )
-                try await crashReporter.install()
-                try await crashReporter.logCrashReports()
-            } catch let error {
-                print("installation failed with error: \(error)")
-                // Crash reporter failed to install
-            }
-        }
-        */
     }
     
     public func recordMetric(metric: Metric) {

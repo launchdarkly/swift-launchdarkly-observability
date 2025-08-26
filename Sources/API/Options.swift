@@ -38,7 +38,7 @@ public struct Options {
     
     public init(
         serviceName: String = Self.defaultResource.attributes["service.name"]?.description ?? "observability-swift",
-        serviceVersion: String = Self.defaultResource.attributes["service.version"]?.description ?? "1.0.0",
+        serviceVersion: String = Self.defaultResource.attributes["service.version"]?.description ?? "0.1.0",
         otlpEndpoint: String = "https://otel.observability.app.launchdarkly.com:4318",
         backendUrl: String = "https://pub.observability.app.launchdarkly.com",
         resourceAttributes: [String: AttributeValue] = [:],
