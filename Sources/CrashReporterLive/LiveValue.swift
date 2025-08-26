@@ -51,7 +51,7 @@ extension CrashReporter {
                 
                 guard let reportStore = reporter.reportStore else { return }
                 reportStore.sink = CrashReportFilterPipeline(filters: [
-                    CrashReportFilterDemangle(),
+                    CrashReportFilterDemangle(), // Handles symbol demangling
                     CrashReportFilterAppleFmt(reportStyle: .symbolicated),
                     LaunchDarklyCrashFilter(
                         logger: logger,

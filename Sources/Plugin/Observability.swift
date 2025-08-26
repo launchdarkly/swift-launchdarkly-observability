@@ -33,7 +33,7 @@ public final class Observability: Plugin {
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
         [
-            EvalTracingHook(withSpans: true, withValue: true)
+            EvalTracingHook(withSpans: true, withValue: true, version: metadata.sdkMetadata.version)
         ]
     }
 }
