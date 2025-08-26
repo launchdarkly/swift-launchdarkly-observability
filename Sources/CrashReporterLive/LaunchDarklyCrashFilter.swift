@@ -22,12 +22,15 @@ final class LaunchDarklyCrashFilter: NSObject, CrashReportFilter {
         case flushFailed
         case underlyingError(Error)
     }
+    /// timeout: time to wait until all logs uploads are cancelled
+    private let timeout: TimeInterval
     private let logger: Logger?
     private let otelBatchLogRecordProcessor: BatchLogRecordProcessor?
     
-    init(logger: Logger?, otelBatchLogRecordProcessor: BatchLogRecordProcessor?) {
+    init(logger: Logger?, otelBatchLogRecordProcessor: BatchLogRecordProcessor?, timeout: TimeInterval = 10) {
         self.logger = logger
         self.otelBatchLogRecordProcessor = otelBatchLogRecordProcessor
+        self.timeout = timeout
     }
     
     func filterReports(
@@ -41,7 +44,7 @@ final class LaunchDarklyCrashFilter: NSObject, CrashReportFilter {
                 jsonArray.append(report.value)
             case let report as CrashReportString:
                 jsonArray.append(report.value)
-            case let report as CrashReportData:
+            case _ as CrashReportData:
 //                "Unexpected non-dictionary/non-string report: \(report)"
                 break
             default:
@@ -59,7 +62,6 @@ final class LaunchDarklyCrashFilter: NSObject, CrashReportFilter {
                 let reportSections = crashReportString.components(separatedBy: "\\n")
                 let incidentIdentifier = reportSections.first(where: { $0.contains(ReportSection.incidentIdentifier.rawValue) }) ?? ""
                 let exceptionType = reportSections.first(where: { $0.contains(ReportSection.exceptionType.rawValue) }) ?? ""
-                let process = reportSections.first(where: { $0.contains(ReportSection.process.rawValue) }) ?? ""
                 
                 var attributes = [String: AttributeValue]()
                 attributes[SemanticAttributes.exceptionType.rawValue] = .string(exceptionType.replacingOccurrences(of: "\"", with: ""))
@@ -71,7 +73,7 @@ final class LaunchDarklyCrashFilter: NSObject, CrashReportFilter {
                     .emit()
                 
             }
-            guard let result = otelBatchLogRecordProcessor?.forceFlush(explicitTimeout: nil) else {
+            guard let result = otelBatchLogRecordProcessor?.forceFlush(explicitTimeout: timeout) else {
                 onCompletion?(reports, LaunchDarklyCrashFilterError.flushFailed)
                 return
             }

@@ -55,7 +55,8 @@ extension CrashReporter {
                     CrashReportFilterAppleFmt(reportStyle: .symbolicated),
                     LaunchDarklyCrashFilter(
                         logger: logger,
-                        otelBatchLogRecordProcessor: otelBatchLogRecordProcessor
+                        otelBatchLogRecordProcessor: otelBatchLogRecordProcessor,
+                        timeout: 10.0 // by default is 10s, explicitly setting it as reference
                     )
                 ])
                 reportStore.sendAllReports { [weak self] anyReports, error in
