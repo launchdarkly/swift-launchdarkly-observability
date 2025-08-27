@@ -1,8 +1,7 @@
 import UIKit.UIApplication
-import Instrumentation
 import Combine
 
-final class Session {
+public final class SessionManager {
     private var id: String
     private var startTime: Date
     private var backgroundTime: Date?
@@ -33,8 +32,20 @@ final class Session {
         self.options = options
     }
     
+    func onDidFinishLaunching(
+        _ handler: (@Sendable () -> Void)?
+    ) {
+        NotificationCenter.default.publisher(for: UIApplication.didFinishLaunchingNotification)
+        .subscribe(on: RunLoop.main)
+        .receive(on: RunLoop.main)
+        .sink { _ in
+            handler?()
+        }
+        .store(in: &cancellables)
+    }
+    
     func onWillTerminate(
-        _ handler: (@Sendable () -> Void)?,
+        _ handler: (() -> Void)?,
     ) {
         NotificationCenter.default.publisher(for: UIApplication.willTerminateNotification)
         .subscribe(on: RunLoop.main)
@@ -46,8 +57,8 @@ final class Session {
     }
     
     func start(
-        onWillEndSession: (@Sendable (_ sessionId: String) -> Void)?,
-        onDidStartSession: (@Sendable (_ sessionId: String) -> Void)?
+        onWillEndSession: ((_ sessionId: String) -> Void)?,
+        onDidStartSession: ((_ sessionId: String) -> Void)?
     ) {
         guard let onWillEndSession, let onDidStartSession else { return }
         
