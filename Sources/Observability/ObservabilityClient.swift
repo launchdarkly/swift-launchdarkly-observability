@@ -1,6 +1,5 @@
 @preconcurrency import OpenTelemetryApi
 import OpenTelemetrySdk
-import URLSessionInstrumentation
 
 import API
 import Common
@@ -15,7 +14,6 @@ public final class ObservabilityClient: Observe {
     
     private var cachedSpans = AtomicDictionary<String, Span>()
     private let crashReporter: CrashReporter
-    private let urlSessionInstrumentation: URLSessionInstrumentation
     
     public init(sdkKey: String, resource: Resource, options: Options) {
         let sessionManager = SessionManager(options: .init(timeout: options.sessionBackgroundTimeout))
@@ -35,16 +33,6 @@ public final class ObservabilityClient: Observe {
             try? crashReporter.install()
             crashReporter.logPendingCrashReports()
         }
-        
-        self.urlSessionInstrumentation = URLSessionInstrumentation(
-            configuration: URLSessionInstrumentationConfiguration(
-                shouldInstrument: { urlRequest in
-                    urlRequest.url?.absoluteString.contains(options.otlpEndpoint) == false &&
-                    urlRequest.url?.absoluteString.contains("https://mobile.launchdarkly.com/mobile") == false
-                },
-                tracer: instrumentationManager.otelTracer
-            )
-        )
         
         sessionManager.onSessionDidChange = { _ in
             // TODO: create a span

@@ -3,6 +3,7 @@ import Foundation
 import OpenTelemetrySdk
 import OpenTelemetryApi
 import OpenTelemetryProtocolExporterHttp
+import URLSessionInstrumentation
 
 import Common
 import API
@@ -19,6 +20,7 @@ final class InstrumentationManager {
     let otelMeter: (any Meter)?
     public let otelBatchLogRecordProcessor: BatchLogRecordProcessor?
     private let sessionManager: SessionManager
+    private let urlSessionInstrumentation: URLSessionInstrumentation
     private var cachedGauges = AtomicDictionary<String, DoubleGauge>()
     private var cachedCounters = AtomicDictionary<String, DoubleCounter>()
     private var cachedLongCounters = AtomicDictionary<String, LongCounter>()
@@ -140,6 +142,16 @@ final class InstrumentationManager {
         
         self.otelMeter = OpenTelemetry.instance.meterProvider.get(
             name: options.serviceName
+        )
+        
+        self.urlSessionInstrumentation = URLSessionInstrumentation(
+            configuration: URLSessionInstrumentationConfiguration(
+                shouldInstrument: { urlRequest in
+                    urlRequest.url?.absoluteString.contains(options.otlpEndpoint) == false &&
+                    urlRequest.url?.absoluteString.contains("https://mobile.launchdarkly.com/mobile") == false
+                },
+                tracer: self.otelTracer
+            )
         )
     }
     
