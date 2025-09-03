@@ -16,7 +16,6 @@ public final class ObservabilityClient: Observe {
     private let options: Options
     
     private var cachedSpans = AtomicDictionary<String, Span>()
-    private var task: Task<Void, Never>?
     private let crashReporter: CrashReporter
     private let urlSessionInstrumentation: URLSessionInstrumentation
     
@@ -65,6 +64,8 @@ public final class ObservabilityClient: Observe {
             onDidStartSession: onDidStartSession
         )
     }
+    
+    // MARK: - Instrumentation
     
     public func recordMetric(metric: Metric) {
         instrumentationManager.recordMetric(metric: metric)
