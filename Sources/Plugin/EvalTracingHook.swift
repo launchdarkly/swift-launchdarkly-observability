@@ -99,34 +99,3 @@ extension EvalTracingHook {
     static let FEATURE_FLAG_SPAN_NAME = "evaluation" /// FEATURE_FLAG_SPAN_NAME
     static let FEATURE_FLAG_CONTEXT_ATTR = "feature_flag.contextKeys"
 }
-/*
- export const FEATURE_FLAG_SCOPE = 'feature_flag'
- export const FEATURE_FLAG_SPAN_NAME = 'evaluation'
- export const FEATURE_FLAG_EVENT_NAME = `${FEATURE_FLAG_SCOPE}.${FEATURE_FLAG_SPAN_NAME}`
- 
- export const FEATURE_FLAG_ENV_ATTR = `${FEATURE_FLAG_SCOPE}.set.id`
- export const FEATURE_FLAG_KEY_ATTR = `${FEATURE_FLAG_SCOPE}.key`
- export const FEATURE_FLAG_CONTEXT_ATTR = `${FEATURE_FLAG_SCOPE}.contextKeys`
- export const FEATURE_FLAG_CONTEXT_ID_ATTR = `${FEATURE_FLAG_SCOPE}.context.id`
- export const FEATURE_FLAG_VALUE_ATTR = `${FEATURE_FLAG_SCOPE}.result.value`
- export const FEATURE_FLAG_PROVIDER_ATTR = `${FEATURE_FLAG_SCOPE}.provider.name`
- */
-
-/*
- export const FEATURE_FLAG_SCOPE = 'feature_flag'
- export const FEATURE_FLAG_SPAN_NAME = 'evaluation'
- export const FEATURE_FLAG_EVENT_NAME = `${FEATURE_FLAG_SCOPE}.${FEATURE_FLAG_SPAN_NAME}`
-
- export const FEATURE_FLAG_KEY_ATTR = `${FEATURE_FLAG_SCOPE}.key`
- export const FEATURE_FLAG_VALUE_ATTR = `${FEATURE_FLAG_SCOPE}.result.value`
- export const FEATURE_FLAG_VARIATION_INDEX_ATTR = `${FEATURE_FLAG_SCOPE}.result.variationIndex`
- export const FEATURE_FLAG_PROVIDER_ATTR = `${FEATURE_FLAG_SCOPE}.provider.name`
- export const FEATURE_FLAG_CONTEXT_ATTR = `${FEATURE_FLAG_SCOPE}.context`
- export const FEATURE_FLAG_CONTEXT_ID_ATTR = `${FEATURE_FLAG_SCOPE}.context.id`
- export const FEATURE_FLAG_ENV_ATTR = `${FEATURE_FLAG_SCOPE}.environment.id`
-
- export const LD_SCOPE = 'launchdarkly'
- export const FEATURE_FLAG_APP_ID_ATTR = `${LD_SCOPE}.application.id`
- export const FEATURE_FLAG_APP_VERSION_ATTR = `${LD_SCOPE}.application.version`
- export const LD_IDENTIFY_RESULT_STATUS = `${LD_SCOPE}.identify.result.status`
- */
