@@ -2,7 +2,8 @@ import SwiftUI
 import LaunchDarkly
 import Plugin
 
-let mobileKey = "mob-dbe6f0ac-80ce-4903-bf20-431c2e7aeae1"
+//let mobileKey = "mob-dbe6f0ac-80ce-4903-bf20-431c2e7aeae1"
+let mobileKey = "mob-48fd3788-eab7-4b72-b607-e41712049dbd"
 let config = { () -> LDConfig in
     var config = LDConfig(
         mobileKey: mobileKey,
@@ -57,7 +58,8 @@ struct ObservabilityiOSTestAppApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+//            ContentView()
+            HomeView()
         }
     }
 }

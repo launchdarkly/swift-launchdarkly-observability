@@ -52,6 +52,10 @@ public final class ObservabilityClient: Observe {
         
         self.urlSessionInstrumentation = URLSessionInstrumentation(
             configuration: URLSessionInstrumentationConfiguration(
+                shouldInstrument: { urlRequest in
+                    urlRequest.url?.absoluteString.contains(options.otlpEndpoint) == false &&
+                    urlRequest.url?.absoluteString.contains("https://mobile.launchdarkly.com/mobile") == false
+                },
                 tracer: instrumentationManager.otelTracer
             )
         )
