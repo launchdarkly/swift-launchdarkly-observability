@@ -1,6 +1,8 @@
 import Foundation
 
 import OpenTelemetrySdk
+import OpenTelemetryApi
+import OpenTelemetryProtocolExporterHttp
 
 import Common
 import API
