@@ -16,6 +16,20 @@ let package = Package(
     ],
     targets: [
         .target(name: "Common"),
+        .target(
+            name: "API",
+            dependencies: [
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+            ]
+        ),
+//        .target(
+//            name: "Instrumentation",
+//            dependencies: [
+//                "Common",
+//                "API",
+//                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+//            ]
+//        ),
         .target(name: "LaunchDarklyObservability")
     ]
 )
