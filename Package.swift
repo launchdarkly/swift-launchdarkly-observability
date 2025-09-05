@@ -7,7 +7,12 @@ let package = Package(
     products: [
         .library(
             name: "LaunchDarklyObservability",
-            targets: ["LaunchDarklyObservability"]),
+            targets: [
+                "LaunchDarklyObservability",
+                "CrashReporter",
+                "CrashReporterLive"
+            ]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift", from: "2.0.0"),
