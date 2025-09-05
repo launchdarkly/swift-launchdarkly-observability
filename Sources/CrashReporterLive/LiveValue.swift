@@ -12,8 +12,10 @@ import Foundation
 @preconcurrency import OpenTelemetryApi
 import OpenTelemetrySdk
 
-import CrashReporter
-import Common
+#if !LD_COCOAPODS
+    import CrashReporter
+    import Common
+#endif
 
 extension CrashReporter {
     public static func otelReporter(

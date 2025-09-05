@@ -13,8 +13,10 @@ import Foundation
 @preconcurrency import OpenTelemetryApi
 import OpenTelemetrySdk
 
-import CrashReporter
-import Common
+#if !LD_COCOAPODS
+    import CrashReporter
+    import Common
+#endif
 
 // Reference: https://github.com/kstenerud/KSCrash/issues/187
 final class LaunchDarklyCrashFilter: NSObject, CrashReportFilter {
