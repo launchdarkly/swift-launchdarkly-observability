@@ -4,8 +4,8 @@ import OpenTelemetrySdk
 
 #if canImport(URLSessionInstrumentation)
     import URLSessionInstrumentation
-#elseif canImport(OpenTelemetrySdk)
-    import OpenTelemetrySdk
+#elseif canImport(URLSession)
+    import URLSession
 #endif
 
 #if !LD_COCOAPODS
