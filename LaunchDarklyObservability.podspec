@@ -65,7 +65,7 @@ spec.pod_target_xcconfig = {
     ld.dependency "OpenTelemetry-Swift-Sdk", "2.0.0"
     ld.dependency "OpenTelemetry-Swift-SdkResourceExtension", "2.0.0"
     ld.dependency "OpenTelemetry-Swift-Instrumentation-URLSession", "2.0.0"
-    #ld.dependency "OpenTelemetry-Swift-Protocol-Exporter-Http"
+    ld.dependency "OpenTelemetry-Swift-Protocol-Exporter-Http"
   end
   
 end

@@ -7,6 +7,7 @@ import OpenTelemetryApi
     import OpenTelemetryProtocolExporterHttp
 #elseif canImport(OpenTelemetrySdk)
     import OpenTelemetrySdk
+    import OpenTelemetryApi
 #endif
 
 
