@@ -47,6 +47,7 @@ spec.pod_target_xcconfig = {
     ld.dependency "LaunchDarklyObservability/CrashReporter"
     ld.dependency "LaunchDarklyObservability/Common"
     ld.dependency "LaunchDarklyObservability/OpenTelemetrySdk"
+    ld.dependency "KSCrash"
     ld.dependency "KSCrash/Installations"
   end
 
