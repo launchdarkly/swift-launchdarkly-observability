@@ -1,9 +1,15 @@
 import Foundation
 
-import KSCrashInstallations
-import KSCrashRecording
-import KSCrashDemangleFilter
-import KSCrashFilters
+#if canImport(KSCrashRecording)
+    import KSCrashInstallations
+    import KSCrashRecording
+    import KSCrashDemangleFilter
+    import KSCrashFilters
+#elseif canImport(KSCrash)
+    import KSCrash
+#endif
+
+
 @preconcurrency import OpenTelemetryApi
 import OpenTelemetrySdk
 
