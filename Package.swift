@@ -9,8 +9,8 @@ let package = Package(
             name: "LaunchDarklyObservability",
             targets: [
                 "LaunchDarklyObservability",
-                "CrashReporter",
-                "CrashReporterLive"
+//                "CrashReporter",
+//                "CrashReporterLive"
             ]
         ),
     ],
