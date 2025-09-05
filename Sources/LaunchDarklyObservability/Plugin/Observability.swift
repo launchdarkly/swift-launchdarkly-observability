@@ -13,10 +13,6 @@ public final class Observability: Plugin {
         self.options = options
     }
     public func getMetadata() -> PluginMetadata {
-//        guard case let .string(serviceName) = DefaultResources().get().attributes["service.name"], !serviceName.isEmpty else {
-//            return .init(name: "'@launchdarkly/observability-ios'")
-//        }
-//        return .init(name: serviceName)
         guard !options.serviceName.isEmpty else {
             return .init(name: "'@launchdarkly/observability-ios'")
         }
@@ -31,10 +27,6 @@ public final class Observability: Plugin {
         resourceAttributes["launchdarkly.sdk.version"] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
         resourceAttributes["highlight.project_id"] = .string(sdkKey)
         
-//        let options = Options(
-//            resourceAttributes: resourceAttributes,
-//            sessionBackgroundTimeout: 3
-//        )
         let options = Options(
             serviceName: options.serviceName,
             serviceVersion: options.serviceVersion,
