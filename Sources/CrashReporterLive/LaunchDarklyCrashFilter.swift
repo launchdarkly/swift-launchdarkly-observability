@@ -1,5 +1,5 @@
 import Foundation
-#if !LD_COCOAPODS
+
 import KSCrashInstallations
 import KSCrashRecording
 import KSCrashDemangleFilter
@@ -9,7 +9,6 @@ import OpenTelemetrySdk
 
 import CrashReporter
 import Common
-#endif
 
 // Reference: https://github.com/kstenerud/KSCrash/issues/187
 final class LaunchDarklyCrashFilter: NSObject, CrashReportFilter {

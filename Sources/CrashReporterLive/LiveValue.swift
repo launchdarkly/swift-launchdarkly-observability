@@ -1,5 +1,4 @@
 import Foundation
-#if !LD_COCOAPODS
 import KSCrashInstallations
 import KSCrashRecording
 import KSCrashDemangleFilter
@@ -9,7 +8,6 @@ import OpenTelemetrySdk
 
 import CrashReporter
 import Common
-#endif
 
 extension CrashReporter {
     public static func otelReporter(
