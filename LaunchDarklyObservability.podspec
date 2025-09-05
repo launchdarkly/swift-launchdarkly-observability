@@ -48,7 +48,17 @@ spec.pod_target_xcconfig = {
     ld.dependency "LaunchDarklyObservability/Common"
     ld.dependency "LaunchDarklyObservability/OpenTelemetrySdk"
     ld.dependency "KSCrash"
-    ld.dependency "KSCrash/Installations"
+    #ld.dependency "KSCrash/Installations"
+  end
+
+  spec.subspec 'Observability' do |ld|
+    ld.source_files = "Sources/#{ld.module_name}/**/*.{h,m,mm,c,cpp,swift}"
+    ld.dependency "LaunchDarklyObservability/Common"
+    ld.dependency "LaunchDarklyObservability/API"
+    ld.dependency "LaunchDarklyObservability/CrashReporter"
+    ld.dependency "LaunchDarklyObservability/CrashReporterLive"
+    ld.dependency "LaunchDarklyObservability/OpenTelemetrySdk"
+    ld.dependency "KSCrash"
   end
 
   spec.subspec 'OpenTelemetrySdk' do |ld|
@@ -56,6 +66,4 @@ spec.pod_target_xcconfig = {
     ld.dependency "OpenTelemetry-Swift-SdkResourceExtension", "2.0.0"
   end
   
-  
-
 end

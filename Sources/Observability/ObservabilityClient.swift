@@ -1,11 +1,19 @@
 @preconcurrency import OpenTelemetryApi
 import OpenTelemetrySdk
-import URLSessionInstrumentation
 
-import API
-import Common
-import CrashReporter
-import CrashReporterLive
+
+#if canImport(URLSessionInstrumentation)
+    import URLSessionInstrumentation
+#elseif canImport(OpenTelemetrySdk)
+    import OpenTelemetrySdk
+#endif
+
+#if !LD_COCOAPODS
+    import API
+    import Common
+    import CrashReporter
+    import CrashReporterLive
+#endif
 
 public final class ObservabilityClient: Observe {
     private let instrumentationManager: InstrumentationManager

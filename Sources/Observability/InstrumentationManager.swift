@@ -2,10 +2,18 @@ import Foundation
 
 import OpenTelemetrySdk
 import OpenTelemetryApi
-import OpenTelemetryProtocolExporterHttp
 
-import Common
-import API
+#if canImport(OpenTelemetryProtocolExporterHttp)
+    import OpenTelemetryProtocolExporterHttp
+#elseif canImport(OpenTelemetrySdk)
+    import OpenTelemetrySdk
+#endif
+
+
+#if !LD_COCOAPODS
+    import Common
+    import API
+#endif
 
 private let tracesPath = "/v1/traces"
 private let logsPath = "/v1/logs"

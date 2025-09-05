@@ -7,11 +7,7 @@ let package = Package(
     products: [
         .library(
             name: "LaunchDarklyObservability",
-            targets: [
-                "LaunchDarklyObservability",
-//                "CrashReporter",
-//                "CrashReporterLive"
-            ]
+            targets: ["LaunchDarklyObservability"]
         ),
     ],
     dependencies: [
