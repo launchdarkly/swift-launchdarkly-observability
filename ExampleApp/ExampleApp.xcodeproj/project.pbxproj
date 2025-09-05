@@ -7,47 +7,47 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E7304B532E59332E00171341 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7304B522E59332E00171341 /* LaunchDarklyObservability */; };
-		E7DF64352E58CF430003BA29 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7DF64342E58CF430003BA29 /* LaunchDarklyObservability */; };
+		E7904AD42E6A528B00A15337 /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD32E6A528B00A15337 /* LaunchDarkly */; };
+		E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		E7DF641D2E58CA090003BA29 /* ObservabilityiOSTestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ObservabilityiOSTestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E7904AC42E6A523D00A15337 /* ExampleApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExampleApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		E7DF641F2E58CA090003BA29 /* ObservabilityiOSTestApp */ = {
+		E7904AC62E6A523D00A15337 /* ExampleApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ObservabilityiOSTestApp;
+			path = ExampleApp;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		E7DF641A2E58CA090003BA29 /* Frameworks */ = {
+		E7904AC12E6A523D00A15337 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E7304B532E59332E00171341 /* LaunchDarklyObservability in Frameworks */,
-				E7DF64352E58CF430003BA29 /* LaunchDarklyObservability in Frameworks */,
+				E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */,
+				E7904AD42E6A528B00A15337 /* LaunchDarkly in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		E7DF64142E58CA090003BA29 = {
+		E7904ABB2E6A523D00A15337 = {
 			isa = PBXGroup;
 			children = (
-				E7DF641F2E58CA090003BA29 /* ObservabilityiOSTestApp */,
-				E7DF641E2E58CA090003BA29 /* Products */,
+				E7904AC62E6A523D00A15337 /* ExampleApp */,
+				E7904AC52E6A523D00A15337 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		E7DF641E2E58CA090003BA29 /* Products */ = {
+		E7904AC52E6A523D00A15337 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E7DF641D2E58CA090003BA29 /* ObservabilityiOSTestApp.app */,
+				E7904AC42E6A523D00A15337 /* ExampleApp.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,69 +55,70 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		E7DF641C2E58CA090003BA29 /* ObservabilityiOSTestApp */ = {
+		E7904AC32E6A523D00A15337 /* ExampleApp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = E7DF64292E58CA0B0003BA29 /* Build configuration list for PBXNativeTarget "ObservabilityiOSTestApp" */;
+			buildConfigurationList = E7904ACF2E6A523E00A15337 /* Build configuration list for PBXNativeTarget "ExampleApp" */;
 			buildPhases = (
-				E7DF64192E58CA090003BA29 /* Sources */,
-				E7DF641A2E58CA090003BA29 /* Frameworks */,
-				E7DF641B2E58CA090003BA29 /* Resources */,
+				E7904AC02E6A523D00A15337 /* Sources */,
+				E7904AC12E6A523D00A15337 /* Frameworks */,
+				E7904AC22E6A523D00A15337 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				E7DF641F2E58CA090003BA29 /* ObservabilityiOSTestApp */,
+				E7904AC62E6A523D00A15337 /* ExampleApp */,
 			);
-			name = ObservabilityiOSTestApp;
+			name = ExampleApp;
 			packageProductDependencies = (
-				E7DF64342E58CF430003BA29 /* LaunchDarklyObservability */,
-				E7304B522E59332E00171341 /* LaunchDarklyObservability */,
+				E7904AD32E6A528B00A15337 /* LaunchDarkly */,
+				E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */,
 			);
-			productName = ObservabilityiOSTestApp;
-			productReference = E7DF641D2E58CA090003BA29 /* ObservabilityiOSTestApp.app */;
+			productName = ExampleApp;
+			productReference = E7904AC42E6A523D00A15337 /* ExampleApp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		E7DF64152E58CA090003BA29 /* Project object */ = {
+		E7904ABC2E6A523D00A15337 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
-					E7DF641C2E58CA090003BA29 = {
+					E7904AC32E6A523D00A15337 = {
 						CreatedOnToolsVersion = 16.4;
 					};
 				};
 			};
-			buildConfigurationList = E7DF64182E58CA090003BA29 /* Build configuration list for PBXProject "ObservabilityiOSTestApp" */;
+			buildConfigurationList = E7904ABF2E6A523D00A15337 /* Build configuration list for PBXProject "ExampleApp" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = E7DF64142E58CA090003BA29;
+			mainGroup = E7904ABB2E6A523D00A15337;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				E7304B512E59332E00171341 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */,
+				E7904AD22E6A528A00A15337 /* XCRemoteSwiftPackageReference "ios-client-sdk" */,
+				E7904AD52E6A52CE00A15337 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = E7DF641E2E58CA090003BA29 /* Products */;
+			productRefGroup = E7904AC52E6A523D00A15337 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				E7DF641C2E58CA090003BA29 /* ObservabilityiOSTestApp */,
+				E7904AC32E6A523D00A15337 /* ExampleApp */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		E7DF641B2E58CA090003BA29 /* Resources */ = {
+		E7904AC22E6A523D00A15337 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -127,7 +128,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		E7DF64192E58CA090003BA29 /* Sources */ = {
+		E7904AC02E6A523D00A15337 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -137,7 +138,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		E7DF64272E58CA0B0003BA29 /* Debug */ = {
+		E7904ACD2E6A523E00A15337 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -189,16 +190,18 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		E7DF64282E58CA0B0003BA29 /* Release */ = {
+		E7904ACE2E6A523E00A15337 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -244,104 +247,87 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
-		E7DF642A2E58CA0B0003BA29 /* Debug */ = {
+		E7904AD02E6A523E00A15337 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = ObservabilityiOSTestApp/ObservabilityiOSTestApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.launchdarkly.test.ObservabilityiOSTestApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.launchdarkly..ExampleApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 2.5;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		E7DF642B2E58CA0B0003BA29 /* Release */ = {
+		E7904AD12E6A523E00A15337 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = ObservabilityiOSTestApp/ObservabilityiOSTestApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.launchdarkly.test.ObservabilityiOSTestApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.launchdarkly..ExampleApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 2.5;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		E7DF64182E58CA090003BA29 /* Build configuration list for PBXProject "ObservabilityiOSTestApp" */ = {
+		E7904ABF2E6A523D00A15337 /* Build configuration list for PBXProject "ExampleApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				E7DF64272E58CA0B0003BA29 /* Debug */,
-				E7DF64282E58CA0B0003BA29 /* Release */,
+				E7904ACD2E6A523E00A15337 /* Debug */,
+				E7904ACE2E6A523E00A15337 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		E7DF64292E58CA0B0003BA29 /* Build configuration list for PBXNativeTarget "ObservabilityiOSTestApp" */ = {
+		E7904ACF2E6A523E00A15337 /* Build configuration list for PBXNativeTarget "ExampleApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				E7DF642A2E58CA0B0003BA29 /* Debug */,
-				E7DF642B2E58CA0B0003BA29 /* Release */,
+				E7904AD02E6A523E00A15337 /* Debug */,
+				E7904AD12E6A523E00A15337 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -349,22 +335,34 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		E7304B512E59332E00171341 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */ = {
+		E7904AD52E6A52CE00A15337 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../../swift-launchdarkly-observability";
 		};
 /* End XCLocalSwiftPackageReference section */
 
-/* Begin XCSwiftPackageProductDependency section */
-		E7304B522E59332E00171341 /* LaunchDarklyObservability */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = LaunchDarklyObservability;
+/* Begin XCRemoteSwiftPackageReference section */
+		E7904AD22E6A528A00A15337 /* XCRemoteSwiftPackageReference "ios-client-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/launchdarkly/ios-client-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.15.0;
+			};
 		};
-		E7DF64342E58CF430003BA29 /* LaunchDarklyObservability */ = {
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E7904AD32E6A528B00A15337 /* LaunchDarkly */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E7904AD22E6A528A00A15337 /* XCRemoteSwiftPackageReference "ios-client-sdk" */;
+			productName = LaunchDarkly;
+		};
+		E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LaunchDarklyObservability;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = E7DF64152E58CA090003BA29 /* Project object */;
+	rootObject = E7904ABC2E6A523D00A15337 /* Project object */;
 }

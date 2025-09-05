@@ -1,10 +1,8 @@
 @preconcurrency import OpenTelemetryApi
 import OpenTelemetrySdk
-import StdoutExporter
 import URLSessionInstrumentation
 
 import API
-import Interfaces
 import Common
 import CrashReporter
 import CrashReporterLive
@@ -16,20 +14,8 @@ public final class ObservabilityClient: Observe {
     private let options: Options
     
     private var cachedSpans = AtomicDictionary<String, Span>()
-    private var task: Task<Void, Never>?
     private let crashReporter: CrashReporter
     private let urlSessionInstrumentation: URLSessionInstrumentation
-    
-    private var onWillEndSession: (_ sessionId: String) -> Void {
-        { [weak self] sessionId in
-            self?.willEndSession(sessionId)
-        }
-    }
-    private var onDidStartSession: (_ sessionId: String) -> Void {
-        { [weak self] sessionId in
-            self?.didStartSession(sessionId)
-        }
-    }
     
     public init(sdkKey: String, resource: Resource, options: Options) {
         let sessionManager = SessionManager(options: .init(timeout: options.sessionBackgroundTimeout))
@@ -60,10 +46,13 @@ public final class ObservabilityClient: Observe {
             )
         )
         
-        self.sessionManager.start(
-            onWillEndSession: onWillEndSession,
-            onDidStartSession: onDidStartSession
-        )
+        sessionManager.onSessionDidChange = { _ in
+            // TODO: create a span
+        }
+        sessionManager.onStateDidChange = { _, _ in
+            // TODO: create a span
+            
+        }
     }
     
     public func recordMetric(metric: Metric) {
@@ -101,25 +90,4 @@ public final class ObservabilityClient: Observe {
     public func flush() {
         // TODO: Implement flush
     }
-}
-
-extension ObservabilityClient {
-    // NOTE: we are not creating spans for app life cycle
-    private func didStartSession(_ id: String) {
-        /*
-        let span = instrumentationManager.startSpan(
-            name: "app.session.started",
-            attributes: [:]
-        )
-        cachedSpans[id] = span
-         */
-    }
-    
-    private func willEndSession(_ id: String) {
-        /*
-        guard let span = cachedSpans[id] else { return }
-        span.end()
-         */
-    }
-    
 }

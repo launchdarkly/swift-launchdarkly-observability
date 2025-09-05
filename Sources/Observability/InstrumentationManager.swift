@@ -1,26 +1,24 @@
 import Foundation
-@preconcurrency import OpenTelemetryApi
+
 import OpenTelemetrySdk
-import StdoutExporter
+import OpenTelemetryApi
 import OpenTelemetryProtocolExporterHttp
 
-import API
-import Interfaces
 import Common
+import API
 
 private let tracesPath = "/v1/traces"
 private let logsPath = "/v1/logs"
 private let metricsPath = "/v1/metrics"
 
-public final class InstrumentationManager {
+final class InstrumentationManager {
     private let sdkKey: String
     private let options: Options
     let otelLogger: Logger?
     let otelTracer: Tracer?
-    let otelBatchLogRecordProcessor: BatchLogRecordProcessor?
     let otelMeter: (any Meter)?
+    public let otelBatchLogRecordProcessor: BatchLogRecordProcessor?
     private let sessionManager: SessionManager
-    
     private var cachedGauges = AtomicDictionary<String, DoubleGauge>()
     private var cachedCounters = AtomicDictionary<String, DoubleCounter>()
     private var cachedLongCounters = AtomicDictionary<String, LongCounter>()
@@ -56,8 +54,8 @@ public final class InstrumentationManager {
                         processor
                     ]
                 )
-                .with(resource: Resource(attributes: options.resourceAttributes))
-                .build()
+                    .with(resource: Resource(attributes: options.resourceAttributes))
+                    .build()
                 return (processor, provider)
             }
             .map { (arg0)  in
@@ -67,7 +65,7 @@ public final class InstrumentationManager {
                 )
                 return (processor, loggerProvider)
             }
-
+        
         URL(string: options.otlpEndpoint)
             .flatMap { $0.appending(path: tracesPath) }
             .map { url in
@@ -129,7 +127,7 @@ public final class InstrumentationManager {
                     meterProvider: meterProvider
                 )
             }
-
+        
         self.otelBatchLogRecordProcessor = processorAndProvider?.0
         self.otelLogger =  OpenTelemetry.instance.loggerProvider.get(
             instrumentationScopeName: options.serviceName
@@ -199,11 +197,11 @@ public final class InstrumentationManager {
             attributes[SemanticConvention.highlightSessionId.rawValue] = .string(sessionId)
         }
         otelLogger?.logRecordBuilder()
-                    .setBody(.string(message))
-                    .setTimestamp(.now)
-                    .setSeverity(severity)
-                    .setAttributes(attributes)
-                    .emit()
+            .setBody(.string(message))
+            .setTimestamp(.now)
+            .setSeverity(severity)
+            .setAttributes(attributes)
+            .emit()
     }
     
     func recordError(error: Error, attributes: [String: AttributeValue]) {
