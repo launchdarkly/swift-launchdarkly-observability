@@ -1,8 +1,7 @@
-import SwiftUI
+import UIKit
 import LaunchDarkly
-import Plugin
+import LaunchDarklyObservability
 
-//let mobileKey = "mob-dbe6f0ac-80ce-4903-bf20-431c2e7aeae1"
 let mobileKey = "mob-48fd3788-eab7-4b72-b607-e41712049dbd"
 let config = { () -> LDConfig in
     var config = LDConfig(
@@ -10,7 +9,7 @@ let config = { () -> LDConfig in
         autoEnvAttributes: .enabled
     )
     config.plugins = [
-        Observability()
+        Observability(options: .init(sessionBackgroundTimeout: 3))
     ]
     return config
 }()
@@ -49,17 +48,5 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         print(once)
         return true
-    }
-}
-
-@main
-struct ObservabilityiOSTestAppApp: App {
-    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    
-    var body: some Scene {
-        WindowGroup {
-//            ContentView()
-            HomeView()
-        }
     }
 }

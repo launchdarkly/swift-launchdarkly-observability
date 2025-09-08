@@ -2,7 +2,7 @@ import Foundation
 import LaunchDarkly
 @preconcurrency import OpenTelemetryApi
 import OpenTelemetrySdk
-import Client
+import Observability
 import Common
 
 public final class EvalTracingHook: @unchecked Sendable, Hook {

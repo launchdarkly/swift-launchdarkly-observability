@@ -1,21 +1,20 @@
 import SwiftUI
 import LaunchDarkly
-import LaunchDarklyObservability
 
-private let featureFlag = "new-home-experience"
-struct HomeView: View {
+struct FeatureFlagView: View {
+    private let featureFlag = "new-home-experience"
     @State private var isNewExperience = Optional<Bool>.none
     
     var body: some View {
-        NavigationStack {
-            if isNewExperience == true {
-                HomeNewView()
-            } else if isNewExperience == false {
-                HomeOldView()
+        Group {
+            if let isNewExperience {
+                Text("Feature flag is: \(isNewExperience)")
             } else {
-                Text("Default Home View")
+                Text("Feature flag is nil...")
             }
         }
+        .font(.title)
+        .bold()
         .onAppear {
             isNewExperience = LDClient.get()?.boolVariation(
                 forKey: featureFlag,
@@ -23,4 +22,5 @@ struct HomeView: View {
             )
         }
     }
+  
 }

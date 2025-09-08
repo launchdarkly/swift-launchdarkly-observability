@@ -1,7 +1,7 @@
 import Foundation
 @preconcurrency import OpenTelemetryApi
-import Client
-import Interfaces
+import API
+import Observability
 
 private final class NoOpClient: Observe {
     func recordMetric(metric: Metric) {}
