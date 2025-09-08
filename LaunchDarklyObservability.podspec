@@ -58,14 +58,14 @@ spec.pod_target_xcconfig = {
     ld.dependency "LaunchDarklyObservability/CrashReporter"
     ld.dependency "LaunchDarklyObservability/CrashReporterLive"
     ld.dependency "LaunchDarklyObservability/OpenTelemetrySdk"
-    #ld.dependency "KSCrash"
   end
 
   spec.subspec 'OpenTelemetrySdk' do |ld|
     ld.dependency "OpenTelemetry-Swift-Sdk", "2.0.0"
+    ld.dependency "OpenTelemetry-Swift-Api", "2.0.0"
     ld.dependency "OpenTelemetry-Swift-SdkResourceExtension", "2.0.0"
     ld.dependency "OpenTelemetry-Swift-Instrumentation-URLSession", "2.0.0"
-    ld.dependency "OpenTelemetry-Swift-Protocol-Exporter-Http"
+    ld.dependency "OpenTelemetry-Swift-Protocol-Exporter-Http", "2.0.0"
   end
   
 end
