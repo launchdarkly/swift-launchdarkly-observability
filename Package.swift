@@ -35,15 +35,49 @@ let package = Package(
             ]
         ),
         .target(
+            name: "Sampling",
+            dependencies: [
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift")
+            ]
+        ),
+        .target(
+            name: "SamplingLive",
+            dependencies: [
+                "Sampling",
+                "Common",
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift")
+            ]
+        ),
+        .testTarget(
+            name: "SamplingLiveTests",
+            dependencies: [
+                "Sampling",
+                "SamplingLive",
+                "Common",
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift")
+            ],
+            resources: [
+                .copy("Resources/Stubs/Config.json")
+            ]
+        ),
+        .target(
             name: "Observability",
             dependencies: [
                 "Common",
                 "API",
                 "CrashReporter",
                 "CrashReporterLive",
+                "Sampling",
+                "SamplingLive",
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
                 .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift"),
+            ],
+            resources: [
+                .copy("Resources/Config.json")
             ]
         ),
         .target(

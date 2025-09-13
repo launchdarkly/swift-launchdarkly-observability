@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(Browser.self) var browser
+    
     var body: some View {
         VStack(spacing: 32) {
             Button {
@@ -15,8 +17,23 @@ struct ContentView: View {
             } label: {
                 Text("Crash")
             }
-            NetworkRequestView()
-            FeatureFlagView()
+            Button {
+                browser.navigate(to: .automaticInstrumentation)
+            } label: {
+                Text("Automatic Instrumentation")
+            }
+            Button {
+                browser.navigate(to: .evaluation)
+            } label: {
+                Text("Flag evaluation")
+            }
+            Button {
+                browser.navigate(to: .manualInstrumentation)
+            } label: {
+                Text("Manual Instrumentation")
+            }
+//            NetworkRequestView()
+//            FeatureFlagView()
         }
         .padding()
     }

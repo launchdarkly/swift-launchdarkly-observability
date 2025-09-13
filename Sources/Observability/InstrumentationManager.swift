@@ -7,6 +7,8 @@ import URLSessionInstrumentation
 
 import Common
 import API
+import Sampling
+import SamplingLive
 
 private let tracesPath = "/v1/traces"
 private let logsPath = "/v1/logs"
@@ -26,18 +28,30 @@ final class InstrumentationManager {
     private var cachedLongCounters = AtomicDictionary<String, LongCounter>()
     private var cachedHistograms = AtomicDictionary<String, DoubleHistogram>()
     private var cachedUpDownCounters = AtomicDictionary<String, DoubleUpDownCounter>()
+    private let sampler: ExportSampler
     
     public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
         self.sdkKey = sdkKey
         self.options = options
         self.sessionManager = sessionManager
         
+        
+        let sampler = ExportSampler.customSampler()
+        /// Here is how we will inject the sampling config coming from backend, if the next lines
+        /// are uncommented, them will inject a example local config for testing purposes only.
+        ///let samplingConfig = loadSampleConfig()
+        ///sampler.setConfig(samplingConfig)
+        
+        
         let processorAndProvider = URL(string: options.otlpEndpoint)
             .flatMap { $0.appending(path: logsPath) }
             .map { url in
-                OtlpHttpLogExporter(
-                    endpoint: url,
-                    envVarHeaders: options.customHeaders
+                SamplingLogExporterDecorator(
+                    exporter: OtlpHttpLogExporter(
+                        endpoint: url,
+                        envVarHeaders: options.customHeaders
+                    ),
+                    sampler: sampler
                 )
             }
             .map { exporter in
@@ -71,9 +85,12 @@ final class InstrumentationManager {
         URL(string: options.otlpEndpoint)
             .flatMap { $0.appending(path: tracesPath) }
             .map { url in
-                OtlpHttpTraceExporter(
-                    endpoint: url,
-                    envVarHeaders: options.customHeaders
+                SamplingTraceExporterDecorator(
+                    exporter: OtlpHttpTraceExporter(
+                        endpoint: url,
+                        envVarHeaders: options.customHeaders
+                    ),
+                    sampler: sampler
                 )
             }
             .map { exporter in
@@ -153,6 +170,8 @@ final class InstrumentationManager {
                 tracer: self.otelTracer
             )
         )
+        
+        self.sampler = sampler
     }
     
     func recordMetric(metric: Metric) {
@@ -206,7 +225,7 @@ final class InstrumentationManager {
         var attributes = attributes
         let sessionId = sessionManager.sessionInfo.id
         if !sessionId.isEmpty {
-            attributes[SemanticConvention.highlightSessionId.rawValue] = .string(sessionId)
+            attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
         }
         otelLogger?.logRecordBuilder()
             .setBody(.string(message))
@@ -230,8 +249,8 @@ final class InstrumentationManager {
         
         let sessionId = sessionManager.sessionInfo.id
         if !sessionId.isEmpty {
-            builder?.setAttribute(key: SemanticConvention.highlightSessionId.rawValue, value: sessionId)
-            attributes[SemanticConvention.highlightSessionId.rawValue] = .string(sessionId)
+            builder?.setAttribute(key: SemanticConvention.highlightSessionId, value: sessionId)
+            attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
         }
         
         
@@ -263,5 +282,19 @@ final class InstrumentationManager {
         }
         
         return builder.startSpan()
+    }
+}
+
+func loadSampleConfig() -> SamplingConfig? {
+    guard let url = Bundle.module.url(forResource: "Config", withExtension: "json") else {
+        return nil
+    }
+    do {
+        let data = try Data(contentsOf: url)
+        let decoder = JSONDecoder()
+        let root = try decoder.decode(Root.self, from: data)
+        return root.data.sampling
+    } catch {
+        return nil
     }
 }
