@@ -38,7 +38,7 @@ public final class SamplingLogExporterDecorator: LogRecordExporter {
             return .success
         }
         
-        return exporter.export(logRecords: logRecords, explicitTimeout: explicitTimeout)
+        return exporter.export(logRecords: sampledItems, explicitTimeout: explicitTimeout)
     }
     
     
