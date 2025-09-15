@@ -73,6 +73,7 @@ let package = Package(
                 "Sampling",
                 "SamplingLive",
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
                 .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift"),
             ],

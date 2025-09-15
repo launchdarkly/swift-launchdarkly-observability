@@ -10,22 +10,20 @@ func sampleLogs(
         return items
     }
     
-    return items.reduce([ReadableLogRecord]()) { (result, item) in
+    return items.compactMap { item in
         let sampleResult = sampler.sampleLog(item)
-        if sampleResult.sample {
-            let updatedLog = ReadableLogRecord(
-                resource: item.resource,
-                instrumentationScopeInfo: item.instrumentationScopeInfo,
-                timestamp: item.timestamp,
-                observedTimestamp: item.observedTimestamp,
-                spanContext: item.spanContext,
-                severity: item.severity,
-                body: item.body,
-                attributes: item.attributes.merging(sampleResult.attributes ?? [:], uniquingKeysWith: { current, new in current }) // Merge, prioritizing values from logRecord for duplicate keys
-            )
-            return result + [updatedLog]
+        guard sampleResult.sample else {
+            return nil
         }
-        
-        return result
+        return ReadableLogRecord(
+            resource: item.resource,
+            instrumentationScopeInfo: item.instrumentationScopeInfo,
+            timestamp: item.timestamp,
+            observedTimestamp: item.observedTimestamp,
+            spanContext: item.spanContext,
+            severity: item.severity,
+            body: item.body,
+            attributes: item.attributes.merging(sampleResult.attributes ?? [:], uniquingKeysWith: { current, new in current }) // Merge, prioritizing values from logRecord for duplicate keys
+        )
     }
 }

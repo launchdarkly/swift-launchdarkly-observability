@@ -48,10 +48,10 @@ extension ExportSampler {
             }
             
             func sampleLog(_ logData: ReadableLogRecord) -> SamplingResult {
-                guard let config else {
-                    /// no configs, so we sample it.
+                guard let config, !(config.logs?.isEmpty ?? true) else {
                     return .init(sample: true)
                 }
+                
                 for logConfig in config.logs ?? [] {
                     if matchesLogConfig(config: logConfig, record: logData) {
                         return .init(
@@ -89,7 +89,7 @@ extension ExportSampler {
                 switch matchConfig {
                 case .basic(let configValue):
                     if let configAttributeValue = AttributeValue(configValue) ,let attributeValue = value as? AttributeValue {
-                        return JSON.stringify(configAttributeValue.description) == JSON.stringify(attributeValue.description)
+                        return configAttributeValue == attributeValue
                     } else if let attributeValue = value as? AttributeValue {
                         guard let configValueEncodabled = configValue as? Encodable else {
                             return false
