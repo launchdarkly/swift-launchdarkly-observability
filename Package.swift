@@ -89,6 +89,8 @@ let package = Package(
                 "API",
                 "Common",
                 .product(name: "LaunchDarkly", package: "ios-client-sdk"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
             ]
         )
     ]
