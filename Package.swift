@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "swift-launchdarkly-observability",
-    platforms: [.iOS(.v16)],
+    platforms: [.iOS(.v13)],
     products: [
         .library(
             name: "LaunchDarklyObservability",

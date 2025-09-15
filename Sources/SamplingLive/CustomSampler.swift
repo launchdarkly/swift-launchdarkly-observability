@@ -12,7 +12,6 @@ extension ExportSampler {
     ) -> Self {
         final class CustomSampler {
             private let sampler: (Int) -> Bool
-            private var regexCache = AtomicDictionary<String, Regex<Substring>>()
             private let queue = DispatchQueue(label: "com.launchdarkly.sampler.custom", attributes: .concurrent)
             private var _config: SamplingConfig?
             private var config: SamplingConfig? {
@@ -90,12 +89,7 @@ extension ExportSampler {
                     return configValue == value
                 case .regex(let pattern):
                     guard case .string(let valueString) = value else { return false }
-                    var regex = regexCache[pattern]
-                    if regex == nil {
-                        regex = try? Regex(pattern)
-                        regexCache[pattern] = regex
-                    }
-                    return (try? regex?.firstMatch(in: valueString) != nil) ?? false
+                    return valueString.matches(pattern)
                 }
             }
             

@@ -33,7 +33,7 @@ public final class EvalTracingHook: @unchecked Sendable, Hook {
         lazy var span: any Span = {
             let span = tracer
                 .spanBuilder(spanName: Self.FEATURE_FLAG_SPAN_NAME)
-                .setStartTime(time: .now)
+                .setStartTime(time: Date())
                 .startSpan()
  
             return span
@@ -76,7 +76,7 @@ public final class EvalTracingHook: @unchecked Sendable, Hook {
         
         let value = seriesData[Self.DATA_KEY_SPAN]
         if let span = value as? Span {
-            span.addEvent(name: Self.EVENT_NAME, attributes: resourceAttributes, timestamp: .now)
+            span.addEvent(name: Self.EVENT_NAME, attributes: resourceAttributes, timestamp: Date())
             span.end()
         }
         
