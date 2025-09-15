@@ -20,6 +20,7 @@ let package = Package(
             name: "API",
             dependencies: [
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "ResourceExtension", package: "opentelemetry-swift"),
             ]
         ),
