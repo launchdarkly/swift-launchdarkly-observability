@@ -61,7 +61,7 @@ let package = Package(
             ],
             resources: [
                 .copy("Resources/Stubs/Config.json"),
-                .copy("Resources/Stubs/Config2.json")
+                .copy("Resources/Stubs/MinConfig.json")
             ]
         ),
         .target(

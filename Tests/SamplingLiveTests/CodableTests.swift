@@ -36,4 +36,20 @@ struct ConfigCodableTests {
             throw error
         }
     }
+    
+    @Test
+    func decodeMinConfig() throws {
+        let jsonDecoder = JSONDecoder()
+        guard let url = Bundle.module.url(forResource: "MinConfig", withExtension: "json") else {
+            print("Error: Could not find my_data.txt in bundle.")
+            throw URLError(.fileDoesNotExist)
+        }
+        
+        let data = try Data(contentsOf: url)
+        do {
+            _ = try jsonDecoder.decode(Root.self, from: data)
+        } catch let error {
+            throw error
+        }
+    }
 }
