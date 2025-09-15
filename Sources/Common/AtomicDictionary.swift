@@ -20,6 +20,6 @@ where Key: Hashable, Key: Sendable {
   }
 
   public var debugDescription: String {
-    return storage.debugDescription
+      return queue.sync { storage.debugDescription }
   }
 }

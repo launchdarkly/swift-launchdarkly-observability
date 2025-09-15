@@ -23,6 +23,13 @@ let package = Package(
                 .product(name: "ResourceExtension", package: "opentelemetry-swift"),
             ]
         ),
+        .testTarget(
+            name: "CommonTests",
+            dependencies: [
+                "Common"
+            ],
+            resources: [.process("GraphQL/Queries")]
+        ),
         .target(name: "CrashReporter"),
         .target(
             name: "CrashReporterLive",
