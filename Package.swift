@@ -43,6 +43,13 @@ let package = Package(
             ]
         ),
         .target(
+            name: "SessionReplay",
+            dependencies: [
+                "Common"
+            ],
+            resources: [.process("Queries")]
+        ),
+        .target(
             name: "Sampling",
             dependencies: [
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
@@ -93,6 +100,7 @@ let package = Package(
         .target(
             name: "LaunchDarklyObservability",
             dependencies: [
+                "SessionReplay",
                 "Observability",
                 "API",
                 "Common",
