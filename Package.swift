@@ -10,7 +10,7 @@ let package = Package(
             targets: ["LaunchDarklyObservability"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/open-telemetry/opentelemetry-swift", exact: "2.0.2"),
+        .package(url: "https://github.com/open-telemetry/opentelemetry-swift", exact: "2.0.0"),
         .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", from: "9.15.0"),
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
     ],
