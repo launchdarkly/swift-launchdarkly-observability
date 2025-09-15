@@ -14,7 +14,7 @@ struct SamplingSpansTests {
         let spans = (1...3).map { makeMockSpanData(name: "span\($0)") }
         let sampler = ExportSampler.fake(isSamplingEnabled: false)
         
-        let result = sampleSpans(items: spans, sampler: sampler)
+        let result = sampler.sampleSpans(items: spans)
         
         #expect(result.count == spans.count)
         for (r, sd) in zip(result, spans) {
@@ -28,7 +28,7 @@ struct SamplingSpansTests {
         let spans = [SpanData]()
         let sampler = ExportSampler.fake(isSamplingEnabled: true)
         
-        let result = sampleSpans(items: spans, sampler: sampler)
+        let result = sampler.sampleSpans(items: spans)
         
         #expect(result.isEmpty)
     }
@@ -41,7 +41,7 @@ struct SamplingSpansTests {
             isSamplingEnabled: true
         )
         
-        let result = sampleSpans(items: spans, sampler: sampler)
+        let result = sampler.sampleSpans(items: spans)
         
         #expect(result.isEmpty)
     }
@@ -54,7 +54,7 @@ struct SamplingSpansTests {
         )
         let spans = (1...3).map { makeMockSpanData(name: "span\($0)") }
         
-        let result = sampleSpans(items: spans, sampler: sampler)
+        let result = sampler.sampleSpans(items: spans)
         
         #expect(result.count == spans.count)
         #expect(result.contains(spans))
@@ -77,7 +77,7 @@ struct SamplingSpansTests {
         let span3 = makeMockSpanData(name: "span1")
         let spans = [span1, span2, span3]
         
-        let result = sampleSpans(items: spans, sampler: sampler)
+        let result = sampler.sampleSpans(items: spans)
         
         
         #expect(result.count == 2)
@@ -117,7 +117,7 @@ struct SamplingSpansTests {
             isSamplingEnabled: true
         )
         
-        let result = sampleSpans(items: spans, sampler: sampler)
+        let result = sampler.sampleSpans(items: spans)
         
         #expect(result.count == 1)
         #expect(originalSpan.attributes != result[0].attributes)

@@ -20,7 +20,7 @@ struct SamplingLogsTests {
         let sampler = ExportSampler.fake(isSamplingEnabled: false)
         let logs = (1...3).map { makeMockReadableLogRecord(body: .string("log\($0)")) }
         
-        let result = sampleLogs(items: logs, sampler: sampler)
+        let result = sampler.sampleLogs(items: logs)
         
         #expect(logs.count == result.count)
         
@@ -33,7 +33,7 @@ struct SamplingLogsTests {
     func enablingSampling() {
         let sampler = ExportSampler.fake(isSamplingEnabled: true)
         
-        let result = sampleLogs(items: [], sampler: sampler)
+        let result = sampler.sampleLogs(items: [])
         
         #expect(result.isEmpty)
     }
@@ -46,7 +46,7 @@ struct SamplingLogsTests {
         )
         let logs = (1...3).map { makeMockReadableLogRecord(body: .string("log\($0)")) }
         
-        let result = sampleLogs(items: logs, sampler: sampler)
+        let result = sampler.sampleLogs(items: logs)
         
         #expect(result.isEmpty)
     }
@@ -64,7 +64,7 @@ struct SamplingLogsTests {
         )
         let logs = (1...3).map { makeMockReadableLogRecord(body: .string("log\($0)")) }
         
-        let result = sampleLogs(items: logs, sampler: sampler)
+        let result = sampler.sampleLogs(items: logs)
         
         #expect(logs.count == result.count)
         
@@ -91,7 +91,7 @@ struct SamplingLogsTests {
         )
         
         
-        let result = sampleLogs(items: logs, sampler: sampler)
+        let result = sampler.sampleLogs(items: logs)
         
         
         let logAtIndex2ThatIsNotSampledIsInTheArray = { (log: ReadableLogRecord) -> Bool in
@@ -125,7 +125,7 @@ struct SamplingLogsTests {
         
         // When
         let items = [mockLog]
-        let result = sampleLogs(items: items, sampler: sampler)
+        let result = sampler.sampleLogs(items: items)
         #expect(result.count == items.count)
         
         #expect(result[0].attributes["service.name"] == originalAttributes["service.name"])
@@ -156,7 +156,7 @@ struct SamplingLogsTests {
             isSamplingEnabled: true
         )
         
-        let result = sampleLogs(items: logs, sampler: sampler)
+        let result = sampler.sampleLogs(items: logs)
         
         let sampled = [logs[0], logs[2]]
         #expect(result.count == sampled.count)

@@ -60,7 +60,8 @@ let package = Package(
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift")
             ],
             resources: [
-                .copy("Resources/Stubs/Config.json")
+                .copy("Resources/Stubs/Config.json"),
+                .copy("Resources/Stubs/Config2.json")
             ]
         ),
         .target(
@@ -78,7 +79,7 @@ let package = Package(
                 .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift"),
             ],
             resources: [
-                .copy("Resources/Config.json")
+                .copy("Resources/Config.json"),
             ]
         ),
         .target(

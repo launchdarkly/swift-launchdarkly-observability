@@ -1,7 +1,8 @@
 import Foundation
+import OpenTelemetryApi
 
 public enum MatchConfig: Codable {
-    case basic(value: Any)
+    case basic(value: AttributeValue)
     case regex(expression: String)
     
     enum CodingKeys: String, CodingKey {
@@ -14,14 +15,19 @@ public enum MatchConfig: Codable {
         if let regex = try? container.decode(String.self, forKey: .regex) {
             self = .regex(expression: regex)
         } else if let value = try? container.decode(String.self, forKey: .basic) {
-            self = .basic(value: value)
+            self = .basic(value: .string(value))
         } else if let value = try? container.decode(Int.self, forKey: .basic) {
-            self = .basic(value: value)
+            self = .basic(value: .int(value))
         } else if let value = try? container.decode(Bool.self, forKey: .basic) {
-            self = .basic(value: value)
+            self = .basic(value: .bool(value))
         } else if let value = try? container.decode(Double.self, forKey: .basic) {
-            self = .basic(value: value)
-        } else {
+            self = .basic(value: .double(value))
+        } else if let value = try? container.decode(AttributeArray.self, forKey: .basic) {
+            self = .basic(value: .array(value))
+        } else if let value = try? container.decode(AttributeSet.self, forKey: .basic) {
+            self = .basic(value: .set(value))
+        }
+        else {
             throw DecodingError.typeMismatch(
                 Any.self,
                     .init(codingPath: decoder.codingPath, debugDescription: "Unsupported type for MatchConfig")
@@ -33,10 +39,7 @@ public enum MatchConfig: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
         case .basic(let value):
-            guard let encodableValue = value as? Encodable else {
-                throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: encoder.codingPath, debugDescription: "Value is not encodable"))
-            }
-            try container.encode(encodableValue, forKey: .basic)
+            try container.encode(value, forKey: .basic)
         case .regex(let expression):
             try container.encode(expression, forKey: .regex)
         }

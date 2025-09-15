@@ -6,7 +6,7 @@ import Sampling
 struct ConfigCodableTests {
     @Test
     func matchConfig() throws {
-        let config = MatchConfig.basic(value: "Hello, World!")
+        let config = MatchConfig.basic(value: .string("Hello, World!"))
         let encoder = JSONEncoder()
         encoder.outputFormatting = .prettyPrinted
         do {
@@ -31,7 +31,7 @@ struct ConfigCodableTests {
         
         let data = try Data(contentsOf: url)
         do {
-            let config = try jsonDecoder.decode(Root.self, from: data)
+            _ = try jsonDecoder.decode(Root.self, from: data)
         } catch let error {
             throw error
         }

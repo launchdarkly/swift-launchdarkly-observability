@@ -28,7 +28,7 @@ public final class SamplingTraceExporterDecorator: SpanExporter {
         spans: [SpanData],
         explicitTimeout: TimeInterval?
     ) -> SpanExporterResultCode {
-        let sampledItems = sampleSpans(items: spans, sampler: sampler)
+        let sampledItems = sampler.sampleSpans(items: spans)
         guard !sampledItems.isEmpty else {
             return .success
         }

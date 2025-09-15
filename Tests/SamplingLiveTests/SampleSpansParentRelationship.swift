@@ -28,7 +28,7 @@ struct SampleSpansParentRelationship {
         
         let spans = [parentSpan, childSpan, grandchildSpan, unrelatedSpan]
         
-        let result = sampleSpans(items: spans, sampler: sampler)
+        let result = sampler.sampleSpans(items: spans)
         
         #expect(result.count == 1)
         #expect(result[0] == unrelatedSpan)
@@ -49,7 +49,7 @@ struct SampleSpansParentRelationship {
         
         let spans = [parentSpan, childSpan1, childSpan2]
         
-        let result = sampleSpans(items: spans, sampler: sampler)
+        let result = sampler.sampleSpans(items: spans)
         
         #expect(result.count == 3)
         #expect(result.allSatisfy { spans.contains($0) })
@@ -74,7 +74,7 @@ struct SampleSpansParentRelationship {
         
         let spans = [parentSpan, childSpan, grandchildSpan]
         
-        let result = sampleSpans(items: spans, sampler: sampler)
+        let result = sampler.sampleSpans(items: spans)
         
         #expect(result.count == 1)
         #expect(result[0] == parentSpan)
@@ -114,7 +114,7 @@ struct SampleSpansParentRelationship {
         
         let spans = [parent1, child1, grandchild1, parent2, child2, grandchild2, unrelated]
         
-        let result = sampleSpans(items: spans, sampler: sampler)
+        let result = sampler.sampleSpans(items: spans)
         
         #expect(result.count == 2)
         #expect(result.contains(parent1))

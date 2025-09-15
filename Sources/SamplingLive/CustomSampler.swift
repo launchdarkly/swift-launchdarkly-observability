@@ -82,29 +82,14 @@ extension ExportSampler {
             
             private func matchesValue(
                 matchConfig: MatchConfig?,
-                value: Any
+                value: AttributeValue
             ) -> Bool {
                 guard let matchConfig else { return false }
-                
                 switch matchConfig {
                 case .basic(let configValue):
-                    if let configAttributeValue = AttributeValue(configValue) ,let attributeValue = value as? AttributeValue {
-                        return configAttributeValue == attributeValue
-                    } else if let attributeValue = value as? AttributeValue {
-                        guard let configValueEncodabled = configValue as? Encodable else {
-                            return false
-                        }
-                        return JSON.stringify(configValueEncodabled) == JSON.stringify(attributeValue.description)
-                    } else {
-                        guard let configValueEncodabled = configValue as? Encodable, let valueEncodable = value as? Encodable else {
-                            return false
-                        }
-                        return JSON.stringify(configValueEncodabled) == JSON.stringify(valueEncodable)
-                    }
+                    return configValue == value
                 case .regex(let pattern):
-                    guard let valueString = (value as? String) ?? (value as? AttributeValue)?.description else {
-                        return false
-                    }
+                    guard case .string(let valueString) = value else { return false }
                     var regex = regexCache[pattern]
                     if regex == nil {
                         regex = try? Regex(pattern)
@@ -132,7 +117,7 @@ extension ExportSampler {
                 
                 return attributeConfigs.allSatisfy { config in
                     let result = attributes.contains { key, value in
-                        let match = matchesValue(matchConfig: config.key, value: key) && matchesValue(matchConfig: config.attribute, value: value)
+                        let match = matchesValue(matchConfig: config.key, value: .string(key)) && matchesValue(matchConfig: config.attribute, value: value)
                         return match
                     }
                     return result
@@ -145,7 +130,7 @@ extension ExportSampler {
             ) -> Bool {
                 if let eventConfigName = eventConfig.name {
                     // Match by Event name
-                    if !matchesValue(matchConfig: eventConfigName, value: event.name) {
+                    if !matchesValue(matchConfig: eventConfigName, value: .string(event.name)) {
                         return false
                     }
                 }
@@ -188,7 +173,7 @@ extension ExportSampler {
             ) -> Bool {
                 // Check span name if it's defined in the config
                 if let configName = config.name {
-                    if !matchesValue(matchConfig: configName, value: span.name) {
+                    if !matchesValue(matchConfig: configName, value: .string(span.name)) {
                         return false
                     }
                 }
@@ -205,12 +190,12 @@ extension ExportSampler {
                 record: ReadableLogRecord
             ) -> Bool {
                 if let severityText = config.severityText, let severity = record.severity?.description {
-                    if !matchesValue(matchConfig: severityText, value: severity) {
+                    if !matchesValue(matchConfig: severityText, value: .string(severity)) {
                         return false
                     }
                 }
-                if let configName = config.message, case .string(let message) = record.body {
-                    if !matchesValue(matchConfig: configName, value: message) {
+                if let configName = config.message, let body = record.body {
+                    if !matchesValue(matchConfig: configName, value: body) {
                         return false
                     }
                 }

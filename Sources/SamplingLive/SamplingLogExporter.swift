@@ -30,9 +30,8 @@ public final class SamplingLogExporterDecorator: LogRecordExporter {
         logRecords: [ReadableLogRecord],
         explicitTimeout: TimeInterval?
     ) -> ExportResult {
-        let sampledItems = sampleLogs(
-            items: logRecords,
-            sampler: sampler
+        let sampledItems = sampler.sampleLogs(
+            items: logRecords
         )
         guard !sampledItems.isEmpty else {
             return .success
