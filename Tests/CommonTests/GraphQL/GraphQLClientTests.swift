@@ -182,7 +182,6 @@ struct GraphQLClientTests {
         let mock = MockNetworkClient(mode: .succeed(payload))
         let client = GraphQLClient(endpoint: URL(string: "https://example.com/graphql")!, network: mock)
         
-        let bundle = Bundle(for: DummyClass.self)
         let out: GetUserOut = try await client.executeFromFile(
             resource: "getUser",
             bundle: Bundle.module,
