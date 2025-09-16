@@ -50,6 +50,8 @@ public final class GraphQLClient {
                 throw GraphQLClientError.missingData
             }
             return value
+        } catch let error as GraphQLClientError {
+            throw error
         } catch {
             throw GraphQLClientError.decoding(error)
         }
