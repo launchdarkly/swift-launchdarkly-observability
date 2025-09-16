@@ -1,5 +1,4 @@
 import Foundation
-import SessionReplay
 
 public struct ReplaySession: Codable {
     public let secureId: String
