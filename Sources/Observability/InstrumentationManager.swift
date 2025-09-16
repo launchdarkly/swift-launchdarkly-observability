@@ -31,7 +31,8 @@ final class InstrumentationManager {
     private var cachedHistograms = AtomicDictionary<String, DoubleHistogram>()
     private var cachedUpDownCounters = AtomicDictionary<String, DoubleUpDownCounter>()
     private let lock: NSLock = NSLock()
-    private let handler = TapHandler()
+    private let tapHandler = TapHandler()
+    private let swipeHandler = SwipeHandler()
     private let sampler: ExportSampler
     
     public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
@@ -204,7 +205,7 @@ final class InstrumentationManager {
         lock.lock()
         defer { lock.unlock() }
         UIWindowSendEvent.inject { [weak self] uiWindow, uiEvent in
-            self?.handler.handle(event: uiEvent, window: uiWindow) { touchEvent in
+            self?.tapHandler.handle(event: uiEvent, window: uiWindow) { touchEvent in
                 var attributes = [String: AttributeValue]()
                 attributes["screen.name"] = .string(touchEvent.viewName)
                 attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
@@ -212,6 +213,15 @@ final class InstrumentationManager {
                 attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
                 attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
                 self?.startSpan(name: "user.tap", attributes: attributes).end()
+            }
+            self?.swipeHandler.handle(event: uiEvent, window: uiWindow) { touchEvent in
+                var attributes = [String: AttributeValue]()
+                attributes["screen.name"] = .string(touchEvent.viewName)
+                attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
+                // sending location in points (since it is preferred over pixels)
+                attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
+                attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
+                self?.startSpan(name: "user.swipe", attributes: attributes).end()
             }
         }
     }
