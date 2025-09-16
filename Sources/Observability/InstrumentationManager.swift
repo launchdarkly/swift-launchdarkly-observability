@@ -44,7 +44,14 @@ final class InstrumentationManager {
         
         
         let processorAndProvider = URL(string: options.otlpEndpoint)
-            .flatMap { $0.appending(path: logsPath) }
+            .flatMap {
+                if #available(iOS 16, *) {
+                    return $0.appending(path: logsPath)
+                }
+                else {
+                    return $0.appendingPathComponent(logsPath)
+                }
+            }
             .map { url in
                 SamplingLogExporterDecorator(
                     exporter: OtlpHttpLogExporter(
@@ -83,7 +90,14 @@ final class InstrumentationManager {
             }
         
         URL(string: options.otlpEndpoint)
-            .flatMap { $0.appending(path: tracesPath) }
+            .flatMap {
+                if #available(iOS 16, *) {
+                    return $0.appending(path: tracesPath)
+                }
+                else {
+                    return $0.appendingPathComponent(tracesPath)
+                }
+            }
             .map { url in
                 SamplingTraceExporterDecorator(
                     exporter: OtlpHttpTraceExporter(
@@ -118,7 +132,14 @@ final class InstrumentationManager {
             }
         
         URL(string: options.otlpEndpoint)
-            .flatMap { $0.appending(path: metricsPath) }
+            .flatMap {
+                if #available(iOS 16, *) {
+                    return $0.appending(path: metricsPath)
+                }
+                else {
+                    return $0.appendingPathComponent(metricsPath)
+                }
+            }
             .map { url in
                 OtlpHttpMetricExporter(
                     endpoint: url,
@@ -229,7 +250,7 @@ final class InstrumentationManager {
         }
         otelLogger?.logRecordBuilder()
             .setBody(.string(message))
-            .setTimestamp(.now)
+            .setTimestamp(Date())
             .setSeverity(severity)
             .setAttributes(attributes)
             .emit()

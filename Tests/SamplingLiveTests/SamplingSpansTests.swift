@@ -57,7 +57,7 @@ struct SamplingSpansTests {
         let result = sampler.sampleSpans(items: spans)
         
         #expect(result.count == spans.count)
-        #expect(result.contains(spans))
+        #expect(result == spans)
     }
     
     @Test("Given an array of spans, when some spans are sampled, then should return a subset of the spans")

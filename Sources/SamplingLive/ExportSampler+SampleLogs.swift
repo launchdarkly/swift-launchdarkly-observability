@@ -1,4 +1,5 @@
 import OpenTelemetrySdk
+import OpenTelemetryApi
 
 import Sampling
 

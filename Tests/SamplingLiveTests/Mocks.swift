@@ -11,7 +11,7 @@ func makeMockReadableLogRecord(
     .init(
         resource: .empty,
         instrumentationScopeInfo: .init(),
-        timestamp: .now,
+        timestamp: Date(),
         severity: severity,
         body: body,
         attributes: attributes
@@ -31,16 +31,16 @@ func makeMockSpanData(
         parentSpanId: parentSpanId,
         name: name,
         kind: .client,
-        startTime: .now,
+        startTime: Date(),
         attributes: attributes,
         events: events,
-        endTime: .now.addingTimeInterval(60 * 2)
+        endTime: Date().addingTimeInterval(60 * 2)
     )
 }
 
 func makeMockSpanEvent(
     name: String,
-    timestamp: Date = .now,
+    timestamp: Date = Date(),
     attributes: [String: AttributeValue]? = nil
 ) -> SpanData.Event {
     SpanData.Event(

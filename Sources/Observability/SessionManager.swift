@@ -36,7 +36,7 @@ final class SessionManager {
     
     init(
         id: String = UUID().uuidString,
-        startTime: Date = Date.now,
+        startTime: Date = Date(),
         options: SessionOptions
     ) {
         self.id = id
@@ -96,7 +96,7 @@ final class SessionManager {
     
     private func handleActiveState() {
         guard let backgroundTime = self.backgroundTime else { return }
-        let timeInBackground = Date.now.timeIntervalSince1970 - backgroundTime.timeIntervalSince1970
+        let timeInBackground = Date().timeIntervalSince1970 - backgroundTime.timeIntervalSince1970
         if timeInBackground >= self.options.timeout {
             self.resetSession()
         }
@@ -104,7 +104,7 @@ final class SessionManager {
     }
     
     private func handleBackgroundState() {
-        self.backgroundTime = Date.now
+        self.backgroundTime = Date()
     }
     
     private func resetSession() {
@@ -113,7 +113,7 @@ final class SessionManager {
         let oldStartTime = startTime
         
         id = newSessionId
-        let newStartTime = Date.now
+        let newStartTime = Date()
         startTime = newStartTime
         
         if options.isDebug {

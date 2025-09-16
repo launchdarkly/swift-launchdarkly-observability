@@ -3,14 +3,14 @@ import PackageDescription
 
 let package = Package(
     name: "swift-launchdarkly-observability",
-    platforms: [.iOS(.v16)],
+    platforms: [.iOS(.v13)],
     products: [
         .library(
             name: "LaunchDarklyObservability",
             targets: ["LaunchDarklyObservability"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/open-telemetry/opentelemetry-swift", from: "2.0.0"),
+        .package(url: "https://github.com/open-telemetry/opentelemetry-swift", exact: "2.0.0"),
         .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", from: "9.15.0"),
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
     ],
@@ -20,6 +20,7 @@ let package = Package(
             name: "API",
             dependencies: [
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "ResourceExtension", package: "opentelemetry-swift"),
             ]
         ),
@@ -96,6 +97,8 @@ let package = Package(
                 "API",
                 "Common",
                 .product(name: "LaunchDarkly", package: "ios-client-sdk"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
             ]
         )
     ]
