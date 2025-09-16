@@ -1,0 +1,14 @@
+{
+  "data": {
+    "sampling": {
+      "spans": [
+        {
+          "name": {
+            "matchValue": "test-span"
+          },
+          "samplingRatio": 0
+        }
+      ]
+    }
+  }
+}

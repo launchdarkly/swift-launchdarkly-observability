@@ -1,7 +1,7 @@
 import Foundation
 @preconcurrency import OpenTelemetryApi
-import Client
-import Interfaces
+import API
+import Observability
 
 private final class NoOpClient: Observe {
     func recordMetric(metric: Metric) {}
@@ -65,19 +65,19 @@ public final class LDObserve: @unchecked Sendable, Observe {
         client.recordUpDownCounter(metric: metric)
     }
     
-    public func recordError(error: any Error, attributes: [String : AttributeValue]) {
+    public func recordError(error: any Error, attributes: [String : AttributeValue] = [:]) {
         lock.lock()
         defer { lock.unlock() }
         client.recordError(error: error, attributes: attributes)
     }
     
-    public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue]) {
+    public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue] = [:]) {
         lock.lock()
         defer { lock.unlock() }
         client.recordLog(message: message, severity: severity, attributes: attributes)
     }
     
-    public func startSpan(name: String, attributes: [String : AttributeValue]) -> any Span {
+    public func startSpan(name: String, attributes: [String : AttributeValue] = [:]) -> any Span {
         lock.lock()
         defer { lock.unlock() }
         return client.startSpan(name: name, attributes: attributes)

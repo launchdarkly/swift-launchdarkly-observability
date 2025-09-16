@@ -5,7 +5,6 @@ import KSCrashDemangleFilter
 import KSCrashFilters
 @preconcurrency import OpenTelemetryApi
 import OpenTelemetrySdk
-import ResourceExtension
 
 import CrashReporter
 import Common
