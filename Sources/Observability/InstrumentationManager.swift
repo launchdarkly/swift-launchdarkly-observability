@@ -1,5 +1,7 @@
 import Foundation
 
+import UIKit.UIWindow
+
 import OpenTelemetrySdk
 import OpenTelemetryApi
 import OpenTelemetryProtocolExporterHttp
@@ -28,6 +30,8 @@ final class InstrumentationManager {
     private var cachedLongCounters = AtomicDictionary<String, LongCounter>()
     private var cachedHistograms = AtomicDictionary<String, DoubleHistogram>()
     private var cachedUpDownCounters = AtomicDictionary<String, DoubleUpDownCounter>()
+    private let lock: NSLock = NSLock()
+    private let handler = TapHandler()
     private let sampler: ExportSampler
     
     public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
@@ -193,7 +197,26 @@ final class InstrumentationManager {
         )
         
         self.sampler = sampler
+        self.install()
     }
+    
+    private func install() {
+        lock.lock()
+        defer { lock.unlock() }
+        UIWindowSendEvent.inject { [weak self] uiWindow, uiEvent in
+            self?.handler.handle(event: uiEvent, window: uiWindow) { touchEvent in
+                var attributes = [String: AttributeValue]()
+                attributes["screen.name"] = .string(touchEvent.viewName)
+                attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
+                // sending location in points (since it is preferred over pixels)
+                attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
+                attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
+                self?.startSpan(name: "user.tap", attributes: attributes).end()
+            }
+        }
+    }
+    
+    // MARK: - Instrumentation
     
     func recordMetric(metric: Metric) {
         var gauge = cachedGauges[metric.name]

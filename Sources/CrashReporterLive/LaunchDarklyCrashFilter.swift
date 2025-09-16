@@ -61,10 +61,13 @@ final class LaunchDarklyCrashFilter: NSObject, CrashReportFilter {
                 let reportSections = crashReportString.components(separatedBy: "\\n")
                 let incidentIdentifier = reportSections.first(where: { $0.contains(ReportSection.incidentIdentifier.rawValue) }) ?? ""
                 let exceptionType = reportSections.first(where: { $0.contains(ReportSection.exceptionType.rawValue) }) ?? ""
+                let exceptionCodes = reportSections.first(where: { $0.contains(ReportSection.exceptionCodes.rawValue) }) ?? ""
                 
                 var attributes = [String: AttributeValue]()
                 attributes[SemanticAttributes.exceptionType.rawValue] = .string(exceptionType.replacingOccurrences(of: "\"", with: ""))
                 attributes[SemanticAttributes.exceptionStacktrace.rawValue] = .string(crashReportString)
+                attributes[SemanticAttributes.exceptionMessage.rawValue] = .string(exceptionCodes)
+                
                 logger?.logRecordBuilder()
                     .setAttributes(attributes)
                     .setBody(.string(incidentIdentifier.replacingOccurrences(of: "\"", with: "")))

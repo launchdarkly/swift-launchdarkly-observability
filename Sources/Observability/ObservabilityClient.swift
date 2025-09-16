@@ -43,6 +43,8 @@ public final class ObservabilityClient: Observe {
         }
     }
     
+    // MARK: - Instrumentation
+    
     public func recordMetric(metric: Metric) {
         instrumentationManager.recordMetric(metric: metric)
     }
