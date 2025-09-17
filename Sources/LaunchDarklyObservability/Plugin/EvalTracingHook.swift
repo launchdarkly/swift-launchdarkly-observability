@@ -30,9 +30,11 @@ public final class EvalTracingHook: @unchecked Sendable, Hook {
             instrumentationVersion: version
         )
         
+        /// Requirement 1.2.3.6
+        /// https://github.com/launchdarkly/sdk-specs/tree/main/specs/OTEL-openteletry-integration#requirement-1236
         lazy var span: any Span = {
             let span = tracer
-                .spanBuilder(spanName: Self.FEATURE_FLAG_SPAN_NAME)
+                .spanBuilder(spanName: "LDClient.\(seriesContext.methodName)")
                 .setStartTime(time: Date())
                 .startSpan()
  
