@@ -35,7 +35,7 @@ final class LDStdoutExporter: LogRecordExporter {
         for log in logRecords {
             guard let message = JSON.stringify(log) else { continue }
             
-            os_log("%{public}%@", log: .default, type: .info, message)
+            os_log("%{public}@", log: .default, type: .info, message)
         }
         
         return .success
