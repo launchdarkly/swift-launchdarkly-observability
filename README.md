@@ -50,14 +50,14 @@ let config = { () -> LDConfig in
         autoEnvAttributes: .enabled
     )
     config.plugins = [
-        Observability(options: .init())
+        Observability(options: .init(sessionBackgroundTimeout: 3))
     ]
     return config
 }()
 
 let context = { () -> LDContext in
     var contextBuilder = LDContextBuilder(
-        key: "user-key"
+        key: "12345"
     )
     contextBuilder.kind("user")
     do {
@@ -68,26 +68,22 @@ let context = { () -> LDContext in
 }()
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
-    lazy var once: Void = {
-        let completion = { (timedOut: Bool) -> Void in
-            if timedOut {
-                // Client may not have the most recent flags for the configured context
-            } else {
-                // Client has received flags for the configured context
-            }
-        }
-        LDClient.start(
-            config: config,
-            context: context,
-            startWaitSeconds: 5.0,
-            completion: completion
-        )
-    }()
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
-        _ = once
+        LDClient.start(
+            config: config,
+            context: context,
+            startWaitSeconds: 5.0,
+            completion: { (timedOut: Bool) -> Void in
+                if timedOut {
+                    // Client may not have the most recent flags for the configured context
+                } else {
+                    // Client has received flags for the configured context
+                }
+            }
+        )
         return true
     }
 }
