@@ -1,5 +1,7 @@
 import Foundation
 
+import os
+
 import UIKit.UIWindow
 
 import OpenTelemetrySdk
@@ -19,7 +21,7 @@ private let metricsPath = "/v1/metrics"
 final class InstrumentationManager {
     private let sdkKey: String
     private let options: Options
-    let otelLogger: Logger?
+    let otelLogger: OpenTelemetryApi.Logger?
     let otelTracer: Tracer?
     let otelMeter: (any Meter)?
     public let otelBatchLogRecordProcessor: BatchLogRecordProcessor?
@@ -58,12 +60,25 @@ final class InstrumentationManager {
                 }
             }
             .map { url in
-                SamplingLogExporterDecorator(
-                    exporter: OtlpHttpLogExporter(
-                        endpoint: url,
-                        envVarHeaders: options.customHeaders
-                    ),
-                    sampler: sampler
+                MultiLogRecordExporter(
+                    logRecordExporters: options.isDebug ? [
+                        SamplingLogExporterDecorator(
+                            exporter: OtlpHttpLogExporter(
+                                endpoint: url,
+                                envVarHeaders: options.customHeaders
+                            ),
+                            sampler: sampler
+                        ),
+                        LDStdoutExporter(loggerName: options.loggerName)
+                    ] : [
+                        SamplingLogExporterDecorator(
+                            exporter: OtlpHttpLogExporter(
+                                endpoint: url,
+                                envVarHeaders: options.customHeaders
+                            ),
+                            sampler: sampler
+                        )
+                    ]
                 )
             }
             .map { exporter in

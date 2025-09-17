@@ -16,6 +16,7 @@ struct TraceView: View {
                 TextField(text: $name) {
                     Text("Span name:")
                 }
+                .autocorrectionDisabled(true)
                 .textCase(.lowercase)
                 .textInputAutocapitalization(.never)
                 .textFieldStyle(.roundedBorder)

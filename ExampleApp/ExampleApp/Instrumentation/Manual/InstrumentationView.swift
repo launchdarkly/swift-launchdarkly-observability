@@ -6,6 +6,8 @@ struct InstrumentationView: View {
     var body: some View {
         VStack {
             TraceView()
+            LogsView()
+            Spacer()
         }
         .padding()
     }

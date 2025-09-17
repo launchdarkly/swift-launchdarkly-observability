@@ -9,7 +9,7 @@ let config = { () -> LDConfig in
         autoEnvAttributes: .enabled
     )
     config.plugins = [
-        Observability(options: .init(sessionBackgroundTimeout: 3))
+        Observability(options: .init(sessionBackgroundTimeout: 3, isDebug: true))
     ]
     return config
 }()
