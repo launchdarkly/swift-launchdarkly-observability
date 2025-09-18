@@ -1,7 +1,7 @@
 import Foundation
 
 public final class GraphQLClient {
-    private let endpoint: URL
+    public let endpoint: URL
     private let network: NetworkClient
     private let decoder: JSONDecoder
     private let defaultHeaders: [String: String]
@@ -50,6 +50,8 @@ public final class GraphQLClient {
                 throw GraphQLClientError.missingData
             }
             return value
+        } catch let error as GraphQLClientError {
+            throw error
         } catch {
             throw GraphQLClientError.decoding(error)
         }
