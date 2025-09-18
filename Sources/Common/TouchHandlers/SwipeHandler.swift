@@ -1,10 +1,12 @@
 import UIKit.UIWindow
 import Common
 
-final class SwipeHandler {
+public final class SwipeHandler {
     private var startPoint: CGPoint?
     
-    func handle(event: UIEvent, window: UIWindow, completion: (TouchEvent) -> Void) {
+    public init() {}
+    
+    public func handle(event: UIEvent, window: UIWindow, completion: (TouchEvent) -> Void) {
         if let touches = event.allTouches, let touch = touches.first, let targetView = touch.view {
             switch touch.phase {
             case .began:

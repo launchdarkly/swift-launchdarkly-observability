@@ -34,12 +34,13 @@ final class InstrumentationManager {
     private let tapHandler = TapHandler()
     private let swipeHandler = SwipeHandler()
     private let sampler: ExportSampler
-    
+    private let graphQLClient: GraphQLClient?
+
     public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
         self.sdkKey = sdkKey
         self.options = options
         self.sessionManager = sessionManager
-        
+        self.graphQLClient = URL(string: options.backendUrl).map { GraphQLClient(endpoint: $0) }
         
         let sampler = ExportSampler.customSampler()
         /// Here is how we will inject the sampling config coming from backend, if the next lines
@@ -174,7 +175,7 @@ final class InstrumentationManager {
             }
         
         self.otelBatchLogRecordProcessor = processorAndProvider?.0
-        self.otelLogger =  OpenTelemetry.instance.loggerProvider.get(
+        self.otelLogger = OpenTelemetry.instance.loggerProvider.get(
             instrumentationScopeName: options.serviceName
         )
         
@@ -198,6 +199,7 @@ final class InstrumentationManager {
         )
         
         self.sampler = sampler
+
         self.install()
     }
     
@@ -205,23 +207,29 @@ final class InstrumentationManager {
         lock.lock()
         defer { lock.unlock() }
         UIWindowSendEvent.inject { [weak self] uiWindow, uiEvent in
-            self?.tapHandler.handle(event: uiEvent, window: uiWindow) { touchEvent in
+            guard let self = self else { return }
+            
+            self.tapHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
+                guard let self = self else { return }
+                
                 var attributes = [String: AttributeValue]()
                 attributes["screen.name"] = .string(touchEvent.viewName)
                 attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
                 // sending location in points (since it is preferred over pixels)
                 attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
                 attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
-                self?.startSpan(name: "user.tap", attributes: attributes).end()
+                self.startSpan(name: "user.tap", attributes: attributes).end()
             }
-            self?.swipeHandler.handle(event: uiEvent, window: uiWindow) { touchEvent in
+            self.swipeHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
+                guard let self = self else { return }
+
                 var attributes = [String: AttributeValue]()
                 attributes["screen.name"] = .string(touchEvent.viewName)
                 attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
                 // sending location in points (since it is preferred over pixels)
                 attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
                 attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
-                self?.startSpan(name: "user.swipe", attributes: attributes).end()
+                self.startSpan(name: "user.swipe", attributes: attributes).end()
             }
         }
     }

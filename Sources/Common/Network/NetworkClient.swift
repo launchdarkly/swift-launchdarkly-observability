@@ -35,6 +35,8 @@ public final class URLSessionNetworkClient: NetworkClient {
                 throw NetworkError.httpStatus(http.statusCode, data: data)
             }
             return data
+        } catch let error as NetworkError {
+            throw error
         } catch {
             throw NetworkError.transport(error)
         }
