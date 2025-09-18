@@ -207,8 +207,11 @@ final class InstrumentationManager {
         lock.lock()
         defer { lock.unlock() }
         UIWindowSendEvent.inject { [weak self] uiWindow, uiEvent in
-            self?.tapHandler.handle(event: uiEvent, window: uiWindow) { touchEvent in
+            guard let self = self else { return }
+            
+            self.tapHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
                 guard let self = self else { return }
+                
                 var attributes = [String: AttributeValue]()
                 attributes["screen.name"] = .string(touchEvent.viewName)
                 attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
@@ -217,14 +220,16 @@ final class InstrumentationManager {
                 attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
                 self.startSpan(name: "user.tap", attributes: attributes).end()
             }
-            self?.swipeHandler.handle(event: uiEvent, window: uiWindow) { touchEvent in
+            self.swipeHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
+                guard let self = self else { return }
+
                 var attributes = [String: AttributeValue]()
                 attributes["screen.name"] = .string(touchEvent.viewName)
                 attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
                 // sending location in points (since it is preferred over pixels)
                 attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
                 attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
-                self?.startSpan(name: "user.swipe", attributes: attributes).end()
+                self.startSpan(name: "user.swipe", attributes: attributes).end()
             }
         }
     }
