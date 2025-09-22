@@ -7,7 +7,11 @@ let package = Package(
     products: [
         .library(
             name: "LaunchDarklyObservability",
-            targets: ["LaunchDarklyObservability"]),
+            targets: [
+                "LaunchDarklyObservability",
+                "ObservabilitySwiftUIExtensions"
+            ]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift", exact: "2.0.0"),
