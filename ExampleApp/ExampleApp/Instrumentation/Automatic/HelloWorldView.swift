@@ -38,7 +38,7 @@ struct HelloWorldView: View {
             }
             AChildView()
         }
-        .logScreenName(
+        .logViewName(
             "HelloWorldView",
             attributes: [
                 "view": .string("vstack")

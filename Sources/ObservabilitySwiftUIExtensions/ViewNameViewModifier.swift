@@ -7,11 +7,11 @@ import OpenTelemetryApi
 import LaunchDarklyObservability
 
 public struct ViewNameViewModifier: ViewModifier {
-    public let screenName: String
+    public let viewName: String
     public let attributes: [String: AttributeValue]?
     
-    public init(screenName: String, attributes: [String: AttributeValue]? = nil) {
-        self.screenName = screenName
+    public init(viewName: String, attributes: [String: AttributeValue]? = nil) {
+        self.viewName = viewName
         self.attributes = attributes
     }
     
@@ -20,20 +20,20 @@ public struct ViewNameViewModifier: ViewModifier {
             .onDisappear {
                 let logAttributes = self.attributes ?? [String: AttributeValue]()
                 LDObserve.shared.recordLog(
-                    message: "on Disappear \(self.screenName ?? String(describing: self))",
+                    message: "on Disappear \(self.viewName ?? String(describing: self))",
                     severity: .info,
                     attributes: [
-                        "screen.name": .string(self.screenName),
+                        "screen.name": .string(self.viewName),
                     ].merging(logAttributes) { _, inbound in inbound }
                 )
             }
             .onAppear {
                 let logAttributes = self.attributes ?? [String: AttributeValue]()
                 LDObserve.shared.recordLog(
-                    message: "on Appear \(self.screenName ?? String(describing: self))",
+                    message: "on Appear \(self.viewName ?? String(describing: self))",
                     severity: .info,
                     attributes: [
-                        "screen.name": .string(self.screenName),
+                        "screen.name": .string(self.viewName),
                     ].merging(logAttributes) { _, inbound in inbound }
                 )
             }
@@ -42,8 +42,8 @@ public struct ViewNameViewModifier: ViewModifier {
 
 
 extension View {
-    public func logScreenName(_ screenName: String, attributes: [String: AttributeValue]? = nil) -> some View {
-        modifier(ViewNameViewModifier(screenName: screenName, attributes: attributes))
+    public func logViewName(_ viewName: String, attributes: [String: AttributeValue]? = nil) -> some View {
+        modifier(ViewNameViewModifier(viewName: viewName, attributes: attributes))
     }
 }
 
