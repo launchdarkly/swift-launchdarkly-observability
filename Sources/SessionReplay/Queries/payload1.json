@@ -1,0 +1,154 @@
+{
+    "session_secure_id": "dJkX1MpPaHoy5VrhxzFhPN0HgwzR",
+    "payload_id": "1",
+    "events": {
+        "events": [
+            {
+                "type": 4,
+                "data": {
+                    "href": "http://localhost:5173/",
+                    "width": 422,
+                    "height": 890
+                },
+                "timestamp": 1757107072120,
+                "_sid": 1
+            },
+            {
+                "type": 2,
+                "data": {
+                    "node": {
+                        "type": 0,
+                        "childNodes": [
+                            {
+                                "type": 1,
+                                "name": "html",
+                                "publicId": "",
+                                "systemId": "",
+                                "id": 2
+                            },
+                            {
+                                "type": 2,
+                                "tagName": "html",
+                                "attributes": {
+                                    "lang": "en"
+                                },
+                                "childNodes": [
+                                    {
+                                        "type": 2,
+                                        "tagName": "head",
+                                        "attributes": {},
+                                        "childNodes": [
+                                            {
+                                                "type": 2,
+                                                "tagName": "meta",
+                                                "attributes": {
+                                                    "charset": "UTF-8"
+                                                },
+                                                "childNodes": [],
+                                                "id": 5
+                                            },
+                                            {
+                                                "type": 2,
+                                                "tagName": "meta",
+                                                "attributes": {
+                                                    "name": "viewport",
+                                                    "content": "width=device-width, initial-scale=1.0"
+                                                },
+                                                "childNodes": [],
+                                                "id": 7
+                                            },
+                                            {
+                                                "type": 2,
+                                                "tagName": "title",
+                                                "attributes": {},
+                                                "childNodes": [
+                                                    {
+                                                        "type": 3,
+                                                        "textContent": "Vite + React + TS",
+                                                        "id": 9
+                                                    }
+                                                ],
+                                                "id": 8
+                                            },
+            
+                                        ],
+                                        "id": 4
+                                    },
+                                    {
+                                        "type": 2,
+                                        "tagName": "body",
+                                        "attributes": {},
+                                        "childNodes": [
+                                            {
+                                                "type": 2,
+                                                "tagName": "canvas",
+                                                "attributes": {
+                                                    "width": "200",
+                                                    "height": "200",
+                                                    "src": "",
+                                                    "rr_dataURL": ""
+                                                },
+                                                "childNodes": [],
+                                                "id": 16
+                                            }
+                                        ],
+                                        "id": 12
+                                    }
+                                ],
+                                "id": 3
+                            }
+                        ],
+                        "id": 1
+                    },
+                    "initialOffset": {
+                        "left": 0,
+                        "top": 0
+                    }
+                },
+                "timestamp": 1757107072134,
+                "_sid": 2
+            },
+            {
+                "type": 5,
+                "data": {
+                    "tag": "Track",
+                    "payload": "{\"data\":{\"sessionID\":\"dJkX1MpPaHoy5VrhxzFhPN0HgwzR\"},\"event\":\"$ld:telemetry:session:init\"}"
+                },
+                "timestamp": 1757107072145,
+                "_sid": 3
+            },
+            {
+                "type": 5,
+                "data": {
+                    "tag": "Reload",
+                    "payload": "http://localhost:5173/"
+                },
+                "timestamp": 1757107072638,
+                "_sid": 5
+            },
+            {
+                "type": 5,
+                "data": {
+                    "tag": "Viewport",
+                    "payload": {
+                        "height": 936,
+                        "width": 543,
+                        "availHeight": 1023,
+                        "availWidth": 1728,
+                        "colorDepth": 30,
+                        "pixelDepth": 30,
+                        "orientation": 0
+                    }
+                },
+                "timestamp": 1757107072638,
+                "_sid": 6
+            }
+        ]
+    },
+    "messages": "{\"messages\":[]}",
+    "resources": "{\"resources\":[]}",
+    "web_socket_events": "{\"webSocketEvents\":[]}",
+    "errors": [],
+    "is_beacon": false,
+    "has_session_unloaded": false
+}

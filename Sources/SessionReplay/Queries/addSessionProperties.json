@@ -1,0 +1,1 @@
+{"query":"mutation addSessionProperties($session_secure_id: String!, $properties_object: Any) {\n  addSessionProperties(\n    session_secure_id: $session_secure_id\n    properties_object: $properties_object\n  )\n}","variables":{"session_secure_id":"\(session_secure_id)","properties_object":{"reload":"true"}},"operationName":"addSessionProperties"}

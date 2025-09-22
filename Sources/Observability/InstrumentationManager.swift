@@ -1,7 +1,5 @@
 import Foundation
 
-import os
-
 import UIKit.UIWindow
 
 import OpenTelemetrySdk
@@ -13,6 +11,7 @@ import Common
 import API
 import Sampling
 import SamplingLive
+import SessionReplay
 
 private let tracesPath = "/v1/traces"
 private let logsPath = "/v1/logs"
@@ -21,7 +20,7 @@ private let metricsPath = "/v1/metrics"
 final class InstrumentationManager {
     private let sdkKey: String
     private let options: Options
-    let otelLogger: OpenTelemetryApi.Logger?
+    let otelLogger: Logger?
     let otelTracer: Tracer?
     let otelMeter: (any Meter)?
     public let otelBatchLogRecordProcessor: BatchLogRecordProcessor?
@@ -37,12 +36,14 @@ final class InstrumentationManager {
     private let swipeHandler = SwipeHandler()
     private let sampler: ExportSampler
     private let graphQLClient: GraphQLClient?
+    private let sessionReplayService: SessionReplayService?
 
     public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
         self.sdkKey = sdkKey
         self.options = options
         self.sessionManager = sessionManager
         self.graphQLClient = URL(string: options.backendUrl).map { GraphQLClient(endpoint: $0) }
+        self.sessionReplayService = graphQLClient.map { SessionReplayService(graphQLClient: $0) }
         
         let sampler = ExportSampler.customSampler()
         /// Here is how we will inject the sampling config coming from backend, if the next lines
@@ -61,25 +62,12 @@ final class InstrumentationManager {
                 }
             }
             .map { url in
-                MultiLogRecordExporter(
-                    logRecordExporters: options.isDebug ? [
-                        SamplingLogExporterDecorator(
-                            exporter: OtlpHttpLogExporter(
-                                endpoint: url,
-                                envVarHeaders: options.customHeaders
-                            ),
-                            sampler: sampler
-                        ),
-                        LDStdoutExporter(loggerName: options.loggerName)
-                    ] : [
-                        SamplingLogExporterDecorator(
-                            exporter: OtlpHttpLogExporter(
-                                endpoint: url,
-                                envVarHeaders: options.customHeaders
-                            ),
-                            sampler: sampler
-                        )
-                    ]
+                SamplingLogExporterDecorator(
+                    exporter: OtlpHttpLogExporter(
+                        endpoint: url,
+                        envVarHeaders: options.customHeaders
+                    ),
+                    sampler: sampler
                 )
             }
             .map { exporter in
@@ -216,35 +204,32 @@ final class InstrumentationManager {
         self.sampler = sampler
 
         self.install()
+        self.sessionReplayService?.start()
     }
     
     private func install() {
         lock.lock()
         defer { lock.unlock() }
         UIWindowSendEvent.inject { [weak self] uiWindow, uiEvent in
-            guard let self = self else { return }
-            
-            self.tapHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
+            self?.tapHandler.handle(event: uiEvent, window: uiWindow) { touchEvent in
                 guard let self = self else { return }
-                
-                var attributes = [String: AttributeValue]()
-                attributes["screen.name"] = .string(touchEvent.viewName)
-                attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
-                // sending location in points (since it is preferred over pixels)
-                attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
-                attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
-                self.startSpan(name: "user.tap", attributes: attributes).end()
+//                var attributes = [String: AttributeValue]()
+//                attributes["screen.name"] = .string(touchEvent.viewName)
+//                attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
+//                // sending location in points (since it is preferred over pixels)
+//                attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
+//                attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
+                self.sessionReplayService?.userTap(touchEvent: touchEvent)
+                //self.startSpan(name: "user.tap", attributes: attributes).end()
             }
-            self.swipeHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
-                guard let self = self else { return }
-
-                var attributes = [String: AttributeValue]()
-                attributes["screen.name"] = .string(touchEvent.viewName)
-                attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
-                // sending location in points (since it is preferred over pixels)
-                attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
-                attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
-                self.startSpan(name: "user.swipe", attributes: attributes).end()
+            self?.swipeHandler.handle(event: uiEvent, window: uiWindow) { touchEvent in
+//                var attributes = [String: AttributeValue]()
+//                attributes["screen.name"] = .string(touchEvent.viewName)
+//                attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
+//                // sending location in points (since it is preferred over pixels)
+//                attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
+//                attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
+                //self?.startSpan(name: "user.swipe", attributes: attributes).end()
             }
         }
     }

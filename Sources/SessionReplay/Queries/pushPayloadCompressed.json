@@ -1,0 +1,1 @@
+{"query":"mutation PushPayloadCompressed($session_secure_id: String!, $payload_id: ID!, $data: String!) {\n  pushPayloadCompressed(\n    session_secure_id: $session_secure_id\n    payload_id: $payload_id\n    data: $data\n  )\n}","variables":{"session_secure_id":"F6iTY803kWCWhyyGzZBCIpgzhpam","payload_id":"2","data":"BASE64_ENCODED_DATA"},"operationName":"PushPayloadCompressed"}

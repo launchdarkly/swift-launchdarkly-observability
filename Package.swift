@@ -43,6 +43,13 @@ let package = Package(
             ]
         ),
         .target(
+            name: "SessionReplay",
+            dependencies: [
+                "Common"
+            ],
+            resources: [.process("Queries")]
+        ),
+        .target(
             name: "Sampling",
             dependencies: [
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
@@ -77,6 +84,7 @@ let package = Package(
             dependencies: [
                 "Common",
                 "API",
+                "SessionReplay",
                 "CrashReporter",
                 "CrashReporterLive",
                 "Sampling",

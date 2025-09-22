@@ -21,6 +21,7 @@ public final class SwipeHandler {
                     
                     let viewName = accessibilityIdentifier ?? String(describing: targetClass)
                     let touchEvent = TouchEvent(
+                        phase: touch.phase,
                         location: endPoint,
                         viewName: viewName,
                         accessibilityIdentifier: accessibilityIdentifier,

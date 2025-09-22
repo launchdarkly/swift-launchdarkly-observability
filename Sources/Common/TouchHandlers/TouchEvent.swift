@@ -1,8 +1,9 @@
 import UIKit
 
 public struct TouchEvent: Sendable, CustomStringConvertible {
+    public let phase: UITouch.Phase
     public let location: CGPoint
-    public let viewName: String
+    public let viewName: String?
     public let accessibilityIdentifier: String?
     public let scale: CGFloat
     

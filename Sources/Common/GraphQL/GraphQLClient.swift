@@ -36,6 +36,8 @@ public final class GraphQLClient {
         request.httpMethod = "POST"
         request.httpBody = try gqlRequest.httpBody()
 
+        print("🔹Sending request: \(String(data: request.httpBody!, encoding: .utf8) ?? "(no body)")")
+        
         let combinedHeaders = defaultHeaders.merging(headers) { _, new in new }
         combinedHeaders.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
 

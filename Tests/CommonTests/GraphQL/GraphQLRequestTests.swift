@@ -5,7 +5,7 @@ import Testing
 @Suite("GraphQLRequest")
 struct GraphQLRequestTests {
     private struct Vars: Encodable {
-        let id: String;
+        let id: String
         let limit: Int
     }
     
@@ -29,7 +29,7 @@ struct GraphQLRequestTests {
         #expect(vars?["limit"] as? Int == 10)
     }
     
-    @Test("Encodes [String: AnyEncodable] variables")
+    @Test("Encodes [String: String] variables")
     func encodesAnyEncodableDictionaryVariables() throws {
         let variables: [String: String] = [
             "id": "abc",

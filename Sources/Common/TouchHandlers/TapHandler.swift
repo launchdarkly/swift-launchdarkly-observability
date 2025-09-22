@@ -11,25 +11,37 @@ public final class TapHandler {
             switch touch.phase {
             case .began:
                 startPoint = touch.location(in: window)
+                if let startPoint {
+                    completion(
+                        TouchEvent(
+                            phase: touch.phase,
+                            location: startPoint,
+                            viewName: nil,
+                            accessibilityIdentifier: nil,
+                            scale: targetView.window?.screen.scale ?? UIScreen.main.scale)
+                    )
+                }
             case .ended:
                 if let startPoint {
                     let endPoint = touch.location(in: window)
                     let dx = endPoint.x - startPoint.x
                     let dy = endPoint.y - startPoint.y
+                    var viewName: String?
+                    var accessibilityIdentifier: String?
+                    var targetClass: AnyClass?
                     if abs(dx) < 10 && abs(dy) < 10 {
-                        let accessibilityIdentifier = targetView.accessibilityIdentifier
-                        let targetClass = type(of: targetView)
-                        
-                        let viewName = accessibilityIdentifier ?? String(describing: targetClass)
-                        
-                        completion(
-                            .init(
-                                location: endPoint,
-                                viewName: viewName,
-                                accessibilityIdentifier: accessibilityIdentifier,
-                                scale: targetView.window?.screen.scale ?? UIScreen.main.scale)
-                        )
+                        accessibilityIdentifier = targetView.accessibilityIdentifier
+                        targetClass = type(of: targetView)
+                        viewName = accessibilityIdentifier ?? String(describing: targetClass)
                     }
+                    completion(
+                        TouchEvent(
+                            phase: touch.phase,
+                            location: endPoint,
+                            viewName: viewName,
+                            accessibilityIdentifier: accessibilityIdentifier,
+                            scale: targetView.window?.screen.scale ?? UIScreen.main.scale)
+                    )
                 }
                 startPoint = nil
             default:
