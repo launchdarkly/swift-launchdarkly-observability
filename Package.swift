@@ -100,6 +100,15 @@ let package = Package(
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
             ]
+        ),
+        .target(
+            name: "ObservabilitySwiftUIExtensions",
+            dependencies: [
+                "LaunchDarklyObservability",
+                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+            ]
         )
     ]
 )
