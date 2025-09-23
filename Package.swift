@@ -87,8 +87,7 @@ let package = Package(
                 .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift"),
             ],
             resources: [
-                .copy("Resources/Config.json"),
-                .copy("Resources/GetSamplingConfigQuery.graphql"),
+                .process("Resources"),
             ]
         ),
         .target(

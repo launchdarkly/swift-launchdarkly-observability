@@ -37,15 +37,21 @@ final class InstrumentationManager {
     private let swipeHandler = SwipeHandler()
     private let sampler: ExportSampler
     private let graphQLClient: GraphQLClient?
+    private let samplingConfigClient: SamplingConfigClient
 
     public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
         self.sdkKey = sdkKey
         self.options = options
         self.sessionManager = sessionManager
         let graphQLClient = URL(string: options.backendUrl).map { GraphQLClient(endpoint: $0) }
-        self.graphQLClient = graphQLClient
-
+        let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
+        
         let sampler = ExportSampler.customSampler()
+        
+        Task {
+            let config = try? await samplingConfigClient.getSamplingConfig(sdkKey: sdkKey)
+            sampler.setConfig(config)
+        }
         
         let processorAndProvider = URL(string: options.otlpEndpoint)
             .flatMap {
@@ -210,13 +216,12 @@ final class InstrumentationManager {
         )
         
         self.sampler = sampler
+        
+        self.graphQLClient = graphQLClient
+        
+        self.samplingConfigClient = samplingConfigClient
 
         self.install()
-        
-        Task {
-            let config = try? await graphQLClient?.getSamplingConfig(sdkKey: sdkKey)
-            sampler.setConfig(config)
-        }
     }
     
     private func install() {
@@ -360,30 +365,5 @@ final class InstrumentationManager {
         }
         
         return builder.startSpan()
-    }
-}
-
-func loadSampleConfig() -> SamplingConfig? {
-    guard let url = Bundle.module.url(forResource: "Config", withExtension: "json") else {
-        return nil
-    }
-    do {
-        let data = try Data(contentsOf: url)
-        let decoder = JSONDecoder()
-        let root = try decoder.decode(Root.self, from: data)
-        return root.data.sampling
-    } catch {
-        return nil
-    }
-}
-
-extension GraphQLClient {
-    struct OrganizationVerboseIdVar: Encodable { let organization_verbose_id: String }
-    func getSamplingConfig(sdkKey: String) async throws -> SamplingConfig? {
-        try await executeFromFile(
-            resource: "GetSamplingConfigQuery",
-            bundle: .module,
-            variables: OrganizationVerboseIdVar(organization_verbose_id: sdkKey)
-        )
     }
 }
