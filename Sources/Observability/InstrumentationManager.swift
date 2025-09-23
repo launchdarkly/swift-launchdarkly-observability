@@ -37,7 +37,6 @@ final class InstrumentationManager {
     private let swipeHandler = SwipeHandler()
     private let sampler: ExportSampler
     private let graphQLClient: GraphQLClient?
-    private var getSamplingConfigTask: Task<Void, Never>?
 
     public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
         self.sdkKey = sdkKey
@@ -214,7 +213,7 @@ final class InstrumentationManager {
 
         self.install()
         
-        self.getSamplingConfigTask = Task {
+        Task {
             let config = try? await graphQLClient?.getSamplingConfig(sdkKey: sdkKey)
             sampler.setConfig(config)
         }
@@ -379,36 +378,12 @@ func loadSampleConfig() -> SamplingConfig? {
 }
 
 extension GraphQLClient {
-    struct GetSamplingConfigQueryFile {
-        let content: String
-        let filename = "GetSamplingConfigQuery"
-        
-        init?() {
-            guard let url = Bundle.module.url(forResource: filename, withExtension: "graphql") else {
-                return nil
-            }
-            do {
-                let data = try Data(contentsOf: url)
-                if let graphql = String(data: data, encoding: .utf8) {
-                    self.content = graphql
-                } else {
-                    return nil
-                }
-            } catch {
-                return nil
-            }
-        }
-    }
     struct OrganizationVerboseIdVar: Encodable { let organization_verbose_id: String }
-    
     func getSamplingConfig(sdkKey: String) async throws -> SamplingConfig? {
-        guard let queryFile = GetSamplingConfigQueryFile() else {
-            throw URLError(URLError.fileDoesNotExist)
-        }
-        return try await execute(
-            query: queryFile.content,
+        try await executeFromFile(
+            resource: "GetSamplingConfigQuery",
+            bundle: .module,
             variables: OrganizationVerboseIdVar(organization_verbose_id: sdkKey)
         )
     }
-        
 }
