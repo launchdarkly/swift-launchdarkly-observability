@@ -88,6 +88,7 @@ let package = Package(
             ],
             resources: [
                 .copy("Resources/Config.json"),
+                .copy("Resources/GetSamplingConfigQuery.graphql"),
             ]
         ),
         .target(

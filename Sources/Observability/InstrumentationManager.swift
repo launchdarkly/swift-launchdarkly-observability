@@ -37,19 +37,16 @@ final class InstrumentationManager {
     private let swipeHandler = SwipeHandler()
     private let sampler: ExportSampler
     private let graphQLClient: GraphQLClient?
+    private var getSamplingConfigTask: Task<Void, Never>?
 
     public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
         self.sdkKey = sdkKey
         self.options = options
         self.sessionManager = sessionManager
-        self.graphQLClient = URL(string: options.backendUrl).map { GraphQLClient(endpoint: $0) }
-        
+        let graphQLClient = URL(string: options.backendUrl).map { GraphQLClient(endpoint: $0) }
+        self.graphQLClient = graphQLClient
+
         let sampler = ExportSampler.customSampler()
-        /// Here is how we will inject the sampling config coming from backend, if the next lines
-        /// are uncommented, them will inject a example local config for testing purposes only.
-        ///let samplingConfig = loadSampleConfig()
-        ///sampler.setConfig(samplingConfig)
-        
         
         let processorAndProvider = URL(string: options.otlpEndpoint)
             .flatMap {
@@ -216,6 +213,11 @@ final class InstrumentationManager {
         self.sampler = sampler
 
         self.install()
+        
+        self.getSamplingConfigTask = Task {
+            let config = try? await graphQLClient?.getSamplingConfig(sdkKey: sdkKey)
+            sampler.setConfig(config)
+        }
     }
     
     private func install() {
@@ -374,4 +376,39 @@ func loadSampleConfig() -> SamplingConfig? {
     } catch {
         return nil
     }
+}
+
+extension GraphQLClient {
+    struct GetSamplingConfigQueryFile {
+        let content: String
+        let filename = "GetSamplingConfigQuery"
+        
+        init?() {
+            guard let url = Bundle.module.url(forResource: filename, withExtension: "graphql") else {
+                return nil
+            }
+            do {
+                let data = try Data(contentsOf: url)
+                if let graphql = String(data: data, encoding: .utf8) {
+                    self.content = graphql
+                } else {
+                    return nil
+                }
+            } catch {
+                return nil
+            }
+        }
+    }
+    struct OrganizationVerboseIdVar: Encodable { let organization_verbose_id: String }
+    
+    func getSamplingConfig(sdkKey: String) async throws -> SamplingConfig? {
+        guard let queryFile = GetSamplingConfigQueryFile() else {
+            throw URLError(URLError.fileDoesNotExist)
+        }
+        return try await execute(
+            query: queryFile.content,
+            variables: OrganizationVerboseIdVar(organization_verbose_id: sdkKey)
+        )
+    }
+        
 }
