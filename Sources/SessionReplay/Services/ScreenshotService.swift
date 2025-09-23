@@ -62,7 +62,7 @@ actor ScreenshotService {
                 if payloadId <= 1 {
                     try await pushNotScreenshotItems(items: notScreenItems)
                     try await pushPayloadFullSnapshot(session: currentSession, exportImage: exportImage, timestamp: timestamp)
-
+                    try await pushPayload(session: currentSession, resource: "payload2", timestamp: timestamp)
                 } else {
                     try await pushNotScreenshotItems(items: notScreenItems)
                     try await pushPayloadDrawImage(session: currentSession, timestamp: timestamp, exportImage: exportImage)
