@@ -57,9 +57,8 @@ extension ScreenshotService  {
             }
             let session = sessionData.data.initializeSession
             print("Secure ID: \(session.secureId)")
-            print("Project ID: \(session.projectId)")
             
-            print("Session initialized - Secure ID: \(session.secureId), Project ID: \(session.projectId)")
+            print("Session initialized - Secure ID: \(session.secureId)")
             return session
         } catch let error as DecodingError {
             throw ScreenshotServiceError.decodingError(error)

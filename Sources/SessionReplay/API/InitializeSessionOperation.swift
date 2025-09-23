@@ -54,16 +54,13 @@ struct InitializeSessionVariables: Codable {
 
 public struct InitializeSessionResponse: Codable {
     public let secureId: String
-    public let projectId: String
     
-    init(secureId: String, projectId: String) {
+    init(secureId: String) {
         self.secureId = secureId
-        self.projectId = projectId
     }
     
     enum CodingKeys: String, CodingKey {
         case secureId = "secure_id"
-        case projectId = "project_id"
     }
 }
 
