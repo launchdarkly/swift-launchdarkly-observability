@@ -44,6 +44,7 @@ extension Instrumentation {
             private var cachedHistograms = AtomicDictionary<String, DoubleHistogram>()
             private var cachedUpDownCounters = AtomicDictionary<String, DoubleUpDownCounter>()
             
+            private let sampler = ExportSampler.customSampler()
             private var otelLogger: (any OpenTelemetryApi.Logger)
             private var otelTracer: Tracer?
             private var otelMeter: (any Meter)
@@ -59,6 +60,8 @@ extension Instrumentation {
                 self.sessionManager = sessionManager
                 self.flushTimeout = flushTimeout
                 
+                /// If options.otlpEndpoint is not a valid url use no-op instrumentation
+                ///
                 /// Load default instrumentation (logger, tracer, meter are no-op)
                 self.otelLogger = OpenTelemetry.instance.loggerProvider.get(
                     instrumentationScopeName: options.serviceName
@@ -72,20 +75,21 @@ extension Instrumentation {
                 self.otelMeter = OpenTelemetry.instance.meterProvider.get(
                     name: options.serviceName
                 )
+                
+                self.initializeInstrumentation(options: options)
 
                 Task { [weak self] in
                     do {
                         let graphQLClient = URL(string: options.backendUrl).map { GraphQLClient(endpoint: $0) }
                         let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
                         let config = try await samplingConfigClient.getSamplingConfig(sdkKey: sdkKey)
-                        self?.initializeInstrumentation(withConfig: config, options: options)
-                        self?.install()
+                        self?.sampler.setConfig(config)
                     } catch {
                         os_log("%{public}@", log: LDLogger, type: .error, "getSamplingConfig failed with error: \(error)")
-                        self?.initializeInstrumentation(withConfig: nil, options: options)
-                        self?.install()
                     }
                 }
+                
+                self.install()
             }
             
             // MARK: - Install Crash Reporter
@@ -244,9 +248,7 @@ extension Instrumentation {
                 }
             }
             
-            private func initializeInstrumentation(withConfig samplerConfig: SamplingConfig?, options: Options) {
-                let sampler = ExportSampler.customSampler()
-                sampler.setConfig(samplerConfig)
+            private func initializeInstrumentation(options: Options) {
                 initializeTracer(withSampler: sampler)
                 initializeLogger(withSampler: sampler)
                 initializeMeter()
@@ -254,7 +256,8 @@ extension Instrumentation {
                     configuration: URLSessionInstrumentationConfiguration(
                         shouldInstrument: { urlRequest in
                             urlRequest.url?.absoluteString.contains(options.otlpEndpoint) == false &&
-                            urlRequest.url?.absoluteString.contains("https://mobile.launchdarkly.com/mobile") == false
+                            urlRequest.url?.absoluteString.contains("https://mobile.launchdarkly.com/mobile") == false &&
+                            urlRequest.url?.absoluteString.contains(options.backendUrl) == false
                         },
                         nameSpan: { request in
                             "http.request"
