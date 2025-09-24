@@ -81,7 +81,10 @@ extension Instrumentation {
 
                 Task { [weak self] in
                     do {
-                        let graphQLClient = URL(string: context.options.backendUrl).map { GraphQLClient(endpoint: $0) }
+                        guard let url = URL(string: context.options.backendUrl) else {
+                            throw InstrumentationError.graphQLUrlIsInvalid
+                        }
+                        let graphQLClient = GraphQLClient(endpoint: url)
                         let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
                         let config = try await samplingConfigClient.getSamplingConfig(sdkKey: context.sdkKey)
                         self?.sampler.setConfig(config)

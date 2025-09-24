@@ -7,14 +7,14 @@ protocol SamplingConfigClient {
 
 final class DefaultSamplingConfigClient: SamplingConfigClient {
     struct OrganizationVerboseIdVar: Encodable { let organization_verbose_id: String }
-    private let client: GraphQLClient?
+    private let client: GraphQLClient
     
-    init(client: GraphQLClient?) {
+    init(client: GraphQLClient) {
         self.client = client
     }
     
     func getSamplingConfig(sdkKey: String) async throws -> SamplingConfig? {
-        try await client?.executeFromFile(
+        try await client.executeFromFile(
             resource: "GetSamplingConfigQuery",
             bundle: .module,
             variables: OrganizationVerboseIdVar(organization_verbose_id: sdkKey)
