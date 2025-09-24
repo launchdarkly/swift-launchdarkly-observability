@@ -49,8 +49,12 @@ final class InstrumentationManager {
         let sampler = ExportSampler.customSampler()
         
         Task {
-            let config = try? await samplingConfigClient.getSamplingConfig(sdkKey: sdkKey)
-            sampler.setConfig(config)
+            do {
+                let config = try await samplingConfigClient.getSamplingConfig(sdkKey: sdkKey)
+                sampler.setConfig(config)
+            } catch {
+                os_log("%{public}@", log: .default, type: .error, "getSamplingConfig failed with error: \(error)")
+            }
         }
         
         let processorAndProvider = URL(string: options.otlpEndpoint)

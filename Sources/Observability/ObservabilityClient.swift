@@ -2,37 +2,25 @@
 import OpenTelemetrySdk
 
 import API
+import Instrumentation
 import Common
 import CrashReporter
 import CrashReporterLive
 
 public final class ObservabilityClient: Observe {
-    private let instrumentationManager: InstrumentationManager
+    private let instrumentationManager: Instrumentation
     private let sessionManager: SessionManager
     private let resource: Resource
     private let options: Options
     
     private var cachedSpans = AtomicDictionary<String, Span>()
-    private let crashReporter: CrashReporter
     
     public init(sdkKey: String, resource: Resource, options: Options) {
         let sessionManager = SessionManager(options: .init(timeout: options.sessionBackgroundTimeout))
-        self.instrumentationManager = .init(sdkKey: sdkKey, options: options, sessionManager: sessionManager)
+        self.instrumentationManager = Instrumentation.build(sdkKey: sdkKey, options: options, sessionManager: sessionManager)
         self.sessionManager = sessionManager
         self.resource = resource
         self.options = options
-        
-        let crashReporter = CrashReporter.otelReporter(
-            logger: instrumentationManager.otelLogger,
-            otelBatchLogRecordProcessor: instrumentationManager.otelBatchLogRecordProcessor
-        ) {
-            
-        }
-        self.crashReporter = crashReporter
-        defer {
-            try? crashReporter.install()
-            crashReporter.logPendingCrashReports()
-        }
         
         sessionManager.onSessionDidChange = { _ in
             // TODO: create a span
@@ -77,7 +65,7 @@ public final class ObservabilityClient: Observe {
         instrumentationManager.startSpan(name: name, attributes: attributes)
     }
     
-    public func flush() {
-        // TODO: Implement flush
+    public func flush() -> Bool {
+        instrumentationManager.flush()
     }
 }

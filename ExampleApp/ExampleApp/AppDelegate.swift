@@ -9,7 +9,13 @@ let config = { () -> LDConfig in
         autoEnvAttributes: .enabled
     )
     config.plugins = [
-        Observability(options: .init(sessionBackgroundTimeout: 3, isDebug: true))
+        Observability(
+            options: .init(
+                otlpEndpoint: "http://localhost:4318",
+                sessionBackgroundTimeout: 3,
+                isDebug: true
+            )
+        )
     ]
     return config
 }()
