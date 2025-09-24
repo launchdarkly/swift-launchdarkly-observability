@@ -34,7 +34,7 @@ extension CrashReporter {
                 let installation = CrashInstallationStandard.shared
                 let config = KSCrashConfiguration()
                 
-                config.deadlockWatchdogInterval = 5.0
+                config.deadlockWatchdogInterval = 0
                 config.enableMemoryIntrospection = true
                 config.monitors = .all
                 config.enableSigTermMonitoring = true
