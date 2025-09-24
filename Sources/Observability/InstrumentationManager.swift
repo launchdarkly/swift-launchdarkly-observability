@@ -37,25 +37,14 @@ final class InstrumentationManager {
     private let swipeHandler = SwipeHandler()
     private let sampler: ExportSampler
     private let graphQLClient: GraphQLClient?
-    private let samplingConfigClient: SamplingConfigClient
 
     public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
         self.sdkKey = sdkKey
         self.options = options
         self.sessionManager = sessionManager
         let graphQLClient = URL(string: options.backendUrl).map { GraphQLClient(endpoint: $0) }
-        let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
         
         let sampler = ExportSampler.customSampler()
-        
-        Task {
-            do {
-                let config = try await samplingConfigClient.getSamplingConfig(sdkKey: sdkKey)
-                sampler.setConfig(config)
-            } catch {
-                os_log("%{public}@", log: .default, type: .error, "getSamplingConfig failed with error: \(error)")
-            }
-        }
         
         let processorAndProvider = URL(string: options.otlpEndpoint)
             .flatMap {
@@ -222,8 +211,6 @@ final class InstrumentationManager {
         self.sampler = sampler
         
         self.graphQLClient = graphQLClient
-        
-        self.samplingConfigClient = samplingConfigClient
 
         self.install()
     }
