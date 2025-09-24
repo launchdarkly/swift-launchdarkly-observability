@@ -1,4 +1,6 @@
-@preconcurrency import OpenTelemetryApi
+import OSLog
+
+import OpenTelemetryApi
 import OpenTelemetrySdk
 
 import API
@@ -17,10 +19,17 @@ public final class ObservabilityClient: Observe {
     public init(context: ObservabilityContext) {
         self.context = context
         let sessionManager = SessionManager(options: .init(timeout: context.options.sessionBackgroundTimeout))
-        self.instrumentationManager = Instrumentation.build(
-            context: context,
-            sessionManager: sessionManager
-        )
+        
+        do {
+            self.instrumentationManager = try Instrumentation.build(
+                context: context,
+                sessionManager: sessionManager
+            )
+        } catch {
+            self.instrumentationManager = Instrumentation.noOp()
+            os_log("%{public}@", log: context.logger.log, type: .error, "Failed to initialize Instrumentation manager with error: \(error)")
+        }
+        
         self.sessionManager = sessionManager
         
         sessionManager.onSessionDidChange = { _ in
