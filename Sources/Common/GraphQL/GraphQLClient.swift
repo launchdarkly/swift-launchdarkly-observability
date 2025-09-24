@@ -52,7 +52,6 @@ public final class GraphQLClient {
         combinedHeaders.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
 
         let data = try await network.send(request)
- 
         
         print("GraphQL response: \(String(data: data, encoding: .utf8) ?? "(no data)")")
 
