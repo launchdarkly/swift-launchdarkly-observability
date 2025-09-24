@@ -125,7 +125,10 @@ extension Instrumentation {
             }
             
             // MARK: - Init Instrumentation
-            private func initializeTracer(withSampler sampler: ExportSampler) {
+            private func initializeTracer(withSampler sampler: ExportSampler, options: Options) {
+                guard !options.disableTraces else {
+                    return /// currently tracer instance is a no-op, means, we don't want a custom tracer, we will use no-op
+                }
                 if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.tracesPath) {
                     let exporter = SamplingTraceExporterDecorator(
                         exporter: OtlpHttpTraceExporter(
@@ -167,7 +170,10 @@ extension Instrumentation {
                 }
             }
             
-            private func initializeLogger(withSampler sampler: ExportSampler) {
+            private func initializeLogger(withSampler sampler: ExportSampler, options: Options) {
+                guard !options.disableLogs else {
+                    return /// currently logger instance is a no-op, means, we don't want a custom logger, we will use no-op
+                }
                 if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.logsPath) {
                     let exporter = MultiLogRecordExporter(
                         logRecordExporters: context.options.isDebug ? [
@@ -232,7 +238,10 @@ extension Instrumentation {
                 }
             }
             
-            private func initializeMeter() {
+            private func initializeMeter(options: Options) {
+                guard !options.disableMetrics else {
+                    return /// currently meter instance is a no-op, means, we don't want a custom meter, we will use no-op
+                }
                 if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.metricsPath) {
                     let exporter = OtlpHttpMetricExporter(
                         endpoint: url,
@@ -270,9 +279,9 @@ extension Instrumentation {
             }
             
             private func initializeInstrumentation(options: Options) {
-                initializeTracer(withSampler: sampler)
-                initializeLogger(withSampler: sampler)
-                initializeMeter()
+                initializeTracer(withSampler: sampler, options: options)
+                initializeLogger(withSampler: sampler, options: options)
+                initializeMeter(options: options)
                 self.urlSessionInstrumentation = URLSessionInstrumentation(
                     configuration: URLSessionInstrumentationConfiguration(
                         shouldInstrument: { urlRequest in

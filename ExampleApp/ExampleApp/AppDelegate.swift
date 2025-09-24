@@ -11,9 +11,12 @@ let config = { () -> LDConfig in
     config.plugins = [
         Observability(
             options: .init(
-                otlpEndpoint: "http://localhost:4318",
+//                otlpEndpoint: "http://localhost:4318",
                 sessionBackgroundTimeout: 3,
-                isDebug: true
+                isDebug: true,
+                disableLogs: false,
+                disableTraces: false,
+                disableMetrics: false
             )
         )
     ]
