@@ -1,6 +1,6 @@
 import Foundation
 
-import os
+import OSLog
 
 import OpenTelemetrySdk
 import OpenTelemetryApi
@@ -9,10 +9,10 @@ import Common
 
 
 final class LDStdoutExporter: LogRecordExporter {
-    private let loggerName: String
+    private let logger: OSLog
     
-    init(loggerName: String) {
-        self.loggerName = loggerName
+    init(logger: OSLog) {
+        self.logger = logger
     }
     
     public func forceFlush(
@@ -34,8 +34,7 @@ final class LDStdoutExporter: LogRecordExporter {
 
         for log in logRecords {
             guard let message = JSON.stringify(log) else { continue }
-            
-            os_log("%{public}@", log: LDLogger, type: .info, message)
+            os_log("%{public}@", log: logger, type: .info, message)
         }
         
         return .success

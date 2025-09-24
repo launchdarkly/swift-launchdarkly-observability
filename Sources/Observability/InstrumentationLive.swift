@@ -21,15 +21,13 @@ extension Instrumentation {
     private static let metricsPath = "/v1/metrics"
     
     static func build(
-        sdkKey: String,
-        options: Options,
+        context: ObservabilityContext,
         sessionManager: SessionManager,
         flushTimeout: TimeInterval = 5.0
     ) -> Self {
         
         final class InstrumentationManager {
-            private let sdkKey: String
-            private let options: Options
+            private let context: ObservabilityContext
             private let sessionManager: SessionManager
             private let flushTimeout: TimeInterval
             
@@ -54,9 +52,12 @@ extension Instrumentation {
             private var flushBatchLogRecordProcessor: (_ explicitTimeout: TimeInterval?) -> ExportResult = { _ in .success }
             private var flushMeterReader: () -> ExportResult = { .success }
             
-            init(sdkKey: String, options: Options, sessionManager: SessionManager, flushTimeout: TimeInterval = 5.0) {
-                self.sdkKey = sdkKey
-                self.options = options
+            init(
+                context: ObservabilityContext,
+                sessionManager: SessionManager,
+                flushTimeout: TimeInterval = 5.0
+            ) {
+                self.context = context
                 self.sessionManager = sessionManager
                 self.flushTimeout = flushTimeout
                 
@@ -64,28 +65,28 @@ extension Instrumentation {
                 ///
                 /// Load default instrumentation (logger, tracer, meter are no-op)
                 self.otelLogger = OpenTelemetry.instance.loggerProvider.get(
-                    instrumentationScopeName: options.serviceName
+                    instrumentationScopeName: context.options.serviceName
                 )
                 
                 self.otelTracer = OpenTelemetry.instance.tracerProvider.get(
-                    instrumentationName: options.serviceName,
-                    instrumentationVersion: options.serviceVersion
+                    instrumentationName: context.options.serviceName,
+                    instrumentationVersion: context.options.serviceVersion
                 )
                 
                 self.otelMeter = OpenTelemetry.instance.meterProvider.get(
-                    name: options.serviceName
+                    name: context.options.serviceName
                 )
                 
-                self.initializeInstrumentation(options: options)
+                self.initializeInstrumentation(options: context.options)
 
                 Task { [weak self] in
                     do {
-                        let graphQLClient = URL(string: options.backendUrl).map { GraphQLClient(endpoint: $0) }
+                        let graphQLClient = URL(string: context.options.backendUrl).map { GraphQLClient(endpoint: $0) }
                         let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
-                        let config = try await samplingConfigClient.getSamplingConfig(sdkKey: sdkKey)
+                        let config = try await samplingConfigClient.getSamplingConfig(sdkKey: context.sdkKey)
                         self?.sampler.setConfig(config)
                     } catch {
-                        os_log("%{public}@", log: LDLogger, type: .error, "getSamplingConfig failed with error: \(error)")
+                        os_log("%{public}@", log: context.logger.log, type: .error, "getSamplingConfig failed with error: \(error)")
                     }
                 }
                 
@@ -99,17 +100,17 @@ extension Instrumentation {
                     crashReporter.logPendingCrashReports()
                     self.crashReporter = crashReporter
                 } catch {
-                    os_log("%{public}@", log: LDLogger, type: .error, "Crash Reporter installation failed with error: \(error)")
+                    os_log("%{public}@", log: context.logger.log, type: .error, "Crash Reporter installation failed with error: \(error)")
                 }
             }
             
             // MARK: - Init Instrumentation
             private func initializeTracer(withSampler sampler: ExportSampler) {
-                if let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(Instrumentation.tracesPath) {
+                if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.tracesPath) {
                     let exporter = SamplingTraceExporterDecorator(
                         exporter: OtlpHttpTraceExporter(
                             endpoint: url,
-                            envVarHeaders: options.customHeaders
+                            envVarHeaders: context.options.customHeaders
                         ),
                         sampler: sampler
                     )
@@ -130,7 +131,7 @@ extension Instrumentation {
                     
                     let provider = TracerProviderBuilder()
                         .add(spanProcessor: processor)
-                        .with(resource: Resource(attributes: options.resourceAttributes))
+                        .with(resource: Resource(attributes: context.options.resourceAttributes))
                         .build()
                     
                     /// Register Custom Tracer Provider
@@ -140,29 +141,29 @@ extension Instrumentation {
                     
                     /// Update tracer instance
                     self.otelTracer = OpenTelemetry.instance.tracerProvider.get(
-                        instrumentationName: options.serviceName,
-                        instrumentationVersion: options.serviceVersion
+                        instrumentationName: context.options.serviceName,
+                        instrumentationVersion: context.options.serviceVersion
                     )
                 }
             }
             
             private func initializeLogger(withSampler sampler: ExportSampler) {
-                if let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(Instrumentation.logsPath) {
+                if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.logsPath) {
                     let exporter = MultiLogRecordExporter(
-                        logRecordExporters: options.isDebug ? [
+                        logRecordExporters: context.options.isDebug ? [
                             SamplingLogExporterDecorator(
                                 exporter: OtlpHttpLogExporter(
                                     endpoint: url,
-                                    envVarHeaders: options.customHeaders
+                                    envVarHeaders: context.options.customHeaders
                                 ),
                                 sampler: sampler
                             ),
-                            LDStdoutExporter(loggerName: options.loggerName)
+                            LDStdoutExporter(logger: context.logger.log)
                         ] : [
                             SamplingLogExporterDecorator(
                                 exporter: OtlpHttpLogExporter(
                                     endpoint: url,
-                                    envVarHeaders: options.customHeaders
+                                    envVarHeaders: context.options.customHeaders
                                 ),
                                 sampler: sampler
                             )
@@ -190,7 +191,7 @@ extension Instrumentation {
                                 processor
                             ]
                         )
-                        .with(resource: Resource(attributes: options.resourceAttributes))
+                        .with(resource: Resource(attributes: context.options.resourceAttributes))
                         .build()
                     
                     /// Register custom logger
@@ -200,7 +201,7 @@ extension Instrumentation {
                     
                     /// Update logger instance
                     self.otelLogger = OpenTelemetry.instance.loggerProvider.get(
-                        instrumentationScopeName: options.serviceName
+                        instrumentationScopeName: context.options.serviceName
                     )
                     
                     let crashReporter = CrashReporter.otelReporter(
@@ -212,10 +213,10 @@ extension Instrumentation {
             }
             
             private func initializeMeter() {
-                if let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(Instrumentation.metricsPath) {
+                if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.metricsPath) {
                     let exporter = OtlpHttpMetricExporter(
                         endpoint: url,
-                        envVarHeaders: options.customHeaders
+                        envVarHeaders: context.options.customHeaders
                     )
                     
                     let reader = PeriodicMetricReaderBuilder(exporter: exporter)
@@ -228,7 +229,7 @@ extension Instrumentation {
                     
                     let provider = MeterProviderSdk.builder()
                         .registerView(
-                            selector: InstrumentSelector.builder().setInstrument(name: options.serviceName).build(),
+                            selector: InstrumentSelector.builder().setInstrument(name: context.options.serviceName).build(),
                             view: View.builder().build()
                         )
                         .registerMetricReader(
@@ -243,7 +244,7 @@ extension Instrumentation {
                     
                     /// Update meter instance
                     self.otelMeter = OpenTelemetry.instance.meterProvider.get(
-                        name: options.serviceName
+                        name: context.options.serviceName
                     )
                 }
             }
@@ -402,8 +403,8 @@ extension Instrumentation {
                     tracer = otelTracer
                 } else {
                     tracer = OpenTelemetry.instance.tracerProvider.get(
-                        instrumentationName: options.serviceName,
-                        instrumentationVersion: options.serviceVersion
+                        instrumentationName: context.options.serviceName,
+                        instrumentationVersion: context.options.serviceVersion
                     )
                 }
                 
@@ -432,8 +433,7 @@ extension Instrumentation {
         }
         
         let manager = InstrumentationManager(
-            sdkKey: sdkKey,
-            options: options,
+            context: context,
             sessionManager: sessionManager
         )
         

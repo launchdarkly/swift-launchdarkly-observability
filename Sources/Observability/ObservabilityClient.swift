@@ -10,17 +10,18 @@ import CrashReporterLive
 public final class ObservabilityClient: Observe {
     private let instrumentationManager: Instrumentation
     private let sessionManager: SessionManager
-    private let resource: Resource
-    private let options: Options
+    private let context: ObservabilityContext
     
     private var cachedSpans = AtomicDictionary<String, Span>()
     
-    public init(sdkKey: String, resource: Resource, options: Options) {
-        let sessionManager = SessionManager(options: .init(timeout: options.sessionBackgroundTimeout))
-        self.instrumentationManager = Instrumentation.build(sdkKey: sdkKey, options: options, sessionManager: sessionManager)
+    public init(context: ObservabilityContext) {
+        self.context = context
+        let sessionManager = SessionManager(options: .init(timeout: context.options.sessionBackgroundTimeout))
+        self.instrumentationManager = Instrumentation.build(
+            context: context,
+            sessionManager: sessionManager
+        )
         self.sessionManager = sessionManager
-        self.resource = resource
-        self.options = options
         
         sessionManager.onSessionDidChange = { _ in
             // TODO: create a span
