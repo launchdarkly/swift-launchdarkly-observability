@@ -43,9 +43,12 @@ public final class Observability: Plugin {
             loggerName: options.loggerName
         )
         let client = ObservabilityClient(
-            sdkKey: sdkKey,
-            resource: .init(attributes: resourceAttributes),
-            options: options
+            context: .init(
+                sdkKey: sdkKey,
+                resource: .init(attributes: resourceAttributes),
+                options: options,
+                logger: .init(name: options.loggerName)
+            )
         )
         
         LDObserve.shared.set(client: client)

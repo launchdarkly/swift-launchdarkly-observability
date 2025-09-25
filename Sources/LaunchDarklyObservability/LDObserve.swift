@@ -12,12 +12,10 @@ private final class NoOpClient: Observe {
     func recordError(error: any Error, attributes: [String : AttributeValue]) {}
     func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue]) {}
     func startSpan(name: String, attributes: [String : AttributeValue]) -> any Span {
-        OpenTelemetry.instance.tracerProvider.get(
-            instrumentationName: "",
-            instrumentationVersion: ""
-        ).spanBuilder(spanName: "").startSpan()
+        /// No-op implementation of the Tracer
+        DefaultTracer.instance.spanBuilder(spanName: "").startSpan()
     }
-    func flush() {}
+    func flush() -> Bool { true }
 }
 
 public final class LDObserve: @unchecked Sendable, Observe {
@@ -83,9 +81,9 @@ public final class LDObserve: @unchecked Sendable, Observe {
         return client.startSpan(name: name, attributes: attributes)
     }
     
-    public func flush() {
+    public func flush() -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        client.flush()
+        return client.flush()
     }
 }

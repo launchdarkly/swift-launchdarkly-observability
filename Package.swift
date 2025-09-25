@@ -80,6 +80,16 @@ let package = Package(
             ]
         ),
         .target(
+            name: "Instrumentation",
+            dependencies: [
+                "API",
+                "CrashReporter",
+                "Sampling",
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+            ]
+        ),
+        .target(
             name: "Observability",
             dependencies: [
                 "Common",
@@ -89,13 +99,14 @@ let package = Package(
                 "CrashReporterLive",
                 "Sampling",
                 "SamplingLive",
+                "Instrumentation",
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
                 .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift"),
             ],
             resources: [
-                .copy("Resources/Config.json"),
+                .process("Resources"),
             ]
         ),
         .target(
