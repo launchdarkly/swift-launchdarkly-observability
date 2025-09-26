@@ -17,7 +17,7 @@ struct ExampleAppApp: App {
                         case .manualInstrumentation:
                             InstrumentationView()
                         case .automaticInstrumentation:
-                            NetworkRequestView()
+                            AutomaticInstrumentationView()
                         case .evaluation:
                             FeatureFlagView()
                         }
