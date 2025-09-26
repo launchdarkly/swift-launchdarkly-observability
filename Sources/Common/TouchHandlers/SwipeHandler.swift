@@ -1,5 +1,4 @@
-import UIKit.UIWindow
-import Common
+import UIKit
 
 public final class SwipeHandler {
     private var startPoint: CGPoint?

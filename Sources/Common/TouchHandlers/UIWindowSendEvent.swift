@@ -1,4 +1,4 @@
-import UIKit.UIWindow
+import UIKit
 
 public final class UIWindowSendEvent {
     typealias SendEventRef = @convention(c) (UIWindow, Selector, UIEvent) -> Void
