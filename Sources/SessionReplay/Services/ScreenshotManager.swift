@@ -30,7 +30,7 @@ class ScreenshotManager {
         }
         
         Task {
-            guard let exportImage = capturedImage.image.exportImage(format: .png, originalSize: capturedImage.renderSize, scale: capturedImage.scale) else {
+            guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3), originalSize: capturedImage.renderSize, scale: capturedImage.scale) else {
                 return
             }
             await queue.enque(EventQueueItem(payload: .screenshot(exportImage: exportImage)))

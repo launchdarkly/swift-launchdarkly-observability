@@ -58,7 +58,6 @@ public struct EventData: EventDataProtocol {
     }
 }
 
-
 public struct EventNode: Codable {
     public var type: NodeType
     public var name: String?

@@ -14,6 +14,7 @@ import CrashReporterLive
 import Sampling
 import SamplingLive
 import Instrumentation
+import SessionReplay
 
 extension Instrumentation {
     private static let tracesPath = "/v1/traces"
@@ -47,6 +48,8 @@ extension Instrumentation {
             private let context: ObservabilityContext
             private let sessionManager: SessionManager
             private let flushTimeout: TimeInterval
+            private let graphQLClient: GraphQLClient
+            private let sessionReplayService: SessionReplayService?
             
             private var crashReporter: CrashReporter?
             private let lock: NSLock = NSLock()
@@ -73,11 +76,16 @@ extension Instrumentation {
                 context: ObservabilityContext,
                 sessionManager: SessionManager,
                 flushTimeout: TimeInterval = 5.0
-            ) {
+            ) throws {
                 self.context = context
                 self.sessionManager = sessionManager
                 self.flushTimeout = flushTimeout
                 
+                guard let url = URL(string: context.options.backendUrl) else {
+                    throw InstrumentationError.graphQLUrlIsInvalid
+                }
+                self.graphQLClient = GraphQLClient(endpoint: url)
+                self.sessionReplayService = SessionReplayService(graphQLClient: graphQLClient)
                 /// If options.otlpEndpoint is not a valid url use no-op instrumentation
                 ///
                 /// Load default instrumentation (logger, tracer, meter are no-op)
@@ -95,13 +103,11 @@ extension Instrumentation {
                 )
                 
                 self.initializeInstrumentation(options: context.options)
-
+                
+                
                 Task { [weak self] in
                     do {
-                        guard let url = URL(string: context.options.backendUrl) else {
-                            throw InstrumentationError.graphQLUrlIsInvalid
-                        }
-                        let graphQLClient = GraphQLClient(endpoint: url)
+                  
                         let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
                         let config = try await samplingConfigClient.getSamplingConfig(sdkKey: context.sdkKey)
                         self?.sampler.setConfig(config)
@@ -111,6 +117,7 @@ extension Instrumentation {
                 }
                 
                 self.install()
+                self.sessionReplayService?.start()
             }
             
             // MARK: - Install Crash Reporter
@@ -316,24 +323,24 @@ extension Instrumentation {
                     self.tapHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
                         guard let self = self else { return }
                         
-                        var attributes = [String: AttributeValue]()
-                        attributes["screen.name"] = .string(touchEvent.viewName)
-                        attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
-                        // sending location in points (since it is preferred over pixels)
-                        attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
-                        attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
-                        self.startSpan(name: "user.tap", attributes: attributes).end()
+//                        var attributes = [String: AttributeValue]()
+//                        attributes["screen.name"] = .string(touchEvent.viewName)
+//                        attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
+//                        // sending location in points (since it is preferred over pixels)
+//                        attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
+//                        attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
+//                        self.startSpan(name: "user.tap", attributes: attributes).end()
                     }
                     self.swipeHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
-                        guard let self = self else { return }
-                        
-                        var attributes = [String: AttributeValue]()
-                        attributes["screen.name"] = .string(touchEvent.viewName)
-                        attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
-                        // sending location in points (since it is preferred over pixels)
-                        attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
-                        attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
-                        self.startSpan(name: "user.swipe", attributes: attributes).end()
+//                        guard let self = self else { return }
+//                        
+//                        var attributes = [String: AttributeValue]()
+//                        attributes["screen.name"] = .string(touchEvent.viewName)
+//                        attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
+//                        // sending location in points (since it is preferred over pixels)
+//                        attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
+//                        attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
+//                        self.startSpan(name: "user.swipe", attributes: attributes).end()
                     }
                 }
             }
@@ -461,7 +468,7 @@ extension Instrumentation {
             }
         }
         
-        let manager = InstrumentationManager(
+        let manager = try InstrumentationManager(
             context: context,
             sessionManager: sessionManager
         )

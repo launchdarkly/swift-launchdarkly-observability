@@ -1,5 +1,4 @@
 import Foundation
-import LaunchDarkly
 import Common
 
 struct PushPayloadVariables: Codable {

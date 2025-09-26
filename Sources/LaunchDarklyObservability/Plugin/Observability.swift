@@ -43,7 +43,7 @@ public final class Observability: Plugin {
             loggerName: options.loggerName
         )
         let client = ObservabilityClient(
-            context: .init(
+            context: ObservabilityContext(
                 sdkKey: sdkKey,
                 resource: .init(attributes: resourceAttributes),
                 options: options,

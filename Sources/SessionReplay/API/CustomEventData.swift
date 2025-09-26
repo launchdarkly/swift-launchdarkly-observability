@@ -14,4 +14,3 @@ struct ViewPortPayload: Codable {
     var pixelDepth: Int
     var orientation: Int
 }
-

@@ -62,6 +62,7 @@ actor ScreenshotService {
                 if payloadId <= 1 {
                     try await pushNotScreenshotItems(items: notScreenItems)
                     try await pushPayloadFullSnapshot(session: currentSession, exportImage: exportImage, timestamp: timestamp)
+                    // fake mouse movement to trigger something
                     try await pushPayload(session: currentSession, resource: "payload2", timestamp: timestamp)
                 } else {
                     try await pushNotScreenshotItems(items: notScreenItems)
@@ -157,7 +158,7 @@ actor ScreenshotService {
         Int64(Date().timeIntervalSince1970 * 1000.0)
     }
     
-    func metaEvent(href: String, width: Int, height: Int, timestamp: Int64) -> Event {
+    func windowEvent(href: String, width: Int, height: Int, timestamp: Int64) -> Event {
         let eventData = EventData(href: href, width: width, height: height)
         let event = Event(type: .Meta,
                           data: AnyEventData(eventData),
@@ -245,7 +246,7 @@ actor ScreenshotService {
         
         //let imageNode = exportImage.eventNode(id: 16)
         // event with window size
-        events.append(metaEvent(href: "http://localhost:5173/", width: exportImage.paddedWidth, height: exportImage.paddedHeight, timestamp: timestamp))
+        events.append(windowEvent(href: "http://localhost:5173/", width: exportImage.paddedWidth, height: exportImage.paddedHeight, timestamp: timestamp))
         events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
         events.append(reloadEvent(timestamp: timestamp))
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
