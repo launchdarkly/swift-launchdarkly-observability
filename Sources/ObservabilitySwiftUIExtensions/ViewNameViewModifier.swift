@@ -20,7 +20,7 @@ public struct ViewNameViewModifier: ViewModifier {
             .onDisappear {
                 let logAttributes = self.attributes ?? [String: AttributeValue]()
                 LDObserve.shared.recordLog(
-                    message: "on Disappear \(self.viewName ?? String(describing: self))",
+                    message: "on Disappear \(self.viewName)",
                     severity: .info,
                     attributes: [
                         "screen.name": .string(self.viewName),
@@ -30,7 +30,7 @@ public struct ViewNameViewModifier: ViewModifier {
             .onAppear {
                 let logAttributes = self.attributes ?? [String: AttributeValue]()
                 LDObserve.shared.recordLog(
-                    message: "on Appear \(self.viewName ?? String(describing: self))",
+                    message: "on Appear \(self.viewName)",
                     severity: .info,
                     attributes: [
                         "screen.name": .string(self.viewName),
