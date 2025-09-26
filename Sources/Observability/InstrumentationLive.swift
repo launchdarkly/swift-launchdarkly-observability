@@ -323,6 +323,7 @@ extension Instrumentation {
                     self.tapHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
                         guard let self = self else { return }
                         
+                        sessionReplayService?.userTap(touchEvent: touchEvent)
 //                        var attributes = [String: AttributeValue]()
 //                        attributes["screen.name"] = .string(touchEvent.viewName)
 //                        attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)

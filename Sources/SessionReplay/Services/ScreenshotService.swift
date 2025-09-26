@@ -183,8 +183,6 @@ actor ScreenshotService {
         try await replayApiService.initializeSession(sessionSecureId: sessionSecureId)
     }
     
- 
-    
     func identifySession(session: InitializeSessionResponse) async throws {
         try await replayApiService.identifySession(
             sessionSecureId: session.secureId,
