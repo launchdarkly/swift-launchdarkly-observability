@@ -1,4 +1,6 @@
-import UIKit.UIWindow
+#if canImport(UIKit)
+
+import UIKit
 import Common
 
 public final class SwipeHandler {
@@ -21,7 +23,7 @@ public final class SwipeHandler {
                     
                     let viewName = accessibilityIdentifier ?? String(describing: targetClass)
                     let touchEvent = TouchEvent(
-                        phase: touch.phase,
+                        phase: .ended,
                         location: endPoint,
                         viewName: viewName,
                         accessibilityIdentifier: accessibilityIdentifier,
@@ -41,3 +43,5 @@ public final class SwipeHandler {
         }
     }
 }
+
+#endif

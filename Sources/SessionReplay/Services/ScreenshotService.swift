@@ -1,4 +1,4 @@
-import UIKit
+import Foundation
 import Common
 
 enum ScreenshotServiceError: Error {
@@ -144,8 +144,6 @@ actor ScreenshotService {
                            "feature_flag.provider.name":"LaunchDarkly",
                            "key":"unknown"])
     }
-    
- 
     
     func prepareImageNode(imageNode: EventNode? = nil) -> EventNode? {
         guard var imageNode else { return nil }

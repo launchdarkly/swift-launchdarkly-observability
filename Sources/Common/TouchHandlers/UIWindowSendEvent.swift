@@ -1,3 +1,5 @@
+#if canImport(UIKit)
+
 import UIKit.UIWindow
 
 public final class UIWindowSendEvent {
@@ -36,3 +38,5 @@ public final class UIWindowSendEvent {
         return ids.contains(ObjectIdentifier(receiverType))
     }
 }
+
+#endif

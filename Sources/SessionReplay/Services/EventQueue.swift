@@ -1,6 +1,5 @@
 import Foundation
 import Common
-import UIKit
 
 struct EventQueueItem {
     enum Payload {

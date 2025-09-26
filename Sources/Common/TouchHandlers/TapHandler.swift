@@ -1,3 +1,5 @@
+#if canImport(UIKit)
+
 import UIKit.UIWindow
 import Common
 
@@ -14,7 +16,7 @@ public final class TapHandler {
                 if let startPoint {
                     completion(
                         TouchEvent(
-                            phase: touch.phase,
+                            phase: .began,
                             location: startPoint,
                             viewName: nil,
                             accessibilityIdentifier: nil,
@@ -36,7 +38,7 @@ public final class TapHandler {
                     }
                     completion(
                         TouchEvent(
-                            phase: touch.phase,
+                            phase: .ended,
                             location: endPoint,
                             viewName: viewName,
                             accessibilityIdentifier: accessibilityIdentifier,
@@ -50,3 +52,5 @@ public final class TapHandler {
         }
     }
 }
+
+#endif

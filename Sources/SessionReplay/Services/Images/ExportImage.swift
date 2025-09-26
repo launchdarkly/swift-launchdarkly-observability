@@ -63,11 +63,6 @@ enum ExportFormat {
 }
 
 extension UIImage {
-    /// Export as PNG Data
-    func asPNGData() -> Data? {
-        return self.pngData()
-    }
-
     /// Export as Data in requested format (PNG or JPEG)
     func asData(format: ExportFormat = .png) -> Data? {
         switch format {
@@ -76,11 +71,5 @@ extension UIImage {
         case .jpeg(let q):
             return self.jpegData(compressionQuality: max(0, min(1, q)))
         }
-    }
-}
-
-public extension Data {
-    func asBase64PNGDataURL() -> String? {
-        return "data:image/png;base64,\(self.base64EncodedString())"
     }
 }

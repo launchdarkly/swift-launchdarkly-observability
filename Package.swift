@@ -4,10 +4,7 @@ import PackageDescription
 let package = Package(
     name: "swift-launchdarkly-observability",
     platforms: [
-        .iOS(.v13),
-        .macOS(.v12),
-        .watchOS(.v6),
-        .tvOS(.v13)
+        .iOS(.v13)
     ],
     products: [
         .library(
@@ -18,9 +15,13 @@ let package = Package(
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift", exact: "2.0.0"),
         .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", from: "9.15.0"),
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
+        .package(url: "https://github.com/mw99/DataCompression", from: "3.8.0")
     ],
     targets: [
-        .target(name: "Common"),
+        .target(name: "Common",
+                dependencies: [
+                    .product(name: "DataCompression", package: "DataCompression"),
+                ]),
         .target(
             name: "API",
             dependencies: [

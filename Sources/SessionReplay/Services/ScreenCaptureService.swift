@@ -1,3 +1,5 @@
+#if canImport(UIKit)
+
 import UIKit
 
 struct CapturedImage {
@@ -26,17 +28,17 @@ final class ScreenCaptureService {
 
     private func captureCompositeImageOfAllWindows() -> CapturedImage? {
         let scale = 1.0 // UIScreen.main.scale
-        let size  = UIScreen.main.bounds.size
+        let bounds  = UIScreen.main.bounds
 
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = false
 
-        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        let renderer = UIGraphicsImageRenderer(size: bounds.size, format: format)
         let image = renderer.image { ctx in
-            drawAllWindows(into: ctx.cgContext)
+            drawAllWindows(into: ctx.cgContext, bounds: bounds, afterScreenUpdates: false)
         }
-        return CapturedImage(image: image, scale: scale, renderSize: size)
+        return CapturedImage(image: image, scale: scale, renderSize: bounds.size)
     }
 
     private func allWindowsInZOrder() -> [UIWindow] {
@@ -50,10 +52,10 @@ final class ScreenCaptureService {
         
     }
 
-    private func drawAllWindows(into context: CGContext) {
+    private func drawAllWindows(into context: CGContext, bounds: CGRect, afterScreenUpdates: Bool) {
         context.saveGState()
         context.setFillColor(UIColor.clear.cgColor)
-        context.fill(UIScreen.main.bounds)
+        context.fill(bounds)
         context.restoreGState()
 
         for window in allWindowsInZOrder() {
@@ -64,8 +66,9 @@ final class ScreenCaptureService {
             let anchor = CGPoint(x: window.bounds.midX, y: window.bounds.midY)
             context.translateBy(x: anchor.x, y: anchor.y)
             context.translateBy(x: -anchor.x, y: -anchor.y)
-
-            window.layer.render(in: context)
+           
+            window.drawHierarchy(in: bounds, afterScreenUpdates: afterScreenUpdates)
+            //window.layer.render(in: context)
             context.restoreGState()
         }
     }
@@ -75,3 +78,4 @@ final class ScreenCaptureService {
     }
 }
 
+#endif

@@ -1,7 +1,11 @@
-import UIKit
+import Foundation
 
 public struct TouchEvent: Sendable, CustomStringConvertible {
-    public let phase: UITouch.Phase
+    public enum Phase: Sendable {
+        case began, moved, ended
+    }
+
+    public let phase: Phase
     public let location: CGPoint
     public let viewName: String?
     public let accessibilityIdentifier: String?
@@ -12,10 +16,11 @@ public struct TouchEvent: Sendable, CustomStringConvertible {
     }
     
     public var locationInPixels: CGPoint {
-        return CGPoint(x: Int((location.x * scale).rounded()), y: Int((location.y * scale).rounded()))
+        return CGPoint(x: (location.x * scale).rounded(), y: (location.y * scale).rounded())
     }
     
     public var description: String {
-        return "TouchEvent(\(location), \(viewName), \(accessibilityIdentifier ?? "nil"), \(scale)) coordinates In pixels: \(locationInPixels.x), \(locationInPixels.y)"
+        return "TouchEvent(\(location), \(viewName ?? "nil"), \(accessibilityIdentifier ?? "nil"), \(scale)) coordinates In pixels: \(locationInPixels.x), \(locationInPixels.y)"
     }
 }
+
