@@ -50,30 +50,45 @@ actor ScreenshotService {
             return
         }
         
+        var events = [Event]()
         for item in items {
-            switch item.payload {
-            case .screenshot(let exportImage):
-                guard lastExporImage != exportImage else {
-                    return
-                }
-                lastExporImage = exportImage
-                let timestamp = item.timestamp
-                
-                if payloadId <= 1 {
-                    try await pushNotScreenshotItems(items: notScreenItems)
-                    try await pushPayloadFullSnapshot(session: currentSession, exportImage: exportImage, timestamp: timestamp)
-                    // fake mouse movement to trigger something
-                    try await pushPayload(session: currentSession, resource: "payload2", timestamp: timestamp)
-                } else {
-                    try await pushNotScreenshotItems(items: notScreenItems)
-                    try await pushPayloadDrawImage(session: currentSession, timestamp: timestamp, exportImage: exportImage)
-                }
-            default:
-                notScreenItems.append(item)
-            }
+            appendEvents(item: item, events: &events)
+        }
+        
+        if events.isNotEmpty {
+            try await pushPayload(events: events)
         }
         
         try await pushNotScreenshotItems(items: notScreenItems)
+    }
+    
+    func oldSend(items: [EventQueueItem]) async throws {
+        
+    }
+    
+    func appendEvents(item: EventQueueItem, events: inout [Event]) -> Event? {
+        switch item.payload {
+        case .screenshot(let exportImage):
+            guard lastExporImage != exportImage else {
+                return nil
+            }
+            lastExporImage = exportImage
+            let timestamp = item.timestamp
+            
+            if payloadId <= 1 {
+                fullSnapshotEvent(exportImage, timestamp, &events)
+                
+                //try await pushNotScreenshotItems(items: notScreenItems)
+                //try await pushPayloadFullSnapshot(session: currentSession, exportImage: exportImage, timestamp: timestamp)
+                // fake mouse movement to trigger something
+                //try await pushPayload(session: currentSession, resource: "payload2", timestamp: timestamp)
+            } else {
+                try await pushNotScreenshotItems(items: notScreenItems)
+                try await pushPayloadDrawImage(session: currentSession, timestamp: timestamp, exportImage: exportImage)
+            }
+        case .tap(let toucEvent):
+            notScreenItems.append(item)
+        }
     }
     
     func tapEvent(touch: TouchEvent, timestamp: Int64) -> Event? {
@@ -106,7 +121,7 @@ actor ScreenshotService {
         guard let currentSession else {
             return
         }
-        guard !notScreenItems.isEmpty else { return }
+        guard items.isNotEmpty else { return }
         
         var events = [Event]()
         for item in items {
@@ -151,11 +166,7 @@ actor ScreenshotService {
         imageNode.rootId = 1
         return imageNode
     }
-    
-    var nowTimestamp: Int64 {
-        Int64(Date().timeIntervalSince1970 * 1000.0)
-    }
-    
+
     func windowEvent(href: String, width: Int, height: Int, timestamp: Int64) -> Event {
         let eventData = EventData(href: href, width: width, height: height)
         let event = Event(type: .Meta,
@@ -236,18 +247,22 @@ actor ScreenshotService {
         return rootNode
     }
     
-    func pushPayloadFullSnapshot(session: InitializeSessionResponse, exportImage: ExportImage? = nil, timestamp: Int64) async throws {
-        var events = [Event]()
-        guard let exportImage else {
-            return
-        }
-        
+    fileprivate func fullSnapshotEvent(_ exportImage: ExportImage, _ timestamp: Int64, _ events: inout [Event]) {
         //let imageNode = exportImage.eventNode(id: 16)
         // event with window size
         events.append(windowEvent(href: "http://localhost:5173/", width: exportImage.paddedWidth, height: exportImage.paddedHeight, timestamp: timestamp))
         events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
         events.append(reloadEvent(timestamp: timestamp))
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
+    }
+    
+    func pushPayloadFullSnapshot(session: InitializeSessionResponse, exportImage: ExportImage? = nil, timestamp: Int64) async throws {
+        var events = [Event]()
+        guard let exportImage else {
+            return
+        }
+        
+        fullSnapshotEvent(exportImage, timestamp, &events)
         
         let input = PushPayloadVariables(sessionSecureId: session.secureId, payloadId: "\(nextPayloadId)", events: events)
         try await replayApiService.pushPayload(input)
