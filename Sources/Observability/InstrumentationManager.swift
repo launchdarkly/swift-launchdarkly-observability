@@ -1,7 +1,5 @@
 import Foundation
-
-import os
-
+import OSLog
 import UIKit.UIWindow
 
 import OpenTelemetrySdk
@@ -9,214 +7,277 @@ import OpenTelemetryApi
 import OpenTelemetryProtocolExporterHttp
 import URLSessionInstrumentation
 
-import Common
 import API
+import Common
+import CrashReporter
+import CrashReporterLive
 import Sampling
 import SamplingLive
-
-private let tracesPath = "/v1/traces"
-private let logsPath = "/v1/logs"
-private let metricsPath = "/v1/metrics"
+import Instrumentation
 
 final class InstrumentationManager {
-    private let sdkKey: String
-    private let options: Options
-    let otelLogger: OpenTelemetryApi.Logger?
-    let otelTracer: Tracer?
-    let otelMeter: (any Meter)?
-    public let otelBatchLogRecordProcessor: BatchLogRecordProcessor?
+    private let context: ObservabilityContext
     private let sessionManager: SessionManager
-    private let urlSessionInstrumentation: URLSessionInstrumentation
+    private let flushTimeout: TimeInterval
+    
+    private var crashReporter: CrashReporter?
+    private let lock: NSLock = NSLock()
+    private let tapHandler = TapHandler()
+    private let swipeHandler = SwipeHandler()
+    
     private var cachedGauges = AtomicDictionary<String, DoubleGauge>()
     private var cachedCounters = AtomicDictionary<String, DoubleCounter>()
     private var cachedLongCounters = AtomicDictionary<String, LongCounter>()
     private var cachedHistograms = AtomicDictionary<String, DoubleHistogram>()
     private var cachedUpDownCounters = AtomicDictionary<String, DoubleUpDownCounter>()
-    private let lock: NSLock = NSLock()
-    private let tapHandler = TapHandler()
-    private let swipeHandler = SwipeHandler()
-    private let sampler: ExportSampler
-    private let graphQLClient: GraphQLClient?
-
-    public init(sdkKey: String, options: Options, sessionManager: SessionManager) {
-        self.sdkKey = sdkKey
-        self.options = options
+    
+    private let sampler = ExportSampler.customSampler()
+    private var otelLogger: (any OpenTelemetryApi.Logger)
+    private var otelTracer: Tracer?
+    private var otelMeter: (any Meter)
+    
+    private var urlSessionInstrumentation: URLSessionInstrumentation?
+    private var flushSpanProcessor: (_ timeout: TimeInterval?) -> Void = { _ in }
+    private var flushBatchLogRecordProcessor: (_ explicitTimeout: TimeInterval?) -> ExportResult = { _ in .success }
+    private var flushMeterReader: () -> ExportResult = { .success }
+    
+    init(
+        context: ObservabilityContext,
+        sessionManager: SessionManager,
+        flushTimeout: TimeInterval = 5.0
+    ) {
+        self.context = context
         self.sessionManager = sessionManager
-        self.graphQLClient = URL(string: options.backendUrl).map { GraphQLClient(endpoint: $0) }
+        self.flushTimeout = flushTimeout
         
-        let sampler = ExportSampler.customSampler()
-        /// Here is how we will inject the sampling config coming from backend, if the next lines
-        /// are uncommented, them will inject a example local config for testing purposes only.
-        ///let samplingConfig = loadSampleConfig()
-        ///sampler.setConfig(samplingConfig)
+        /// If options.otlpEndpoint is not a valid url use no-op instrumentation
+        ///
+        /// Load default instrumentation (logger, tracer, meter are no-op)
+        self.otelLogger = OpenTelemetry.instance.loggerProvider.get(
+            instrumentationScopeName: context.options.serviceName
+        )
         
+        self.otelTracer = OpenTelemetry.instance.tracerProvider.get(
+            instrumentationName: context.options.serviceName,
+            instrumentationVersion: context.options.serviceVersion
+        )
         
-        let processorAndProvider = URL(string: options.otlpEndpoint)
-            .flatMap {
-                if #available(iOS 16, *) {
-                    return $0.appending(path: logsPath)
+        self.otelMeter = OpenTelemetry.instance.meterProvider.get(
+            name: context.options.serviceName
+        )
+        
+        self.initializeInstrumentation(options: context.options)
+        
+        Task { [weak self] in
+            do {
+                guard let url = URL(string: context.options.backendUrl) else {
+                    throw InstrumentationError.graphQLUrlIsInvalid
                 }
-                else {
-                    return $0.appendingPathComponent(logsPath)
-                }
+                let graphQLClient = GraphQLClient(endpoint: url)
+                let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
+                let config = try await samplingConfigClient.getSamplingConfig(sdkKey: context.sdkKey)
+                self?.sampler.setConfig(config)
+            } catch {
+                os_log("%{public}@", log: context.logger.log, type: .error, "getSamplingConfig failed with error: \(error)")
             }
-            .map { url in
-                MultiLogRecordExporter(
-                    logRecordExporters: options.isDebug ? [
-                        SamplingLogExporterDecorator(
-                            exporter: OtlpHttpLogExporter(
-                                endpoint: url,
-                                envVarHeaders: options.customHeaders
-                            ),
-                            sampler: sampler
+        }
+        
+        self.install()
+    }
+    
+    // MARK: - Install Crash Reporter
+    private func installCrashReporter(_ crashReporter: CrashReporter) {
+        do {
+            try crashReporter.install()
+            crashReporter.logPendingCrashReports()
+            self.crashReporter = crashReporter
+        } catch {
+            os_log("%{public}@", log: context.logger.log, type: .error, "Crash Reporter installation failed with error: \(error)")
+        }
+    }
+    
+    // MARK: - Init Instrumentation
+    private func initializeTracer(withSampler sampler: ExportSampler, options: Options) {
+        guard !options.disableTraces else {
+            return /// currently tracer instance is a no-op, means, we don't want a custom tracer, we will use no-op
+        }
+        if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.tracesPath) {
+            let exporter = SamplingTraceExporterDecorator(
+                exporter: OtlpHttpTraceExporter(
+                    endpoint: url,
+                    envVarHeaders: context.options.customHeaders
+                ),
+                sampler: sampler
+            )
+            /// Using the default values from OpenTelemetry for Swift
+            /// For reference check:
+            ///https://github.com/open-telemetry/opentelemetry-swift/blob/main/Sources/OpenTelemetrySdk/Trace/SpanProcessors/BatchSpanProcessor.swift
+            let processor = BatchSpanProcessor(
+                spanExporter: exporter,
+                scheduleDelay: 5,
+                exportTimeout: 30,
+                maxQueueSize: 2048,
+                maxExportBatchSize: 512,
+            )
+            
+            self.flushSpanProcessor = {
+                processor.forceFlush(timeout: $0)
+            }
+            
+            let provider = TracerProviderBuilder()
+                .add(spanProcessor: processor)
+                .with(resource: Resource(attributes: context.options.resourceAttributes))
+                .build()
+            
+            /// Register Custom Tracer Provider
+            OpenTelemetry.registerTracerProvider(
+                tracerProvider: provider
+            )
+            
+            /// Update tracer instance
+            self.otelTracer = OpenTelemetry.instance.tracerProvider.get(
+                instrumentationName: context.options.serviceName,
+                instrumentationVersion: context.options.serviceVersion
+            )
+        }
+    }
+    
+    private func initializeLogger(withSampler sampler: ExportSampler, options: Options) {
+        guard !options.disableLogs else {
+            return /// currently logger instance is a no-op, means, we don't want a custom logger, we will use no-op
+        }
+        if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.logsPath) {
+            let exporter = MultiLogRecordExporter(
+                logRecordExporters: context.options.isDebug ? [
+                    SamplingLogExporterDecorator(
+                        exporter: OtlpHttpLogExporter(
+                            endpoint: url,
+                            envVarHeaders: context.options.customHeaders
                         ),
-                        LDStdoutExporter(loggerName: options.loggerName)
-                    ] : [
-                        SamplingLogExporterDecorator(
-                            exporter: OtlpHttpLogExporter(
-                                endpoint: url,
-                                envVarHeaders: options.customHeaders
-                            ),
-                            sampler: sampler
-                        )
-                    ]
-                )
+                        sampler: sampler
+                    ),
+                    LDStdoutExporter(logger: context.logger.log)
+                ] : [
+                    SamplingLogExporterDecorator(
+                        exporter: OtlpHttpLogExporter(
+                            endpoint: url,
+                            envVarHeaders: context.options.customHeaders
+                        ),
+                        sampler: sampler
+                    )
+                ]
+            )
+            
+            /// Using the default values from OpenTelemetry for Swift
+            /// For reference check:
+            ///https://github.com/open-telemetry/opentelemetry-swift/blob/main/Sources/OpenTelemetrySdk/Logs/Processors/BatchLogRecordProcessor.swift
+            let processor = BatchLogRecordProcessor(
+                logRecordExporter: exporter,
+                scheduleDelay: 5,
+                exportTimeout: 30,
+                maxQueueSize: 2048,
+                maxExportBatchSize: 512
+            )
+            
+            self.flushBatchLogRecordProcessor = {
+                processor.forceFlush(explicitTimeout: $0)
             }
-            .map { exporter in
-                /// Using the default values from OpenTelemetry for Swift
-                /// For reference check:
-                /// https://github.com/open-telemetry/opentelemetry-swift/blob/main/Sources/OpenTelemetrySdk/Logs/Processors/BatchLogRecordProcessor.swift
-                let processor = BatchLogRecordProcessor(
-                    logRecordExporter: exporter,
-                    scheduleDelay: 5,
-                    exportTimeout: 30,
-                    maxQueueSize: 2048,
-                    maxExportBatchSize: 512
-                )
-                let provider = LoggerProviderBuilder().with(
+            
+            let provider = LoggerProviderBuilder()
+                .with(
                     processors: [
                         processor
                     ]
                 )
-                    .with(resource: Resource(attributes: options.resourceAttributes))
-                    .build()
-                return (processor, provider)
+                .with(resource: Resource(attributes: context.options.resourceAttributes))
+                .build()
+            
+            /// Register custom logger
+            OpenTelemetry.registerLoggerProvider(
+                loggerProvider: provider
+            )
+            
+            /// Update logger instance
+            self.otelLogger = OpenTelemetry.instance.loggerProvider.get(
+                instrumentationScopeName: context.options.serviceName
+            )
+            
+            let crashReporter = CrashReporter.otelReporter(
+                logger: otelLogger,
+                otelBatchLogRecordProcessor: processor
+            ) {}
+            self.installCrashReporter(crashReporter)
+        }
+    }
+    
+    private func initializeMeter(options: Options) {
+        guard !options.disableMetrics else {
+            return /// currently meter instance is a no-op, means, we don't want a custom meter, we will use no-op
+        }
+        if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.metricsPath) {
+            let exporter = OtlpHttpMetricExporter(
+                endpoint: url,
+                envVarHeaders: context.options.customHeaders
+            )
+            
+            let reader = PeriodicMetricReaderBuilder(exporter: exporter)
+                .setInterval(timeInterval: 10.0)
+                .build()
+            
+            self.flushMeterReader = {
+                reader.forceFlush()
             }
-            .map { (arg0)  in
-                let (processor, loggerProvider) = arg0
-                OpenTelemetry.registerLoggerProvider(
-                    loggerProvider: loggerProvider
+            
+            let provider = MeterProviderSdk.builder()
+                .registerView(
+                    selector: InstrumentSelector.builder().setInstrument(name: context.options.serviceName).build(),
+                    view: View.builder().build()
                 )
-                return (processor, loggerProvider)
-            }
-        
-        URL(string: options.otlpEndpoint)
-            .flatMap {
-                if #available(iOS 16, *) {
-                    return $0.appending(path: tracesPath)
-                }
-                else {
-                    return $0.appendingPathComponent(tracesPath)
-                }
-            }
-            .map { url in
-                SamplingTraceExporterDecorator(
-                    exporter: OtlpHttpTraceExporter(
-                        endpoint: url,
-                        envVarHeaders: options.customHeaders
-                    ),
-                    sampler: sampler
+                .registerMetricReader(
+                    reader: reader
                 )
-            }
-            .map { exporter in
-                /// Using the default values from OpenTelemetry for Swift
-                /// For reference check:
-                /// https://github.com/open-telemetry/opentelemetry-swift/blob/main/Sources/OpenTelemetrySdk/Trace/SpanProcessors/BatchSpanProcessor.swift
-                BatchSpanProcessor(
-                    spanExporter: exporter,
-                    scheduleDelay: 5,
-                    exportTimeout: 30,
-                    maxQueueSize: 2048,
-                    maxExportBatchSize: 512,
-                )
-            }
-            .map { processor in
-                TracerProviderBuilder()
-                    .add(spanProcessor: processor)
-                    .with(resource: Resource(attributes: options.resourceAttributes))
-                    .build()
-            }
-            .map { tracerProvider in
-                OpenTelemetry.registerTracerProvider(
-                    tracerProvider: tracerProvider
-                )
-            }
-        
-        URL(string: options.otlpEndpoint)
-            .flatMap {
-                if #available(iOS 16, *) {
-                    return $0.appending(path: metricsPath)
-                }
-                else {
-                    return $0.appendingPathComponent(metricsPath)
-                }
-            }
-            .map { url in
-                OtlpHttpMetricExporter(
-                    endpoint: url,
-                    envVarHeaders: options.customHeaders
-                )
-            }
-            .map { exporter in
-                PeriodicMetricReaderBuilder(exporter: exporter)
-                    .setInterval(timeInterval: 10.0)
-                    .build()
-            }
-            .map { reader in
-                MeterProviderSdk.builder()
-                    .registerView(
-                        selector: InstrumentSelector.builder().setInstrument(name: options.serviceName).build(),
-                        view: View.builder().build()
-                    )
-                    .registerMetricReader(
-                        reader: reader
-                    )
-                    .build()
-            }
-            .map { meterProvider in
-                OpenTelemetry.registerMeterProvider(
-                    meterProvider: meterProvider
-                )
-            }
-        
-        self.otelBatchLogRecordProcessor = processorAndProvider?.0
-        self.otelLogger = OpenTelemetry.instance.loggerProvider.get(
-            instrumentationScopeName: options.serviceName
-        )
-        
-        self.otelTracer = OpenTelemetry.instance.tracerProvider.get(
-            instrumentationName: options.serviceName,
-            instrumentationVersion: options.serviceVersion
-        )
-        
-        self.otelMeter = OpenTelemetry.instance.meterProvider.get(
-            name: options.serviceName
-        )
-        
+                .build()
+            
+            /// Register custom meter
+            OpenTelemetry.registerMeterProvider(
+                meterProvider: provider
+            )
+            
+            /// Update meter instance
+            self.otelMeter = OpenTelemetry.instance.meterProvider.get(
+                name: context.options.serviceName
+            )
+        }
+    }
+    
+    private func initializeInstrumentation(options: Options) {
+        initializeTracer(withSampler: sampler, options: options)
+        initializeLogger(withSampler: sampler, options: options)
+        initializeMeter(options: options)
         self.urlSessionInstrumentation = URLSessionInstrumentation(
             configuration: URLSessionInstrumentationConfiguration(
                 shouldInstrument: { urlRequest in
                     urlRequest.url?.absoluteString.contains(options.otlpEndpoint) == false &&
-                    urlRequest.url?.absoluteString.contains("https://mobile.launchdarkly.com/mobile") == false
+                    urlRequest.url?.absoluteString.contains("https://mobile.launchdarkly.com/mobile") == false &&
+                    urlRequest.url?.absoluteString.contains(options.backendUrl) == false
+                },
+                nameSpan: { request in
+                    "http.request"
+                },
+                spanCustomization: { request, spanBuilder in
+                    if let httpMethod = request.httpMethod {
+                        spanBuilder.setAttribute(key: "http.method", value: httpMethod)
+                    }
+                    if let url = request.url {
+                        spanBuilder.setAttribute(key: "http.url", value: url.absoluteString)
+                    }
                 },
                 tracer: self.otelTracer
             )
         )
-        
-        self.sampler = sampler
-
-        self.install()
     }
+    
+    // MARK: - Interaction
     
     private func install() {
         lock.lock()
@@ -237,7 +298,7 @@ final class InstrumentationManager {
             }
             self.swipeHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
                 guard let self = self else { return }
-
+                
                 var attributes = [String: AttributeValue]()
                 attributes["screen.name"] = .string(touchEvent.viewName)
                 attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
@@ -254,7 +315,7 @@ final class InstrumentationManager {
     func recordMetric(metric: Metric) {
         var gauge = cachedGauges[metric.name]
         if gauge == nil {
-            gauge = otelMeter?
+            gauge = otelMeter
                 .gaugeBuilder(name: metric.name)
                 .build()
             cachedGauges[metric.name] = gauge
@@ -265,7 +326,7 @@ final class InstrumentationManager {
     func recordCount(metric: Metric) {
         var counter = cachedCounters[metric.name]
         if counter == nil {
-            counter = otelMeter?.counterBuilder(name: metric.name).ofDoubles().build()
+            counter = otelMeter.counterBuilder(name: metric.name).ofDoubles().build()
             cachedCounters[metric.name] = counter
         }
         counter?.add(value: metric.value, attributes: metric.attributes)
@@ -274,7 +335,7 @@ final class InstrumentationManager {
     func recordIncr(metric: Metric) {
         var counter = cachedLongCounters[metric.name]
         if counter == nil {
-            counter = otelMeter?.counterBuilder(name: metric.name).build()
+            counter = otelMeter.counterBuilder(name: metric.name).build()
             cachedLongCounters[metric.name] = counter
         }
         counter?.add(value: 1, attributes: metric.attributes)
@@ -283,7 +344,7 @@ final class InstrumentationManager {
     func recordHistogram(metric: Metric) {
         var histogram = cachedHistograms[metric.name]
         if histogram == nil {
-            histogram = otelMeter?.histogramBuilder(name: metric.name).build()
+            histogram = otelMeter.histogramBuilder(name: metric.name).build()
             cachedHistograms[metric.name] = histogram
         }
         histogram?.record(value: metric.value, attributes: metric.attributes)
@@ -292,7 +353,7 @@ final class InstrumentationManager {
     func recordUpDownCounter(metric: Metric) {
         var upDownCounter = cachedUpDownCounters[metric.name]
         if upDownCounter == nil {
-            upDownCounter = otelMeter?.upDownCounterBuilder(name: metric.name).ofDoubles().build()
+            upDownCounter = otelMeter.upDownCounterBuilder(name: metric.name).ofDoubles().build()
             cachedUpDownCounters[metric.name] = upDownCounter
         }
         upDownCounter?.add(value: metric.value, attributes: metric.attributes)
@@ -304,7 +365,7 @@ final class InstrumentationManager {
         if !sessionId.isEmpty {
             attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
         }
-        otelLogger?.logRecordBuilder()
+        otelLogger.logRecordBuilder()
             .setBody(.string(message))
             .setTimestamp(Date())
             .setSeverity(severity)
@@ -343,8 +404,8 @@ final class InstrumentationManager {
             tracer = otelTracer
         } else {
             tracer = OpenTelemetry.instance.tracerProvider.get(
-                instrumentationName: options.serviceName,
-                instrumentationVersion: options.serviceVersion
+                instrumentationName: context.options.serviceName,
+                instrumentationVersion: context.options.serviceVersion
             )
         }
         
@@ -360,18 +421,25 @@ final class InstrumentationManager {
         
         return builder.startSpan()
     }
+    
+    func flush() -> Bool {
+        /// There is no export result span processor in the SpanProcessor protocol
+        flushSpanProcessor(flushTimeout)
+        
+        let flushedLogsSucceeded = flushBatchLogRecordProcessor(flushTimeout).isSuccess
+        let flushedMetricsSucceeded = flushMeterReader().isSuccess
+        
+        return flushedLogsSucceeded && flushedMetricsSucceeded
+    }
 }
 
-func loadSampleConfig() -> SamplingConfig? {
-    guard let url = Bundle.module.url(forResource: "Config", withExtension: "json") else {
-        return nil
-    }
-    do {
-        let data = try Data(contentsOf: url)
-        let decoder = JSONDecoder()
-        let root = try decoder.decode(Root.self, from: data)
-        return root.data.sampling
-    } catch {
-        return nil
+extension ExportResult {
+    var isSuccess: Bool {
+        switch self {
+        case .success:
+            return true
+        case .failure:
+            return false
+        }
     }
 }

@@ -54,5 +54,5 @@ public protocol Observe {
      */
     func startSpan(name: String, attributes: [String: AttributeValue]) -> Span
     
-    func flush()
+    func flush() -> Bool
 }
