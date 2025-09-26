@@ -1,6 +1,6 @@
 import Foundation
 import OSLog
-import UIKit.UIWindow
+import UIKit
 
 import OpenTelemetrySdk
 import OpenTelemetryApi
@@ -117,7 +117,7 @@ final class InstrumentationManager {
                 scheduleDelay: 5,
                 exportTimeout: 30,
                 maxQueueSize: 2048,
-                maxExportBatchSize: 512,
+                maxExportBatchSize: 512
             )
             
             self.flushSpanProcessor = {

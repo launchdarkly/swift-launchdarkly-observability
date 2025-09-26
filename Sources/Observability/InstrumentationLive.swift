@@ -1,6 +1,6 @@
 import Foundation
 import OSLog
-import UIKit.UIWindow
+import UIKit
 
 import OpenTelemetrySdk
 import OpenTelemetryApi
