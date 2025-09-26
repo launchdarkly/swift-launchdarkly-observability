@@ -28,7 +28,7 @@ actor ScreenshotService {
         return id
     }
     
-    var imageId: Int = 16
+    var imageId: Int?
     
     var currentSession: InitializeSessionResponse?
     var lastExporImage: ExportImage?
@@ -59,39 +59,68 @@ actor ScreenshotService {
             try await pushPayload(events: events)
         }
         
-        try await pushNotScreenshotItems(items: notScreenItems)
+        try await pushPayload(session: currentSession, resource: "payload2", timestamp: Date().millisecondsSince1970)
+
+        //try await pushNotScreenshotItems(items: notScreenItems)
     }
     
-    func oldSend(items: [EventQueueItem]) async throws {
-        
+    func sendOld(items: [EventQueueItem]) async throws {
+              if currentSession == nil {
+                   let session = try await initializeSession(sessionSecureId: ReplaySessionGenerator.generateSecureID())
+                   try await identifySession(session: session)
+                   currentSession = session
+               }
+               
+               guard let currentSession else {
+                   return
+               }
+               
+               for item in items {
+                   switch item.payload {
+                   case .screenshot(let exportImage):
+                       guard lastExporImage != exportImage else {
+                           return
+                       }
+                       lastExporImage = exportImage
+                       let timestamp = item.timestamp
+                       
+                       if let imageId {
+                           try await pushNotScreenshotItems(items: notScreenItems)
+                           try await pushPayloadDrawImage(session: currentSession, timestamp: timestamp, exportImage: exportImage, imageId: imageId)
+                       } else {
+                           try await pushNotScreenshotItems(items: notScreenItems)
+                           try await pushPayloadFullSnapshot(session: currentSession, exportImage: exportImage, timestamp: timestamp)
+                           // fake mouse movement to trigger something
+                           try await pushPayload(session: currentSession, resource: "payload2", timestamp: timestamp)
+                       }
+                   default:
+                       notScreenItems.append(item)
+                   }
+               }
+               
+               try await pushNotScreenshotItems(items: notScreenItems)
     }
     
-    func appendEvents(item: EventQueueItem, events: inout [Event]) -> Event? {
+    func appendEvents(item: EventQueueItem, events: inout [Event]) {
         switch item.payload {
         case .screenshot(let exportImage):
             guard lastExporImage != exportImage else {
-                return nil
+                return
             }
             lastExporImage = exportImage
             let timestamp = item.timestamp
             
-            if payloadId <= 1 {
-                fullSnapshotEvent(exportImage, timestamp, &events)
-                
-                //try await pushNotScreenshotItems(items: notScreenItems)
-                //try await pushPayloadFullSnapshot(session: currentSession, exportImage: exportImage, timestamp: timestamp)
-                // fake mouse movement to trigger something
-                //try await pushPayload(session: currentSession, resource: "payload2", timestamp: timestamp)
+            if let imageId {
+                events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
             } else {
-                try await pushNotScreenshotItems(items: notScreenItems)
-                try await pushPayloadDrawImage(session: currentSession, timestamp: timestamp, exportImage: exportImage)
+                fullSnapshotEvent(exportImage, timestamp, &events)
             }
-        case .tap(let toucEvent):
-            notScreenItems.append(item)
+        case .tap(let touchEvent):
+            tapEvent(touch: touchEvent, events: &events, timestamp: item.timestamp)
         }
     }
     
-    func tapEvent(touch: TouchEvent, timestamp: Int64) -> Event? {
+    func tapEvent(touch: TouchEvent, events: inout [Event], timestamp: Int64) {
         var type: MouseInteractions?
         switch touch.phase {
         case .began:
@@ -102,7 +131,7 @@ actor ScreenshotService {
             () // NO-OP
         }
         guard let type else {
-            return nil
+            return
         }
         
         let eventData = EventData(source: .mouseInteraction,
@@ -114,7 +143,15 @@ actor ScreenshotService {
                           data: AnyEventData(eventData),
                           timestamp: timestamp,
                           _sid: nextSid)
-        return event
+        events.append(event)
+    }
+    
+    func pushPayload(events: [Event]) async throws {
+        guard let currentSession else { return }
+        guard events.isNotEmpty else { return }
+            
+        let input = PushPayloadVariables(sessionSecureId: currentSession.secureId, payloadId: "\(nextPayloadId)", events: events)
+        try await replayApiService.pushPayload(input)
     }
     
     func pushNotScreenshotItems(items: [EventQueueItem]) async throws {
@@ -130,9 +167,7 @@ actor ScreenshotService {
                 continue
                 
             case .tap(let touch):
-                if let tapEvent = tapEvent(touch: touch, timestamp: item.timestamp) {
-                    events.append(tapEvent)
-                }
+                tapEvent(touch: touch, events: &events, timestamp: item.timestamp)
             }
         }
         
@@ -201,7 +236,7 @@ actor ScreenshotService {
         return event
     }
     
-    func drawImageEvent(exportImage: ExportImage, timestamp: Int64) -> Event {
+    func drawImageEvent(exportImage: ExportImage, timestamp: Int64, imageId: Int) -> Event {
         let clearRectCommand = ClearRect(x: 0, y: 0, width: exportImage.originalWidth, height: exportImage.originalHeight)
         let arrayBuffer = RRArrayBuffer(base64: exportImage.data.base64EncodedString())
         let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportImage.mimeType))
@@ -269,8 +304,8 @@ actor ScreenshotService {
     }
     
 
-    func pushPayloadDrawImage(session: InitializeSessionResponse, timestamp: Int64, exportImage: ExportImage) async throws {
-        let event = drawImageEvent(exportImage: exportImage, timestamp: timestamp)
+    func pushPayloadDrawImage(session: InitializeSessionResponse, timestamp: Int64, exportImage: ExportImage, imageId: Int) async throws {
+        let event = drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId)
         let input = PushPayloadVariables(sessionSecureId: session.secureId, payloadId: "\(nextPayloadId)", events: [event])
         try await replayApiService.pushPayload(input)
     }

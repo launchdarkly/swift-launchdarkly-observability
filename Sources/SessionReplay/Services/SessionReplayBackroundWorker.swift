@@ -22,7 +22,7 @@ final class SessionReplayBackroundWorker {
             guard let self else { return }
             
             while !Task.isCancelled {
-                let items = await eventQueue.dequeue(cost: 30000, count: 20, interval: 30.0)
+                let items = await eventQueue.dequeue(cost: 30000, limit: 20)
                 if items.isNotEmpty {
                     await self.send(items: items)
                     continue

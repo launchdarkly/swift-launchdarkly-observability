@@ -23,13 +23,13 @@ struct AppSidebarNavigation: View {
         NavigationView {
             List {
                 NavigationLink(tag: NavigationItem.menu, selection: $selection) {
-                    SmoothieMenu()
+                    SmoothieMenu().environmentObject(model)
                 } label: {
                     Label("Menu", systemImage: "list.bullet")
                 }
                 
                 NavigationLink(tag: NavigationItem.favorites, selection: $selection) {
-                    FavoriteSmoothies()
+                    FavoriteSmoothies().environmentObject(model)
                 } label: {
                     Label("Favorites", systemImage: "heart")
                 }

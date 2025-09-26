@@ -12,10 +12,10 @@ struct FrutaAppView: View {
     @StateObject private var model = Model()
     
     var body: some View {
-    //    WindowGroup {
-        FruitContentView()
+       // WindowGroup {
+            FruitContentView()
                 .environmentObject(model)
-      //  }
+        //}
        // .commands {
        //     SidebarCommands()
        //     SmoothieCommands(model: model)

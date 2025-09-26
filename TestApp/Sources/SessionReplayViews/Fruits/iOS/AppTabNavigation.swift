@@ -18,6 +18,10 @@ struct AppTabNavigation: View {
 
     @State private var selection: Tab = .menu
 
+    init(selection: Tab = .menu) {
+        self.selection = selection
+    }
+    
     var body: some View {
         TabView(selection: $selection) {
             NavigationView {
@@ -45,6 +49,7 @@ struct AppTabNavigation: View {
                 }
             }
             .tag(Tab.favorites)
+
             
             #if EXTENDED_ALL
             NavigationView {
