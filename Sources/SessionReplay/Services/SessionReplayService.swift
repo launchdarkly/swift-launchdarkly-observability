@@ -9,7 +9,9 @@ public final class SessionReplayService {
     public init(graphQLClient: GraphQLClient) {
         let replayApiService = SessionReplayAPIService(gqlClient: graphQLClient)
         self.screenshotService = ScreenshotService(replayApiService: replayApiService)
-        self.worker = SessionReplayBackroundWorker(screenshotService: screenshotService, eventQueue: eventQueue)
+        self.worker = SessionReplayBackroundWorker(options: SessionReplayOptions(),
+                                                   screenshotService: screenshotService,
+                                                   eventQueue: eventQueue)
     }
     
     public func start() {

@@ -29,9 +29,9 @@ actor ScreenshotService {
     }
     
     var imageId: Int?
-    
     var currentSession: InitializeSessionResponse?
-    var lastExporImage: ExportImage?
+    var lastExportImage: ExportImage?
+    var shouldReload = true
     
     init(replayApiService: SessionReplayAPIService) {
         self.replayApiService = replayApiService
@@ -59,60 +59,34 @@ actor ScreenshotService {
             try await pushPayload(events: events)
         }
         
-        try await pushPayload(session: currentSession, resource: "payload2", timestamp: Date().millisecondsSince1970)
-
-        //try await pushNotScreenshotItems(items: notScreenItems)
-    }
-    
-    func sendOld(items: [EventQueueItem]) async throws {
-              if currentSession == nil {
-                   let session = try await initializeSession(sessionSecureId: ReplaySessionGenerator.generateSecureID())
-                   try await identifySession(session: session)
-                   currentSession = session
-               }
-               
-               guard let currentSession else {
-                   return
-               }
-               
-               for item in items {
-                   switch item.payload {
-                   case .screenshot(let exportImage):
-                       guard lastExporImage != exportImage else {
-                           return
-                       }
-                       lastExporImage = exportImage
-                       let timestamp = item.timestamp
-                       
-                       if let imageId {
-                           try await pushNotScreenshotItems(items: notScreenItems)
-                           try await pushPayloadDrawImage(session: currentSession, timestamp: timestamp, exportImage: exportImage, imageId: imageId)
-                       } else {
-                           try await pushNotScreenshotItems(items: notScreenItems)
-                           try await pushPayloadFullSnapshot(session: currentSession, exportImage: exportImage, timestamp: timestamp)
-                           // fake mouse movement to trigger something
-                           try await pushPayload(session: currentSession, resource: "payload2", timestamp: timestamp)
-                       }
-                   default:
-                       notScreenItems.append(item)
-                   }
-               }
-               
-               try await pushNotScreenshotItems(items: notScreenItems)
+        // try await pushPayload(session: currentSession, resource: "payload2", timestamp: Date().millisecondsSince1970)
     }
     
     func appendEvents(item: EventQueueItem, events: inout [Event]) {
         switch item.payload {
         case .screenshot(let exportImage):
-            guard lastExporImage != exportImage else {
+            guard lastExportImage != exportImage else {
                 return
             }
-            lastExporImage = exportImage
+            defer {
+                lastExportImage = exportImage
+            }
             let timestamp = item.timestamp
             
-            if let imageId {
+            if shouldReload {
+                // TODO: make it through real event, when we subscribe device events
+                events.append(reloadEvent(timestamp: timestamp))
+                shouldReload = false
+            }
+            
+            if let imageId,
+               let lastExportImage,
+               lastExportImage.originalWidth == exportImage.originalWidth,
+               lastExportImage.originalHeight == exportImage.originalHeight {
+                events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
                 events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
             } else {
+                // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
                 fullSnapshotEvent(exportImage, timestamp, &events)
             }
         case .tap(let touchEvent):
@@ -149,34 +123,9 @@ actor ScreenshotService {
     func pushPayload(events: [Event]) async throws {
         guard let currentSession else { return }
         guard events.isNotEmpty else { return }
-            
+        
         let input = PushPayloadVariables(sessionSecureId: currentSession.secureId, payloadId: "\(nextPayloadId)", events: events)
         try await replayApiService.pushPayload(input)
-    }
-    
-    func pushNotScreenshotItems(items: [EventQueueItem]) async throws {
-        guard let currentSession else {
-            return
-        }
-        guard items.isNotEmpty else { return }
-        
-        var events = [Event]()
-        for item in items {
-            switch item.payload {
-            case .screenshot:
-                continue
-                
-            case .tap(let touch):
-                tapEvent(touch: touch, events: &events, timestamp: item.timestamp)
-            }
-        }
-        
-        if events.isNotEmpty {
-            let input = PushPayloadVariables(sessionSecureId: currentSession.secureId, payloadId: "\(nextPayloadId)", events: events)
-            try await replayApiService.pushPayload(input)
-        }
- 
-        notScreenItems.removeAll()
     }
     
     func initializeSession(sessionSecureId: String) async throws -> InitializeSessionResponse {
@@ -193,13 +142,6 @@ actor ScreenshotService {
                            "key":"unknown"])
     }
     
-    func prepareImageNode(imageNode: EventNode? = nil) -> EventNode? {
-        guard var imageNode else { return nil }
-        imageNode.id = nextId
-        imageNode.rootId = 1
-        return imageNode
-    }
-
     func windowEvent(href: String, width: Int, height: Int, timestamp: Int64) -> Event {
         let eventData = EventData(href: href, width: width, height: height)
         let event = Event(type: .Meta,
@@ -225,7 +167,7 @@ actor ScreenshotService {
                                       availHeight: exportImage.originalHeight,
                                       colorDepth: 30,
                                       pixelDepth: 30,
-                                      orientation: 0)
+                                      orientation: Int.random(in: 0...1))
         let eventData = CustomEventData(tag: "Viewport", payload: payload)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
@@ -243,7 +185,7 @@ actor ScreenshotService {
                                          dy: 0,
                                          dw: exportImage.originalWidth,
                                          dh: exportImage.originalHeight)
-
+        
         let eventData = CanvasDrawData(source: .canvasMutation,
                                        id: imageId,
                                        type: .mouseUp,
@@ -285,7 +227,6 @@ actor ScreenshotService {
         // event with window size
         events.append(windowEvent(href: "http://localhost:5173/", width: exportImage.paddedWidth, height: exportImage.paddedHeight, timestamp: timestamp))
         events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
-        events.append(reloadEvent(timestamp: timestamp))
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
     }
     
@@ -301,12 +242,9 @@ actor ScreenshotService {
         try await replayApiService.pushPayload(input)
     }
     
-
     func pushPayloadDrawImage(session: InitializeSessionResponse, timestamp: Int64, exportImage: ExportImage, imageId: Int) async throws {
         let event = drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId)
         let input = PushPayloadVariables(sessionSecureId: session.secureId, payloadId: "\(nextPayloadId)", events: [event])
         try await replayApiService.pushPayload(input)
     }
-    
- 
 }

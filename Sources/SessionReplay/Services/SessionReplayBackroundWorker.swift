@@ -8,10 +8,10 @@ final class SessionReplayBackroundWorker {
     var task: Task<Void, Never>?
     var screenshotService: ScreenshotService
     
-    init(screenshotService: ScreenshotService, eventQueue: EventQueue) {
+    init(options: SessionReplayOptions, screenshotService: ScreenshotService, eventQueue: EventQueue) {
         self.screenshotService = screenshotService
         self.eventQueue = eventQueue
-        self.screenshotManager = ScreenshotManager(queue: eventQueue)
+        self.screenshotManager = ScreenshotManager(queue: eventQueue, captureService: ScreenCaptureService(options: options))
     }
     
     func start() {

@@ -17,7 +17,8 @@ enum Failure: LocalizedError {
 }
 
 struct ContentView: View {
-    @State private var isDarkModeEnabled: Bool = false
+    @State private var isMaskingUIKitEnabled: Bool = false
+    
     @State private var buttonPressed: Bool = false
     @State private var errorPressed: Bool = false
     @State private var counterMetricPressed: Bool = false
@@ -27,17 +28,22 @@ struct ContentView: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 32) {
+            HStack {
+                Image("Logo")
                 Text("LaunchDarkly Observability")
-                
+            }
+            
+            List {
                 NavigationLink(destination: FrutaAppView()) {
-                    Text("Fruit Session Replay")
+                    Text("Fruta (SwiftUI)")
                 }
                 
+                NavigationLink(destination: MaskingElementsView()) {
+                    Text("Masking Elements (SwiftUI)")
+                }
                 
-                ScreenshotSectionView()
+                FauxLinkToggleRow(title: "Masking Elements (UIKit)", isOn: $isMaskingUIKitEnabled)
                 
-   
                 Button {
                     buttonPressed.toggle()
                 } label: {
@@ -51,12 +57,14 @@ struct ContentView: View {
                     Text("logs")
                 }
                 .buttonStyle(.borderedProminent)
+                
                 Button {
                     counterMetricPressed.toggle()
                 } label: {
                     Text("metric: counter")
                 }
                 .buttonStyle(.borderedProminent)
+                
                 Button {
                     networkPressed.toggle()
                 } label: {
@@ -70,6 +78,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(networkPressed)
+                
                 Button {
                     errorPressed.toggle()
                 } label: {
@@ -77,6 +86,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
+                
                 Button {
                     crashPressed.toggle()
                 } label: {
@@ -85,8 +95,7 @@ struct ContentView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
                 
-            }
-            .padding()
+            }.background(Color.clear)
         }
         .task(id: errorPressed) {
             guard errorPressed else { return }
@@ -145,9 +154,39 @@ struct ContentView: View {
             } catch {
                 networkPressed.toggle()
             }
+        }.sheet(isPresented: $isMaskingUIKitEnabled) {
+            MaskingElementsUIKitView()
         }
     }
 }
+
+
+struct FauxLinkToggleRow: View {
+    private struct NoDestinationTag: Hashable {}
+    
+    let title: String
+    @Binding var isOn: Bool
+    
+    var body: some View {
+        ZStack {
+            // Visuals only: system chevron/spacing
+            NavigationLink(value: NoDestinationTag()) {
+                Text("Masking Elements (UIKit)")
+            }
+            .allowsHitTesting(false) // <- disables all taps on the link (incl. chevron)
+            
+            // Full-row tap handler
+            Rectangle()
+                .fill(.clear)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle()) // full-row hit area
+                .onTapGesture {
+                    isOn.toggle()
+                }
+        }
+    }
+}
+
 
 #Preview {
     ContentView()

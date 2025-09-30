@@ -2,12 +2,13 @@ import Foundation
 
 
 class ScreenshotManager {
-    var queue: EventQueue
+    let queue: EventQueue
+    let captureService: ScreenCaptureService
     var timer: Timer?
-    let captureService = ScreenCaptureService()
     
-    init(queue: EventQueue) {
+    init(queue: EventQueue, captureService: ScreenCaptureService) {
         self.queue = queue
+        self.captureService = captureService
     }
     
     func start() {

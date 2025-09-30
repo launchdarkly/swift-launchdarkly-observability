@@ -23,4 +23,3 @@ public struct TouchEvent: Sendable, CustomStringConvertible {
         return "TouchEvent(\(location), \(viewName ?? "nil"), \(accessibilityIdentifier ?? "nil"), \(scale)) coordinates In pixels: \(locationInPixels.x), \(locationInPixels.y)"
     }
 }
-
