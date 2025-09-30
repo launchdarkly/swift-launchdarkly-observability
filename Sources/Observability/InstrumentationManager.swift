@@ -277,7 +277,7 @@ final class InstrumentationManager {
                             return false
                         }
                         return options.urlBlocklist.contains { url in
-                            return requestUrl.lowercased().contains(url)
+                            return requestUrl.lowercased().contains(url.lowercased())
                         }
                     }() == false
                 },
@@ -297,7 +297,7 @@ final class InstrumentationManager {
                         return false
                     }
                     let contains = options.urlBlocklist.contains { blockedUrl in
-                        return url.absoluteString.lowercased().contains(blockedUrl)
+                        return url.absoluteString.lowercased().contains(blockedUrl.lowercased())
                     }
                     guard !contains else {
                         return false
@@ -310,21 +310,21 @@ final class InstrumentationManager {
                         let patterns = [#"/localhost|^\/"#]
                         
                         return patterns.contains { regex in
-                            url.absoluteString.matches(regex)
+                            url.absoluteString.lowercased().matches(regex)
                         }
                     case .list(let origins):
                         guard let url = urlRequest.url?.absoluteString else {
                             return false
                         }
                         return origins.contains { origin in
-                            url.contains(origin)
+                            url.lowercased().contains(origin.lowercased())
                         }
                     case .regex(let regexArray):
                         guard let urlString = urlRequest.url?.absoluteString else {
                             return false
                         }
                         return regexArray.contains { regex in
-                            urlString.matches(regex)
+                            urlString.lowercased().matches(regex)
                         }
                     }
                 },
