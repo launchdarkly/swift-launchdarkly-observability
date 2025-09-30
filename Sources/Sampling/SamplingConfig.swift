@@ -114,9 +114,6 @@ public struct SamplingConfig: Codable {
     }
 }
 
-public struct Root: Codable {
-    public struct SamplingData: Codable {
-        public let sampling: SamplingConfig
-    }
-    public let data: SamplingData
+public struct SamplingData: Codable {
+    public let sampling: SamplingConfig
 }

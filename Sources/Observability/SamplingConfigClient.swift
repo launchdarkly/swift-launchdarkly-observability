@@ -14,10 +14,12 @@ final class DefaultSamplingConfigClient: SamplingConfigClient {
     }
     
     func getSamplingConfig(sdkKey: String) async throws -> SamplingConfig? {
-        try await client.executeFromFile(
+        let data: SamplingData = try await client.executeFromFile(
             resource: "GetSamplingConfigQuery",
             bundle: .module,
             variables: OrganizationVerboseIdVar(organization_verbose_id: sdkKey)
         )
+        
+        return data.sampling
     }
 }
