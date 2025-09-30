@@ -307,7 +307,7 @@ final class InstrumentationManager {
                     case .all:
                         return true
                     case .traceOrigin:
-                        let patterns = [#"/localhost|^\/"#]
+                        let patterns = ["localhost", "^/"]
                         
                         return patterns.contains { regex in
                             url.absoluteString.lowercased().matches(regex)
