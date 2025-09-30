@@ -20,5 +20,13 @@ struct NetworkRequestView: View {
                 
             }
         }
+        .task {
+            guard let url = URL(string: "http://localhost/something") else { return }
+            do {
+                let (_, _) = try await URLSession.shared.data(from: url)
+            } catch {
+                
+            }
+        }
     }
 }

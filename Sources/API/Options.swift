@@ -11,6 +11,7 @@ import ResourceExtension
 ///   - backendUrl The backend URL for non-OTLP operations. Defaults to LaunchDarkly url.
 ///   - resourceAttributes Additional resource attributes to include in telemetry data.
 ///   - customHeaders Custom headers to include with OTLP exports.
+///   - tracingOrigins Specifies where the backend of the app lives. If specified, the SDK will attach tracing headers to outgoing requests whose destination URLs match a substring or regexp from this list, so that backend errors can be linked back to the session.
 ///   - sessionBackgroundTimeout Session timeout if app is backgrounded. Defaults to 15 minutes. 15 * 60
 ///   - isDebug Enables verbose telemetry logging if true as well as other debug functionality. Defaults to false.
 ///   - disableErrorTracking Disables error tracking if true. Defaults to false.
@@ -22,12 +23,20 @@ import ResourceExtension
 ///
 
 public struct Options {
+    public enum TracingOrigin {
+        case all
+        case traceOrigin
+        case list([String])
+        case regex([String])
+    }
     public let serviceName: String
     public let serviceVersion: String
     public let otlpEndpoint: String
     public let backendUrl: String
     public private(set) var resourceAttributes: [String: AttributeValue]
     public let customHeaders: [(String, String)]
+    public let tracingOrigins: TracingOrigin
+    public let urlBlocklist: [String]
     public let sessionBackgroundTimeout: TimeInterval
     public let isDebug: Bool
     public let disableErrorTracking: Bool
@@ -43,6 +52,8 @@ public struct Options {
         backendUrl: String = "https://pub.observability.app.launchdarkly.com",
         resourceAttributes: [String: AttributeValue] = [:],
         customHeaders: [(String, String)] = [],
+        tracingOrigins: TracingOrigin = .all,
+        urlBlocklist: [String] = [],
         sessionBackgroundTimeout: TimeInterval = 15 * 60,
         isDebug: Bool = false,
         disableErrorTracking: Bool = false,
@@ -57,6 +68,8 @@ public struct Options {
         self.backendUrl = backendUrl
         self.resourceAttributes = resourceAttributes.merging(Self.defaultResource.attributes) { (current, _) in current }
         self.customHeaders = customHeaders
+        self.tracingOrigins = tracingOrigins
+        self.urlBlocklist = urlBlocklist
         self.sessionBackgroundTimeout = sessionBackgroundTimeout
         self.isDebug = isDebug
         self.disableErrorTracking = disableErrorTracking

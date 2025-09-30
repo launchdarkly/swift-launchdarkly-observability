@@ -33,8 +33,9 @@ final class InstrumentationManager {
     
     private let sampler = ExportSampler.customSampler()
     private var otelLogger: (any OpenTelemetryApi.Logger)
-    private var otelTracer: Tracer?
+    private var otelTracer: Tracer
     private var otelMeter: (any Meter)
+    private var textMapPropagator: (any TextMapPropagator)
     
     private var urlSessionInstrumentation: URLSessionInstrumentation?
     private var flushSpanProcessor: (_ timeout: TimeInterval?) -> Void = { _ in }
@@ -65,6 +66,9 @@ final class InstrumentationManager {
         self.otelMeter = OpenTelemetry.instance.meterProvider.get(
             name: context.options.serviceName
         )
+        
+        /// registered manager or default via  DefaultBaggageManager.instance. W3CTraceContextPropagator
+        self.textMapPropagator = OpenTelemetry.instance.propagators.textMapPropagator
         
         self.initializeInstrumentation(options: context.options)
         
@@ -267,7 +271,15 @@ final class InstrumentationManager {
                 shouldInstrument: { urlRequest in
                     urlRequest.url?.absoluteString.contains(options.otlpEndpoint) == false &&
                     urlRequest.url?.absoluteString.contains("https://mobile.launchdarkly.com/mobile") == false &&
-                    urlRequest.url?.absoluteString.contains(options.backendUrl) == false
+                    urlRequest.url?.absoluteString.contains(options.backendUrl) == false &&
+                    {
+                        guard let requestUrl = urlRequest.url?.absoluteString.lowercased() else {
+                            return false
+                        }
+                        return options.urlBlocklist.contains { url in
+                            return requestUrl.lowercased().contains(url)
+                        }
+                    }() == false
                 },
                 nameSpan: { request in
                     "http.request"
@@ -278,6 +290,51 @@ final class InstrumentationManager {
                     }
                     if let url = request.url {
                         spanBuilder.setAttribute(key: "http.url", value: url.absoluteString)
+                    }
+                },
+                shouldInjectTracingHeaders: { urlRequest in
+                    guard let url = urlRequest.url else {
+                        return false
+                    }
+                    let contains = options.urlBlocklist.contains { blockedUrl in
+                        return url.absoluteString.lowercased().contains(blockedUrl)
+                    }
+                    guard !contains else {
+                        return false
+                    }
+                    
+                    switch options.tracingOrigins {
+                    case .all:
+                        return true
+                    case .traceOrigin:
+                        let patterns = [#"/localhost|^\/"#]
+                        
+                        return patterns.contains { regex in
+                            url.absoluteString.matches(regex)
+                        }
+                    case .list(let origins):
+                        guard let url = urlRequest.url?.absoluteString else {
+                            return false
+                        }
+                        return origins.contains { origin in
+                            origin.contains(url)
+                        }
+                    case .regex(let regexArray):
+                        guard let urlString = urlRequest.url?.absoluteString else {
+                            return false
+                        }
+                        return regexArray.contains { regex in
+                            urlString.matches(regex)
+                        }
+                    }
+                },
+                injectCustomHeaders: { [weak self] urlRequest, span in
+                    guard let self else { return }
+                    guard let span else { return }
+                    var carrier = [String: String]()
+                    self.injectContextInto(span: span, carrier: &carrier)
+                    carrier.forEach { (key: String, value: String) in
+                        urlRequest.setValue(value, forHTTPHeaderField: key)
                     }
                 },
                 tracer: self.otelTracer
@@ -383,41 +440,7 @@ final class InstrumentationManager {
     
     func recordError(error: Error, attributes: [String: AttributeValue]) {
         var attributes = attributes
-        let builder = otelTracer?.spanBuilder(spanName: "highlight.error")
-        
-        if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
-            builder?.setParent(parent)
-        }
-        
-        attributes.forEach {
-            builder?.setAttribute(key: $0.key, value: $0.value)
-        }
-        
-        let sessionId = sessionManager.sessionInfo.id
-        if !sessionId.isEmpty {
-            builder?.setAttribute(key: SemanticConvention.highlightSessionId, value: sessionId)
-            attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
-        }
-        
-        
-        let span = builder?.startSpan()
-        span?.setAttributes(attributes)
-        span?.recordException(ErrorSpanException(error: error), attributes: attributes)
-        span?.end()
-    }
-    
-    func startSpan(name: String, attributes: [String: AttributeValue]) -> any Span {
-        let tracer: Tracer
-        if let otelTracer {
-            tracer = otelTracer
-        } else {
-            tracer = OpenTelemetry.instance.tracerProvider.get(
-                instrumentationName: context.options.serviceName,
-                instrumentationVersion: context.options.serviceVersion
-            )
-        }
-        
-        let builder = tracer.spanBuilder(spanName: name)
+        let builder = otelTracer.spanBuilder(spanName: "highlight.error")
         
         if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
             builder.setParent(parent)
@@ -427,7 +450,37 @@ final class InstrumentationManager {
             builder.setAttribute(key: $0.key, value: $0.value)
         }
         
-        return builder.startSpan()
+        let sessionId = sessionManager.sessionInfo.id
+        if !sessionId.isEmpty {
+            builder.setAttribute(key: SemanticConvention.highlightSessionId, value: sessionId)
+            attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
+        }
+        
+        
+        let span = builder.startSpan()
+        span.setAttributes(attributes)
+        span.recordException(ErrorSpanException(error: error), attributes: attributes)
+        
+        defer {
+            span.end()
+        }
+    }
+    
+    func startSpan(name: String, attributes: [String: AttributeValue]) -> any Span {
+        let builder = otelTracer.spanBuilder(spanName: name)
+        
+        if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
+            builder.setParent(parent)
+        }
+        
+        attributes.forEach {
+            builder.setAttribute(key: $0.key, value: $0.value)
+        }
+
+        let span = builder
+            .startSpan()
+        
+        return span
     }
     
     func flush() -> Bool {
@@ -438,6 +491,21 @@ final class InstrumentationManager {
         let flushedMetricsSucceeded = flushMeterReader().isSuccess
         
         return flushedLogsSucceeded && flushedMetricsSucceeded
+    }
+    
+    let setter = W3CTraceContextSetter()
+    struct W3CTraceContextSetter: Setter {
+        func set(carrier: inout [String : String], key: String, value: String) {
+            carrier[key] = value
+        }
+    }
+    
+    func injectContextInto(span: Span, carrier: inout [String: String]) {
+        textMapPropagator.inject(
+            spanContext: span.context,
+            carrier: &carrier,
+            setter: setter
+        )
     }
 }
 

@@ -12,6 +12,11 @@ let config = { () -> LDConfig in
         Observability(
             options: .init(
                 otlpEndpoint: "http://localhost:4318",
+                tracingOrigins: .all,
+                urlBlocklist: [
+                    "backend.myapp.com",
+//                    "jsonplaceholder.typicode.com"
+                ],
                 sessionBackgroundTimeout: 3,
                 isDebug: true,
                 disableLogs: false,

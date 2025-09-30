@@ -34,6 +34,8 @@ public final class Observability: Plugin {
             backendUrl: options.backendUrl,
             resourceAttributes: options.resourceAttributes.merging(resourceAttributes) { (old, _) in old },
             customHeaders: options.customHeaders,
+            tracingOrigins: options.tracingOrigins,
+            urlBlocklist: options.urlBlocklist,
             sessionBackgroundTimeout: options.sessionBackgroundTimeout,
             isDebug: options.isDebug,
             disableErrorTracking: options.disableErrorTracking,
