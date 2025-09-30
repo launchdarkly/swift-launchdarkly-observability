@@ -317,7 +317,7 @@ final class InstrumentationManager {
                             return false
                         }
                         return origins.contains { origin in
-                            origin.contains(url)
+                            url.contains(origin)
                         }
                     case .regex(let regexArray):
                         guard let urlString = urlRequest.url?.absoluteString else {
