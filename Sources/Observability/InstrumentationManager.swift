@@ -228,13 +228,20 @@ final class InstrumentationManager {
                 reader.forceFlush()
             }
             
+            
             let provider = MeterProviderSdk.builder()
                 .registerMetricReader(
                     reader: reader
                 )
                 .registerView(
-                    selector: InstrumentSelector.builder().setInstrument(name: ".*").build(),
-                    view: View.builder().build()
+                    selector: InstrumentSelector
+                        .builder()
+                        .setMeter(name: options.serviceName)
+                        .build(),
+                    view: View
+                        .builder()
+                        .withName(name: options.serviceName)
+                        .build()
                 )
                 .build()
             
