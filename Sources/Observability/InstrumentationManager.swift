@@ -254,18 +254,11 @@ final class InstrumentationManager {
         }
     }
     
-    private func registerPropagators() {
-        OpenTelemetry.registerPropagators(
-            textPropagators: [W3CTraceContextPropagator()],
-            baggagePropagator: W3CBaggagePropagator()
-        )
-    }
-    
     private func initializeInstrumentation(options: Options) {
         initializeTracer(withSampler: sampler, options: options)
         initializeLogger(withSampler: sampler, options: options)
         initializeMeter(options: options)
-        registerPropagators()
+        
         self.urlSessionInstrumentation = URLSessionInstrumentation(
             configuration: URLSessionInstrumentationConfiguration(
                 shouldInstrument: { urlRequest in
