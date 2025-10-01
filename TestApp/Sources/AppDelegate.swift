@@ -10,12 +10,23 @@ let config = { () -> LDConfig in
         mobileKey: mobileKey,
         autoEnvAttributes: .enabled
     )
-
+    
     config.plugins = [
         Observability(options: .init(
+            serviceName: "ryan-test",
             otlpEndpoint: "https://otel.observability.ld-stg.launchdarkly.com:4318",
             backendUrl: "https://pub.observability.ld-stg.launchdarkly.com/",
             sessionBackgroundTimeout: 3))
+//        SesssionReplay(options: .init(
+//            frameRate: 1.0,
+//            imageFormat: .jpeg(quality: 0.3)
+//            privacySettings: .init(
+//                maskTextInputs: true,
+//                maskImages: false,
+//                maskUIViews: [AvatarImageView.self],
+//                maskAccessibilityIdentifiers: ["email-field", "password-field"],
+//            )
+//        ))
     ]
     return config
 }()

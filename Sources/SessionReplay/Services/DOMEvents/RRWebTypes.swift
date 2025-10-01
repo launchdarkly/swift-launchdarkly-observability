@@ -52,3 +52,10 @@ public enum MouseInteractions: Int, Codable {
          touchEnd = 9,
          touchCancel = 10
 }
+
+public enum CustomDataTag: String, Codable {
+    case click = "Click"
+    case focus = "Focus"
+    case viewport = "Viewport"
+    case reload = "Reload"
+}

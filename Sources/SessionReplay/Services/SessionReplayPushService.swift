@@ -1,13 +1,9 @@
 import Foundation
 import Common
 
-enum ScreenshotServiceError: Error {
-    case loadingJSONFailed(String)
-    case networkError(Error)
-    case decodingError(Error?)
-}
 
-actor ScreenshotService {
+
+actor ReplayPushService {
     let replayApiService: SessionReplayAPIService
     
     var payloadId = 0
@@ -32,34 +28,36 @@ actor ScreenshotService {
     var currentSession: InitializeSessionResponse?
     var lastExportImage: ExportImage?
     var shouldReload = true
+    let context: SessionReplayContext
     
-    init(replayApiService: SessionReplayAPIService) {
+    init(context: SessionReplayContext, sessionId: String, replayApiService: SessionReplayAPIService) {
+        self.context = context
         self.replayApiService = replayApiService
+        self.sessionId = sessionId
     }
     
     var notScreenItems = [EventQueueItem]()
+    let sessionId: String
+    var fakePayloadOnce = false
     
     func send(items: [EventQueueItem]) async throws {
         if currentSession == nil {
-            let session = try await initializeSession(sessionSecureId: ReplaySessionGenerator.generateSecureID())
+            let session = try await initializeSession(sessionSecureId: sessionId)
             try await identifySession(session: session)
             currentSession = session
         }
-        
-        guard let currentSession else {
-            return
-        }
-        
+  
         var events = [Event]()
         for item in items {
             appendEvents(item: item, events: &events)
         }
         
         if events.isNotEmpty {
+            if let currentSession, !fakePayloadOnce {
+                try await pushPayload(session: currentSession, resource: "payload2", timestamp: Date().millisecondsSince1970)
+            }
             try await pushPayload(events: events)
         }
-        
-        // try await pushPayload(session: currentSession, resource: "payload2", timestamp: Date().millisecondsSince1970)
     }
     
     func appendEvents(item: EventQueueItem, events: inout [Event]) {
@@ -76,6 +74,8 @@ actor ScreenshotService {
             if shouldReload {
                 // TODO: make it through real event, when we subscribe device events
                 events.append(reloadEvent(timestamp: timestamp))
+                // fake movement
+                events.append(mouseEvent(timestamp: timestamp))
                 shouldReload = false
             }
             
@@ -98,10 +98,10 @@ actor ScreenshotService {
         var type: MouseInteractions?
         switch touch.phase {
         case .began:
-            type = .click
+            type = .touchStart
         case .ended:
             type = .touchEnd
-        @unknown default:
+        case .moved:
             () // NO-OP
         }
         guard let type else {
@@ -118,6 +118,24 @@ actor ScreenshotService {
                           timestamp: timestamp,
                           _sid: nextSid)
         events.append(event)
+        
+        if let clickEvent = clickEvent(touchEvent: touch, timestamp: timestamp) {
+            events.append(clickEvent)
+        }
+    }
+    
+    func clickEvent(touchEvent: TouchEvent, timestamp: Int64) -> Event? {
+        guard touchEvent.phase == .ended, let viewName = touchEvent.viewName else { return nil }
+            
+        let eventData = CustomEventData(tag: .click, payload: ClickPayload(
+            clickTarget: viewName,
+            clickTextContent: touchEvent.title ?? "",
+            clickSelector: touchEvent.accessibilityIdentifier ?? "view"))
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: timestamp,
+                          _sid: nextSid)
+        return event
     }
     
     func pushPayload(events: [Event]) async throws {
@@ -129,7 +147,7 @@ actor ScreenshotService {
     }
     
     func initializeSession(sessionSecureId: String) async throws -> InitializeSessionResponse {
-        try await replayApiService.initializeSession(sessionSecureId: sessionSecureId)
+        try await replayApiService.initializeSession(context: context, sessionSecureId: sessionSecureId)
     }
     
     func identifySession(session: InitializeSessionResponse) async throws {
@@ -152,7 +170,7 @@ actor ScreenshotService {
     }
     
     func reloadEvent(timestamp: Int64) -> Event {
-        let eventData = CustomEventData(tag: "Reload", payload: "iOS Demo")
+        let eventData = CustomEventData(tag: .reload, payload: "iOS Demo")
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: timestamp,
@@ -161,14 +179,14 @@ actor ScreenshotService {
     }
     
     func viewPortEvent(exportImage: ExportImage, timestamp: Int64) -> Event {
-        let payload = ViewPortPayload(width: exportImage.originalWidth,
+        let payload = ViewportPayload(width: exportImage.originalWidth,
                                       height: exportImage.originalHeight,
                                       availWidth: exportImage.originalWidth,
                                       availHeight: exportImage.originalHeight,
                                       colorDepth: 30,
                                       pixelDepth: 30,
                                       orientation: Int.random(in: 0...1))
-        let eventData = CustomEventData(tag: "Viewport", payload: payload)
+        let eventData = CustomEventData(tag: .viewport, payload: payload)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: timestamp,
@@ -194,6 +212,15 @@ actor ScreenshotService {
                                         AnyCommand(drawImageCommand)
                                        ])
         let event = Event(type: .IncrementalSnapshot, data: AnyEventData(eventData), timestamp: timestamp, _sid: nextSid)
+        return event
+    }
+    
+    func mouseEvent(timestamp: Int64) -> Event {
+        let eventData = MouseMoveEventData(source: .mouseMove, positions: [.init(x: 0, y: 0, id: "1", timeOffset: 0)])
+        let event = Event(type: .IncrementalSnapshot,
+                          data: AnyEventData(eventData),
+                          timestamp: timestamp,
+                          _sid: nextSid)
         return event
     }
     

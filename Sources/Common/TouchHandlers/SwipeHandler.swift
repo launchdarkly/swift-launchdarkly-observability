@@ -26,6 +26,7 @@ public final class SwipeHandler {
                         phase: .ended,
                         location: endPoint,
                         viewName: viewName,
+                        title: nil,
                         accessibilityIdentifier: accessibilityIdentifier,
                         scale: targetView.window?.screen.scale ?? UIScreen.main.scale)
                     if abs(dx) > 50 && abs(dx) > abs(dy) {

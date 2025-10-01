@@ -1,7 +1,7 @@
 import Foundation
 
 
-class ScreenshotManager {
+class SnapshotTaker {
     let queue: EventQueue
     let captureService: ScreenCaptureService
     var timer: Timer?
@@ -14,7 +14,7 @@ class ScreenshotManager {
     func start() {
         guard timer == nil else { return }
         
-        let timer = Timer(timeInterval: 1.0, target: self, selector: #selector(takeScreenshot), userInfo: nil, repeats: true)
+        let timer = Timer(timeInterval: 1.0, target: self, selector: #selector(queueSnapshot), userInfo: nil, repeats: true)
         RunLoop.main.add(timer, forMode: .default)
         self.timer = timer
     }
@@ -24,7 +24,7 @@ class ScreenshotManager {
         timer = nil
     }
     
-    @objc func takeScreenshot() {
+    @objc func queueSnapshot() {
         guard let capturedImage = captureService.captureUIImage() else {
             return
         }

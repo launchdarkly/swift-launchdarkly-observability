@@ -3,15 +3,15 @@ import Common
 
 final class SessionReplayBackroundWorker {
     let eventQueue: EventQueue
-    let screenshotManager: ScreenshotManager
+    let screenshotManager: SnapshotTaker
     let interval = TimeInterval(2)
     var task: Task<Void, Never>?
-    var screenshotService: ScreenshotService
+    var screenshotService: ReplayPushService
     
-    init(options: SessionReplayOptions, screenshotService: ScreenshotService, eventQueue: EventQueue) {
+    init(options: SessionReplayOptions, screenshotService: ReplayPushService, eventQueue: EventQueue) {
         self.screenshotService = screenshotService
         self.eventQueue = eventQueue
-        self.screenshotManager = ScreenshotManager(queue: eventQueue, captureService: ScreenCaptureService(options: options))
+        self.screenshotManager = SnapshotTaker(queue: eventQueue, captureService: ScreenCaptureService(options: options))
     }
     
     func start() {

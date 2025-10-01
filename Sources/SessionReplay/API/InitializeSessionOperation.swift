@@ -74,7 +74,8 @@ struct InitializeSessionResponseWrapper: Codable {
 
 
 extension SessionReplayAPIService {
-    public func initializeSession(sessionSecureId: String,
+    public func initializeSession(context: SessionReplayContext,
+                                  sessionSecureId: String,
                                   userIdentifier: String = "unknown",
                                   userObject: [String: String]? = nil) async throws -> InitializeSessionResponse {
         let clientConfig = InitializeSessionVariables.ClientConfig(
@@ -83,8 +84,8 @@ extension SessionReplayAPIService {
                 domRecording: true
             ),
             privacySetting: "none",
-            serviceName: "ryan-test",
-            backendUrl: URL(string: "https://pub.observability.ld-stg.launchdarkly.com")!,
+            serviceName: context.serviceName,
+            backendUrl: context.backendUrl,
             manualStart: true,
             organizationID: "548f6741c1efad40031b18ae",
             environment: "production",
@@ -108,7 +109,7 @@ extension SessionReplayAPIService {
                    environment: "production",
                    id: "31MMpqmDG2DsZvbxo0Lzx4xelbt7",
                    appVersion: nil,
-                   serviceName: "ryan-test",
+                   serviceName: context.serviceName,
                    clientId: "31MMpqmDG2DsZvbxo0Lzx4xelbt7",
                    networkRecordingDomains: [],
                    disableSessionRecording: nil

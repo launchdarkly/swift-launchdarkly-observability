@@ -27,18 +27,33 @@ protocol EventDataProtocol: Codable {
 struct AnyEventData: Codable {
     let value: any EventDataProtocol
 
-    // We only need "source" to choose the concrete type
-    private enum ProbeKey: String, CodingKey { case source }
+    private enum ProbeKey: String, CodingKey { case source, tag }
 
     init(_ value: any EventDataProtocol) { self.value = value }
 
     init(from decoder: Decoder) throws {
         let probe = try decoder.container(keyedBy: ProbeKey.self)
-        let src = try probe.decode(IncrementalSource.self, forKey: .source)
-        if src == .canvasMutation {
-            self.value = try CanvasDrawData(from: decoder)
+        if let src = try probe.decodeIfPresent(IncrementalSource.self, forKey: .source) {
+            if src == .canvasMutation {
+                self.value = try CanvasDrawData(from: decoder)
+            } else if src == .mouseMove {
+                self.value = try MouseMoveEventData(from: decoder)
+            } else {
+                self.value = try EventData(from: decoder)
+            }
+        } else if let tag = try probe.decodeIfPresent(CustomDataTag.self, forKey: .tag) {
+            self.value = switch tag {
+            case .click:
+                try CustomEventData<ClickPayload>(from: decoder)
+            case .focus:
+                try CustomEventData<String>(from: decoder)
+            case .viewport:
+                try CustomEventData<ViewportPayload>(from: decoder)
+            case .reload:
+                try CustomEventData<String>(from: decoder)
+            }
         } else {
-            self.value = try EventData(from: decoder)
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Unexpected EventData"))
         }
     }
 

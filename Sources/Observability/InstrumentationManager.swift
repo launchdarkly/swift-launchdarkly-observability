@@ -14,11 +14,14 @@ import CrashReporterLive
 import Sampling
 import SamplingLive
 import Instrumentation
+import SessionReplay
 
 final class InstrumentationManager {
     private let context: ObservabilityContext
     private let sessionManager: SessionManager
     private let flushTimeout: TimeInterval
+    private let graphQLClient: GraphQLClient
+    private let sessionReplayService: SessionReplayService?
     
     private var crashReporter: CrashReporter?
     private let lock: NSLock = NSLock()
@@ -45,10 +48,22 @@ final class InstrumentationManager {
         context: ObservabilityContext,
         sessionManager: SessionManager,
         flushTimeout: TimeInterval = 5.0
-    ) {
+    ) throws {
         self.context = context
         self.sessionManager = sessionManager
         self.flushTimeout = flushTimeout
+        
+        guard let url = URL(string: context.options.backendUrl) else {
+            throw InstrumentationError.graphQLUrlIsInvalid
+        }
+        self.graphQLClient = GraphQLClient(endpoint: url)
+        self.sessionReplayService = SessionReplayService(
+            context: .init(
+                sdkKey: context.sdkKey,
+                serviceName: context.options.serviceName,
+                backendUrl: url,
+                graphQLClient: graphQLClient),
+            sessionId: sessionManager.sessionInfo.id)
         
         /// If options.otlpEndpoint is not a valid url use no-op instrumentation
         ///
@@ -69,20 +84,18 @@ final class InstrumentationManager {
         self.initializeInstrumentation(options: context.options)
         
         Task { [weak self] in
+            guard let self else { return }
             do {
-                guard let url = URL(string: context.options.backendUrl) else {
-                    throw InstrumentationError.graphQLUrlIsInvalid
-                }
-                let graphQLClient = GraphQLClient(endpoint: url)
                 let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
                 let config = try await samplingConfigClient.getSamplingConfig(sdkKey: context.sdkKey)
-                self?.sampler.setConfig(config)
+                self.sampler.setConfig(config)
             } catch {
                 os_log("%{public}@", log: context.logger.log, type: .error, "getSamplingConfig failed with error: \(error)")
             }
         }
         
         self.install()
+        self.sessionReplayService?.start()
     }
     
     // MARK: - Install Crash Reporter
@@ -264,13 +277,20 @@ final class InstrumentationManager {
                 nameSpan: { request in
                     "http.request"
                 },
-                spanCustomization: { request, spanBuilder in
+                spanCustomization: { [weak self] request, spanBuilder in
+                    guard let self else { return }
+                    
                     if let httpMethod = request.httpMethod {
                         spanBuilder.setAttribute(key: "http.method", value: httpMethod)
                     }
                     if let url = request.url {
                         spanBuilder.setAttribute(key: "http.url", value: url.absoluteString)
                     }
+                    let sessionId = self.sessionManager.sessionInfo.id
+                    if !sessionId.isEmpty {
+                        spanBuilder.setAttribute(key: SemanticConvention.highlightSessionId, value: sessionId)
+                    }
+                    
                 },
                 tracer: self.otelTracer
             )
@@ -288,9 +308,11 @@ final class InstrumentationManager {
             self.tapHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
                 guard let self = self else { return }
                 
+                sessionReplayService?.userTap(touchEvent: touchEvent)
                 var attributes = [String: AttributeValue]()
-                attributes["screen.name"] = .string(touchEvent.viewName)
-                attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
+                let viewName = touchEvent.viewName ?? "unknown"
+                attributes["screen.name"] = .string(viewName)
+                attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? viewName)
                 // sending location in points (since it is preferred over pixels)
                 attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
                 attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())
@@ -298,10 +320,10 @@ final class InstrumentationManager {
             }
             self.swipeHandler.handle(event: uiEvent, window: uiWindow) { [weak self] touchEvent in
                 guard let self = self else { return }
-                
+                let viewName = touchEvent.viewName ?? "unknown"
                 var attributes = [String: AttributeValue]()
-                attributes["screen.name"] = .string(touchEvent.viewName)
-                attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? touchEvent.viewName)
+                attributes["screen.name"] = .string(viewName)
+                attributes["target.id"] = .string(touchEvent.accessibilityIdentifier ?? viewName)
                 // sending location in points (since it is preferred over pixels)
                 attributes["position.x"] = .string(touchEvent.locationInPoints.x.toString())
                 attributes["position.y"] = .string(touchEvent.locationInPoints.y.toString())

@@ -43,7 +43,7 @@ extension Instrumentation {
         sessionManager: SessionManager,
         flushTimeout: TimeInterval = 5.0
     ) throws -> Self {
-        let manager = InstrumentationManager(
+        let manager = try InstrumentationManager(
             context: context,
             sessionManager: sessionManager,
             flushTimeout: flushTimeout

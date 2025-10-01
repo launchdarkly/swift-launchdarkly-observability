@@ -8,6 +8,7 @@ public struct TouchEvent: Sendable, CustomStringConvertible {
     public let phase: Phase
     public let location: CGPoint
     public let viewName: String?
+    public let title: String?
     public let accessibilityIdentifier: String?
     public let scale: CGFloat
     

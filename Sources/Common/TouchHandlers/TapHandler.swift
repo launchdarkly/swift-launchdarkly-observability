@@ -19,6 +19,7 @@ public final class TapHandler {
                             phase: .began,
                             location: startPoint,
                             viewName: nil,
+                            title: nil,
                             accessibilityIdentifier: nil,
                             scale: targetView.window?.screen.scale ?? UIScreen.main.scale)
                     )
@@ -31,16 +32,17 @@ public final class TapHandler {
                     var viewName: String?
                     var accessibilityIdentifier: String?
                     var targetClass: AnyClass?
+                    var title: String?
                     if abs(dx) < 10 && abs(dy) < 10 {
-                        accessibilityIdentifier = targetView.accessibilityIdentifier
-                        targetClass = type(of: targetView)
-                        viewName = accessibilityIdentifier ?? String(describing: targetClass)
+                        let info = targetView.extractViewInfo()
+                        viewName = info.category
                     }
                     completion(
                         TouchEvent(
                             phase: .ended,
                             location: endPoint,
                             viewName: viewName,
+                            title: title,
                             accessibilityIdentifier: accessibilityIdentifier,
                             scale: targetView.window?.screen.scale ?? UIScreen.main.scale)
                     )

@@ -1,6 +1,12 @@
 import Foundation
 
-extension ScreenshotService  {
+enum ScreenshotServiceError: Error {
+    case loadingJSONFailed(String)
+    case networkError(Error)
+    case decodingError(Error?)
+}
+
+extension ReplayPushService  {
     func pushNotScreenshotItems(items: [EventQueueItem]) async throws {
         guard let currentSession else {
             return

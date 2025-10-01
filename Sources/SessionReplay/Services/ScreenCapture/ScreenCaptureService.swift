@@ -37,14 +37,14 @@ public final class ScreenCaptureService {
 
     private func captureCompositeImageOfAllWindows() -> CapturedImage? {
         let scale = 1.0 // UIScreen.main.scale
-        let bounds  = UIScreen.main.bounds
-
+        //let bounds  = UIScreen.main.bounds
+            
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = false
 
         let windows = allWindowsInZOrder()
-        var enclosingBounds = minimalBoundsEnclosingWindows(windows)
+        let enclosingBounds = minimalBoundsEnclosingWindows(windows)
         let renderer = UIGraphicsImageRenderer(size: enclosingBounds.size, format: format)
         let image = renderer.image { ctx in
             drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false)

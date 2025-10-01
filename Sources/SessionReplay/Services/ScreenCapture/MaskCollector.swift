@@ -44,25 +44,27 @@ final class MaskCollector {
     
     func collectViewMasks(in rootView: UIView, window: UIWindow) -> [ViewMask] {
         var result = [ViewMask]()
-        var stack = [rootView]
-        let rootLayer = rootView.layer
+        let rootLayer = rootView.layer.presentation() ?? rootView.layer
+        guard var stack = rootLayer.sublayers else { return result }
         
-        while let currentView = stack.popLast() {
-            guard !currentView.isHidden,
+        while let layer = stack.popLast() {
+            guard let currentView = layer.delegate as? UIView,
+                    !currentView.isHidden,
                     currentView.window != nil,
-                  currentView.alpha >= settings.minimumAlpha else { return [] }
+                  currentView.alpha >= settings.minimumAlpha
+            else { continue }
             
-            let layer = currentView.layer.presentation() ?? currentView.layer
+            //let layer = currentView.layer.presentation() ?? currentView.layer
             
-            guard !settings.shouldMask(currentView) else {
-                let rect = currentView.convert(currentView.bounds, to: window)
+            if settings.shouldMask(currentView) {
+                let rect = currentView.convert(layer.bounds, to: window)
                 result.append(ViewMask(rect: rect))
                 continue
             }
         
-            
-            let subviews = currentView.subviews
-            stack.append(contentsOf: subviews)
+            if let sublayers = layer.sublayers {
+                stack.append(contentsOf: sublayers)
+            }
         }
         
         return result
@@ -71,7 +73,7 @@ final class MaskCollector {
 
 extension PrivacySettings {
     func buildMaskClasses() -> Set<ObjectIdentifier> {
-        var ids = Set(maskClasses.map(ObjectIdentifier.init))
+        var ids = Set(maskUIViews.map(ObjectIdentifier.init))
 //            if privacySettings.maskTextInputs {
 //                [UITextField.self, UITextView.self, UIWebView.self, UISearchTextField.self,
 //                 SwiftUI.UITextView.self, SwiftUI.UITextView.self].forEach {
