@@ -27,13 +27,22 @@ public final class Observability: Plugin {
         resourceAttributes["launchdarkly.sdk.version"] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
         resourceAttributes["highlight.project_id"] = .string(sdkKey)
         
+        let containsProjectId = options.customHeaders.contains { (key, value) in
+            key == "highlight.project_id"
+        }
+        var customHeaders = options.customHeaders
+        if !containsProjectId {
+            customHeaders.append(("highlight.project_id", sdkKey))
+        }
+        
+        
         let options = Options(
             serviceName: options.serviceName,
             serviceVersion: options.serviceVersion,
             otlpEndpoint: options.otlpEndpoint,
             backendUrl: options.backendUrl,
             resourceAttributes: options.resourceAttributes.merging(resourceAttributes) { (old, _) in old },
-            customHeaders: options.customHeaders,
+            customHeaders: customHeaders,
             sessionBackgroundTimeout: options.sessionBackgroundTimeout,
             isDebug: options.isDebug,
             disableErrorTracking: options.disableErrorTracking,

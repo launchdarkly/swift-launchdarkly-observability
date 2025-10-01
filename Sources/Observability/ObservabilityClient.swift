@@ -8,10 +8,13 @@ import Instrumentation
 import Common
 import CrashReporter
 import CrashReporterLive
+import System
+import SystemLive
 
 public final class ObservabilityClient: Observe {
     private let instrumentationManager: Instrumentation
     private let sessionManager: SessionManager
+    private let systemInfoManager: SystemInfo
     private let context: ObservabilityContext
     
     private var cachedSpans = AtomicDictionary<String, Span>()
@@ -21,12 +24,23 @@ public final class ObservabilityClient: Observe {
         let sessionManager = SessionManager(options: .init(timeout: context.options.sessionBackgroundTimeout))
         
         do {
-            self.instrumentationManager = try Instrumentation.build(
+            let instrumentation = try Instrumentation.build(
                 context: context,
                 sessionManager: sessionManager
             )
+            
+            let systemInfoManager = SystemInfo.build(
+                monitoringInterval: 5,
+                instrumentation: instrumentation,
+                logger: context.logger
+            )
+            
+            self.instrumentationManager = instrumentation
+            self.systemInfoManager = systemInfoManager
+            systemInfoManager.startMonitoring()
         } catch {
-            self.instrumentationManager = Instrumentation.noOp()
+            self.instrumentationManager = Instrumentation.noOp
+            self.systemInfoManager = SystemInfo.noOp
             os_log("%{public}@", log: context.logger.log, type: .error, "Failed to initialize Instrumentation manager with error: \(error)")
         }
         

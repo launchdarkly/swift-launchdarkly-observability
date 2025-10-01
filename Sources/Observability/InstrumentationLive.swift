@@ -20,22 +20,20 @@ extension Instrumentation {
     static let logsPath = "/v1/logs"
     static let metricsPath = "/v1/metrics"
     
-    static func noOp() -> Self {
-        Self(
-            recordMetric: { _ in },
-            recordCount: { _ in },
-            recordIncr: { _ in },
-            recordHistogram: { _ in },
-            recordUpDownCounter: { _ in },
-            recordError: { _, _ in },
-            recordLog: { _, _, _ in },
-            startSpan: { _, _ in
-                /// No-op implementation of the Tracer
-                DefaultTracer.instance.spanBuilder(spanName: "").startSpan()
-            },
-            flush: { true }
-        )
-    }
+    static let noOp: Self = .init(
+        recordMetric: { _ in },
+        recordCount: { _ in },
+        recordIncr: { _ in },
+        recordHistogram: { _ in },
+        recordUpDownCounter: { _ in },
+        recordError: { _, _ in },
+        recordLog: { _, _, _ in },
+        startSpan: { _, _ in
+            /// No-op implementation of the Tracer
+            DefaultTracer.instance.spanBuilder(spanName: "").startSpan()
+        },
+        flush: { true }
+    )
     
     static func build(
         context: ObservabilityContext,

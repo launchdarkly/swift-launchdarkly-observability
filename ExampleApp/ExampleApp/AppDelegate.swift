@@ -11,6 +11,7 @@ let config = { () -> LDConfig in
     config.plugins = [
         Observability(
             options: .init(
+                serviceName: "MyApp (ExampleApp)",
 //                otlpEndpoint: "http://localhost:4318",
                 sessionBackgroundTimeout: 3,
                 isDebug: true,

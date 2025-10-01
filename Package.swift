@@ -82,6 +82,16 @@ let package = Package(
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
             ]
         ),
+        .target(name: "System"),
+        .target(
+            name: "SystemLive",
+            dependencies: [
+                "System",
+                "Common",
+                "Instrumentation",
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+            ]
+        ),
         .target(
             name: "Observability",
             dependencies: [
@@ -92,6 +102,8 @@ let package = Package(
                 "Sampling",
                 "SamplingLive",
                 "Instrumentation",
+                "System",
+                "SystemLive",
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),

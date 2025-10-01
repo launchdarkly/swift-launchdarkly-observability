@@ -33,7 +33,7 @@ final class InstrumentationManager {
     
     private let sampler = ExportSampler.customSampler()
     private var otelLogger: (any OpenTelemetryApi.Logger)
-    private var otelTracer: Tracer?
+    private var otelTracer: Tracer
     private var otelMeter: (any Meter)
     
     private var urlSessionInstrumentation: URLSessionInstrumentation?
@@ -105,7 +105,7 @@ final class InstrumentationManager {
             let exporter = SamplingTraceExporterDecorator(
                 exporter: OtlpHttpTraceExporter(
                     endpoint: url,
-                    envVarHeaders: context.options.customHeaders
+                    config: .init(headers: context.options.customHeaders)
                 ),
                 sampler: sampler
             )
@@ -161,7 +161,7 @@ final class InstrumentationManager {
                     SamplingLogExporterDecorator(
                         exporter: OtlpHttpLogExporter(
                             endpoint: url,
-                            envVarHeaders: context.options.customHeaders
+                            config: .init(headers: context.options.customHeaders)
                         ),
                         sampler: sampler
                     )
@@ -217,7 +217,7 @@ final class InstrumentationManager {
         if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.metricsPath) {
             let exporter = OtlpHttpMetricExporter(
                 endpoint: url,
-                envVarHeaders: context.options.customHeaders
+                config: .init(headers: context.options.customHeaders)
             )
             
             let reader = PeriodicMetricReaderBuilder(exporter: exporter)
@@ -229,12 +229,12 @@ final class InstrumentationManager {
             }
             
             let provider = MeterProviderSdk.builder()
-                .registerView(
-                    selector: InstrumentSelector.builder().setInstrument(name: context.options.serviceName).build(),
-                    view: View.builder().build()
-                )
                 .registerMetricReader(
                     reader: reader
+                )
+                .registerView(
+                    selector: InstrumentSelector.builder().setInstrument(name: ".*").build(),
+                    view: View.builder().build()
                 )
                 .build()
             
@@ -320,7 +320,9 @@ final class InstrumentationManager {
                 .build()
             cachedGauges[metric.name] = gauge
         }
-        gauge?.record(value: metric.value, attributes: metric.attributes)
+        let attributes = metric.attributes.merging(context.options.resourceAttributes, uniquingKeysWith: { current, _ in current })
+        gauge?.record(value: metric.value, attributes: attributes)
+//        gauge?.record(value: metric.value, attributes: attributes)
     }
     
     func recordCount(metric: Metric) {
@@ -375,41 +377,31 @@ final class InstrumentationManager {
     
     func recordError(error: Error, attributes: [String: AttributeValue]) {
         var attributes = attributes
-        let builder = otelTracer?.spanBuilder(spanName: "highlight.error")
+        let builder = otelTracer.spanBuilder(spanName: "highlight.error")
         
         if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
-            builder?.setParent(parent)
+            builder.setParent(parent)
         }
         
         attributes.forEach {
-            builder?.setAttribute(key: $0.key, value: $0.value)
+            builder.setAttribute(key: $0.key, value: $0.value)
         }
         
         let sessionId = sessionManager.sessionInfo.id
         if !sessionId.isEmpty {
-            builder?.setAttribute(key: SemanticConvention.highlightSessionId, value: sessionId)
+            builder.setAttribute(key: SemanticConvention.highlightSessionId, value: sessionId)
             attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
         }
         
         
-        let span = builder?.startSpan()
-        span?.setAttributes(attributes)
-        span?.recordException(ErrorSpanException(error: error), attributes: attributes)
-        span?.end()
+        let span = builder.startSpan()
+        span.setAttributes(attributes)
+        span.recordException(ErrorSpanException(error: error), attributes: attributes)
+        span.end()
     }
     
     func startSpan(name: String, attributes: [String: AttributeValue]) -> any Span {
-        let tracer: Tracer
-        if let otelTracer {
-            tracer = otelTracer
-        } else {
-            tracer = OpenTelemetry.instance.tracerProvider.get(
-                instrumentationName: context.options.serviceName,
-                instrumentationVersion: context.options.serviceVersion
-            )
-        }
-        
-        let builder = tracer.spanBuilder(spanName: name)
+        let builder = otelTracer.spanBuilder(spanName: name)
         
         if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
             builder.setParent(parent)
