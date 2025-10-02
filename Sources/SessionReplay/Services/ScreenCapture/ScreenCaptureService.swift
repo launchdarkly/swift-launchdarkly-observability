@@ -100,7 +100,7 @@ public final class ScreenCaptureService {
             let windowFrame = window.layer.frame
             window.drawHierarchy(in: windowFrame, afterScreenUpdates: afterScreenUpdates)
             
-            maskingService.applyViewMasks(viewMasks: masks)
+            maskingService.applyViewMasks(context: context, viewMasks: masks)
             //window.layer.render(in: context)
             context.restoreGState()
         }

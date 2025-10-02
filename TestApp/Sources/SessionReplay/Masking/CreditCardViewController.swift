@@ -63,7 +63,8 @@ public final class CreditCardViewController: UIViewController {
     private let cvvField    = UITextField()
     private let postalField = UITextField()
     private let saveButton  = UIButton(type: .system)
-    
+    private let cover = UIView()
+
     // Accessory toolbar
     private lazy var kbToolbar: UIToolbar = {
         let tb = UIToolbar()
@@ -86,6 +87,42 @@ public final class CreditCardViewController: UIViewController {
         setupNav()
         setupLayout()
         updateSaveButton()
+       // view.layer.transform = CATransform3DRotate(CATransform3DIdentity, .pi / 8.0, 0, 1, 1)
+        startRotating(view: stack)
+    }
+    
+    public override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        //view.layer.layoutSublayers()
+        
+        cover.frame = view.bounds
+        startSliding(view: cover)
+        
+    }
+    
+    func startRotating(view: UIView, duration: TimeInterval = 10.0) {
+        let rotation = CABasicAnimation(keyPath: "transform.rotation.z")
+        rotation.fromValue = Double.pi * 2
+        rotation.toValue = Double.pi * 0
+        rotation.duration = duration
+        rotation.repeatCount = .infinity
+        rotation.isRemovedOnCompletion = false
+        view.layer.anchorPoint = CGPoint(x: 0.5, y: 0.25)
+        view.layer.add(rotation, forKey: "rotationAnimation")
+    }
+    
+    func startSliding(view v: UIView, duration: TimeInterval = 40.0) {
+        //guard let superview = v.superview else { return }
+        
+        let startX: CGFloat = v.bounds.width
+        let endX: CGFloat = -v.bounds.width
+    
+        v.frame.origin.x = startX
+        UIView.animate(withDuration: duration,
+                       delay: 0, options: [.repeat, .curveLinear],
+                       animations: {
+            v.frame.origin.x = endX
+        })
     }
     
     // MARK: - Public prefill (optional)
@@ -179,6 +216,8 @@ public final class CreditCardViewController: UIViewController {
         cvvField.delegate = self
         cvvContainer.addArrangedSubview(cvvField)
         
+        startRotating(view: cvvContainer)
+
         row.addArrangedSubview(expiryContainer)
         row.addArrangedSubview(cvvContainer)
         stack.addArrangedSubview(row)
@@ -201,6 +240,17 @@ public final class CreditCardViewController: UIViewController {
         saveButton.heightAnchor.constraint(equalToConstant: 50).isActive = true
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
         stack.addArrangedSubview(saveButton)
+        
+        
+        cover.backgroundColor = .blue
+      //  cover.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(cover)
+//        NSLayoutConstraint.activate([
+//            cover.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+//            cover.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+//            cover.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+//            cover.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+//        ])
     }
     
     private func addLabeledField(title: String, field: UITextField) {

@@ -38,6 +38,7 @@ public final class SwipeHandler {
                     }
                 }
                 startPoint = nil
+                
             default:
                 break
             }

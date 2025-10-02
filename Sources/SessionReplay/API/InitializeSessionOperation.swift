@@ -87,7 +87,7 @@ extension SessionReplayAPIService {
             serviceName: context.serviceName,
             backendUrl: context.backendUrl,
             manualStart: true,
-            organizationID: "548f6741c1efad40031b18ae",
+            organizationID: context.sdkKey,
             environment: "production",
             sessionSecureID: sessionSecureId
         )
@@ -99,7 +99,7 @@ extension SessionReplayAPIService {
             bundle: Bundle.module,
             variables: InitializeSessionVariables(
                    sessionSecureId: sessionSecureId,
-                   organizationVerboseId: "548f6741c1efad40031b18ae",
+                   organizationVerboseId:  context.sdkKey,
                    enableStrictPrivacy: false,
                    privacySetting: "none",
                    enableRecordingNetworkContents: false,

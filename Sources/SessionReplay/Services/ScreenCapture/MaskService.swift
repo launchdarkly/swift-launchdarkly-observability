@@ -5,11 +5,21 @@ final class MaskService {
     public init() {
     }
     
-    func applyViewMasks(viewMasks: [ViewMask]) {
+    func applyViewMasks(context: CGContext, viewMasks: [Mask]) {
         for viewMask in viewMasks {
-            let path = UIBezierPath(roundedRect: viewMask.rect, cornerRadius: 4)
-            UIColor.gray.setFill()
-            path.fill()
+            switch viewMask {
+            case .affine(let rect, let transform):
+                context.saveGState()
+                context.concatenate(transform)
+                let path = UIBezierPath(roundedRect: rect, cornerRadius: 4)
+                UIColor.gray.setFill()
+                path.fill()
+                
+                context.restoreGState()
+                
+            case .quad:
+                () //TODO:
+            }
         }
     }
 }

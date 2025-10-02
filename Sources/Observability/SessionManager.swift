@@ -1,5 +1,6 @@
 import Foundation
 import UIKit.UIApplication
+import SessionReplay
 
 final class SessionManager {
     enum State: String {
@@ -35,7 +36,7 @@ final class SessionManager {
     }
     
     init(
-        id: String = UUID().uuidString,
+        id: String = ReplaySessionGenerator.generateSecureID(),
         startTime: Date = Date(),
         options: SessionOptions
     ) {

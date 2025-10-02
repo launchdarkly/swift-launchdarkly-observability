@@ -5,7 +5,7 @@ public struct SessionReplayOptions {
     public struct PrivacySettings {
         public var maskTextInputs: Bool = true
         public var maskLabels: Bool = false
-        public var maskImages: Bool = true
+        public var maskImages: Bool = false
                 
         public var maskUIViews: [AnyClass] = []
         public var ignoreUIViews: [AnyClass] = []

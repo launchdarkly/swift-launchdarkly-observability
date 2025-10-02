@@ -1,8 +1,8 @@
 import Foundation
 
-struct ReplaySessionGenerator {
+public struct ReplaySessionGenerator {
     static let characterSet = Array("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-    static func generateSecureID() -> String {
+    public static func generateSecureID() -> String {
         let idLength = 28
         var secureID = ""
         
