@@ -236,6 +236,7 @@ final class InstrumentationManager {
                 .registerView(
                     selector: InstrumentSelector
                         .builder()
+                        .setInstrument(name: ".*")
                         .setMeter(name: options.serviceName)
                         .build(),
                     view: View
