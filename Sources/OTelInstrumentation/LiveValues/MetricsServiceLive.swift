@@ -1,5 +1,8 @@
 import Foundation
 
+import OpenTelemetrySdk
+import OpenTelemetryProtocolExporterHttp
+
 import ApplicationServices
 
 extension MetricsService {
@@ -12,15 +15,41 @@ extension MetricsService {
         flush: { true }
     )
     
-    public static func build(
+    public static func buildHttp(
         sessionService: SessionService,
         options: Options
     ) throws -> Self {
+        let metricsPath = "/v1/metrics"
+        guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(metricsPath) else {
+            throw InstrumentationError.metricExporterUrlIsInvalid
+        }
+        
+        let exporter = OtlpHttpMetricExporter(
+            endpoint: url,
+            config: .init(headers: options.customHeaders)
+        )
+        
+        return build(
+            sessionService: sessionService,
+            options: options,
+            exporter: exporter
+        )
+    }
+    
+    private static func build(
+        sessionService: SessionService,
+        options: Options,
+        exporter: MetricExporter
+    ) -> Self {
         guard options.metrics == .enabled else {
             return .noOp
         }
         
-        let service = try OTelMetricsService(sessionService: sessionService, options: options)
+        let service = OTelMetricsService(
+            sessionService: sessionService,
+            options: options,
+            exporter: exporter
+        )
         
         return .init(
             recordMetric: { service.recordMetric(metric: $0) },

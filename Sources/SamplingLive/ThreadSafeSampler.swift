@@ -1,7 +1,7 @@
 import Foundation
 
-final class ThreadSafeSampler {
-    static let shared = ThreadSafeSampler()
+public final class ThreadSafeSampler {
+    public static let shared = ThreadSafeSampler()
     private var generator = SystemRandomNumberGenerator()
     private let queue = DispatchQueue(label: "com.launchdarkly.sampler")
     
@@ -13,7 +13,7 @@ final class ThreadSafeSampler {
         }
     }
     
-    func sample(_ ratio: Int) -> Bool {
+    public func sample(_ ratio: Int) -> Bool {
         if ratio <= 0 { return false }
         if ratio == 1 { return true }
         

@@ -2,7 +2,7 @@ import Testing
 import OpenTelemetryApi
 
 import DomainModels
-import OTelInstrumentationService
+import OTelInstrumentation
 
 struct DomainModelOtelTests {
     @Test

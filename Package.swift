@@ -32,7 +32,7 @@ let package = Package(
             ]
         ),
         .target(
-            name: "SessionServiceLive",
+            name: "iOSSessionService",
             dependencies: [
                 "DomainModels",
                 "DomainServices",
@@ -40,26 +40,54 @@ let package = Package(
             ]
         ),
         .target(
-            name: "OTelInstrumentationService",
+            name: "KSCrashReportService",
+            dependencies: [
+                "DomainModels",
+                "DomainServices",
+                "ApplicationServices",
+                .product(name: "Installations", package: "KSCrash")
+            ]
+        ),
+        .target(
+            name: "OTelInstrumentation",
             dependencies: [
                 "Common",
                 "DomainModels",
                 "DomainServices",
                 "ApplicationServices",
                 "Sampling",
-                "SamplingLive",
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift"),
+                .product(name: "ResourceExtension", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
+                .product(name: "InMemoryExporter", package: "opentelemetry-swift"),
+                .product(name: "OTelSwiftLog", package: "opentelemetry-swift"),   
             ]
         ),
         .testTarget(
             name: "OTelInstrumentationServiceTests",
             dependencies: [
-                "OTelInstrumentationService",
+                "OTelInstrumentation",
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
+            ]
+        ),
+        .target(
+            name: "ObservabilityServiceLive",
+            dependencies: [
+                "ApplicationServices",
+                "OTelInstrumentation",
+                "KSCrashReportService",
+                "iOSSessionService",
+                "Sampling",
+                "SamplingLive",
+                "Sampling",
+                "Common"
+            ],
+            resources: [
+                .process("Resources"),
             ]
         ),
         .target(name: "Common"),
@@ -151,12 +179,15 @@ let package = Package(
         .target(
             name: "LaunchDarklyObservability",
             dependencies: [
-                "Observability",
-                "API",
-                "Common",
+                "ApplicationServices",
+                "ObservabilityServiceLive",
                 .product(name: "LaunchDarkly", package: "ios-client-sdk"),
-                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+//                "Observability",
+//                "API",
+//                "Common",
+//                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
+//                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+//                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
             ]
         )
     ]

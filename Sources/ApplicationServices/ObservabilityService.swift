@@ -44,4 +44,8 @@ public struct ObservabilityService {
     public func startSpan(name: String, attributes: [String: AttributeValue]) -> Span {
         tracesService.startSpan(name: name, attributes: attributes)
     }
+    
+    public func flush() -> Bool {
+        tracesService.flush() && logsService.flush() && metricsService.flush()
+    }
 }

@@ -29,19 +29,26 @@ public struct Options {
         case enabled
         case disabled
     }
-    public let serviceName: String
-    public let serviceVersion: String
-    public let otlpEndpoint: String
-    public let backendUrl: String
-    public let resourceAttributes: [String: AttributeValue]
-    public let customHeaders: [(String, String)]
-    public let sessionBackgroundTimeout: TimeInterval
-    public let isDebug: Bool
-    public let disableErrorTracking: Bool
-    public let logs: FeatureFlag
-    public let traces: FeatureFlag
-    public let metrics: FeatureFlag
-    public let log: OSLog
+    public enum TracingOriginsOption {
+        case enabled([String])
+        case enabledRegex([String])
+        case disabled
+    }
+    public var serviceName: String
+    public var serviceVersion: String
+    public var otlpEndpoint: String
+    public var backendUrl: String
+    public var resourceAttributes: [String: AttributeValue]
+    public var customHeaders: [(String, String)]
+    public var tracingOrigins: TracingOriginsOption
+    public var urlBlocklist: [String]
+    public var sessionBackgroundTimeout: TimeInterval
+    public var isDebug: Bool
+    public var disableErrorTracking: Bool
+    public var logs: FeatureFlag
+    public var traces: FeatureFlag
+    public var metrics: FeatureFlag
+    public var log: OSLog
     
     public init(
         serviceName: String = "observability-swift",
@@ -50,6 +57,8 @@ public struct Options {
         backendUrl: String = "https://pub.observability.app.launchdarkly.com",
         resourceAttributes: [String: AttributeValue] = [:],
         customHeaders: [(String, String)] = [],
+        tracingOrigins: TracingOriginsOption = .disabled,
+        urlBlocklist: [String] = [],
         sessionBackgroundTimeout: TimeInterval = 15 * 60,
         isDebug: Bool = false,
         disableErrorTracking: Bool = false,
@@ -64,6 +73,8 @@ public struct Options {
         self.backendUrl = backendUrl
         self.resourceAttributes = resourceAttributes
         self.customHeaders = customHeaders
+        self.tracingOrigins = tracingOrigins
+        self.urlBlocklist = urlBlocklist
         self.sessionBackgroundTimeout = sessionBackgroundTimeout
         self.isDebug = isDebug
         self.disableErrorTracking = disableErrorTracking
