@@ -76,7 +76,7 @@ struct InitializeSessionResponseWrapper: Codable {
 extension SessionReplayAPIService {
     public func initializeSession(context: SessionReplayContext,
                                   sessionSecureId: String,
-                                  userIdentifier: String = "unknown",
+                                  userIdentifier: String,
                                   userObject: [String: String]? = nil) async throws -> InitializeSessionResponse {
         let clientConfig = InitializeSessionVariables.ClientConfig(
             debug: InitializeSessionVariables.ClientConfig.Debug(

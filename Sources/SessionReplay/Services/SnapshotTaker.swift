@@ -25,15 +25,15 @@ class SnapshotTaker {
     }
     
     @objc func queueSnapshot() {
-//        guard let capturedImage = captureService.captureUIImage() else {
-//            return
-//        }
-//        
-//        Task {
-//            guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3), originalSize: capturedImage.renderSize, scale: capturedImage.scale) else {
-//                return
-//            }
-//           await queue.enque(EventQueueItem(payload: .screenshot(exportImage: exportImage)))
-//        }
+        guard let capturedImage = captureService.captureUIImage() else {
+            return
+        }
+        
+        Task {
+            guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3), originalSize: capturedImage.renderSize, scale: capturedImage.scale) else {
+                return
+            }
+           await queue.enque(EventQueueItem(payload: .screenshot(exportImage: exportImage)))
+        }
     }
 }

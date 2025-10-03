@@ -9,12 +9,14 @@ final class MaskCollector {
     struct Settings {
         var maskiOS26ViewTypes: Set<String>
         var maskTextInputs: Bool
+        var maskImages: Bool
         var minimumAlpha: CGFloat
         var maskClasses: Set<ObjectIdentifier>
         
         init(privacySettings: PrivacySettings) {
             self.maskiOS26ViewTypes = Set(privacySettings.maskiOS26TypeIds)
             self.maskTextInputs = privacySettings.maskTextInputs
+            self.maskImages = privacySettings.maskImages
             self.minimumAlpha = privacySettings.minimumAlpha
             self.maskClasses = privacySettings.buildMaskClasses()
         }
@@ -28,6 +30,10 @@ final class MaskCollector {
                 return SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? true
             }
             
+            if maskImages, let imageView = view as? UIImageView {
+                return SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? true
+            }
+            
             if SessionReplayAssociatedObjects.shouldMaskSwiftUI(view) ?? false {
                 return true
             }
@@ -35,9 +41,8 @@ final class MaskCollector {
             if SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? false {
                 return true
             }
-//            if let imageView = view as? UIImageView {
-//                return true
-//            }
+            
+           
 //            if let imageView = view as? UILabel {
 //                return true
 //            }
@@ -104,9 +109,9 @@ final class MaskCollector {
     
     func createMask(_ rPresenation: CALayer, root: CALayer, layer: CALayer, scale: CGFloat) -> Mask? {
         var scale = 1.0 // scale is already in layers
-        let rBounds = rPresenation.bounds
+       // let rBounds = rPresenation.bounds
         let lBounds = layer.bounds
-        guard rBounds.width > 0, rBounds.height > 0 else { return nil }
+        guard lBounds.width > 0, lBounds.height > 0 else { return nil }
 
         //let lPresenation = layer.presentation() ?? layer
         if CATransform3DIsAffine(layer.transform) {
@@ -122,7 +127,7 @@ final class MaskCollector {
                                                     tx: tx,
                                                     ty: ty).scaledBy(x: scale, y: scale)
             return Mask.affine(rect: lBounds, transform: affineTransform)
-        } else {
+        } else { // 3D animations
             let corner0 = CGPoint.zero
             let corner1 = CGPoint(x: lBounds.width, y: 0)
             

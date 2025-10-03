@@ -147,7 +147,9 @@ actor ReplayPushService {
     }
     
     func initializeSession(sessionSecureId: String) async throws -> InitializeSessionResponse {
-        try await replayApiService.initializeSession(context: context, sessionSecureId: sessionSecureId)
+        try await replayApiService.initializeSession(context: context,
+                                                     sessionSecureId: sessionSecureId,
+                                                     userIdentifier: "abelonogov@launchdarkly.com")
     }
     
     func identifySession(session: InitializeSessionResponse) async throws {

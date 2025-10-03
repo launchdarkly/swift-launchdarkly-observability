@@ -24,8 +24,7 @@ public final class ScreenCaptureService {
         return captureCompositeImageOfAllWindows()
     }
 
-    
-    
+
 //    /// Async-style convenience with closure.
 //    public func captureUIImage(completion: @escaping (CapturedImage?) -> Void) {
 //        runOnMain {
@@ -36,7 +35,7 @@ public final class ScreenCaptureService {
     // MARK: - Internals
 
     private func captureCompositeImageOfAllWindows() -> CapturedImage? {
-        let scale = 2.0 // UIScreen.main.scale
+        let scale = 1.0 // UIScreen.main.scale
         //let bounds  = UIScreen.main.bounds
             
         let format = UIGraphicsImageRendererFormat()
