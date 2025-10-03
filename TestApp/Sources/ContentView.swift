@@ -17,8 +17,9 @@ enum Failure: LocalizedError {
 }
 
 struct ContentView: View {
-    @State private var isMaskingUIKitEnabled: Bool = false
-    
+    @State private var isMaskingUIKitOneFieldEnabled: Bool = false
+    @State private var isMaskingUIKitCreditCardEnabled: Bool = false
+
     @State private var buttonPressed: Bool = false
     @State private var errorPressed: Bool = false
     @State private var counterMetricPressed: Bool = false
@@ -42,7 +43,8 @@ struct ContentView: View {
                     Text("Masking Elements (SwiftUI)")
                 }
                 
-                FauxLinkToggleRow(title: "Masking Elements (UIKit)", isOn: $isMaskingUIKitEnabled)
+                FauxLinkToggleRow(title: "Masking One TextField (UIKit)", isOn: $isMaskingUIKitOneFieldEnabled)
+                FauxLinkToggleRow(title: "Masking Credit Card (UIKit)", isOn: $isMaskingUIKitCreditCardEnabled)
                 
                 Button {
                     buttonPressed.toggle()
@@ -154,8 +156,10 @@ struct ContentView: View {
             } catch {
                 networkPressed.toggle()
             }
-        }.sheet(isPresented: $isMaskingUIKitEnabled) {
-            MaskingElementsUIKitView()
+        }.sheet(isPresented: $isMaskingUIKitCreditCardEnabled) {
+            MaskingCreditCardUIKitView()
+        }.sheet(isPresented: $isMaskingUIKitOneFieldEnabled) {
+            MaskingElementsSimpleUIKitView()
         }
     }
 }
@@ -171,7 +175,7 @@ struct FauxLinkToggleRow: View {
         ZStack {
             // Visuals only: system chevron/spacing
             NavigationLink(value: NoDestinationTag()) {
-                Text("Masking Elements (UIKit)")
+                Text(title)
             }
             .allowsHitTesting(false) // <- disables all taps on the link (incl. chevron)
             

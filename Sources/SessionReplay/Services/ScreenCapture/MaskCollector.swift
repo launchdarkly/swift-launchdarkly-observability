@@ -1,9 +1,7 @@
 import Foundation
 import UIKit
 import SwiftUI
-
-
-
+import Common
 
 typealias PrivacySettings = SessionReplayOptions.PrivacySettings
 
@@ -27,9 +25,16 @@ final class MaskCollector {
             }
             
             if maskTextInputs, let textInput = view as? UITextInput {
+                return SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? true
+            }
+            
+            if SessionReplayAssociatedObjects.shouldMaskSwiftUI(view) ?? false {
                 return true
             }
             
+            if SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? false {
+                return true
+            }
 //            if let imageView = view as? UIImageView {
 //                return true
 //            }
@@ -47,53 +52,76 @@ final class MaskCollector {
         self.settings = Settings(privacySettings: privacySettings)
     }
     
-    func collectViewMasks(in rootView: UIView, window: UIWindow) -> [Mask] {
-        var result = [Mask]()
+    func collectViewMasks(in rootView: UIView, window: UIWindow, scale: CGFloat) -> [MaskOperation] {
+        var result = [MaskOperation]()
         let root = rootView.layer
         let rPresenation = root.presentation() ?? root
-        guard var stack = rPresenation.sublayers else { return result }
         
-        while let layer = stack.popLast() {
+        func visit(layer: CALayer) {
             guard let view = layer.delegate as? UIView,
                   !view.isHidden,
                   view.window != nil,
                   view.alpha >= settings.minimumAlpha
-            else { continue }
+            else { return }
             
             //let layer = currentView.layer.presentation() ?? currentView.layer
+            let effectiveFrame = rPresenation.convert(layer.frame, from: layer.superlayer)
             let shouldMask = settings.shouldMask(view)
-            if shouldMask, let mask = createMask(rPresenation, root: root, layer: layer) {
-                result.append(mask)
-                continue
+            if shouldMask, let mask = createMask(rPresenation, root: root, layer: layer, scale: scale) {
+                var operation = MaskOperation(mask: mask, kind: .fill, effectiveFrame: effectiveFrame)
+                #if DEBUG
+                operation.accessibilityIdentifier = view.accessibilityIdentifier
+                #endif
+                result.append(operation)
+                return
             }
             
-            if let sublayers = layer.sublayers {
-                stack.append(contentsOf: sublayers)
+            if !isSystem(view: view, pLayer: layer) && !isTransparent(view: view, pLayer: layer), result.isNotEmpty {
+              //  if view.accessibilityIdentifier != nil {
+                    result.removeAll {
+                        effectiveFrame.contains($0.effectiveFrame)
+                    }
+              //  }
+            }
+        
+            if let sublayers = layer.sublayers?.sorted { $0.zPosition < $1.zPosition } {
+                sublayers.forEach(visit)
             }
         }
+        
+        rPresenation.sublayers?.sorted { $0.zPosition < $1.zPosition }.forEach(visit)
         
         return result
     }
     
-    func createMask(_ rPresenation: CALayer, root: CALayer, layer: CALayer) -> Mask? {
+    func isTransparent(view: UIView, pLayer: CALayer) -> Bool {
+        pLayer.opacity < 1 || view.alpha < 1.0 || view.backgroundColor == nil || (view.backgroundColor?.cgColor.alpha ?? 0) < 1.0
+    }
+    
+    func isSystem(view: UIView, pLayer: CALayer) -> Bool {
+       return false
+    }
+    
+    func createMask(_ rPresenation: CALayer, root: CALayer, layer: CALayer, scale: CGFloat) -> Mask? {
+        var scale = 1.0 // scale is already in layers
         let rBounds = rPresenation.bounds
         let lBounds = layer.bounds
         guard rBounds.width > 0, rBounds.height > 0 else { return nil }
-        
-        if CATransform3DIsAffine(rPresenation.transform) {
-            let lPresenation = layer.presentation() ?? layer
-            let corner0 = lPresenation.convert(CGPoint.zero, to: root)
-            let corner1 = lPresenation.convert(CGPoint(x: lBounds.width, y: 0), to: root)
-            let corner3 = lPresenation.convert(CGPoint(x: 0, y: lBounds.height), to: root)
+
+        //let lPresenation = layer.presentation() ?? layer
+        if CATransform3DIsAffine(layer.transform) {
+            let corner0 = layer.convert(CGPoint.zero, to: root)
+            let corner1 = layer.convert(CGPoint(x: lBounds.width, y: 0), to: root)
+            let corner3 = layer.convert(CGPoint(x: 0, y: lBounds.height), to: root)
             
             let tx = corner0.x, ty = corner0.y
-            let affineTransform = CGAffineTransform(a: (corner1.x - tx) / max(rBounds.width, 0.0001),
-                                                    b: (corner1.y - ty) / max(rBounds.width, 0.0001),
-                                                    c: (corner3.x - tx) / max(rBounds.height, 0.0001),
-                                                    d: (corner3.y - ty) / max(rBounds.height, 0.0001),
+            let affineTransform = CGAffineTransform(a: (corner1.x - tx) / max(lBounds.width, 0.0001),
+                                                    b: (corner1.y - ty) / max(lBounds.width, 0.0001),
+                                                    c: (corner3.x - tx) / max(lBounds.height, 0.0001),
+                                                    d: (corner3.y - ty) / max(lBounds.height, 0.0001),
                                                     tx: tx,
-                                                    ty: ty)
-            return Mask.affine(rect: rBounds, transform: affineTransform)
+                                                    ty: ty).scaledBy(x: scale, y: scale)
+            return Mask.affine(rect: lBounds, transform: affineTransform)
         } else {
             let corner0 = CGPoint.zero
             let corner1 = CGPoint(x: lBounds.width, y: 0)
@@ -118,6 +146,8 @@ final class MaskCollector {
 extension PrivacySettings {
     func buildMaskClasses() -> Set<ObjectIdentifier> {
         var ids = Set(maskUIViews.map(ObjectIdentifier.init))
+        
+        
 //            if privacySettings.maskTextInputs {
 //                [UITextField.self, UITextView.self, UIWebView.self, UISearchTextField.self,
 //                 SwiftUI.UITextView.self, SwiftUI.UITextView.self].forEach {

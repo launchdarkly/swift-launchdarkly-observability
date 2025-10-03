@@ -6,6 +6,7 @@ A row used by SmoothieList that adjusts its layout based on environment and plat
 */
 
 import SwiftUI
+import SessionReplay
 
 struct SmoothieRow: View {
     var smoothie: Smoothie
@@ -22,6 +23,7 @@ struct SmoothieRow: View {
                 .clipShape(imageClipShape)
                 .overlay(imageClipShape.strokeBorder(.quaternary, lineWidth: 0.5))
                 .accessibility(hidden: true)
+                .ldMask()
 
             VStack(alignment: .leading) {
                 Text(smoothie.title)

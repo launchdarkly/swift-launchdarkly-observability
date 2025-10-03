@@ -5,13 +5,13 @@ final class MaskService {
     public init() {
     }
     
-    func applyViewMasks(context: CGContext, viewMasks: [Mask]) {
-        for viewMask in viewMasks {
-            switch viewMask {
+    func applyViewMasks(context: CGContext, operations: [MaskOperation]) {
+        for operation in operations {
+            switch operation.mask {
             case .affine(let rect, let transform):
                 context.saveGState()
                 context.concatenate(transform)
-                let path = UIBezierPath(roundedRect: rect, cornerRadius: 4)
+                let path = UIBezierPath(roundedRect: rect, cornerRadius: 2)
                 UIColor.gray.setFill()
                 path.fill()
                 

@@ -49,7 +49,33 @@ public protocol CreditCardViewControllerDelegate: AnyObject {
 // MARK: - Controller
 
 public final class CreditCardViewController: UIViewController {
-    
+    var testAnimation: TestAnimation? {
+        didSet {
+            guard isViewLoaded, oldValue != testAnimation else { return }
+            
+            if oldValue == .rotate {
+                stack.layer.removeAllAnimations()
+                cvvContainer?.layer.removeAllAnimations()
+            }
+            
+            switch testAnimation  {
+            case .slideInFromBottom:
+                cover.backgroundColor = .blue
+                startSlidingFromBottom(view: cover)
+            case .slideInFromRight:
+                cover.backgroundColor = .blue
+                startSlidingFromRight(view: cover)
+            case .rotate:
+               cover.backgroundColor = .clear
+               startRotating(view: stack)
+               if let cvvContainer = cvvContainer {
+                   startRotating(view: cvvContainer)
+               }
+            case .none:
+                cover.backgroundColor = .clear
+            }
+        }
+    }
     public weak var delegate: CreditCardViewControllerDelegate?
     
     // MARK: UI
@@ -61,10 +87,11 @@ public final class CreditCardViewController: UIViewController {
     private let brandChip   = UILabel()
     private let expiryField = UITextField()
     private let cvvField    = UITextField()
+    private var cvvContainer: UIStackView?
     private let postalField = UITextField()
     private let saveButton  = UIButton(type: .system)
     private let cover = UIView()
-
+    
     // Accessory toolbar
     private lazy var kbToolbar: UIToolbar = {
         let tb = UIToolbar()
@@ -82,47 +109,19 @@ public final class CreditCardViewController: UIViewController {
     
     public override func viewDidLoad() {
         super.viewDidLoad()
-        //title = "Payment Method"
         view.backgroundColor = .systemBackground
         setupNav()
         setupLayout()
         updateSaveButton()
-       // view.layer.transform = CATransform3DRotate(CATransform3DIdentity, .pi / 8.0, 0, 1, 1)
-        startRotating(view: stack)
+        
+        //nameField.ldUnmask()
     }
     
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        //view.layer.layoutSublayers()
         
         cover.frame = view.bounds
-        startSliding(view: cover)
-        
-    }
-    
-    func startRotating(view: UIView, duration: TimeInterval = 10.0) {
-        let rotation = CABasicAnimation(keyPath: "transform.rotation.z")
-        rotation.fromValue = Double.pi * 2
-        rotation.toValue = Double.pi * 0
-        rotation.duration = duration
-        rotation.repeatCount = .infinity
-        rotation.isRemovedOnCompletion = false
-        view.layer.anchorPoint = CGPoint(x: 0.5, y: 0.25)
-        view.layer.add(rotation, forKey: "rotationAnimation")
-    }
-    
-    func startSliding(view v: UIView, duration: TimeInterval = 40.0) {
-        //guard let superview = v.superview else { return }
-        
-        let startX: CGFloat = v.bounds.width
-        let endX: CGFloat = -v.bounds.width
-    
-        v.frame.origin.x = startX
-        UIView.animate(withDuration: duration,
-                       delay: 0, options: [.repeat, .curveLinear],
-                       animations: {
-            v.frame.origin.x = endX
-        })
+        //startSliding(view: cover)
     }
     
     // MARK: - Public prefill (optional)
@@ -208,16 +207,16 @@ public final class CreditCardViewController: UIViewController {
         expiryField.delegate = self
         expiryContainer.addArrangedSubview(expiryField)
         
-        let cvvContainer = fieldContainer(title: "CVV")
+        let cvvContainer = self.cvvContainer ?? fieldContainer(title: "CVV")
         cvvField.placeholder = "123"
         cvvField.isSecureTextEntry = true
         cvvField.keyboardType = .numberPad
         cvvField.inputAccessoryView = kbToolbar
         cvvField.delegate = self
         cvvContainer.addArrangedSubview(cvvField)
+        self.cvvContainer = cvvContainer
+        //cvvContainer.ldMask()
         
-        startRotating(view: cvvContainer)
-
         row.addArrangedSubview(expiryContainer)
         row.addArrangedSubview(cvvContainer)
         stack.addArrangedSubview(row)
@@ -242,7 +241,7 @@ public final class CreditCardViewController: UIViewController {
         stack.addArrangedSubview(saveButton)
         
         
-        cover.backgroundColor = .blue
+        cover.backgroundColor = .clear
       //  cover.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cover)
 //        NSLayoutConstraint.activate([
@@ -500,17 +499,26 @@ private extension CreditCardViewController {
 
 import SwiftUI
 
+enum TestAnimation {
+    case slideInFromBottom
+    case slideInFromRight
+    case rotate
+}
+
 // MARK: - Wrapper for UIKit controller
 struct CreditCardControllerWrapper: UIViewControllerRepresentable {
     @Environment(\.presentationMode) var presentationMode
+    var testAnimation: TestAnimation
     
-    func makeUIViewController(context: Context) -> UIViewController {
+    func makeUIViewController(context: Context) -> CreditCardViewController {
         //let ccVC = CreditCardViewController()
         //ccVC.delegate = context.coordinator
         return CreditCardViewController()
     }
     
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) { }
+    func updateUIViewController(_ uiViewController: CreditCardViewController, context: Context) {
+        uiViewController.testAnimation = testAnimation
+    }
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -531,15 +539,21 @@ struct CreditCardControllerWrapper: UIViewControllerRepresentable {
     }
 }
 
-struct MaskingElementsUIKitView: View {
+struct MaskingCreditCardUIKitView: View {
     @Environment(\.dismiss) var dismiss
+    @State var testAnimation: TestAnimation = .rotate
     
     var body: some View {
         NavigationStack {
-            CreditCardControllerWrapper()
+            CreditCardControllerWrapper(testAnimation: testAnimation)
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationTitle("Masking Elements (UIKit)")
                 .toolbar {
+                    Button {
+                        testAnimation = (testAnimation == .rotate) ? .slideInFromBottom : .rotate
+                    } label: {
+                        Image(systemName: "arrow.down")
+                    }
                     Button {
                         dismiss()
                     } label: {

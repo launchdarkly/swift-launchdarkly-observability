@@ -36,7 +36,7 @@ public final class ScreenCaptureService {
     // MARK: - Internals
 
     private func captureCompositeImageOfAllWindows() -> CapturedImage? {
-        let scale = 1.0 // UIScreen.main.scale
+        let scale = 2.0 // UIScreen.main.scale
         //let bounds  = UIScreen.main.bounds
             
         let format = UIGraphicsImageRendererFormat()
@@ -47,8 +47,9 @@ public final class ScreenCaptureService {
         let enclosingBounds = minimalBoundsEnclosingWindows(windows)
         let renderer = UIGraphicsImageRenderer(size: enclosingBounds.size, format: format)
         let image = renderer.image { ctx in
-            drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false)
+            drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
         }
+        
         return CapturedImage(image: image, scale: scale, renderSize: enclosingBounds.size)
     }
 
@@ -64,23 +65,15 @@ public final class ScreenCaptureService {
 
     private func minimalBoundsEnclosingWindows(_ windows: [UIWindow]) -> CGRect {
         return windows.reduce(into: CGRect.zero) { rect, window in
-            let windowFrame = window.frame
-            if windowFrame.minX < rect.minX {
-                rect.origin.x = windowFrame.minX
-            }
-            if windowFrame.minY < rect.minY {
-                rect.origin.y = windowFrame.minY
-            }
-            if windowFrame.maxX > rect.maxX {
-                rect.size.width = windowFrame.maxX - rect.minX
-            }
-            if windowFrame.maxY > rect.maxY {
-                rect.size.height = windowFrame.maxY - rect.minY
-            }
+            rect = rect.enclosing(with: window.frame)
         }
     }
     
-    private func drawWindows(_ windows: [UIWindow], into context: CGContext, bounds: CGRect, afterScreenUpdates: Bool) {
+    private func drawWindows(_ windows: [UIWindow],
+                             into context: CGContext,
+                             bounds: CGRect,
+                             afterScreenUpdates: Bool,
+                             scale: CGFloat) {
         context.saveGState()
         context.setFillColor(UIColor.clear.cgColor)
         context.fill(bounds)
@@ -88,7 +81,7 @@ public final class ScreenCaptureService {
 
         for window in windows {
             context.saveGState()
-            let masks = maskCollector.collectViewMasks(in: window, window: window)
+            let maskOperations = maskCollector.collectViewMasks(in: window, window: window, scale: scale)
 
             context.translateBy(x: window.frame.origin.x, y: window.frame.origin.y)
             context.concatenate(window.transform)
@@ -100,7 +93,7 @@ public final class ScreenCaptureService {
             let windowFrame = window.layer.frame
             window.drawHierarchy(in: windowFrame, afterScreenUpdates: afterScreenUpdates)
             
-            maskingService.applyViewMasks(context: context, viewMasks: masks)
+            maskingService.applyViewMasks(context: context, operations: maskOperations)
             //window.layer.render(in: context)
             context.restoreGState()
         }

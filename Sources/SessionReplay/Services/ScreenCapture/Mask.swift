@@ -12,3 +12,19 @@ enum Mask {
     case quad(Quad)
 }
 
+struct MaskOperation {
+    enum Kind {
+        case fill
+        case cut
+    }
+    
+    var mask: Mask
+    var kind: Kind
+    var effectiveFrame: CGRect
+    
+    #if DEBUG
+    var accessibilityIdentifier: String?
+    #endif
+}
+
+
