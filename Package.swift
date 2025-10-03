@@ -15,6 +15,53 @@ let package = Package(
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
     ],
     targets: [
+        .target(
+            name: "DomainModels"
+        ),
+        .target(
+            name: "DomainServices",
+            dependencies: [
+                "DomainModels"
+            ]
+        ),
+        .target(
+            name: "ApplicationServices",
+            dependencies: [
+                "DomainModels",
+                "DomainServices"
+            ]
+        ),
+        .target(
+            name: "SessionServiceLive",
+            dependencies: [
+                "DomainModels",
+                "DomainServices",
+                "ApplicationServices"
+            ]
+        ),
+        .target(
+            name: "OTelInstrumentationService",
+            dependencies: [
+                "Common",
+                "DomainModels",
+                "DomainServices",
+                "ApplicationServices",
+                "Sampling",
+                "SamplingLive",
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
+            ]
+        ),
+        .testTarget(
+            name: "OTelInstrumentationServiceTests",
+            dependencies: [
+                "OTelInstrumentationService",
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
+            ]
+        ),
         .target(name: "Common"),
         .target(
             name: "API",
