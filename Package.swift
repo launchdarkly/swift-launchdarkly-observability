@@ -75,49 +75,6 @@ let package = Package(
             ]
         ),
         .target(
-            name: "ObservabilityServiceLive",
-            dependencies: [
-                "ApplicationServices",
-                "OTelInstrumentation",
-                "KSCrashReportService",
-                "iOSSessionService",
-                "Sampling",
-                "SamplingLive",
-                "Sampling",
-                "Common"
-            ],
-            resources: [
-                .process("Resources"),
-            ]
-        ),
-        .target(name: "Common"),
-        .target(
-            name: "API",
-            dependencies: [
-                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-                .product(name: "ResourceExtension", package: "opentelemetry-swift"),
-            ]
-        ),
-        .testTarget(
-            name: "CommonTests",
-            dependencies: [
-                "Common"
-            ],
-            resources: [.process("GraphQL/Queries")]
-        ),
-        .target(name: "CrashReporter"),
-        .target(
-            name: "CrashReporterLive",
-            dependencies: [
-                "CrashReporter",
-                "Common",
-                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-                .product(name: "Installations", package: "KSCrash")
-            ]
-        ),
-        .target(
             name: "Sampling",
             dependencies: [
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
@@ -148,46 +105,34 @@ let package = Package(
             ]
         ),
         .target(
-            name: "Instrumentation",
+            name: "ObservabilityServiceLive",
             dependencies: [
-                "API",
-                "CrashReporter",
-                "Sampling",
-                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-            ]
-        ),
-        .target(
-            name: "Observability",
-            dependencies: [
-                "Common",
-                "API",
-                "CrashReporter",
-                "CrashReporterLive",
+                "ApplicationServices",
+                "OTelInstrumentation",
+                "KSCrashReportService",
+                "iOSSessionService",
                 "Sampling",
                 "SamplingLive",
-                "Instrumentation",
-                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
-                .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift"),
+                "Common"
             ],
             resources: [
                 .process("Resources"),
             ]
+        ),
+        .target(name: "Common"),
+        .testTarget(
+            name: "CommonTests",
+            dependencies: [
+                "Common"
+            ],
+            resources: [.process("GraphQL/Queries")]
         ),
         .target(
             name: "LaunchDarklyObservability",
             dependencies: [
                 "ApplicationServices",
                 "ObservabilityServiceLive",
-                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
-//                "Observability",
-//                "API",
-//                "Common",
-//                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
-//                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-//                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "LaunchDarkly", package: "ios-client-sdk")
             ]
         )
     ]
