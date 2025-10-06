@@ -45,6 +45,7 @@ public struct ObservabilityService {
         tracesService.startSpan(name: name, attributes: attributes)
     }
     
+    /// Wait for all flush operations to complete, default timeout is 5 seconds
     public func flush() async -> Bool {
         let tracesFlushed = await tracesService.flush()
         let logsFlushed = await logsService.flush()
