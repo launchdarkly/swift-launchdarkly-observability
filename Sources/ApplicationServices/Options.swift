@@ -39,7 +39,7 @@ public struct Options {
     public var otlpEndpoint: String
     public var backendUrl: String
     public var resourceAttributes: [String: AttributeValue]
-    public var customHeaders: [(String, String)]
+    public var customHeaders: [String: String]
     public var tracingOrigins: TracingOriginsOption
     public var urlBlocklist: [String]
     public var sessionBackgroundTimeout: TimeInterval
@@ -56,7 +56,7 @@ public struct Options {
         otlpEndpoint: String = "https://otel.observability.app.launchdarkly.com:4318",
         backendUrl: String = "https://pub.observability.app.launchdarkly.com",
         resourceAttributes: [String: AttributeValue] = [:],
-        customHeaders: [(String, String)] = [],
+        customHeaders: [String: String] = [:],
         tracingOrigins: TracingOriginsOption = .disabled,
         urlBlocklist: [String] = [],
         sessionBackgroundTimeout: TimeInterval = 15 * 60,

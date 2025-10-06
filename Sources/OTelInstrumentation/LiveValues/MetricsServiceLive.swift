@@ -25,7 +25,7 @@ extension MetricsService {
         
         let exporter = OtlpHttpMetricExporter(
             endpoint: url,
-            config: .init(headers: options.customHeaders)
+            config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
         )
         
         return build(

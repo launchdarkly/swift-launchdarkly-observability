@@ -26,7 +26,7 @@ extension LogsService {
                 SamplingLogExporterDecorator(
                     exporter: OtlpHttpLogExporter(
                         endpoint: url,
-                        envVarHeaders: options.customHeaders
+                        envVarHeaders: options.customHeaders.map({ ($0.key, $0.value) })
                     ),
                     sampler: sampler
                 ),
@@ -35,7 +35,7 @@ extension LogsService {
                 SamplingLogExporterDecorator(
                     exporter: OtlpHttpLogExporter(
                         endpoint: url,
-                        envVarHeaders: options.customHeaders
+                        envVarHeaders: options.customHeaders.map({ ($0.key, $0.value) })
                     ),
                     sampler: sampler
                 )

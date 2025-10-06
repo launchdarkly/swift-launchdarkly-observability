@@ -26,9 +26,7 @@ public final class Observability: Plugin {
         resourceAttributes[SemanticConvention.launchdarklySdkVersion] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
         resourceAttributes[SemanticConvention.highlightProjectId] = .string(mobileKey)
      
-        if !customHeaders.contains(where: { $0.0 == SemanticConvention.highlightProjectId }) {
-            customHeaders.append((SemanticConvention.highlightProjectId, mobileKey))
-        }
+        customHeaders[SemanticConvention.highlightProjectId] = mobileKey
         
         options.resourceAttributes = resourceAttributes
         options.customHeaders = customHeaders
