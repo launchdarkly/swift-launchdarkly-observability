@@ -33,7 +33,7 @@ final class CustomSampler {
             if matchesSpanConfig(config: spanConfig, span: spanData) {
                 return .init(
                     sample: sampler(spanConfig.samplingRatio),
-                    attributes: [LDSemanticAttribute.ATTR_SAMPLING_RATIO: .int(spanConfig.samplingRatio)]
+                    attributes: [LDSemanticAttribute.attribute_sampling_ratio: .int(spanConfig.samplingRatio)]
                 )
             }
         }
@@ -51,7 +51,7 @@ final class CustomSampler {
             if matchesLogConfig(config: logConfig, record: logData) {
                 return .init(
                     sample: sampler(logConfig.samplingRatio),
-                    attributes: [LDSemanticAttribute.ATTR_SAMPLING_RATIO: .int(logConfig.samplingRatio)]
+                    attributes: [LDSemanticAttribute.attribute_sampling_ratio: .int(logConfig.samplingRatio)]
                 )
             }
         }

@@ -3,5 +3,5 @@ public enum SemanticConvention {
 }
 
 public enum LDSemanticAttribute {
-    public static let ATTR_SAMPLING_RATIO = "launchdarkly.sampling.ratio"
+    public static let attribute_sampling_ratio = "launchdarkly.sampling.ratio"
 }

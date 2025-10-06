@@ -3,4 +3,5 @@ public enum InstrumentationError: Error {
     case invalidLogExporterUrl
     case invalidMetricExporterUrl
     case invalidGraphQLUrlIs
+    case unableToLoadReportStore
 }

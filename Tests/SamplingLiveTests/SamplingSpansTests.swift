@@ -103,7 +103,7 @@ struct SamplingSpansTests {
         let spans = [originalSpan]
         
         let samplingAttributes = [
-            LDSemanticAttribute.ATTR_SAMPLING_RATIO:  AttributeValue.int(42)
+            LDSemanticAttribute.attribute_sampling_ratio:  AttributeValue.int(42)
         ]
         
         let sampler = ExportSampler.fake(

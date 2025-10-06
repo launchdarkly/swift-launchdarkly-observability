@@ -11,6 +11,7 @@ import KSCrashFilters
 final class KSCrashReportService {
     private let logsService: LogsService
     private let log: OSLog
+    private let reportStore: CrashReportStore
     
     init(logsService: LogsService, log: OSLog) throws {
         let installation = CrashInstallationStandard.shared
@@ -26,19 +27,23 @@ final class KSCrashReportService {
         
         try installation.install(with: config)
         
-        self.logsService = logsService
-        self.log = log
-    }
-    
-    func logPendingCrashReports() -> Void {
         let reporter = KSCrash.shared
         
-        guard let reportStore = reporter.reportStore else { return }
+        guard let reportStore = reporter.reportStore else {
+            throw ApplicationServices.InstrumentationError.unableToLoadReportStore
+        }
         reportStore.sink = CrashReportFilterPipeline(filters: [
             CrashReportFilterDemangle(), // Handles symbol demangling
             CrashReportFilterAppleFmt(reportStyle: .symbolicated),
             LDCrashFilter(logsService: logsService)
         ])
+        
+        self.logsService = logsService
+        self.log = log
+        self.reportStore = reportStore
+    }
+    
+    func logPendingCrashReports() -> Void {
         reportStore.sendAllReports { [weak self] anyReports, error in
             guard let self else { return }
             if let error {

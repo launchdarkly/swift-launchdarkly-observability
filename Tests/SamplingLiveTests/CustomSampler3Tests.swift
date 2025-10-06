@@ -84,6 +84,6 @@ struct CustomSampler3Tests {
         let result = customSampler.sampleSpan(span)
         
         #expect(result.sample)
-        #expect(.int(50) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(50) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
     }
 }

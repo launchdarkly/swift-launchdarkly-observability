@@ -28,7 +28,7 @@ struct CustomSamplerLogsTest {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(42) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
     }
     
     @Test("should not match log when severity does not match")
@@ -70,7 +70,7 @@ struct CustomSamplerLogsTest {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(42) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
     }
     
     @Test("should match log based on message with regex")
@@ -91,7 +91,7 @@ struct CustomSamplerLogsTest {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(42) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
     }
     
     @Test("should match log based on string attribute value")
@@ -121,7 +121,7 @@ struct CustomSamplerLogsTest {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(75) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(75) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
     }
     
     @Test("should not match log when attributes do not exist")
@@ -188,6 +188,6 @@ struct CustomSamplerLogsTest {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(90) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(90) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
     }
 }

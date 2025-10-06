@@ -109,7 +109,7 @@ struct SamplingLogsTests {
             "environment": AttributeValue.string("production")
         ]
         let samplingAttributes = [
-            LDSemanticAttribute.ATTR_SAMPLING_RATIO:  AttributeValue.int(42)
+            LDSemanticAttribute.attribute_sampling_ratio:  AttributeValue.int(42)
         ]
         let mockLog = makeMockReadableLogRecord(body: .string("test-log"), attributes: originalAttributes)
         let sampler = ExportSampler.fake(
@@ -130,7 +130,7 @@ struct SamplingLogsTests {
         
         #expect(result[0].attributes["service.name"] == originalAttributes["service.name"])
         #expect(result[0].attributes["environment"] == originalAttributes["environment"])
-        #expect(result[0].attributes[LDSemanticAttribute.ATTR_SAMPLING_RATIO] == samplingAttributes[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(result[0].attributes[LDSemanticAttribute.attribute_sampling_ratio] == samplingAttributes[LDSemanticAttribute.attribute_sampling_ratio])
     }
     
     @Test("Given a set of logs, when having a mixed sampling results with and without attributes, then should handle them correctly")
@@ -140,7 +140,7 @@ struct SamplingLogsTests {
         let logs = (lowerBound...upperBound).map { makeMockReadableLogRecord(body: .string("log\($0)")) }
         
         let samplingAttributes = [
-            LDSemanticAttribute.ATTR_SAMPLING_RATIO:  AttributeValue.int(50)
+            LDSemanticAttribute.attribute_sampling_ratio:  AttributeValue.int(50)
         ]
         
         let sampler = ExportSampler.fake(
@@ -166,6 +166,6 @@ struct SamplingLogsTests {
         
         #expect(result[1].body == logs[2].body)
         #expect(result[1].attributes != logs[2].attributes) // result[1] has modified attributes with sampling attr. added
-        #expect(result[1].attributes[LDSemanticAttribute.ATTR_SAMPLING_RATIO] == AttributeValue.int(50))
+        #expect(result[1].attributes[LDSemanticAttribute.attribute_sampling_ratio] == AttributeValue.int(50))
     }
 }
