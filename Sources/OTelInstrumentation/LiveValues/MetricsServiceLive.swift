@@ -56,7 +56,7 @@ extension MetricsService {
             recordIncr: { service.recordIncr(metric: $0) },
             recordHistogram: { service.recordHistogram(metric: $0) },
             recordUpDownCounter: { service.recordUpDownCounter(metric: $0) },
-            flush: { service.flush() }
+            flush: { await service.flush() }
         )
     }
 }

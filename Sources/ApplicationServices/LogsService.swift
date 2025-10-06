@@ -2,11 +2,11 @@
 
 public struct LogsService {
     public var recordLog: (_ message: String, _ severity: Severity, _ attributes: [String: AttributeValue]) -> Void
-    public var flush: () -> Bool
+    public var flush: () async -> Bool
     
     public init(
         recordLog: @escaping (_: String, _: Severity, _: [String : AttributeValue]) -> Void,
-        flush: @escaping () -> Bool
+        flush: @escaping () async -> Bool
     ) {
         self.recordLog = recordLog
         self.flush = flush

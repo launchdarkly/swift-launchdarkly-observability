@@ -70,11 +70,13 @@ final class LDCrashFilter: NSObject, CrashReportFilter {
                 )
             }
             
-            guard logsService.flush() else {
-                onCompletion?(reports, LaunchDarklyCrashFilterError.flushFailed)
-                return
+            Task { [weak self] in
+                guard await self?.logsService.flush() == true else {
+                    onCompletion?(reports, LaunchDarklyCrashFilterError.flushFailed)
+                    return
+                }
+                onCompletion?(reports, nil)
             }
-            onCompletion?(reports, nil)
         } catch let error {
             onCompletion?(reports, error)
         }

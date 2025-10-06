@@ -66,7 +66,7 @@ extension LogsService {
         
         return .init(
             recordLog: { service.recordLog(message: $0, severity: $1, attributes: $2) },
-            flush: { service.flush() }
+            flush: { await service.flush() }
         )
     }
 }

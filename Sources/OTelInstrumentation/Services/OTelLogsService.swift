@@ -75,7 +75,11 @@ final class OTelLogsService {
             .emit()
     }
     
-    func flush() -> Bool {
-        logRecordProcessor.forceFlush(explicitTimeout: 3) == .success
+    func flush() async -> Bool {
+        await withCheckedContinuation { continuation in
+            continuation.resume(
+                returning: logRecordProcessor.forceFlush(explicitTimeout: 3) == .success
+            )
+        }
     }
 }

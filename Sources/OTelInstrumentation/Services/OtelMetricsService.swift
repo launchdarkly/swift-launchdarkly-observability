@@ -104,7 +104,11 @@ final class OTelMetricsService {
         upDownCounter?.add(value: metric.value, attributes: metric.attributes.mapValues { $0.toOTel() })
     }
     
-    func flush() -> Bool {
-        periodicMetricReader.forceFlush() == .success
+    func flush() async -> Bool {
+        await withCheckedContinuation { continuation in
+            continuation.resume(
+                returning: periodicMetricReader.forceFlush() == .success
+            )
+        }
     }
 }

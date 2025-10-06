@@ -77,7 +77,7 @@ extension TracesService {
                 service.startSpan(name: $0, attributes: $1)
             },
             flush: {
-                service.flush()
+                await service.flush()
             }
         )
     }

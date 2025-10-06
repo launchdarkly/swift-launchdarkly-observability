@@ -120,11 +120,15 @@ final class OTelTraceService {
         )
     }
     
-    func flush() -> Bool {
+    func flush() async -> Bool {
         /// Processes all span events that have not yet been processed.
         /// This method is executed synchronously on the calling thread
         /// - Parameter timeout: Maximum time the flush complete or abort. If nil, it will wait indefinitely
-        self.spanProcessor.forceFlush(timeout: 3.0)
-        return true
+        await withCheckedContinuation { continuation in
+            self.spanProcessor.forceFlush(timeout: 3.0)
+            continuation.resume(
+                returning: true
+            )
+        }
     }
 }

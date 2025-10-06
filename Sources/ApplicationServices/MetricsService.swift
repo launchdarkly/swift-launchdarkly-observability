@@ -6,7 +6,7 @@ public struct MetricsService {
     public var recordIncr: (_ metric: Metric) -> Void
     public var recordHistogram: (_ metric: Metric) -> Void
     public var recordUpDownCounter: (_ metric: Metric) -> Void
-    public var flush: () -> Bool
+    public var flush: () async -> Bool
     
     public init(
         recordMetric: @escaping (_: Metric) -> Void,
@@ -14,7 +14,7 @@ public struct MetricsService {
         recordIncr: @escaping (_: Metric) -> Void,
         recordHistogram: @escaping (_: Metric) -> Void,
         recordUpDownCounter: @escaping (_: Metric) -> Void,
-        flush: @escaping () -> Bool
+        flush: @escaping () async -> Bool
     ) {
         self.recordMetric = recordMetric
         self.recordCount = recordCount

@@ -39,7 +39,7 @@ extension ObservabilityService {
                 let graphQLClient = GraphQLClient(endpoint: url)
                 let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
                 let config = try await samplingConfigClient.getSamplingConfig(mobileKey: mobileKey)
-                sampler.setConfig(config)
+//                sampler.setConfig(config)
             } catch {
                 os_log("%{public}@", log: options.log, type: .error, "getSamplingConfig failed with error: \(error)")
             }

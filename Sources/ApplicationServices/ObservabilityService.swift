@@ -45,7 +45,11 @@ public struct ObservabilityService {
         tracesService.startSpan(name: name, attributes: attributes)
     }
     
-    public func flush() -> Bool {
-        tracesService.flush() && logsService.flush() && metricsService.flush()
+    public func flush() async -> Bool {
+        let tracesFlushed = await tracesService.flush()
+        let logsFlushed = await logsService.flush()
+        let metricsFlushed = await metricsService.flush()
+        
+        return tracesFlushed && logsFlushed && metricsFlushed
     }
 }
