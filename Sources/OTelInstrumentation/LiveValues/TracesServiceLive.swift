@@ -34,9 +34,8 @@ extension TracesService {
         options: Options,
         sampler: ExportSampler
     ) throws -> Self {
-        let tracesPath = "/v1/traces"
-        guard  let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(tracesPath) else {
-            throw InstrumentationError.traceExporterUrlIsInvalid
+        guard  let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(CommonOTelPath.tracesPath) else {
+            throw InstrumentationError.invalidTraceExporterUrl
         }
         
         let exporter = SamplingTraceExporterDecorator(

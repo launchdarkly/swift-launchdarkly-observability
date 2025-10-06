@@ -1,6 +1,6 @@
 public enum InstrumentationError: Error {
-    case traceExporterUrlIsInvalid
-    case logExporterUrlIsInvalid
-    case metricExporterUrlIsInvalid
-    case graphQLUrlIsInvalid
+    case invalidTraceExporterUrl
+    case invalidLogExporterUrl
+    case invalidMetricExporterUrl
+    case invalidGraphQLUrlIs
 }

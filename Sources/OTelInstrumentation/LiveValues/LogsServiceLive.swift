@@ -17,9 +17,8 @@ extension LogsService {
         options: Options,
         sampler: ExportSampler
     ) throws -> Self {
-        let logsPath = "/v1/logs"
-        guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(logsPath) else {
-            throw InstrumentationError.logExporterUrlIsInvalid
+        guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(CommonOTelPath.logsPath) else {
+            throw InstrumentationError.invalidLogExporterUrl
         }
         
         let exporter = MultiLogRecordExporter(

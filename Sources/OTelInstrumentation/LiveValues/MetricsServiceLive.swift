@@ -19,9 +19,8 @@ extension MetricsService {
         sessionService: SessionService,
         options: Options
     ) throws -> Self {
-        let metricsPath = "/v1/metrics"
-        guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(metricsPath) else {
-            throw InstrumentationError.metricExporterUrlIsInvalid
+        guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(CommonOTelPath.metricsPath) else {
+            throw InstrumentationError.invalidMetricExporterUrl
         }
         
         let exporter = OtlpHttpMetricExporter(
