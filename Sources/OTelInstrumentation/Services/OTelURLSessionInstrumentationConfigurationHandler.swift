@@ -34,9 +34,11 @@ struct OTelURLSessionInstrumentationConfigurationHandler {
         guard let urlString = urlRequest.url?.absoluteString.lowercased() else {
             return false
         }
-        let isNotOtelEndpoint = urlString.contains(options.otlpEndpoint) == false
+        let otlpEndpoint = options.otlpEndpoint.lowercased()
+        let backendUrl = options.backendUrl
+        let isNotOtelEndpoint = urlString.contains(otlpEndpoint) == false
         let isNotMobileLaunchDarklyUrl = urlString.contains("https://mobile.launchdarkly.com/mobile") == false
-        let isNotBackendUrl = urlString.contains(options.backendUrl) == false
+        let isNotBackendUrl = urlString.contains(backendUrl) == false
         let isNotInUrlBlocklist = {
             return options.urlBlocklist.contains { url in
                 return urlString.contains(url.lowercased())

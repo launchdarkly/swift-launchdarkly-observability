@@ -29,8 +29,12 @@ struct DomainModelOtelTests {
     
     @Test
     func domainSeverityToOTelSeverityTransformation() {
-        let domainSeverity: DomainModels.Severity = .info
-        let otelSeverity = domainSeverity.toOtel()
+        var domainSeverity: DomainModels.Severity = .info
+        var otelSeverity = domainSeverity.toOtel()
         #expect(otelSeverity == .info)
+        
+        domainSeverity = .info4
+        otelSeverity = domainSeverity.toOtel()
+        #expect(otelSeverity == .info4)
     }
 }
