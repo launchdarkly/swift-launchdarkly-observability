@@ -84,6 +84,7 @@ let package = Package(
         .target(
             name: "SamplingLive",
             dependencies: [
+                "DomainModels",
                 "Sampling",
                 "Common",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
@@ -93,6 +94,7 @@ let package = Package(
         .testTarget(
             name: "SamplingLiveTests",
             dependencies: [
+                "DomainModels",
                 "Sampling",
                 "SamplingLive",
                 "Common",

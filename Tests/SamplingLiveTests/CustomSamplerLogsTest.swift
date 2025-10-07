@@ -3,6 +3,7 @@ import Testing
 @testable import OpenTelemetrySdk
 import OpenTelemetryApi
 
+import DomainModels
 import Common
 import Sampling
 @testable import SamplingLive
@@ -28,7 +29,7 @@ struct CustomSamplerLogsTest {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
+        #expect(.int(42) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should not match log when severity does not match")
@@ -70,7 +71,7 @@ struct CustomSamplerLogsTest {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
+        #expect(.int(42) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should match log based on message with regex")
@@ -91,7 +92,7 @@ struct CustomSamplerLogsTest {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
+        #expect(.int(42) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should match log based on string attribute value")
@@ -113,7 +114,7 @@ struct CustomSamplerLogsTest {
         let customSampler = ExportSampler.customSampler { $0 == 75 }
         customSampler.setConfig(config)
         let attributes = [
-            "service.name": AttributeValue.string("api-gateway"),
+            "service.name": OpenTelemetryApi.AttributeValue.string("api-gateway"),
             "environment": AttributeValue.string("production")
         ]
         let log = makeMockReadableLogRecord(attributes: attributes)
@@ -121,7 +122,7 @@ struct CustomSamplerLogsTest {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(75) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
+        #expect(.int(75) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should not match log when attributes do not exist")
@@ -175,7 +176,7 @@ struct CustomSamplerLogsTest {
         let customSampler = ExportSampler.customSampler { $0 == 90 }
         customSampler.setConfig(config)
         let attributes = [
-            "service.name": AttributeValue.string("db-connector"),
+            "service.name": OpenTelemetryApi.AttributeValue.string("db-connector"),
             "retry.enabled": AttributeValue.bool(true),
             "retry.count": AttributeValue.int(3)
         ]
@@ -188,6 +189,6 @@ struct CustomSamplerLogsTest {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(90) == result.attributes?[LDSemanticAttribute.attribute_sampling_ratio])
+        #expect(.int(90) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
 }

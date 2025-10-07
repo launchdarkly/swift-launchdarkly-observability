@@ -3,6 +3,7 @@ import Foundation
 import OpenTelemetryApi
 import OpenTelemetrySdk
 
+import DomainModels
 import Common
 import Sampling
 
@@ -33,7 +34,7 @@ final class CustomSampler {
             if matchesSpanConfig(config: spanConfig, span: spanData) {
                 return .init(
                     sample: sampler(spanConfig.samplingRatio),
-                    attributes: [LDSemanticAttribute.attribute_sampling_ratio: .int(spanConfig.samplingRatio)]
+                    attributes: [SemanticConvention.attributeSamplingRatio: .int(spanConfig.samplingRatio)]
                 )
             }
         }
@@ -51,7 +52,7 @@ final class CustomSampler {
             if matchesLogConfig(config: logConfig, record: logData) {
                 return .init(
                     sample: sampler(logConfig.samplingRatio),
-                    attributes: [LDSemanticAttribute.attribute_sampling_ratio: .int(logConfig.samplingRatio)]
+                    attributes: [SemanticConvention.attributeSamplingRatio: .int(logConfig.samplingRatio)]
                 )
             }
         }
@@ -77,7 +78,7 @@ final class CustomSampler {
     
     private func matchesValue(
         matchConfig: MatchConfig?,
-        value: AttributeValue
+        value: OpenTelemetryApi.AttributeValue
     ) -> Bool {
         guard let matchConfig else { return false }
         switch matchConfig {
@@ -91,7 +92,7 @@ final class CustomSampler {
     
     private func matchesAttributes(
         attributeConfigs: [AttributeMatchConfig]?,
-        attributes: [String: AttributeValue]?
+        attributes: [String: OpenTelemetryApi.AttributeValue]?
     ) -> Bool {
         guard let attributeConfigs else {
             return true
