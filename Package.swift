@@ -75,6 +75,14 @@ let package = Package(
             ]
         ),
         .target(
+            name: "SystemMetricsLive",
+            dependencies: [
+                "DomainModels",
+                "DomainServices",
+                "ApplicationServices"
+            ]
+        ),
+        .target(
             name: "Sampling",
             dependencies: [
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
@@ -115,6 +123,7 @@ let package = Package(
                 "iOSSessionService",
                 "Sampling",
                 "SamplingLive",
+                "SystemMetricsLive",
                 "Common"
             ],
             resources: [

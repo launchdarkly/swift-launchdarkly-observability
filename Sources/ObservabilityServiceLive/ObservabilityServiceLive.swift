@@ -7,13 +7,15 @@ import iOSSessionService
 import KSCrashReportService
 import Sampling
 import SamplingLive
+import SystemMetricsLive
 import Common
 
 extension ObservabilityService {
     public static let noOp: Self = .init(
         metricsService: .noOp,
         tracesService: .noOp,
-        logsService: .noOp
+        logsService: .noOp,
+        cpuUsageMeterService: .noOp
     )
     
     public static func build(
@@ -31,6 +33,14 @@ extension ObservabilityService {
         let logsService = try LogsService.buildHttp(sessionService: sessionService, options: options, sampler: sampler)
         let userInteractionService = UserInteractionService.build(tracesService: tracesService)
         userInteractionService.start()
+        
+        let cpuUsageMetrics = CpuUsageMeterService.build(
+            monitoringInterval: 2,
+            metricsService: metricsService,
+            log: options.log
+        )
+        cpuUsageMetrics.startMonitoring()
+
         Task {
             do {
                 guard let url = URL(string: options.backendUrl) else {
@@ -39,7 +49,7 @@ extension ObservabilityService {
                 let graphQLClient = GraphQLClient(endpoint: url)
                 let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
                 let config = try await samplingConfigClient.getSamplingConfig(mobileKey: mobileKey)
-                sampler.setConfig(config)
+//                sampler.setConfig(config)
             } catch {
                 os_log("%{public}@", log: options.log, type: .error, "getSamplingConfig failed with error: \(error)")
             }
@@ -56,7 +66,8 @@ extension ObservabilityService {
         return .init(
             metricsService: metricsService,
             tracesService: tracesService,
-            logsService: logsService
+            logsService: logsService,
+            cpuUsageMeterService: cpuUsageMetrics
         )
     }
 }

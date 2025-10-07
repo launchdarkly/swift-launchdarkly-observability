@@ -2,15 +2,18 @@ public struct ObservabilityService {
     public var metricsService: MetricsService
     public var tracesService: TracesService
     public var logsService: LogsService
+    public var cpuUsageMeterService: CpuUsageMeterService
     
     public init(
         metricsService: MetricsService,
         tracesService: TracesService,
-        logsService: LogsService
+        logsService: LogsService,
+        cpuUsageMeterService: CpuUsageMeterService
     ) {
         self.metricsService = metricsService
         self.tracesService = tracesService
         self.logsService = logsService
+        self.cpuUsageMeterService = cpuUsageMeterService
     }
     
     public func recordMetric(metric: Metric) {

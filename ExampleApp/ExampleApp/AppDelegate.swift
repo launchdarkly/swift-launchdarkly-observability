@@ -2,7 +2,8 @@ import UIKit
 import LaunchDarkly
 import LaunchDarklyObservability
 
-let mobileKey = "mob-48fd3788-eab7-4b72-b607-e41712049dbd"
+//let mobileKey = "mob-48fd3788-eab7-4b72-b607-e41712049dbd"
+let mobileKey = "mob-f9e0f6ce-9abc-4b76-abd2-5f0a635a6541" // staging
 let config = { () -> LDConfig in
     var config = LDConfig(
         mobileKey: mobileKey,
@@ -11,7 +12,8 @@ let config = { () -> LDConfig in
     config.plugins = [
         Observability(
             options: .init(
-                otlpEndpoint: "http://localhost:4318",
+                otlpEndpoint: "https://otel.observability.ld-stg.launchdarkly.com:4318", // Staging
+//                otlpEndpoint: "http://localhost:4318",
                 sessionBackgroundTimeout: 3,
                 isDebug: true,
                 logs: .enabled,
@@ -69,3 +71,4 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         return true
     }
 }
+
