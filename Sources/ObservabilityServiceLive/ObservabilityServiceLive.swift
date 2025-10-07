@@ -34,7 +34,7 @@ extension ObservabilityService {
         Task {
             do {
                 guard let url = URL(string: options.backendUrl) else {
-                    throw InstrumentationError.invalidGraphQLUrlIs
+                    throw InstrumentationError.invalidGraphQLUrl
                 }
                 let graphQLClient = GraphQLClient(endpoint: url)
                 let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
