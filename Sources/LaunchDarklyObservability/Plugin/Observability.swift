@@ -32,7 +32,7 @@ public final class Observability: Plugin {
         options.customHeaders = customHeaders
         
         do {
-            LDObserve.shared.set(service: try ObservabilityService.build(mobileKey: mobileKey, options: options))
+            LDObserve.set(service: try ObservabilityService.build(mobileKey: mobileKey, options: options))
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Observability Service initialization failed with error: \(error)")
         }

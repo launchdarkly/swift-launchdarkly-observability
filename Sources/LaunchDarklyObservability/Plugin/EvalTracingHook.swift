@@ -25,7 +25,7 @@ public final class EvalTracingHook: Hook {
             
             /// Requirement 1.2.3.6
             /// https://github.com/launchdarkly/sdk-specs/tree/main/specs/OTEL-openteletry-integration#requirement-1236
-            let span = LDObserve.shared.startSpan(
+            let span = LDObserve.startSpan(
                 name: "LDClient.\(seriesContext.methodName)"
             )
             

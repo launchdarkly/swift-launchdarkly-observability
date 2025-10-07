@@ -29,10 +29,10 @@ struct TraceView: View {
                 .task(id: started) {
                     guard started else {
                         span?.end()
-                        await LDObserve.shared.flush()
+                        await LDObserve.flush()
                         return name = ""
                     }
-                    span = LDObserve.shared.startSpan(name: name)
+                    span = LDObserve.startSpan(name: name)
                 }
             }
         }

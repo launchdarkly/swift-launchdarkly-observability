@@ -37,7 +37,7 @@ struct LogsView: View {
                     guard pressed else {
                         return
                     }
-                    LDObserve.shared.recordLog(
+                    LDObserve.recordLog(
                         message: message,
                         severity: .info,
                         attributes: [
