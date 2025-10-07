@@ -78,7 +78,7 @@ final class OTelLogsService {
     func flush() async -> Bool {
         await withCheckedContinuation { continuation in
             continuation.resume(
-                returning: logRecordProcessor.forceFlush(explicitTimeout: 3) == .success
+                returning: logRecordProcessor.forceFlush(explicitTimeout: CommonOTelConfiguration.flushTimeout) == .success
             )
         }
     }

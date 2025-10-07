@@ -125,7 +125,7 @@ final class OTelTraceService {
         /// This method is executed synchronously on the calling thread
         /// - Parameter timeout: Maximum time the flush complete or abort. If nil, it will wait indefinitely
         await withCheckedContinuation { continuation in
-            self.spanProcessor.forceFlush(timeout: 3.0)
+            self.spanProcessor.forceFlush(timeout: CommonOTelConfiguration.flushTimeout)
             continuation.resume(
                 returning: true
             )
