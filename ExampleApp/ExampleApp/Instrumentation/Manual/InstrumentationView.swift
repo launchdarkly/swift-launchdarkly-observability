@@ -1,6 +1,5 @@
 import SwiftUI
 import LaunchDarklyObservability
-import OpenTelemetryApi
 
 struct InstrumentationView: View {
     var body: some View {

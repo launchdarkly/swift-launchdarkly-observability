@@ -1,6 +1,5 @@
 import SwiftUI
 import LaunchDarklyObservability
-import OpenTelemetryApi
 
 
 struct LogsView: View {

@@ -3,6 +3,7 @@ import Testing
 @testable import OpenTelemetrySdk
 import OpenTelemetryApi
 
+import DomainModels
 import Common
 import Sampling
 @testable import SamplingLive
@@ -33,7 +34,7 @@ struct CustomSampler3Tests {
         customSampler.setConfig(config)
         
         let eventAttributes = [
-            "error.type": AttributeValue.string("network"),
+            "error.type": OpenTelemetryApi.AttributeValue.string("network"),
             "error.code": AttributeValue.int(503)
         ]
         let event = makeMockSpanEvent(name: "error-event", attributes: eventAttributes)
@@ -71,7 +72,7 @@ struct CustomSampler3Tests {
         let customSampler = ExportSampler.customSampler { $0 == 50 }
         customSampler.setConfig(config)
         let attributes = [
-            "http.method": AttributeValue.string("POST"),
+            "http.method": OpenTelemetryApi.AttributeValue.string("POST"),
             "http.status_code": AttributeValue.int(500),
             "url": AttributeValue.string("https://api.example.com/users"),
             "retry": AttributeValue.bool(true)
@@ -84,6 +85,6 @@ struct CustomSampler3Tests {
         let result = customSampler.sampleSpan(span)
         
         #expect(result.sample)
-        #expect(.int(50) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(50) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
 }

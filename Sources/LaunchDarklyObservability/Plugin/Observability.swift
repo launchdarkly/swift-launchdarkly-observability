@@ -1,57 +1,41 @@
-import Foundation
-import LaunchDarkly
-import OpenTelemetryApi
-import OpenTelemetrySdk
-import ResourceExtension
+import OSLog
 
-import API
-import Observability
+import LaunchDarkly
+
+import ApplicationServices
+import ObservabilityServiceLive
 
 public final class Observability: Plugin {
     private let options: Options
-    public init(options: Options = Options(resourceAttributes: DefaultResources().get().attributes)) {
+    
+    public init(options: Options) {
         self.options = options
     }
-    public func getMetadata() -> PluginMetadata {
-        guard !options.serviceName.isEmpty else {
-            return .init(name: "'@launchdarkly/observability-ios'")
-        }
+    
+    public func getMetadata() -> LaunchDarkly.PluginMetadata {
         return .init(name: options.serviceName)
     }
     
-    public func register(client: LDClient, metadata: EnvironmentMetadata) {
-        let sdkKey = metadata.credential
+    public func register(client: LaunchDarkly.LDClient, metadata: LaunchDarkly.EnvironmentMetadata) {
+        let mobileKey = metadata.credential
         
+        var options = options
+        var resourceAttributes = options.resourceAttributes
+        var customHeaders = options.customHeaders
         
-        var resourceAttributes = DefaultResources().get().attributes
-        resourceAttributes["launchdarkly.sdk.version"] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
-        resourceAttributes["highlight.project_id"] = .string(sdkKey)
+        resourceAttributes[SemanticConvention.launchdarklySdkVersion] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
+        resourceAttributes[SemanticConvention.highlightProjectId] = .string(mobileKey)
+     
+        customHeaders[SemanticConvention.highlightProjectId] = mobileKey
         
-        let options = Options(
-            serviceName: options.serviceName,
-            serviceVersion: options.serviceVersion,
-            otlpEndpoint: options.otlpEndpoint,
-            backendUrl: options.backendUrl,
-            resourceAttributes: options.resourceAttributes.merging(resourceAttributes) { (old, _) in old },
-            customHeaders: options.customHeaders,
-            sessionBackgroundTimeout: options.sessionBackgroundTimeout,
-            isDebug: options.isDebug,
-            disableErrorTracking: options.disableErrorTracking,
-            disableLogs: options.disableLogs,
-            disableTraces: options.disableTraces,
-            disableMetrics: options.disableMetrics,
-            loggerName: options.loggerName
-        )
-        let client = ObservabilityClient(
-            context: .init(
-                sdkKey: sdkKey,
-                resource: .init(attributes: resourceAttributes),
-                options: options,
-                logger: .init(name: options.loggerName)
-            )
-        )
+        options.resourceAttributes = resourceAttributes
+        options.customHeaders = customHeaders
         
-        LDObserve.shared.set(client: client)
+        do {
+            LDObserve.shared.set(service: try ObservabilityService.build(mobileKey: mobileKey, options: options))
+        } catch {
+            os_log("%{public}@", log: options.log, type: .error, "Observability Service initialization failed with error: \(error)")
+        }
     }
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
