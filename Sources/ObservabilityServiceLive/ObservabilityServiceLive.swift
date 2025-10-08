@@ -25,6 +25,7 @@ extension ObservabilityService {
         var options = options
         options.resourceAttributes = options.resourceAttributes
             .merging(ExtendedResourceAttributes.value) { current, _ in current }
+        options.resourceAttributes[SemanticConvention.highlightProjectId] = .string(mobileKey)
         
         let sampler = ExportSampler.build(sampler: ThreadSafeSampler.shared.sample(_:))
         let sessionService = SessionService.build(options: options)
