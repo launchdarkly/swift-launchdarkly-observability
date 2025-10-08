@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import SessionReplay
 
 struct SessionReplayModifier: ViewModifier {
     let isEnabled: Bool

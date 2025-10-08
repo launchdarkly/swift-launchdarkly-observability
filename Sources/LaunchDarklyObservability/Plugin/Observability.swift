@@ -22,7 +22,6 @@ public final class Observability: Plugin {
     public func register(client: LDClient, metadata: EnvironmentMetadata) {
         let sdkKey = metadata.credential
         
-        
         var resourceAttributes = DefaultResources().get().attributes
         resourceAttributes["launchdarkly.sdk.version"] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
         resourceAttributes["highlight.project_id"] = .string(sdkKey)

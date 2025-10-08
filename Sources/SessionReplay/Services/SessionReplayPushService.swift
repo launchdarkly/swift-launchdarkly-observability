@@ -40,7 +40,7 @@ actor ReplayPushService {
     let sessionId: String
     var fakePayloadOnce = false
     
-    func send(items: [EventQueueItem]) async throws {
+    func export(items: [EventQueueItem]) async throws {
         if currentSession == nil {
             let session = try await initializeSession(sessionSecureId: sessionId)
             try await identifySession(session: session)
@@ -54,6 +54,7 @@ actor ReplayPushService {
         
         if events.isNotEmpty {
             if let currentSession, !fakePayloadOnce {
+                fakePayloadOnce = true
                 try await pushPayload(session: currentSession, resource: "payload2", timestamp: Date().millisecondsSince1970)
             }
             try await pushPayload(events: events)
@@ -62,7 +63,8 @@ actor ReplayPushService {
     
     func appendEvents(item: EventQueueItem, events: inout [Event]) {
         switch item.payload {
-        case .screenshot(let exportImage):
+        case let payload as ScreenImageItem:
+            let exportImage = payload.exportImage
             guard lastExportImage != exportImage else {
                 return
             }
@@ -87,10 +89,13 @@ actor ReplayPushService {
                 events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
-                fullSnapshotEvent(exportImage, timestamp, &events)
+                appendFullSnapshotEvents(exportImage, timestamp, &events)
             }
-        case .tap(let touchEvent):
-            tapEvent(touch: touchEvent, events: &events, timestamp: item.timestamp)
+            
+        case let touchEvent as TouchItem:
+            tapEvent(touch: touchEvent.touchEvent, events: &events, timestamp: item.timestamp)
+        default:
+            () //
         }
     }
     
@@ -251,7 +256,7 @@ actor ReplayPushService {
         return rootNode
     }
     
-    fileprivate func fullSnapshotEvent(_ exportImage: ExportImage, _ timestamp: Int64, _ events: inout [Event]) {
+    fileprivate func appendFullSnapshotEvents(_ exportImage: ExportImage, _ timestamp: Int64, _ events: inout [Event]) {
         //let imageNode = exportImage.eventNode(id: 16)
         // event with window size
         events.append(windowEvent(href: "http://localhost:5173/", width: exportImage.paddedWidth, height: exportImage.paddedHeight, timestamp: timestamp))
@@ -265,7 +270,7 @@ actor ReplayPushService {
             return
         }
         
-        fullSnapshotEvent(exportImage, timestamp, &events)
+        appendFullSnapshotEvents(exportImage, timestamp, &events)
         
         let input = PushPayloadVariables(sessionSecureId: session.secureId, payloadId: "\(nextPayloadId)", events: events)
         try await replayApiService.pushPayload(input)
@@ -275,5 +280,11 @@ actor ReplayPushService {
         let event = drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId)
         let input = PushPayloadVariables(sessionSecureId: session.secureId, payloadId: "\(nextPayloadId)", events: [event])
         try await replayApiService.pushPayload(input)
+    }
+}
+
+extension ScreenImageItem: SessionReplayItemPayload {
+    func sessionReplayEvent() -> Event? {
+        return nil
     }
 }

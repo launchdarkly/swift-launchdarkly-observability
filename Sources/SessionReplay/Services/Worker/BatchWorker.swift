@@ -1,22 +1,23 @@
 import Foundation
 import Common
 
-final class SessionReplayBackroundWorker {
+protocol EventExporting {
+    func export(items: [EventQueueItem]) async throws
+}
+
+final class BatchWorker {
     let eventQueue: EventQueue
-    let screenshotManager: SnapshotTaker
     let interval = TimeInterval(2)
     var task: Task<Void, Never>?
-    var screenshotService: ReplayPushService
+    let exporter: EventExporting
     
-    init(options: SessionReplayOptions, screenshotService: ReplayPushService, eventQueue: EventQueue) {
-        self.screenshotService = screenshotService
+    init(eventQueue: EventQueue, exporter: EventExporting) {
         self.eventQueue = eventQueue
-        self.screenshotManager = SnapshotTaker(queue: eventQueue, captureService: ScreenCaptureService(options: options))
+        self.exporter = exporter
     }
     
     func start() {
         guard task == nil else { return }
-        screenshotManager.start()
         
         task = Task.detached(priority: .background) { [weak self] in
             guard let self else { return }
@@ -39,7 +40,7 @@ final class SessionReplayBackroundWorker {
     
     func send(items: [EventQueueItem]) async {
         do {
-            try await screenshotService.send(items: items)
+            try await exporter.export(items: items)
         } catch {
             print(error)
         }

@@ -87,7 +87,6 @@ struct SimpleNestedViewControllerWrapper: UIViewControllerRepresentable {
         init(_ parent: SimpleNestedViewControllerWrapper) { self.parent = parent }
         
         func creditCardViewController(_ vc: SimpleNestedViewController, didSave card: CreditCard) {
-            print("✅ Got card: \(card)")
             parent.presentationMode.wrappedValue.dismiss()
         }
         

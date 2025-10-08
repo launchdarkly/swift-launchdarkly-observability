@@ -6,7 +6,8 @@ public final class GraphQLClient {
     private let network: NetworkClient
     private let decoder: JSONDecoder
     private let defaultHeaders: [String: String]
-
+    private var cvsString: String = ""
+     
     public init(endpoint: URL,
                 network: NetworkClient = URLSessionNetworkClient(),
                 decoder: JSONDecoder = JSONDecoder(),
@@ -40,6 +41,9 @@ public final class GraphQLClient {
         if let compressedData = rawData.gzip() {
           request.httpBody = compressedData
           request.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
+            
+          cvsString.append("\(Date().timeIntervalSince1970), \(compressedData.count)\n")
+          print(cvsString)
         } else {
           request.httpBody = rawData
         }
@@ -52,7 +56,7 @@ public final class GraphQLClient {
         combinedHeaders.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
 
         let data = try await network.send(request)
-        
+    
         print("GraphQL response: \(String(data: data, encoding: .utf8) ?? "(no data)")")
 
         do {

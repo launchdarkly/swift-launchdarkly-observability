@@ -1,17 +1,27 @@
 import Foundation
 import Common
 
-struct EventQueueItem {
-    enum Payload {
-        case screenshot(exportImage: ExportImage)
-        case tap(touch: TouchEvent)
+protocol EventQueueItemPayload {
+    func cost() -> Int
+}
+
+
+struct TouchItem: EventQueueItemPayload {
+    let touchEvent: TouchEvent
+
+    func cost() -> Int {
+        300
     }
     
-    var payload: Payload
-    var timeIntervalSince1970: TimeInterval
+}
 
+
+
+struct EventQueueItem {
+    var payload: EventQueueItemPayload
+    var timeIntervalSince1970: TimeInterval
     
-    init(payload: Payload, date: Date = Date()) {
+    init(payload: EventQueueItemPayload, date: Date = Date()) {
         self.payload = payload
         self.timeIntervalSince1970 = date.timeIntervalSince1970
     }
@@ -21,17 +31,12 @@ struct EventQueueItem {
     }
     
     func cost() -> Int {
-        switch payload {
-        case .screenshot(let exportImage):
-            return exportImage.data.count
-        case .tap:
-            return 300
-        }
+        payload.cost()
     }
 }
 
 // TODO: make it optimal
-actor EventQueue {
+public actor EventQueue {
     var storage = [EventQueueItem]()
     var lastEventTime: TimeInterval = 0
     

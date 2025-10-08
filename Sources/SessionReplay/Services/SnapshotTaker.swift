@@ -1,7 +1,7 @@
 import Foundation
 
 
-class SnapshotTaker {
+class SnapshotTaker: EventSource {
     let queue: EventQueue
     let captureService: ScreenCaptureService
     var timer: Timer?
@@ -33,7 +33,7 @@ class SnapshotTaker {
             guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3), originalSize: capturedImage.renderSize, scale: capturedImage.scale) else {
                 return
             }
-           await queue.enque(EventQueueItem(payload: .screenshot(exportImage: exportImage)))
+           await queue.enque(EventQueueItem(payload: ScreenImageItem(exportImage: exportImage)))
         }
     }
 }

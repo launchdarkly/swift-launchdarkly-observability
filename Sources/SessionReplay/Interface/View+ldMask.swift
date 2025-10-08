@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import SessionReplay
 
 public extension View {
     func ldMask(isEnabled: Bool = true) -> some View {
@@ -20,4 +21,3 @@ public extension UIView {
         SessionReplayAssociatedObjects.maskUIView(self, isEnabled: false)
     }
 }
-

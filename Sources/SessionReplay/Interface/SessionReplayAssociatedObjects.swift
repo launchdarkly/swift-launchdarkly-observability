@@ -1,6 +1,6 @@
 import UIKit
 
-public class SessionReplayAssociatedObjects: NSObject {
+class SessionReplayAssociatedObjects: NSObject {
     private static var swiftUIKey: Int = 0
     private static var uiViewMaskKey: Int = 0
 

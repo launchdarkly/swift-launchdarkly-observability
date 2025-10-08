@@ -1,7 +1,20 @@
 import Foundation
 import Common
 
+struct ScreenImageItem: EventQueueItemPayload {
+    func cost() -> Int {
+        exportImage.data.count
+    }
+    
+    let exportImage: ExportImage
+}
+
+protocol SessionReplayItemPayload {
+    func sessionReplayEvent() -> Event?
+}
+
 public struct SessionReplayContext {
+
     public var sdkKey: String
     public var serviceName: String
     public var backendUrl: URL
@@ -16,32 +29,37 @@ public struct SessionReplayContext {
 }
 
 public final class SessionReplayService {
-    let worker: SessionReplayBackroundWorker
+    let screenshotManager: SnapshotTaker
+    let serviceContainer: ServiceContainer
     let screenshotService: ReplayPushService
-    let eventQueue = EventQueue()
+    public let eventQueue = EventQueue()
     let context: SessionReplayContext
     
     public init(context: SessionReplayContext,
-                sessionId: String) {
+                sessionId: String,
+                observabilityExporter: ObservabilityExporter) {
+        self.screenshotManager = SnapshotTaker(queue: eventQueue, captureService: ScreenCaptureService(options: SessionReplayOptions()))
+        let replayPushService = ReplayPushService(context: context, sessionId: sessionId, replayApiService: SessionReplayAPIService(gqlClient: context.graphQLClient))
+        let exporter = SessionReplayExporter(sessionReplayExporter: replayPushService, observabilityExporter: observabilityExporter)
+        self.serviceContainer = ServiceContainer(eventSources: [screenshotManager], eventQueue: eventQueue, exporter: exporter)
         self.context = context
         let replayApiService = SessionReplayAPIService(gqlClient: context.graphQLClient)
         self.screenshotService = ReplayPushService(context: context, sessionId: sessionId, replayApiService: replayApiService)
-        self.worker = SessionReplayBackroundWorker(options: SessionReplayOptions(),
-                                                   screenshotService: screenshotService,
-                                                   eventQueue: eventQueue)
     }
     
     public func start() {
-        worker.start()
+        screenshotManager.start()
+        serviceContainer.start()
     }
     
     public func stop() {
-        worker.stop()
+        screenshotManager.stop()
+        serviceContainer.stop()
     }
     
     public func userTap(touchEvent: TouchEvent) {
         Task {
-            await eventQueue.enque(EventQueueItem(payload: .tap(touch: touchEvent)))
+            await eventQueue.enque(EventQueueItem(payload: TouchItem(touchEvent: touchEvent)))
         }
     }
 }

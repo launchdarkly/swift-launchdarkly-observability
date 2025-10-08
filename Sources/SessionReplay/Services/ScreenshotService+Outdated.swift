@@ -7,67 +7,68 @@ enum ScreenshotServiceError: Error {
 }
 
 extension ReplayPushService  {
-    func pushNotScreenshotItems(items: [EventQueueItem]) async throws {
-        guard let currentSession else {
-            return
-        }
-        guard items.isNotEmpty else { return }
-        
-        var events = [Event]()
-        for item in items {
-            switch item.payload {
-            case .screenshot:
-                continue
-                
-            case .tap(let touch):
-                tapEvent(touch: touch, events: &events, timestamp: item.timestamp)
-            }
-        }
-        
-        if events.isNotEmpty {
-            let input = PushPayloadVariables(sessionSecureId: currentSession.secureId, payloadId: "\(nextPayloadId)", events: events)
-            try await replayApiService.pushPayload(input)
-        }
- 
-        notScreenItems.removeAll()
-    }
+//    func pushNotScreenshotItems(items: [EventQueueItem]) async throws {
+//        guard let currentSession else {
+//            return
+//        }
+//        guard items.isNotEmpty else { return }
+//        
+//        var events = [Event]()
+//        for item in items {
+//            switch item.payload {
+//            case .screenshot:
+//                continue
+//                
+//            case .tap(let touch):
+//                tapEvent(touch: touch, events: &events, timestamp: item.timestamp)
+//            }
+//        }
+//        
+//        if events.isNotEmpty {
+//            let input = PushPayloadVariables(sessionSecureId: currentSession.secureId, payloadId: "\(nextPayloadId)", events: events)
+//            try await replayApiService.pushPayload(input)
+//        }
+// 
+//        notScreenItems.removeAll()
+//    }
     
-    func sendOld(items: [EventQueueItem]) async throws {
-              if currentSession == nil {
-                   let session = try await initializeSession(sessionSecureId: ReplaySessionGenerator.generateSecureID())
-                   try await identifySession(session: session)
-                   currentSession = session
-               }
-               
-               guard let currentSession else {
-                   return
-               }
-               
-               for item in items {
-                   switch item.payload {
-                   case .screenshot(let exportImage):
-                       guard lastExportImage != exportImage else {
-                           return
-                       }
-                       lastExportImage = exportImage
-                       let timestamp = item.timestamp
-                       
-                       if let imageId {
-                           try await pushNotScreenshotItems(items: notScreenItems)
-                           try await pushPayloadDrawImage(session: currentSession, timestamp: timestamp, exportImage: exportImage, imageId: imageId)
-                       } else {
-                           try await pushNotScreenshotItems(items: notScreenItems)
-                           try await pushPayloadFullSnapshot(session: currentSession, exportImage: exportImage, timestamp: timestamp)
-                           // fake mouse movement to trigger something
-                           try await pushPayload(session: currentSession, resource: "payload2", timestamp: timestamp)
-                       }
-                   default:
-                       notScreenItems.append(item)
-                   }
-               }
-               
-               try await pushNotScreenshotItems(items: notScreenItems)
-    }
+//    func sendOld(items: [EventQueueItem]) async throws {
+//              if currentSession == nil {
+//                   let session = try await initializeSession(sessionSecureId: ReplaySessionGenerator.generateSecureID())
+//                   try await identifySession(session: session)
+//                   currentSession = session
+//               }
+//               
+//               guard let currentSession else {
+//                   return
+//               }
+//               
+//               for item in items {
+//                   switch item.payload {
+//                   case .screenshot(let exportImage):
+//                       guard lastExportImage != exportImage else {
+//                           return
+//                       }
+//                       lastExportImage = exportImage
+//                       let timestamp = item.timestamp
+//                       
+//                       if let imageId {
+//                           try await pushNotScreenshotItems(items: notScreenItems)
+//                           try await pushPayloadDrawImage(session: currentSession, timestamp: timestamp, exportImage: exportImage, imageId: imageId)
+//                       } else {
+//                           try await pushNotScreenshotItems(items: notScreenItems)
+//                           try await pushPayloadFullSnapshot(session: currentSession, exportImage: exportImage, timestamp: timestamp)
+//                           // fake mouse movement to trigger something
+//                           try await pushPayload(session: currentSession, resource: "payload2", timestamp: timestamp)
+//                       }
+//                   default:
+//                       notScreenItems.append(item)
+//                   }
+//               }
+//               
+//               try await pushNotScreenshotItems(items: notScreenItems)
+//    }
+//
     
     func initializeSessionOld(secureId: String) async throws -> InitializeSessionResponse {
         //        guard let urlPayload = Bundle.module.url(forResource: "payload", withExtension: "json") else {

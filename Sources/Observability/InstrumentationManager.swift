@@ -21,7 +21,7 @@ final class InstrumentationManager {
     private let sessionManager: SessionManager
     private let flushTimeout: TimeInterval
     private let graphQLClient: GraphQLClient
-    private let sessionReplayService: SessionReplayService?
+    private var sessionReplayService: SessionReplayService?
     
     private var crashReporter: CrashReporter?
     private let lock: NSLock = NSLock()
@@ -57,13 +57,7 @@ final class InstrumentationManager {
             throw InstrumentationError.graphQLUrlIsInvalid
         }
         self.graphQLClient = GraphQLClient(endpoint: url)
-        self.sessionReplayService = SessionReplayService(
-            context: .init(
-                sdkKey: context.sdkKey,
-                serviceName: context.options.serviceName,
-                backendUrl: url,
-                graphQLClient: graphQLClient),
-            sessionId: sessionManager.sessionInfo.id)
+    
         
         /// If options.otlpEndpoint is not a valid url use no-op instrumentation
         ///
@@ -82,6 +76,8 @@ final class InstrumentationManager {
         )
         
         self.initializeInstrumentation(options: context.options)
+        
+
         
         Task { [weak self] in
             guard let self else { return }
@@ -122,6 +118,7 @@ final class InstrumentationManager {
                 ),
                 sampler: sampler
             )
+            
             /// Using the default values from OpenTelemetry for Swift
             /// For reference check:
             ///https://github.com/open-telemetry/opentelemetry-swift/blob/main/Sources/OpenTelemetrySdk/Trace/SpanProcessors/BatchSpanProcessor.swift
@@ -180,6 +177,16 @@ final class InstrumentationManager {
                     )
                 ]
             )
+            
+            let observabilityExporter = ObservabilityExporter(logRecordExporter: exporter, networkClient: URLSessionNetworkClient())
+            self.sessionReplayService = SessionReplayService(
+                context: .init(
+                    sdkKey: context.sdkKey,
+                    serviceName: context.options.serviceName,
+                    backendUrl: url,
+                    graphQLClient: graphQLClient),
+                sessionId: sessionManager.sessionInfo.id, observabilityExporter: observabilityExporter)
+            
             
             /// Using the default values from OpenTelemetry for Swift
             /// For reference check:
@@ -387,8 +394,15 @@ final class InstrumentationManager {
         if !sessionId.isEmpty {
             attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
         }
-        otelLogger.logRecordBuilder()
-            .setBody(.string(message))
+        
+        let logBuilder = ObservabilityLogRecordBuilder(queue: sessionReplayService!.eventQueue,
+                                                          resource: context.resource,
+                                                          clock: MillisClock(),
+                                                          instrumentationScope: .init(name: context.options.serviceName),
+                                                          includeSpanContext: true)
+       
+        //logBuilder
+        otelLogger.logRecordBuilder().setBody(.string(message))
             .setTimestamp(Date())
             .setSeverity(severity)
             .setAttributes(attributes)
