@@ -1,6 +1,5 @@
 import SwiftUI
 import LaunchDarklyObservability
-import OpenTelemetryApi
 
 
 struct TraceView: View {
@@ -30,6 +29,7 @@ struct TraceView: View {
                 .task(id: started) {
                     guard started else {
                         span?.end()
+                        await LDObserve.shared.flush()
                         return name = ""
                     }
                     span = LDObserve.shared.startSpan(name: name)

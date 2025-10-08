@@ -1,7 +1,6 @@
 #if canImport(UIKit)
 
 import UIKit.UIWindow
-import Common
 
 public final class TapHandler {
     private var startPoint: CGPoint?

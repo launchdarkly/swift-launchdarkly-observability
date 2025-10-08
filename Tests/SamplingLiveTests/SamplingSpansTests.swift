@@ -3,6 +3,7 @@ import Testing
 @testable import OpenTelemetrySdk
 import OpenTelemetryApi
 
+import DomainModels
 import Common
 import Sampling
 @testable import SamplingLive
@@ -94,7 +95,7 @@ struct SamplingSpansTests {
     )
     func samplingEnabledWithSamplingAttributes() {
         let originalAttributes = [
-            "service.name": AttributeValue.string("api-service"),
+            "service.name": OpenTelemetryApi.AttributeValue.string("api-service"),
             "environment": AttributeValue.string("production")
         ]
         
@@ -103,7 +104,7 @@ struct SamplingSpansTests {
         let spans = [originalSpan]
         
         let samplingAttributes = [
-            LDSemanticAttribute.ATTR_SAMPLING_RATIO:  AttributeValue.int(42)
+            SemanticConvention.attributeSamplingRatio:  OpenTelemetryApi.AttributeValue.int(42)
         ]
         
         let sampler = ExportSampler.fake(

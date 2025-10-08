@@ -1,12 +1,11 @@
 import Foundation
 import LaunchDarkly
-@preconcurrency import OpenTelemetryApi
-import OpenTelemetrySdk
-import Observability
-import Common
 
-public final class EvalTracingHook: @unchecked Sendable, Hook {
-    private let lock: NSLock = NSLock()
+import Common
+import ApplicationServices
+
+public final class EvalTracingHook: Hook {
+    private let queue = DispatchQueue(label: "com.launchdarkly.eval.tracing.hook")
     private let withSpans: Bool
     private let withValue: Bool
     private let version: String
@@ -21,30 +20,20 @@ public final class EvalTracingHook: @unchecked Sendable, Hook {
         seriesContext: EvaluationSeriesContext,
         seriesData: EvaluationSeriesData
     ) -> EvaluationSeriesData {
-        lock.lock()
-        defer { lock.unlock() }
-        guard withSpans else { return seriesData }
-
-        let tracer = OpenTelemetry.instance.tracerProvider.get(
-            instrumentationName: EvalTracingHook.INSTRUMENTATION_NAME,
-            instrumentationVersion: version
-        )
-        
-        /// Requirement 1.2.3.6
-        /// https://github.com/launchdarkly/sdk-specs/tree/main/specs/OTEL-openteletry-integration#requirement-1236
-        lazy var span: any Span = {
-            let span = tracer
-                .spanBuilder(spanName: "LDClient.\(seriesContext.methodName)")
-                .setStartTime(time: Date())
-                .startSpan()
- 
-            return span
-        }()
-        
-        var mutableSeriesData = seriesData
-        mutableSeriesData[Self.DATA_KEY_SPAN] = span
-        
-        return mutableSeriesData
+        queue.sync {
+            guard withSpans else { return seriesData }
+            
+            /// Requirement 1.2.3.6
+            /// https://github.com/launchdarkly/sdk-specs/tree/main/specs/OTEL-openteletry-integration#requirement-1236
+            let span = LDObserve.shared.startSpan(
+                name: "LDClient.\(seriesContext.methodName)"
+            )
+            
+            var mutableSeriesData = seriesData
+            mutableSeriesData[Self.DATA_KEY_SPAN] = span
+            
+            return mutableSeriesData
+        }
     }
     
     public func afterEvaluation(
@@ -52,37 +41,38 @@ public final class EvalTracingHook: @unchecked Sendable, Hook {
         seriesData: EvaluationSeriesData,
         evaluationDetail: LDEvaluationDetail<LDValue>
     ) -> EvaluationSeriesData {
-        
-        /// Requirement 1.2.2.2
-        /// The feature_flag event MUST have the following attributes: feature_flag.key, feature_flag.provider.name, and feature_flag.context.id.
-        var resourceAttributes = [String: AttributeValue]()
-        resourceAttributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(seriesContext.flagKey)
-        resourceAttributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
-        resourceAttributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(seriesContext.context.fullyQualifiedKey())
-        
-        if let lDValue = evaluationDetail.reason?[Self.CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT] {
-            if case let .bool(inExperiment) = lDValue {
-                resourceAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT] = .bool(inExperiment)
+        queue.sync {
+            /// Requirement 1.2.2.2
+            /// The feature_flag event MUST have the following attributes: feature_flag.key, feature_flag.provider.name, and feature_flag.context.id.
+            var resourceAttributes = [String: AttributeValue]()
+            resourceAttributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(seriesContext.flagKey)
+            resourceAttributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
+            resourceAttributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(seriesContext.context.fullyQualifiedKey())
+            
+            if let lDValue = evaluationDetail.reason?[Self.CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT] {
+                if case let .bool(inExperiment) = lDValue {
+                    resourceAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT] = .bool(inExperiment)
+                }
             }
-        }
-        
-        if withValue {
-            if let stringified = JSON.stringify(evaluationDetail.value) {
-                resourceAttributes[Self.SEMCONV_FEATURE_FLAG_RESULT_VALUE] = .string(stringified) // .string is from Otel AttributeValue
+            
+            if withValue {
+                if let stringified = JSON.stringify(evaluationDetail.value) {
+                    resourceAttributes[Self.SEMCONV_FEATURE_FLAG_RESULT_VALUE] = .string(stringified) // .string is from Otel AttributeValue
+                }
             }
+            
+            if let index = evaluationDetail.variationIndex {
+                resourceAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_VARIATION_INDEX] = .double(Double(index))
+            }
+            
+            let value = seriesData[Self.DATA_KEY_SPAN]
+            if let span = value as? Span {
+                span.addEvent(name: Self.EVENT_NAME, attributes: resourceAttributes, timestamp: Date())
+                span.end()
+            }
+            
+            return seriesData
         }
-        
-        if let index = evaluationDetail.variationIndex {
-            resourceAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_VARIATION_INDEX] = .double(Double(index))
-        }
-        
-        let value = seriesData[Self.DATA_KEY_SPAN]
-        if let span = value as? Span {
-            span.addEvent(name: Self.EVENT_NAME, attributes: resourceAttributes, timestamp: Date())
-            span.end()
-        }
-        
-        return seriesData
     }
 }
 

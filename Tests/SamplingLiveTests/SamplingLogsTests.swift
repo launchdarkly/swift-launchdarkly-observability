@@ -3,6 +3,7 @@ import Testing
 @testable import OpenTelemetrySdk
 import OpenTelemetryApi
 
+import DomainModels
 import Common
 import Sampling
 @testable import SamplingLive
@@ -105,16 +106,16 @@ struct SamplingLogsTests {
     @Test("Given a log with attributes, when sampling is enabled and sampling attributes is provided, then should add sampling attributes and preserve the original ones")
     func enablingSamplingProvidingSamplingAttributes() {
         let originalAttributes = [
-            "service.name": AttributeValue.string("api-service"),
+            "service.name": OpenTelemetryApi.AttributeValue.string("api-service"),
             "environment": AttributeValue.string("production")
         ]
         let samplingAttributes = [
-            LDSemanticAttribute.ATTR_SAMPLING_RATIO:  AttributeValue.int(42)
+            SemanticConvention.attributeSamplingRatio:  OpenTelemetryApi.AttributeValue.int(42)
         ]
         let mockLog = makeMockReadableLogRecord(body: .string("test-log"), attributes: originalAttributes)
         let sampler = ExportSampler.fake(
             sampleLog: { logData in
-                if let logBody = logData.body, case AttributeValue.string(let body) = logBody, body == "test-log" {
+                if let logBody = logData.body, case OpenTelemetryApi.AttributeValue.string(let body) = logBody, body == "test-log" {
                     return .init(sample: true, attributes: samplingAttributes)
                 } else {
                     return .init(sample: false)
@@ -130,7 +131,7 @@ struct SamplingLogsTests {
         
         #expect(result[0].attributes["service.name"] == originalAttributes["service.name"])
         #expect(result[0].attributes["environment"] == originalAttributes["environment"])
-        #expect(result[0].attributes[LDSemanticAttribute.ATTR_SAMPLING_RATIO] == samplingAttributes[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(result[0].attributes[SemanticConvention.attributeSamplingRatio] == samplingAttributes[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("Given a set of logs, when having a mixed sampling results with and without attributes, then should handle them correctly")
@@ -140,7 +141,7 @@ struct SamplingLogsTests {
         let logs = (lowerBound...upperBound).map { makeMockReadableLogRecord(body: .string("log\($0)")) }
         
         let samplingAttributes = [
-            LDSemanticAttribute.ATTR_SAMPLING_RATIO:  AttributeValue.int(50)
+            SemanticConvention.attributeSamplingRatio:  OpenTelemetryApi.AttributeValue.int(50)
         ]
         
         let sampler = ExportSampler.fake(
@@ -166,6 +167,6 @@ struct SamplingLogsTests {
         
         #expect(result[1].body == logs[2].body)
         #expect(result[1].attributes != logs[2].attributes) // result[1] has modified attributes with sampling attr. added
-        #expect(result[1].attributes[LDSemanticAttribute.ATTR_SAMPLING_RATIO] == AttributeValue.int(50))
+        #expect(result[1].attributes[SemanticConvention.attributeSamplingRatio] == AttributeValue.int(50))
     }
 }

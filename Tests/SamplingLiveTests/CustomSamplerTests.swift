@@ -3,13 +3,14 @@ import Testing
 @testable import OpenTelemetrySdk
 import OpenTelemetryApi
 
+import DomainModels
 import Common
 import Sampling
 @testable import SamplingLive
 
-extension AttributeValue: @retroactive ExpressibleByExtendedGraphemeClusterLiteral {}
-extension AttributeValue: @retroactive ExpressibleByUnicodeScalarLiteral {}
-extension AttributeValue: @retroactive ExpressibleByStringLiteral {
+extension OpenTelemetryApi.AttributeValue: @retroactive ExpressibleByExtendedGraphemeClusterLiteral {}
+extension OpenTelemetryApi.AttributeValue: @retroactive ExpressibleByUnicodeScalarLiteral {}
+extension OpenTelemetryApi.AttributeValue: @retroactive ExpressibleByStringLiteral {
     
     public init(stringLiteral value: StringLiteralType) {
         self = .string(value)
@@ -97,7 +98,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleSpan(span)
         
         #expect(result.sample == false)
-        #expect(result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO] == .int(10))
+        #expect(result.attributes?[SemanticConvention.attributeSamplingRatio] == .int(10))
     }
     
     @Test("should match span when no config is specified")
@@ -128,7 +129,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleSpan(span)
         
         #expect(result.sample)
-        #expect(result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO] == .int(42))
+        #expect(result.attributes?[SemanticConvention.attributeSamplingRatio] == .int(42))
     }
     
     @Test("should not match span when name does not match")
@@ -168,7 +169,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleSpan(span)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(42) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should match span based on string attribute value")
@@ -199,7 +200,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleSpan(span)
         
         #expect(result.sample)
-        #expect(.int(75) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(75) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should match span based on numeric attribute value")
@@ -232,7 +233,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleSpan(span)
         
         #expect(result.sample)
-        #expect(.int(100) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(100) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should match span based on event name")
@@ -258,7 +259,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleSpan(span)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(42) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should match span based on event attributes")
@@ -285,7 +286,7 @@ struct CustomSamplerTests {
         
         
         let eventAttributes = [
-            "error.type": AttributeValue.string("network"),
+            "error.type": OpenTelemetryApi.AttributeValue.string("network"),
             "error.code": AttributeValue.int(503)
         ]
         let event = makeMockSpanEvent(name: "error-event", attributes: eventAttributes)
@@ -297,7 +298,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleSpan(span)
         
         #expect(result.sample)
-        #expect(.int(85) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(85) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should not match when event attributes do not match")
@@ -323,7 +324,7 @@ struct CustomSamplerTests {
         customSampler.setConfig(config)
         
         let eventAttributes = [
-            "error.type": AttributeValue.string("network"),
+            "error.type": OpenTelemetryApi.AttributeValue.string("network"),
             "error.code": AttributeValue.int(503)
         ]
         let event = makeMockSpanEvent(name: "error-event", attributes: eventAttributes)
@@ -361,7 +362,7 @@ struct CustomSamplerTests {
         let customSampler = ExportSampler.customSampler { $0 == 50 }
         customSampler.setConfig(config)
         let attributes = [
-            "http.method": AttributeValue.string("POST"),
+            "http.method": OpenTelemetryApi.AttributeValue.string("POST"),
             "http.status_code": AttributeValue.int(500),
             "url": AttributeValue.string("https://api.example.com/users"),
             "retry": AttributeValue.bool(true)
@@ -374,7 +375,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleSpan(span)
         
         #expect(result.sample)
-        #expect(.int(50) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(50) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     // MARK: - Logs
@@ -397,7 +398,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(42) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should not match log when severity does not match")
@@ -439,7 +440,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(42) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should match log based on message with regex")
@@ -460,7 +461,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(42) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(42) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should match log based on string attribute value")
@@ -482,7 +483,7 @@ struct CustomSamplerTests {
         let customSampler = ExportSampler.customSampler { $0 == 75 }
         customSampler.setConfig(config)
         let attributes = [
-            "service.name": AttributeValue.string("api-gateway"),
+            "service.name": OpenTelemetryApi.AttributeValue.string("api-gateway"),
             "environment": AttributeValue.string("production")
         ]
         let log = makeMockReadableLogRecord(attributes: attributes)
@@ -490,7 +491,7 @@ struct CustomSamplerTests {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(75) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(75) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
     
     @Test("should not match log when attributes do not exist")
@@ -544,7 +545,7 @@ struct CustomSamplerTests {
         let customSampler = ExportSampler.customSampler { $0 == 90 }
         customSampler.setConfig(config)
         let attributes = [
-            "service.name": AttributeValue.string("db-connector"),
+            "service.name": OpenTelemetryApi.AttributeValue.string("db-connector"),
             "retry.enabled": AttributeValue.bool(true),
             "retry.count": AttributeValue.int(3)
         ]
@@ -557,6 +558,6 @@ struct CustomSamplerTests {
         let result = customSampler.sampleLog(log)
         
         #expect(result.sample)
-        #expect(.int(90) == result.attributes?[LDSemanticAttribute.ATTR_SAMPLING_RATIO])
+        #expect(.int(90) == result.attributes?[SemanticConvention.attributeSamplingRatio])
     }
 }
