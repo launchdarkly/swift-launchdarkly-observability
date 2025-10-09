@@ -12,8 +12,8 @@ let config = { () -> LDConfig in
     config.plugins = [
         Observability(
             options: .init(
-                otlpEndpoint: "https://otel.observability.ld-stg.launchdarkly.com:4318", // Staging
-//                otlpEndpoint: "http://localhost:4318",
+//                otlpEndpoint: "https://otel.observability.ld-stg.launchdarkly.com:4318", // Staging
+                otlpEndpoint: "http://localhost:4318",
                 sessionBackgroundTimeout: 3,
                 isDebug: true,
                 logs: .enabled,
@@ -22,20 +22,6 @@ let config = { () -> LDConfig in
             )
         )
     ]
-    /*
-    config.plugins = [
-        Observability(
-            options: .init(
-//                otlpEndpoint: "http://localhost:4318",
-                sessionBackgroundTimeout: 3,
-                isDebug: true,
-                disableLogs: false,
-                disableTraces: false,
-                disableMetrics: false
-            )
-        )
-    ]
-    */
     return config
 }()
 
