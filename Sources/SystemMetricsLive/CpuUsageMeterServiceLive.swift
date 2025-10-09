@@ -51,7 +51,8 @@ final class CpuUsageMeterServiceFacade {
     }
     
     func startMonitoring() {
-        var cpu = CPULoad()
+//        var cpu = CPULoad()
+        var cpu = CpuUsageServiceProvider()
         let log = log
         let metrics = metricsService
         tasks.append(
@@ -59,13 +60,13 @@ final class CpuUsageMeterServiceFacade {
                 every: monitoringInterval) {
                     do {
                         let statistics = try cpu.cpuUsage()
-                        let physicalCores = Int(cpu.physicalCoresCount())
+                        let physicalCores = Int(try cpu.physicalCoreCount())
                         
                         /// measure user
                         metrics.recordMetric(
                             metric: .init(
                                 name: SemanticConvention.System.systemCpuUtilization,
-                                value: statistics.user,
+                                value: Double(statistics.user),
                                 attributes: [
                                     SemanticConvention.System.cpuLogicalNumber: .int(physicalCores),
                                     SemanticConvention.System.cpuMode: .string("user")
@@ -76,7 +77,7 @@ final class CpuUsageMeterServiceFacade {
                         metrics.recordMetric(
                             metric: .init(
                                 name: SemanticConvention.System.systemCpuUtilization,
-                                value: statistics.idle,
+                                value: Double(statistics.idle),
                                 attributes: [
                                     SemanticConvention.System.cpuLogicalNumber: .int(physicalCores),
                                     SemanticConvention.System.cpuMode: .string("idle")
