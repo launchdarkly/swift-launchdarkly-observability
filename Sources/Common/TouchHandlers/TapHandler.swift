@@ -30,7 +30,6 @@ public final class TapHandler {
                     let dy = endPoint.y - startPoint.y
                     var viewName: String?
                     var accessibilityIdentifier: String?
-                    var targetClass: AnyClass?
                     var title: String?
                     if abs(dx) < 10 && abs(dy) < 10 {
                         let info = targetView.extractViewInfo()

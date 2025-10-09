@@ -8,16 +8,27 @@ struct ExportImage: Equatable {
     var scale: CGFloat
     var format: ExportFormat
     
-    func eventNode(id: Int) -> EventNode {
-        return EventNode(
-            id: id,
-            type: .Element,
-            tagName: "canvas",
-            attributes: [
-                         "rr_dataURL": asBase64PNGDataURL(),
-                         "width": "\(originalWidth)",
-                         "height": "\(originalHeight)"]
-        )
+    func eventNode(id: Int, use_rr_dataURL: Bool = true) -> EventNode {
+        if use_rr_dataURL {
+            return EventNode(
+                id: id,
+                type: .Element,
+                tagName: "canvas",
+                attributes: [
+                    "rr_dataURL": asBase64PNGDataURL(),
+                    "width": "\(originalWidth)",
+                    "height": "\(originalHeight)"]
+            )
+        } else {
+            return EventNode(
+                id: id,
+                type: .Element,
+                tagName: "canvas",
+                attributes: [
+                    "width": "\(originalWidth)",
+                    "height": "\(originalHeight)"]
+            )
+        }
     }
     
     var mimeType: String {

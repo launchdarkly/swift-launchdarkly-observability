@@ -13,7 +13,7 @@ public final class ScreenCaptureService {
     let maskCollector: MaskCollector
     
     public init(options: SessionReplayOptions) {
-        maskCollector = MaskCollector(privacySettings: options.privacySettings)
+        maskCollector = MaskCollector(privacySettings: options.privacy)
     }
 
     // MARK: - Capture

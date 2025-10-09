@@ -1,13 +1,19 @@
+import LaunchDarkly
+import Foundation
+
 public struct ObservabilityService {
+    public var context: ObservabilityContext?
     public var metricsService: MetricsService
     public var tracesService: TracesService
     public var logsService: LogsService
     
     public init(
+        context: ObservabilityContext? = nil,
         metricsService: MetricsService,
         tracesService: TracesService,
         logsService: LogsService
     ) {
+        self.context = context
         self.metricsService = metricsService
         self.tracesService = tracesService
         self.logsService = logsService
@@ -52,5 +58,19 @@ public struct ObservabilityService {
         let metricsFlushed = await metricsService.flush()
         
         return tracesFlushed && logsFlushed && metricsFlushed
+    }
+}
+
+extension LDClient {
+    private enum ObservabilityConstants {
+        static var associatedObjectKey: Int = 0
+    }
+    
+    public var observabilityService: ObservabilityService? {
+        get {
+            objc_getAssociatedObject(self, &ObservabilityConstants.associatedObjectKey) as? ObservabilityService
+        } set {
+            objc_setAssociatedObject(self, &ObservabilityConstants.associatedObjectKey, newValue, .OBJC_ASSOCIATION_RETAIN)
+        }
     }
 }

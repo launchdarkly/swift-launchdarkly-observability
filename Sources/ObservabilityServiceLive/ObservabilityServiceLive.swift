@@ -23,20 +23,24 @@ extension ObservabilityService {
         var options = options
         options.resourceAttributes = options.resourceAttributes
             .merging(ExtendedResourceAttributes.value) { current, _ in current }
-        
+     
+        guard let url = URL(string: options.backendUrl) else {
+            throw InstrumentationError.invalidGraphQLUrl
+        }
+        let graphQLClient = GraphQLClient(endpoint: url)
+        let eventQueue = EventQueue()
+      
         let sampler = ExportSampler.build(sampler: ThreadSafeSampler.shared.sample(_:))
         let sessionService = SessionService.build(options: options)
         let metricsService = try MetricsService.buildHttp(sessionService: sessionService, options: options)
         let tracesService = try TracesService.buildHttp(sessionService: sessionService, options: options, sampler: sampler)
         let logsService = try LogsService.buildHttp(sessionService: sessionService, options: options, sampler: sampler)
-        let userInteractionService = UserInteractionService.build(tracesService: tracesService)
+    
+        let userInteractionService = UserInteractionService.build(tracesService: tracesService, eventQueue: eventQueue)
         userInteractionService.start()
+        
         Task {
             do {
-                guard let url = URL(string: options.backendUrl) else {
-                    throw InstrumentationError.invalidGraphQLUrl
-                }
-                let graphQLClient = GraphQLClient(endpoint: url)
                 let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
                 let config = try await samplingConfigClient.getSamplingConfig(mobileKey: mobileKey)
                 sampler.setConfig(config)
@@ -51,9 +55,17 @@ extension ObservabilityService {
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Crash report service initialization failed with error: \(error)")
         }
-            
+                 
+        let batchWorker = BatchWorker(eventQueue: eventQueue)
+        let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionService: sessionService)
+        let context = ObservabilityContext(sdkKey: mobileKey,
+                                           options: options,
+                                           sessionService: sessionService,
+                                           transportService: transportService)
+        transportService.start()
         
         return .init(
+            context: context,
             metricsService: metricsService,
             tracesService: tracesService,
             logsService: logsService

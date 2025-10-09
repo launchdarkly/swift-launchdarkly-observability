@@ -1,19 +1,19 @@
 import Foundation
 import Common
 
-protocol EventExporting {
-    func export(items: [EventQueueItem]) async throws
-}
-
-final class BatchWorker {
+public final class BatchWorker {
     let eventQueue: EventQueue
     let interval = TimeInterval(2)
     var task: Task<Void, Never>?
-    let exporter: EventExporting
+    let multiExporter: MultiEventExporting
     
-    init(eventQueue: EventQueue, exporter: EventExporting) {
+    public init(eventQueue: EventQueue, multiExporter: MultiEventExporting = MultiEventExporter(exporters: [])) {
         self.eventQueue = eventQueue
-        self.exporter = exporter
+        self.multiExporter = multiExporter
+    }
+    
+    public func addExporter(_ exporter: EventExporting) async {
+        await multiExporter.addExporter(exporter)
     }
     
     func start() {
@@ -36,11 +36,12 @@ final class BatchWorker {
     
     func stop() {
         task?.cancel()
+        task = nil
     }
     
     func send(items: [EventQueueItem]) async {
         do {
-            try await exporter.export(items: items)
+            try await multiExporter.export(items: items)
         } catch {
             print(error)
         }

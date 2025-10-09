@@ -1,6 +1,7 @@
 import Foundation
 import OpenTelemetryApi
 import OpenTelemetrySdk
+import ApplicationServices
 
 public class ObservabilityLogRecordBuilder: EventBuilder {
     private var limits: LogLimits
@@ -8,15 +9,15 @@ public class ObservabilityLogRecordBuilder: EventBuilder {
     private var includeSpanContext: Bool
     private var timestamp: Date?
     private var observedTimestamp: Date?
-    private var body: AttributeValue?
-    private var severity: Severity?
+    private var body: OpenTelemetryApi.AttributeValue?
+    private var severity: OpenTelemetryApi.Severity?
     private var attributes: AttributesDictionary
     private var spanContext: SpanContext?
     private var resource: Resource
     private var clock: Clock
-    private var queue: EventQueue
+    private var queue: EventQueuing
     
-    public init(queue: EventQueue,
+    public init(queue: EventQueuing,
          resource: Resource,
          clock: Clock,
          instrumentationScope: InstrumentationScopeInfo,
@@ -44,7 +45,6 @@ public class ObservabilityLogRecordBuilder: EventBuilder {
     
     public func setSpanContext(_ context: OpenTelemetryApi.SpanContext) -> Self {
         spanContext = context
-        
         return self
     }
     
@@ -53,7 +53,7 @@ public class ObservabilityLogRecordBuilder: EventBuilder {
         return self
     }
     
-    public func setBody(_ body: AttributeValue) -> Self {
+    public func setBody(_ body: OpenTelemetryApi.AttributeValue) -> Self {
         self.body = body
         return self
     }
@@ -63,7 +63,7 @@ public class ObservabilityLogRecordBuilder: EventBuilder {
         return self
     }
     
-    public func setData(_ attributes: [String: AttributeValue]) -> Self {
+    public func setData(_ attributes: [String: OpenTelemetryApi.AttributeValue]) -> Self {
         self.attributes["event.data"] = AttributeValue(AttributeSet(labels: attributes))
         return self
     }
@@ -73,7 +73,7 @@ public class ObservabilityLogRecordBuilder: EventBuilder {
             spanContext = OpenTelemetry.instance.contextProvider.activeSpan?.context
         }
         
-        let attrs = attributes.reduce(into: [String: AttributeValue]()) { result, element in
+        let attrs = attributes.reduce(into: [String: OpenTelemetryApi.AttributeValue]()) { result, element in
             result[element.0] = element.1
         }
         
@@ -87,7 +87,7 @@ public class ObservabilityLogRecordBuilder: EventBuilder {
                                     attributes: attrs)
         //enqueue
         Task {
-            await queue.enque(EventQueueItem(payload: LogItem(log: log)))
+            await queue.send(EventQueueItem(payload: LogItem(log: log)))
         }
     }
 }

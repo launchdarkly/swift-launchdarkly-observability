@@ -1,7 +1,6 @@
 #if canImport(UIKit)
 
 import UIKit
-import Common
 
 public final class SwipeHandler {
     private var startPoint: CGPoint?

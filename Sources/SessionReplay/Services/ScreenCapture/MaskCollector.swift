@@ -3,7 +3,7 @@ import UIKit
 import SwiftUI
 import Common
 
-typealias PrivacySettings = SessionReplayOptions.PrivacySettings
+typealias PrivacySettings = SessionReplayOptions.PrivacyOptions
 
 final class MaskCollector {
     struct Settings {

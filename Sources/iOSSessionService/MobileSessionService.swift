@@ -1,8 +1,6 @@
 import Foundation
 import UIKit.UIApplication
-import SessionReplay
 import OSLog
-
 import ApplicationServices
 
 final class MobileSessionService {
@@ -39,7 +37,7 @@ final class MobileSessionService {
     }
     
     init(
-        id: String = ReplaySessionGenerator.generateSecureID(),
+        id: String = SecureIDGenerator.generateSecureID(),
         startTime: Date = Date(),
         options: SessionOptions
     ) {

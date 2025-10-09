@@ -157,25 +157,17 @@ final class InstrumentationManager {
             return /// currently logger instance is a no-op, means, we don't want a custom logger, we will use no-op
         }
         if let url = URL(string: context.options.otlpEndpoint)?.appendingPathComponent(Instrumentation.logsPath) {
+            let samplingExporter = SamplingLogExporterDecorator(
+                exporter: OtlpHttpLogExporter(
+                    endpoint: url,
+                    envVarHeaders: context.options.customHeaders
+                ),
+                sampler: sampler
+            ),
+                
             let exporter = MultiLogRecordExporter(
-                logRecordExporters: context.options.isDebug ? [
-                    SamplingLogExporterDecorator(
-                        exporter: OtlpHttpLogExporter(
-                            endpoint: url,
-                            envVarHeaders: context.options.customHeaders
-                        ),
-                        sampler: sampler
-                    ),
-                    LDStdoutExporter(logger: context.logger.log)
-                ] : [
-                    SamplingLogExporterDecorator(
-                        exporter: OtlpHttpLogExporter(
-                            endpoint: url,
-                            envVarHeaders: context.options.customHeaders
-                        ),
-                        sampler: sampler
-                    )
-                ]
+                logRecordExporters: context.options.isDebug ?
+                [samplingExporter, LDStdoutExporter(logger: context.logger.log)] : [samplingExporter]
             )
             
             let observabilityExporter = ObservabilityExporter(logRecordExporter: exporter, networkClient: URLSessionNetworkClient())

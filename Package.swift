@@ -23,7 +23,10 @@ let package = Package(
                     .product(name: "DataCompression", package: "DataCompression"),
                 ]),
         .target(
-            name: "DomainModels"
+            name: "DomainModels",
+            dependencies: [
+                "Common"
+            ]
         ),
         .target(
             name: "DomainServices",
@@ -84,9 +87,16 @@ let package = Package(
         .target(
             name: "SessionReplay",
             dependencies: [
-                "Common"
+                "Common",
+                "ApplicationServices",
             ],
             resources: [.process("Queries")]
+        ),
+        .target(
+            name: "LaunchDarklySessionReplay",
+            dependencies: [
+                "SessionReplay",
+            ]
         ),
         .target(
             name: "Sampling",
@@ -123,34 +133,19 @@ let package = Package(
         .target(
             name: "ObservabilityServiceLive",
             dependencies: [
-                "API",
-                "CrashReporter",
-                "Sampling",
-                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-            ]
-        ),
-        .target(
-            name: "Observability",
-            dependencies: [
-                "Common",
-                "API",
-                "SessionReplay",
-                "CrashReporter",
-                "CrashReporterLive",
                 "ApplicationServices",
                 "OTelInstrumentation",
                 "KSCrashReportService",
                 "iOSSessionService",
                 "Sampling",
                 "SamplingLive",
-                "Common"
+                "Common",
+                "SessionReplay",
             ],
             resources: [
                 .process("Resources"),
             ]
         ),
-        .target(name: "Common"),
         .testTarget(
             name: "CommonTests",
             dependencies: [

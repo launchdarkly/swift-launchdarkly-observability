@@ -1,5 +1,6 @@
 import Foundation
 import Common
+import ApplicationServices
 
 struct ScreenImageItem: EventQueueItemPayload {
     func cost() -> Int {
@@ -14,52 +15,46 @@ protocol SessionReplayItemPayload {
 }
 
 public struct SessionReplayContext {
-
     public var sdkKey: String
     public var serviceName: String
     public var backendUrl: URL
-    public var graphQLClient: GraphQLClient
     
-    public init(sdkKey: String, serviceName: String, backendUrl: URL, graphQLClient: GraphQLClient) {
+    public init(sdkKey: String, serviceName: String, backendUrl: URL) {
         self.sdkKey = sdkKey
         self.serviceName = serviceName
         self.backendUrl = backendUrl
-        self.graphQLClient = graphQLClient
     }
 }
 
 public final class SessionReplayService {
     let screenshotManager: SnapshotTaker
-    let serviceContainer: ServiceContainer
-    let screenshotService: ReplayPushService
-    public let eventQueue = EventQueue()
-    let context: SessionReplayContext
+    var transportService: TransportServicing
     
-    public init(context: SessionReplayContext,
-                sessionId: String,
-                observabilityExporter: ObservabilityExporter) {
-        self.screenshotManager = SnapshotTaker(queue: eventQueue, captureService: ScreenCaptureService(options: SessionReplayOptions()))
-        let replayPushService = ReplayPushService(context: context, sessionId: sessionId, replayApiService: SessionReplayAPIService(gqlClient: context.graphQLClient))
-        let exporter = SessionReplayExporter(sessionReplayExporter: replayPushService, observabilityExporter: observabilityExporter)
-        self.serviceContainer = ServiceContainer(eventSources: [screenshotManager], eventQueue: eventQueue, exporter: exporter)
-        self.context = context
-        let replayApiService = SessionReplayAPIService(gqlClient: context.graphQLClient)
-        self.screenshotService = ReplayPushService(context: context, sessionId: sessionId, replayApiService: replayApiService)
-    }
-    
-    public func start() {
-        screenshotManager.start()
-        serviceContainer.start()
-    }
-    
-    public func stop() {
-        screenshotManager.stop()
-        serviceContainer.stop()
-    }
-    
-    public func userTap(touchEvent: TouchEvent) {
-        Task {
-            await eventQueue.enque(EventQueueItem(payload: TouchItem(touchEvent: touchEvent)))
+    public init(context: ObservabilityContext,
+                sessonReplayOptions: SessionReplayOptions) throws {
+        guard let url = URL(string: context.options.backendUrl) else {
+            throw InstrumentationError.invalidGraphQLUrl
         }
+        let graphQLClient = GraphQLClient(endpoint: url)
+        
+        let captureService = ScreenCaptureService(options: sessonReplayOptions)
+        self.transportService = context.transportService
+        self.screenshotManager = SnapshotTaker(queue: transportService.eventQueue, captureService: captureService)
+        let sessionReplayContext = SessionReplayContext(
+            sdkKey: context.sdkKey,
+            serviceName: context.options.serviceName,
+            backendUrl: url)
+        
+        let replayApiService = SessionReplayAPIService(gqlClient: graphQLClient)
+        let replayPushService = SessionReplayExporter(context: sessionReplayContext,
+                                                      sessionService: context.sessionService,
+                                                      replayApiService: replayApiService)
+        Task {
+            await transportService.batchWorker.addExporter(replayPushService)
+        }
+        screenshotManager.start()
+        
+        // it maybe already started if observability plugin is used.
+        transportService.start()
     }
 }

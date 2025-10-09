@@ -1,11 +1,12 @@
 import Foundation
 import Common
+import ApplicationServices
 
-
-
-actor ReplayPushService {
+actor SessionReplayExporter: EventExporting {
     let replayApiService: SessionReplayAPIService
-    
+    let context: SessionReplayContext
+    let sessionService: SessionService
+
     var payloadId = 0
     var nextPayloadId: Int {
         payloadId += 1
@@ -28,21 +29,19 @@ actor ReplayPushService {
     var currentSession: InitializeSessionResponse?
     var lastExportImage: ExportImage?
     var shouldReload = true
-    let context: SessionReplayContext
     
-    init(context: SessionReplayContext, sessionId: String, replayApiService: SessionReplayAPIService) {
+    init(context: SessionReplayContext, sessionService: SessionService, replayApiService: SessionReplayAPIService) {
         self.context = context
         self.replayApiService = replayApiService
-        self.sessionId = sessionId
+        self.sessionService = sessionService
     }
     
     var notScreenItems = [EventQueueItem]()
-    let sessionId: String
     var fakePayloadOnce = false
     
     func export(items: [EventQueueItem]) async throws {
         if currentSession == nil {
-            let session = try await initializeSession(sessionSecureId: sessionId)
+            let session = try await initializeSession(sessionSecureId: sessionService.sessionInfo().id)
             try await identifySession(session: session)
             currentSession = session
         }
@@ -92,7 +91,7 @@ actor ReplayPushService {
                 appendFullSnapshotEvents(exportImage, timestamp, &events)
             }
             
-        case let touchEvent as TouchItem:
+        case let touchEvent as TouchItemPayload:
             tapEvent(touch: touchEvent.touchEvent, events: &events, timestamp: item.timestamp)
         default:
             () //
@@ -231,15 +230,15 @@ actor ReplayPushService {
         return event
     }
     
-    func fullSnapshotEvent(exportImage: ExportImage, timestamp: Int64) -> Event {
+    func fullSnapshotEvent(exportImage: ExportImage, timestamp: Int64, emtpyCanvas: Bool) -> Event {
         id = 0
-        let rootNode = fullSnapshotNode(exportImage: exportImage)
+        let rootNode = fullSnapshotNode(exportImage: exportImage, emtpyCanvas: emtpyCanvas)
         let eventData = EventData(node: rootNode)
         let event = Event(type: .FullSnapshot, data: AnyEventData(eventData), timestamp: timestamp, _sid: nextSid)
         return event
     }
     
-    func fullSnapshotNode(exportImage: ExportImage) -> EventNode {
+    func fullSnapshotNode(exportImage: ExportImage, emtpyCanvas: Bool) -> EventNode {
         var rootNode = EventNode(id: nextId, type: .Document)
         let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: "html")
         rootNode.childNodes.append(htmlDocNode)
@@ -247,7 +246,7 @@ actor ReplayPushService {
         let htmlNode = EventNode(id: nextId, type: .Element, tagName: "html", attributes: ["lang": "en"], childNodes: [
             EventNode(id: nextId, type: .Element, tagName: "head", attributes: [:]),
             EventNode(id: nextId, type: .Element, tagName: "body", attributes: [:], childNodes: [
-                exportImage.eventNode(id: nextId)
+                exportImage.eventNode(id: nextId, use_rr_dataURL: !emtpyCanvas)
             ]),
         ])
         imageId = id
@@ -257,10 +256,12 @@ actor ReplayPushService {
     }
     
     fileprivate func appendFullSnapshotEvents(_ exportImage: ExportImage, _ timestamp: Int64, _ events: inout [Event]) {
-        //let imageNode = exportImage.eventNode(id: 16)
-        // event with window size
-        events.append(windowEvent(href: "http://localhost:5173/", width: exportImage.paddedWidth, height: exportImage.paddedHeight, timestamp: timestamp))
-        events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
+        events.append(windowEvent(href: "", width: exportImage.paddedWidth, height: exportImage.paddedHeight, timestamp: timestamp))
+        events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp, emtpyCanvas: false))
+        events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp, emtpyCanvas: true))
+        if let imageId {
+            events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
+        }
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
     }
     

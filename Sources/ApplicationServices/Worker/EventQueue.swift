@@ -1,46 +1,38 @@
 import Foundation
 import Common
 
-protocol EventQueueItemPayload {
-    func cost() -> Int
-}
-
-
-struct TouchItem: EventQueueItemPayload {
-    let touchEvent: TouchEvent
-
-    func cost() -> Int {
-        300
-    }
+public struct EventQueueItem {
+    public var payload: EventQueueItemPayload
+    public var timeIntervalSince1970: TimeInterval
     
-}
-
-
-
-struct EventQueueItem {
-    var payload: EventQueueItemPayload
-    var timeIntervalSince1970: TimeInterval
-    
-    init(payload: EventQueueItemPayload, date: Date = Date()) {
+    public init(payload: EventQueueItemPayload, date: Date = Date()) {
         self.payload = payload
         self.timeIntervalSince1970 = date.timeIntervalSince1970
     }
     
-    var timestamp: Int64 {
+    public var timestamp: Int64 {
         Int64(timeIntervalSince1970 * 1000.0)
     }
     
-    func cost() -> Int {
+    public func cost() -> Int {
         payload.cost()
     }
 }
 
+public protocol EventQueuing: Actor {
+    func send(_ item: EventQueueItem)
+}
+
 // TODO: make it optimal
-public actor EventQueue {
+public actor EventQueue: EventQueuing {
     var storage = [EventQueueItem]()
     var lastEventTime: TimeInterval = 0
     
-    func enque(_ item: EventQueueItem) {
+    public init() {
+        
+    }
+    
+    public func send(_ item: EventQueueItem) {
         storage.append(item)
         lastEventTime = item.timeIntervalSince1970
     }
@@ -76,7 +68,6 @@ public actor EventQueue {
             result.append(item)
             
             sumCost += item.cost()
-            let timestamp = item.timeIntervalSince1970
             if i >= limit || sumCost > cost {
                 storage.removeFirst(i + 1)
                 return result

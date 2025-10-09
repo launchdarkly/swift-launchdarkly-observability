@@ -6,7 +6,7 @@ enum ScreenshotServiceError: Error {
     case decodingError(Error?)
 }
 
-extension ReplayPushService  {
+extension SessionReplayExporter  {
 //    func pushNotScreenshotItems(items: [EventQueueItem]) async throws {
 //        guard let currentSession else {
 //            return

@@ -1,7 +1,7 @@
 import OpenTelemetrySdk
 import Common
 import Foundation
-import OpenTelemetryProtocolExporterCommon
+//import OpenTelemetryProtocolExporterCommon
 
 public final class ObservabilityExporter: EventExporting {
     let networkClient: NetworkClient
@@ -12,7 +12,7 @@ public final class ObservabilityExporter: EventExporting {
         self.networkClient = networkClient
     }
     
-    func export(items: [EventQueueItem]) async throws {
+    public func export(items: [EventQueueItem]) async throws {
         
     }
     
