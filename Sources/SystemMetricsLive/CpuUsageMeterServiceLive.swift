@@ -60,6 +60,8 @@ final class CpuUsageMeterServiceFacade {
                     do {
                         let statistics = try cpu.cpuUsage()
                         let physicalCores = Int(cpu.physicalCoresCount())
+                        
+                        /// measure user
                         metrics.recordMetric(
                             metric: .init(
                                 name: SemanticConvention.System.systemCpuUtilization,
@@ -70,11 +72,11 @@ final class CpuUsageMeterServiceFacade {
                                 ]
                             )
                         )
-                        
+                        /// measure idle
                         metrics.recordMetric(
                             metric: .init(
                                 name: SemanticConvention.System.systemCpuUtilization,
-                                value: statistics.user,
+                                value: statistics.idle,
                                 attributes: [
                                     SemanticConvention.System.cpuLogicalNumber: .int(physicalCores),
                                     SemanticConvention.System.cpuMode: .string("idle")
@@ -82,7 +84,7 @@ final class CpuUsageMeterServiceFacade {
                             )
                         )
                     } catch {
-                        os_log("%{public}@", log: log, type: .error, "failed to get CPU usage")
+                        os_log("%{public}@", log: log, type: .error, "failed to get user CPU usage")
                     }
                 }
         )
