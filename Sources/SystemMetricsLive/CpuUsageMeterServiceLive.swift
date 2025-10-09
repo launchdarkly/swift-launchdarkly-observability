@@ -11,9 +11,13 @@ extension CpuUsageMeterService {
         metricsService: MetricsService,
         log: OSLog
     ) -> Self {
+        
+        let systemCPUUtilizationService = SystemCPUUtilizationService()
+        
         let facade = CpuUsageMeterServiceFacade(
             monitoringInterval: monitoringInterval,
             metricsService: metricsService,
+            systemCPUUtilizationService: systemCPUUtilizationService,
             log: log
         )
         
@@ -27,10 +31,10 @@ extension CpuUsageMeterService {
         )
     }
 }
-
 final class CpuUsageMeterServiceFacade {
     private let monitoringInterval: TimeInterval
     private let metricsService: MetricsService
+    private let systemCPUUtilizationService: SystemCPUUtilizationService
     private let log: OSLog
     private var tasks = [UUID]()
     
@@ -39,10 +43,12 @@ final class CpuUsageMeterServiceFacade {
     init(
         monitoringInterval: TimeInterval = 2,
         metricsService: MetricsService,
+        systemCPUUtilizationService: SystemCPUUtilizationService,
         log: OSLog
     ) {
         self.monitoringInterval = monitoringInterval
         self.metricsService = metricsService
+        self.systemCPUUtilizationService = systemCPUUtilizationService
         self.log = log
     }
     
@@ -51,44 +57,39 @@ final class CpuUsageMeterServiceFacade {
     }
     
     func startMonitoring() {
-//        var cpu = CPULoad()
-        var cpu = CpuUsageServiceProvider()
+        var service = systemCPUUtilizationService
         let log = log
         let metrics = metricsService
-        tasks.append(
-            scheduler.scheduleRepeating(
-                every: monitoringInterval) {
-                    do {
-                        let statistics = try cpu.cpuUsage()
-                        let physicalCores = Int(try cpu.physicalCoreCount())
-                        
-                        /// measure user
-                        metrics.recordMetric(
-                            metric: .init(
-                                name: SemanticConvention.System.systemCpuUtilization,
-                                value: Double(statistics.user),
-                                attributes: [
-                                    SemanticConvention.System.cpuLogicalNumber: .int(physicalCores),
-                                    SemanticConvention.System.cpuMode: .string("user")
-                                ]
-                            )
-                        )
-                        /// measure idle
-                        metrics.recordMetric(
-                            metric: .init(
-                                name: SemanticConvention.System.systemCpuUtilization,
-                                value: Double(statistics.idle),
-                                attributes: [
-                                    SemanticConvention.System.cpuLogicalNumber: .int(physicalCores),
-                                    SemanticConvention.System.cpuMode: .string("idle")
-                                ]
-                            )
-                        )
-                    } catch {
-                        os_log("%{public}@", log: log, type: .error, "failed to get user CPU usage")
+        
+        do {
+            /// Get initial snapshot
+            try service.snapshot()
+            tasks.append(
+                scheduler.scheduleRepeating(
+                    every: monitoringInterval) {
+                        do {
+                            let utilizations = try service.utilizationSinceLastSnapshot()
+                            for cpu in utilizations {
+                                metrics.recordMetric(
+                                    metric: .init(
+                                        name: SemanticConvention.System.systemCpuUtilization,
+                                        value: cpu.byMode[.user] ?? 0.0,
+                                        attributes: [
+                                            SemanticConvention.System.cpuLogicalNumber: .int(cpu.cpuIndex),
+                                            SemanticConvention.System.cpuMode: .string("user")
+                                        ]
+                                    )
+                                )
+                            }
+                        } catch {
+                            os_log("%{public}@", log: log, type: .error, "utilizationSinceLastSnapshot failed with error: \(error)")
+                        }
                     }
-                }
-        )
+            )
+        } catch {
+            os_log("%{public}@", log: log, type: .error, "get initial cpu snapshot failed with error: \(error)")
+        }
+        
     }
     
     func stopMonitoring() {
