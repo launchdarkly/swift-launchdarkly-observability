@@ -54,6 +54,7 @@ final class CpuUsageMeterServiceFacade {
     
     deinit {
         tasks.forEach(scheduler.stopRepeating(id:))
+        tasks.removeAll()
     }
     
     func startMonitoring() {
