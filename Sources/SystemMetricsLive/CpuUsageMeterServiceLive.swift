@@ -81,14 +81,6 @@ final class CpuUsageMeterServiceFacade {
                                 ]
                             )
                         )
-                        
-                        let info = """
-                            user: \(statistics.user) \
-                            system: \(statistics.system) \
-                            idle: \(statistics.idle) \
-                            nice: \(statistics.nice)
-                            """
-                        os_log("%{public}@", log: log, type: .debug, info)
                     } catch {
                         os_log("%{public}@", log: log, type: .error, "failed to get CPU usage")
                     }

@@ -19,9 +19,7 @@ final class Scheduler {
         let id = UUID()
         let log = logger.log
         let workItem = DispatchWorkItem {
-            os_log("%{public}@", log: log, type: .info, "scheduled task \(id.uuidString)started after \(delay)s")
             task()
-            os_log("%{public}@", log: log, type: .info, "scheduled task \(id.uuidString) completed")
             completion?()
         }
         workItems[id] = workItem
@@ -34,7 +32,6 @@ final class Scheduler {
         workItems[id]?.cancel()
         timers.removeValue(forKey: id)
         workItems.removeValue(forKey: id)
-        os_log("%{public}@", log: logger.log, type: .info, "Task \(id.uuidString) cancelled")
     }
     
     @discardableResult func scheduleRepeating(
@@ -47,9 +44,7 @@ final class Scheduler {
         timer.schedule(deadline: .now() + interval, repeating: interval)
         let log = logger.log
         timer.setEventHandler {
-            os_log("%{public}@", log: log, type: .info, "Repeating task \(id.uuidString) started (interval: \(interval)s)")
             task()
-            os_log("%{public}@", log: log, type: .info, "Repeating task \(id.uuidString) completed")
             completion?()
         }
         timer.resume()
@@ -62,6 +57,5 @@ final class Scheduler {
         timers[id]?.cancel()
         timers.removeValue(forKey: id)
         workItems.removeValue(forKey: id)
-        os_log("%{public}@", log: logger.log, type: .info, "Repeating task \(id.uuidString) stopped")
     }
 }
