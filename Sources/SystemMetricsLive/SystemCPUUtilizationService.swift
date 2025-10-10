@@ -35,11 +35,10 @@ public final class SystemCPUUtilizationService {
     // Measure utilization since last snapshot
     public func utilizationSinceLastSnapshot() throws -> [LogicalCPUUtilization] {
         lock.lock()
+        defer { lock.unlock() }
         guard let prevTimes = previousTimes, let prevTimestamp = previousTimestamp else {
-            lock.unlock()
             throw SystemCPUUtilizationError.noPreviousSnapshot
         }
-        lock.unlock()
         let (currTimes, cpuCount) = try Self.getCPUTimes()
         let currTimestamp = Date().timeIntervalSince1970
         let elapsed = currTimestamp - prevTimestamp
@@ -69,10 +68,8 @@ public final class SystemCPUUtilizationService {
             )
         }
         // Update snapshot for next measurement
-        lock.lock()
         previousTimes = currTimes
         previousTimestamp = currTimestamp
-        lock.unlock()
         return results
     }
     

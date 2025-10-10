@@ -42,7 +42,6 @@ final class Scheduler {
         let id = UUID()
         let timer = DispatchSource.makeTimerSource(queue: queue)
         timer.schedule(deadline: .now() + interval, repeating: interval)
-        let log = logger.log
         timer.setEventHandler {
             task()
             completion?()
