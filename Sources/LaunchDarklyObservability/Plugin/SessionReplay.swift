@@ -2,6 +2,7 @@ import LaunchDarkly
 import Foundation
 import ApplicationServices
 import OSLog
+import SessionReplay
 
 public final class SessionReplay: Plugin {
     private let options: SessionReplayOptions
@@ -30,5 +31,4 @@ public final class SessionReplay: Plugin {
         }
     }
 }
-
 

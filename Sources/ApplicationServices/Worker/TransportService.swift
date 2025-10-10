@@ -12,14 +12,14 @@ public protocol TransportServicing {
     func stop()
 }
 
-public final class NoOpTransportService: TransportServicing {
-    public var eventQueue = EventQueue()
-    public var batchWorker = BatchWorker(eventQueue: EventQueue())
-
-    public init() {}
-    public func start() {}
-    public func stop() {}
-}
+//public final class NoOpTransportService: TransportServicing {
+//    public var eventQueue = EventQueue()
+//    public var batchWorker = BatchWorker(eventQueue: EventQueue())
+//
+//    public init() {}
+//    public func start() {}
+//    public func stop() {}
+//}
 
 public final class TransportService: TransportServicing {
     public let eventQueue: EventQueue

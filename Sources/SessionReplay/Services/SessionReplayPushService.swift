@@ -45,19 +45,19 @@ actor SessionReplayExporter: EventExporting {
             try await identifySession(session: session)
             currentSession = session
         }
-  
+        
         var events = [Event]()
         for item in items {
             appendEvents(item: item, events: &events)
         }
         
-        if events.isNotEmpty {
-            if let currentSession, !fakePayloadOnce {
-                fakePayloadOnce = true
-                try await pushPayload(session: currentSession, resource: "payload2", timestamp: Date().millisecondsSince1970)
-            }
-            try await pushPayload(events: events)
+        guard let firstEvent = events.first else { return }
+        
+        if let currentSession, !fakePayloadOnce {
+            //fakePayloadOnce = true
+            try await pushPayload(session: currentSession, resource: "payload2", timestamp: firstEvent.timestamp)
         }
+        try await pushPayload(events: events)
     }
     
     func appendEvents(item: EventQueueItem, events: inout [Event]) {

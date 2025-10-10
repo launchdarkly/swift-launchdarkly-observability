@@ -3,13 +3,13 @@ import DataCompression
 
 public final class GraphQLClient {
     public let endpoint: URL
-    private let network: NetworkClient
+    private let network: HttpServicing
     private let decoder: JSONDecoder
     private let defaultHeaders: [String: String]
     private var cvsString: String = ""
      
     public init(endpoint: URL,
-                network: NetworkClient = URLSessionNetworkClient(),
+                network: HttpServicing = HttpService(),
                 decoder: JSONDecoder = JSONDecoder(),
                 defaultHeaders: [String: String] = [
                     "Content-Type": "application/json",

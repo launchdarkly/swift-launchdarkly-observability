@@ -1,6 +1,7 @@
 import Foundation
 
 public enum NetworkError: Error, CustomStringConvertible {
+    case invalidRequest(cause: Error)
     case invalidResponse
     case httpStatus(Int, data: Data?)
     case transport(Error)
@@ -10,15 +11,16 @@ public enum NetworkError: Error, CustomStringConvertible {
         case .invalidResponse: return "Invalid response type"
         case .httpStatus(let code, _): return "HTTP status \(code)"
         case .transport(let error): return "Transport error: \(error)"
+        case .invalidRequest(let cause): return "Invalid request: \(cause)"
         }
     }
 }
 
-public protocol NetworkClient {
+public protocol HttpServicing {
     func send(_ request: URLRequest) async throws -> Data
 }
 
-public final class URLSessionNetworkClient: NetworkClient {
+public final class HttpService: HttpServicing {
     private let session: URLSession
 
     public init(session: URLSession = .shared) {

@@ -1,9 +1,9 @@
 import Foundation
 
-enum CommonOTelPath {
-    static let logsPath = "/v1/logs"
-    static let metricsPath = "/v1/metrics"
-    static let tracesPath = "/v1/traces"
+public enum CommonOTelPath {
+    public static let logsPath = "/v1/logs"
+    public static let metricsPath = "/v1/metrics"
+    public static let tracesPath = "/v1/traces"
 }
 
 enum CommonOTelConfiguration {

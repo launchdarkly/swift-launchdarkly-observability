@@ -45,7 +45,7 @@ public final class TapHandler {
                             scale: targetView.window?.screen.scale ?? UIScreen.main.scale)
                     )
                 }
-                startPoint = nil
+                //startPoint = nil
             default:
                 break
             }

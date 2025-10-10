@@ -215,7 +215,7 @@ public final class CreditCardViewController: UIViewController {
         cvvField.delegate = self
         cvvContainer.addArrangedSubview(cvvField)
         self.cvvContainer = cvvContainer
-        //cvvContainer.ldMask()
+        cvvContainer.ldPrivate()
         
         row.addArrangedSubview(expiryContainer)
         row.addArrangedSubview(cvvContainer)
@@ -228,6 +228,7 @@ public final class CreditCardViewController: UIViewController {
         postalField.autocapitalizationType = .allCharacters
         postalField.inputAccessoryView = kbToolbar
         postalField.delegate = self
+        postalField.ldPrivate(isEnabled: false)
         
         // Save button
         saveButton.setTitle("Save Card", for: .normal)

@@ -9,18 +9,21 @@ final class OTelLogsService {
     private let sessionService: SessionService
     private let options: Options
     private let exporter: LogRecordExporter
+    private let eventQueue: EventQueue
     private let otelLogger: any OpenTelemetryApi.Logger
     private let logRecordProcessor: any LogRecordProcessor
-    
+    private let resource: Resource
+    private let instrumentationScope: InstrumentationScopeInfo
+
     init(
         sessionService: SessionService,
         options: Options,
-        exporter: LogRecordExporter
+        exporter: LogRecordExporter,
+        eventQueue: EventQueue
     ) {
-        
-        /// Using the default values from OpenTelemetry for Swift
-        /// For reference check:
-        ///https://github.com/open-telemetry/opentelemetry-swift/blob/main/Sources/OpenTelemetrySdk/Logs/Processors/BatchLogRecordProcessor.swift
+//        / Using the default values from OpenTelemetry for Swift
+//        / For reference check:
+//        /https://github.com/open-telemetry/opentelemetry-swift/blob/main/Sources/OpenTelemetrySdk/Logs/Processors/BatchLogRecordProcessor.swift
         let processor = BatchLogRecordProcessor(
             logRecordExporter: exporter,
             scheduleDelay: 5,
@@ -28,7 +31,7 @@ final class OTelLogsService {
             maxQueueSize: 2048,
             maxExportBatchSize: 512
         )
-
+        self.resource = Resource(attributes: options.resourceAttributes.mapValues { $0.toOTel() })
         let provider = LoggerProviderBuilder()
             .with(
                 processors: [
@@ -52,7 +55,9 @@ final class OTelLogsService {
         self.logRecordProcessor = processor
         self.sessionService = sessionService
         self.options = options
+        self.eventQueue = eventQueue
         self.exporter = exporter
+        self.instrumentationScope = .init(name: options.serviceName)
     }
     
     // MARK: - API
@@ -67,12 +72,24 @@ final class OTelLogsService {
         if !sessionId.isEmpty {
             attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
         }
-        otelLogger.logRecordBuilder()
-            .setBody(.string(message))
+        
+        let logBuilder = ObservabilityLogRecordBuilder(queue: eventQueue,
+                                                          resource: resource,
+                                                          clock: MillisClock(),
+                                                          instrumentationScope: instrumentationScope,
+                                                          includeSpanContext: true)
+        logBuilder.setBody(.string(message))
             .setTimestamp(Date())
             .setSeverity(severity.toOtel())
             .setAttributes(attributes.mapValues { $0.toOTel() })
             .emit()
+        
+//        otelLogger.logRecordBuilder()
+//            .setBody(.string(message))
+//            .setTimestamp(Date())
+//            .setSeverity(severity.toOtel())
+//            .setAttributes(attributes.mapValues { $0.toOTel() })
+//            .emit()
     }
     
     func flush() async -> Bool {

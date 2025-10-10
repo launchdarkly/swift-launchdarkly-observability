@@ -10,10 +10,13 @@ let package = Package(
         .library(
             name: "LaunchDarklyObservability",
             targets: ["LaunchDarklyObservability"]),
+//        .library(
+//            name: "LaunchDarklySessionReplay",
+//            targets: ["LaunchDarklySessionReplay"]),
     ],
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift", exact: "2.0.0"),
-        .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", from: "9.15.0"),
+        .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", branch: "v10"),
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
         .package(url: "https://github.com/mw99/DataCompression", from: "3.8.0")
     ],
@@ -92,12 +95,12 @@ let package = Package(
             ],
             resources: [.process("Queries")]
         ),
-        .target(
-            name: "LaunchDarklySessionReplay",
-            dependencies: [
-                "SessionReplay",
-            ]
-        ),
+//        .target(
+//            name: "LaunchDarklySessionReplay",
+//            dependencies: [
+//                "SessionReplay",
+//            ]
+//        ),
         .target(
             name: "Sampling",
             dependencies: [
@@ -158,6 +161,7 @@ let package = Package(
             dependencies: [
                 "ApplicationServices",
                 "ObservabilityServiceLive",
+            //    "LaunchDarklySessionReplay",
                 .product(name: "LaunchDarkly", package: "ios-client-sdk")
             ]
         )

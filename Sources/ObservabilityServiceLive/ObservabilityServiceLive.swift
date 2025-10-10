@@ -28,13 +28,13 @@ extension ObservabilityService {
             throw InstrumentationError.invalidGraphQLUrl
         }
         let graphQLClient = GraphQLClient(endpoint: url)
+       
         let eventQueue = EventQueue()
-      
         let sampler = ExportSampler.build(sampler: ThreadSafeSampler.shared.sample(_:))
         let sessionService = SessionService.build(options: options)
         let metricsService = try MetricsService.buildHttp(sessionService: sessionService, options: options)
         let tracesService = try TracesService.buildHttp(sessionService: sessionService, options: options, sampler: sampler)
-        let logsService = try LogsService.buildHttp(sessionService: sessionService, options: options, sampler: sampler)
+        let logsService = try LogsService.buildHttp(sessionService: sessionService, options: options, sampler: sampler, eventQueue: eventQueue)
     
         let userInteractionService = UserInteractionService.build(tracesService: tracesService, eventQueue: eventQueue)
         userInteractionService.start()
@@ -57,6 +57,15 @@ extension ObservabilityService {
         }
                  
         let batchWorker = BatchWorker(eventQueue: eventQueue)
+        guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(CommonOTelPath.logsPath) else {
+            throw InstrumentationError.invalidLogExporterUrl
+        }
+        
+        let logExporter = ObservabilityExporter(endpoint: url)
+        Task {
+            await batchWorker.addExporter(logExporter)
+        }
+       
         let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionService: sessionService)
         let context = ObservabilityContext(sdkKey: mobileKey,
                                            options: options,

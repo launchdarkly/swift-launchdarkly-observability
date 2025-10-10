@@ -2,6 +2,7 @@ import LaunchDarkly
 import Foundation
 
 public struct ObservabilityService {
+    // Context for transfer data from Observability to SessionReplay during initialization
     public var context: ObservabilityContext?
     public var metricsService: MetricsService
     public var tracesService: TracesService

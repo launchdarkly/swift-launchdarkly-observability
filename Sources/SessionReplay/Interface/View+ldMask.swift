@@ -3,7 +3,7 @@ import UIKit
 import SessionReplay
 
 public extension View {
-    func ldMask(isEnabled: Bool = true) -> some View {
+    func ldPrivate(isEnabled: Bool = true) -> some View {
         modifier(SessionReplayModifier(isEnabled: isEnabled))
     }
     
@@ -13,7 +13,7 @@ public extension View {
 }
 
 public extension UIView {
-    func ldMask(isEnabled: Bool = true) {
+    func ldPrivate(isEnabled: Bool = true) {
         SessionReplayAssociatedObjects.maskUIView(self, isEnabled: isEnabled)
     }
     

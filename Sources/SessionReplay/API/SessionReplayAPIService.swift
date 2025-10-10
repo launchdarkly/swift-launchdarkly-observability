@@ -10,7 +10,7 @@ public final class SessionReplayAPIService {
     }
     
     public convenience init() {
-        let networkClient = URLSessionNetworkClient()
+        let networkClient = HttpService()
         let headers = ["accept-encoding": "gzip, deflate, br, zstd",
                        "Content-Type": "application/json"]
         

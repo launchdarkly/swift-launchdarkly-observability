@@ -23,7 +23,7 @@ struct SmoothieRow: View {
                 .clipShape(imageClipShape)
                 .overlay(imageClipShape.strokeBorder(.quaternary, lineWidth: 0.5))
                 .accessibility(hidden: true)
-                .ldMask()
+                .ldPrivate()
 
             VStack(alignment: .leading) {
                 Text(smoothie.title)

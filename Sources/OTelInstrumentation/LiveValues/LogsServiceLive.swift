@@ -15,7 +15,8 @@ extension LogsService {
     public static func buildHttp(
         sessionService: SessionService,
         options: Options,
-        sampler: ExportSampler
+        sampler: ExportSampler,
+        eventQueue: EventQueue
     ) throws -> Self {
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(CommonOTelPath.logsPath) else {
             throw InstrumentationError.invalidLogExporterUrl
@@ -39,14 +40,16 @@ extension LogsService {
         return build(
             sessionService: sessionService,
             options: options,
-            exporter: exporter
+            exporter: exporter,
+            eventQueue: eventQueue
         )
     }
     
     static func build(
         sessionService: SessionService,
         options: Options,
-        exporter: LogRecordExporter
+        exporter: LogRecordExporter,
+        eventQueue: EventQueue
     ) -> Self {
         guard options.logs == .enabled else {
             return .noOp
@@ -55,7 +58,8 @@ extension LogsService {
         let service = OTelLogsService(
             sessionService: sessionService,
             options: options,
-            exporter: exporter
+            exporter: exporter,
+            eventQueue: eventQueue
         )
         
         return .init(

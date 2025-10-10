@@ -10,10 +10,10 @@ import Foundation
 struct Event: Codable {
     var type: EventType
     var data: AnyEventData
-    var timestamp: Int64?
+    var timestamp: Int64
     var _sid: Int
     
-    public init(type: EventType, data: AnyEventData, timestamp: Int64? = nil, _sid: Int) {
+    public init(type: EventType, data: AnyEventData, timestamp: Int64, _sid: Int) {
         self.type = type
         self.data = data
         self.timestamp = timestamp

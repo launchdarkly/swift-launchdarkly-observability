@@ -24,6 +24,7 @@ public actor MultiEventExporter: MultiEventExporting {
                     try await exporter.export(items: items)
                 }
             }
+            
             for _ in exporters {
                 try await group.next()
             }
