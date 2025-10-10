@@ -89,7 +89,8 @@ public struct Options {
         logs: FeatureFlag = .enabled,
         traces: FeatureFlag = .enabled,
         metrics: FeatureFlag = .enabled,
-        log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin")
+        log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
+        systemMetrics: Set<SystemMetric>
     ) {
         self.serviceName = serviceName
         self.serviceVersion = serviceVersion
@@ -106,5 +107,7 @@ public struct Options {
         self.traces = traces
         self.metrics = metrics
         self.log = log
+        self.systemMetrics = systemMetrics
+        
     }
 }

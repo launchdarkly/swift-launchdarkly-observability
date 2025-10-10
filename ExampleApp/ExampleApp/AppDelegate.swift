@@ -15,7 +15,10 @@ let config = { () -> LDConfig in
                 isDebug: true,
                 logs: .enabled,
                 traces: .enabled,
-                metrics: .enabled
+                metrics: .enabled,
+                systemMetrics: [
+                    .init(system: .cpu, state: .enabled, pollingFrequency: 2)
+                ]
             )
         )
     ]
