@@ -1,15 +1,9 @@
 import Foundation
-
-struct CPUUsage {
-    let user: Double
-    let system: Double
-    let idle: Double
-    let nice: Double
-}
+import DomainModels
 
 struct CPUUsageService {
 
-    func getCPUUsage() -> CPUUsage? {
+    func getCPUUsage() -> CpuUsage? {
         var count = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info_data_t>.size / MemoryLayout<integer_t>.size)
         var cpuLoad = host_cpu_load_info()
 
@@ -20,7 +14,6 @@ struct CPUUsageService {
         }
 
         guard result == KERN_SUCCESS else {
-            print("Failed to fetch CPU info. Error code: \(result)")
             return nil
         }
 
@@ -35,11 +28,12 @@ struct CPUUsageService {
             return nil
         }
 
-        return CPUUsage(
+        return CpuUsage(
             user: (user / total) * 100.0,
             system: (system / total) * 100.0,
             idle: (idle / total) * 100.0,
-            nice: (nice / total) * 100.0
+            nice: (nice / total) * 100.0,
+            total: total * 100.0
         )
     }
 }
