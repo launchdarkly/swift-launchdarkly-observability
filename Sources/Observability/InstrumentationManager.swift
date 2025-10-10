@@ -289,7 +289,6 @@ final class InstrumentationManager {
                     if !sessionId.isEmpty {
                         spanBuilder.setAttribute(key: SemanticConvention.highlightSessionId, value: sessionId)
                     }
-                    
                 },
                 tracer: self.otelTracer
             )

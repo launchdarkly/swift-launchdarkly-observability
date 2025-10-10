@@ -9,9 +9,11 @@ import ApplicationServices
 
 extension URLSessionInstrumentationConfiguration {
     static func contextPropagationConfig(
-        options: Options
+        options: Options,
+        sessionService: SessionService
     ) -> Self {
-        let handler = OTelURLSessionInstrumentationConfigurationHandler(options: options)
+        let handler = OTelURLSessionInstrumentationConfigurationHandler(options: options,
+                                                                        sessionService: sessionService)
         
         return .init(
             shouldInstrument: handler.shouldInstrument(urlRequest:),
@@ -25,9 +27,11 @@ extension URLSessionInstrumentationConfiguration {
 
 struct OTelURLSessionInstrumentationConfigurationHandler {
     private let options: Options
-    
-    init(options: Options) {
+    private let sessionService: SessionService
+
+    init(options: Options, sessionService: SessionService) {
         self.options = options
+        self.sessionService = sessionService
     }
     
     func shouldInstrument(urlRequest: URLRequest) -> Bool? {
@@ -58,6 +62,11 @@ struct OTelURLSessionInstrumentationConfigurationHandler {
         }
         if let url = urlRequest.url {
             spanBuilder.setAttribute(key: "http.url", value: url.absoluteString)
+        }
+        
+        let sessionId = self.sessionService.sessionInfo().id
+        if !sessionId.isEmpty {
+            spanBuilder.setAttribute(key: SemanticConvention.highlightSessionId, value: sessionId)
         }
     }
     

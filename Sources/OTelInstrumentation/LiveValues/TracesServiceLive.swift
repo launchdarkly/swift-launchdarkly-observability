@@ -66,7 +66,8 @@ extension TracesService {
             sessionService: sessionService,
             options: options,
             exporter: exporter,
-            urlSessionInstrumentationConfiguration: .contextPropagationConfig(options: options)
+            urlSessionInstrumentationConfiguration: .contextPropagationConfig(options: options,
+                                                                              sessionService: sessionService)
         )
         
         return .init(
