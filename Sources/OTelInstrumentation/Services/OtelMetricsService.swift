@@ -27,7 +27,7 @@ final class OTelMetricsService {
     ) {
         
         let reader = PeriodicMetricReaderBuilder(exporter: exporter)
-            .setInterval(timeInterval: 5.0)
+            .setInterval(timeInterval: 10.0)
             .build()
         
         
