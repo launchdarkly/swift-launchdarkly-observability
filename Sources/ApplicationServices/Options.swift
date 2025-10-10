@@ -22,6 +22,7 @@ import OSLog
 ///   - disableMetrics Disables metrics if true. Defaults to false.
 ///   - logAdapter The log adapter to use. Defaults to using the LaunchDarkly SDK's LDTimberLogging.adapter(). ///Use LDAndroidLogging.adapter() to use the Android logging adapter.
 ///   - loggerName The name of the logger to use. Defaults to "LaunchDarklyObservabilityPlugin".
+///   - systemMetrics it is a list of metrics used to report system information, e.g. cpu, memory, battery, etc.
 ///
 
 public struct Options {
@@ -33,6 +34,26 @@ public struct Options {
         case enabled([String])
         case enabledRegex([String])
         case disabled
+    }
+    public enum System: Hashable {
+        case cpu, memory, battery
+    }
+    /// System metric
+    /// Defines a specific configuration for reporting a metric for a system like cpu, battery, etc..
+    /// parameters
+    /// - system is the type of system to be reported cpu, battery, etc.
+    /// - state to define if it is either disabled or enabled
+    /// - pollingFrequency defines polling frequency in seconds, by default is 2 seconds
+    public struct SystemMetric: Hashable {
+        public let system: System
+        public let state: FeatureFlag
+        public let pollingFrequency: TimeInterval
+        
+        public init(system: System, state: FeatureFlag, pollingFrequency: TimeInterval = 2) {
+            self.system = system
+            self.state = state
+            self.pollingFrequency = pollingFrequency
+        }
     }
     public var serviceName: String
     public var serviceVersion: String
@@ -49,6 +70,9 @@ public struct Options {
     public var traces: FeatureFlag
     public var metrics: FeatureFlag
     public var log: OSLog
+    public var systemMetrics: Set<SystemMetric> = [
+        .init(system: .cpu, state: .enabled)
+    ]
     
     public init(
         serviceName: String = "observability-swift",

@@ -36,9 +36,8 @@ extension ObservabilityService {
         userInteractionService.start()
         
         let cpuUsageMetrics = CpuUsageMeterService.build(
-            monitoringInterval: 2,
-            metricsService: metricsService,
-            log: options.log
+            options: options, 
+            metricsService: metricsService
         )
         cpuUsageMetrics.startMonitoring()
 
