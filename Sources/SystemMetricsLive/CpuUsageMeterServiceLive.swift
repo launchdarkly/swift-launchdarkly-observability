@@ -15,13 +15,13 @@ extension CpuUsageMeterService {
         }
         
         let cpuService = CPUUsageService()
-        let cpuMonitor = Monitor<CpuUsage>(
+        let cpuMonitor = MonitorAsyncAwait<CpuUsage>(
             interval: cpuOptions.pollingFrequency,
             sampleProvider: { cpuService.getCPUUsage() }) { usage in
                 metricsService.recordMetric(
                     metric: .init(
                         name: SemanticConvention.System.systemCpuUtilization,
-                        value: usage.total
+                        value: usage.user
                     )
                 )
             }

@@ -32,8 +32,7 @@ struct CPUUsageService {
             user: (user / total) * 100.0,
             system: (system / total) * 100.0,
             idle: (idle / total) * 100.0,
-            nice: (nice / total) * 100.0,
-            total: total * 100.0
+            nice: (nice / total) * 100.0
         )
     }
 }
