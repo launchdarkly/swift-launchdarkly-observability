@@ -2,38 +2,26 @@ import UIKit
 import LaunchDarkly
 import LaunchDarklyObservability
 
-let mobileKey = "mob-48fd3788-eab7-4b72-b607-e41712049dbd"
 let config = { () -> LDConfig in
     var config = LDConfig(
-        mobileKey: mobileKey,
+        mobileKey: Env.mobileKey,
         autoEnvAttributes: .enabled
     )
     config.plugins = [
         Observability(
             options: .init(
-                otlpEndpoint: "http://localhost:4318",
+                otlpEndpoint: Env.otelHost,
                 sessionBackgroundTimeout: 3,
                 isDebug: true,
                 logs: .enabled,
                 traces: .enabled,
-                metrics: .enabled
+                metrics: .enabled,
+                systemMetrics: [
+                    .init(system: .cpu, state: .enabled, pollingFrequency: 2)
+                ]
             )
         )
     ]
-    /*
-    config.plugins = [
-        Observability(
-            options: .init(
-//                otlpEndpoint: "http://localhost:4318",
-                sessionBackgroundTimeout: 3,
-                isDebug: true,
-                disableLogs: false,
-                disableTraces: false,
-                disableMetrics: false
-            )
-        )
-    ]
-    */
     return config
 }()
 
@@ -69,3 +57,4 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         return true
     }
 }
+

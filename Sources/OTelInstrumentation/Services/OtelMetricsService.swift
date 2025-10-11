@@ -30,10 +30,18 @@ final class OTelMetricsService {
             .setInterval(timeInterval: 10.0)
             .build()
         
+        
+        
         let provider = MeterProviderSdk.builder()
             .registerView(
-                selector: InstrumentSelector.builder().setInstrument(name: ".*").build(),
-                view: View.builder().build()
+                selector: InstrumentSelector
+                    .builder()
+                    .setInstrument(name: ".*")
+                    .build(),
+                view: View
+                    .builder()
+                    .withAggregation(aggregation: Aggregations.defaultAggregation())
+                    .build()
             )
             .registerMetricReader(
                 reader: reader
@@ -55,6 +63,8 @@ final class OTelMetricsService {
         self.exporter = exporter
     }
     
+    // MARK: - Private
+    
     // MARK: - API
     
     func recordMetric(metric: Metric) {
@@ -65,7 +75,12 @@ final class OTelMetricsService {
                 .build()
             cachedGauges[metric.name] = gauge
         }
-        gauge?.record(value: metric.value, attributes: metric.attributes.mapValues { $0.toOTel() })
+        gauge?.record(
+            value: metric.value,
+            attributes: metric.attributes
+                .merging(options.resourceAttributes) { current, _ in current }
+                .mapValues { $0.toOTel() }
+        )
     }
     
     func recordCount(metric: Metric) {
@@ -74,7 +89,12 @@ final class OTelMetricsService {
             counter = meter.counterBuilder(name: metric.name).ofDoubles().build()
             cachedCounters[metric.name] = counter
         }
-        counter?.add(value: metric.value, attributes: metric.attributes.mapValues { $0.toOTel() })
+        counter?.add(
+            value: metric.value,
+            attributes: metric.attributes
+                .merging(options.resourceAttributes) { current, _ in current }
+                .mapValues { $0.toOTel() }
+        )
     }
     
     func recordIncr(metric: Metric) {
@@ -83,7 +103,12 @@ final class OTelMetricsService {
             counter = meter.counterBuilder(name: metric.name).build()
             cachedLongCounters[metric.name] = counter
         }
-        counter?.add(value: 1, attributes: metric.attributes.mapValues { $0.toOTel() })
+        counter?.add(
+            value: 1,
+            attributes: metric.attributes
+                .merging(options.resourceAttributes) { current, _ in current }
+                .mapValues { $0.toOTel() }
+        )
     }
     
     func recordHistogram(metric: Metric) {
@@ -92,7 +117,12 @@ final class OTelMetricsService {
             histogram = meter.histogramBuilder(name: metric.name).build()
             cachedHistograms[metric.name] = histogram
         }
-        histogram?.record(value: metric.value, attributes: metric.attributes.mapValues { $0.toOTel() })
+        histogram?.record(
+            value: metric.value,
+            attributes: metric.attributes
+                .merging(options.resourceAttributes) { current, _ in current }
+                .mapValues { $0.toOTel() }
+        )
     }
     
     func recordUpDownCounter(metric: Metric) {
@@ -101,7 +131,12 @@ final class OTelMetricsService {
             upDownCounter = meter.upDownCounterBuilder(name: metric.name).ofDoubles().build()
             cachedUpDownCounters[metric.name] = upDownCounter
         }
-        upDownCounter?.add(value: metric.value, attributes: metric.attributes.mapValues { $0.toOTel() })
+        upDownCounter?.add(
+            value: metric.value,
+            attributes: metric.attributes
+                .merging(options.resourceAttributes) { current, _ in current }
+                .mapValues { $0.toOTel() }
+        )
     }
     
     func flush() async -> Bool {

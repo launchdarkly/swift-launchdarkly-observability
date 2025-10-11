@@ -4,4 +4,5 @@ public enum InstrumentationError: Error {
     case invalidMetricExporterUrl
     case invalidGraphQLUrl
     case unableToLoadReportStore
+    case failedToReadCpuUsage
 }

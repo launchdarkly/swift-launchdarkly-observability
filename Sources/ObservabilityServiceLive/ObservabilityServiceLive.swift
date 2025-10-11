@@ -7,13 +7,15 @@ import iOSSessionService
 import KSCrashReportService
 import Sampling
 import SamplingLive
+import SystemMetricsLive
 import Common
 
 extension ObservabilityService {
     public static let noOp: Self = .init(
         metricsService: .noOp,
         tracesService: .noOp,
-        logsService: .noOp
+        logsService: .noOp,
+        cpuUsageMeterService: .noOp
     )
     
     public static func build(
@@ -23,6 +25,7 @@ extension ObservabilityService {
         var options = options
         options.resourceAttributes = options.resourceAttributes
             .merging(ExtendedResourceAttributes.value) { current, _ in current }
+        options.resourceAttributes[SemanticConvention.highlightProjectId] = .string(mobileKey)
         
         let sampler = ExportSampler.build(sampler: ThreadSafeSampler.shared.sample(_:))
         let sessionService = SessionService.build(options: options)
@@ -31,6 +34,13 @@ extension ObservabilityService {
         let logsService = try LogsService.buildHttp(sessionService: sessionService, options: options, sampler: sampler)
         let userInteractionService = UserInteractionService.build(tracesService: tracesService)
         userInteractionService.start()
+        
+        let cpuUsageMetrics = CpuUsageMeterService.build(
+            options: options, 
+            metricsService: metricsService
+        )
+        cpuUsageMetrics.startMonitoring()
+
         Task {
             do {
                 guard let url = URL(string: options.backendUrl) else {
@@ -56,7 +66,8 @@ extension ObservabilityService {
         return .init(
             metricsService: metricsService,
             tracesService: tracesService,
-            logsService: logsService
+            logsService: logsService,
+            cpuUsageMeterService: cpuUsageMetrics
         )
     }
 }
