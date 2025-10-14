@@ -75,24 +75,24 @@ public class ObservabilityLogRecordBuilder: EventBuilder {
             spanContext = OpenTelemetry.instance.contextProvider.activeSpan?.context
         }
     
-        let attrs = attributes.reduce(into: [String: OpenTelemetryApi.AttributeValue]()) { result, element in
-            result[element.0] = element.1
-        }
-    
-        let log = ReadableLogRecord(resource: resource,
-                                    instrumentationScopeInfo: instrumentationScope,
-                                    timestamp: timestamp ?? clock.now,
-                                    observedTimestamp: observedTimestamp,
-                                    spanContext: spanContext,
-                                    severity: severity,
-                                    body: body,
-                                    attributes: attrs)
-
-        guard let sampledLog = sampler.sampledLog(log) else {
-            return
-        }
-
         Task {
+            let attrs = attributes.reduce(into: [String: OpenTelemetryApi.AttributeValue]()) { result, element in
+                result[element.0] = element.1
+            }
+        
+            let log = ReadableLogRecord(resource: resource,
+                                        instrumentationScopeInfo: instrumentationScope,
+                                        timestamp: timestamp ?? clock.now,
+                                        observedTimestamp: observedTimestamp,
+                                        spanContext: spanContext,
+                                        severity: severity,
+                                        body: body,
+                                        attributes: attrs)
+            
+            guard let sampledLog = sampler.sampledLog(log) else {
+                return
+            }
+            
             await queue.send(EventQueueItem(payload: LogItem(log: sampledLog)))
         }
     }

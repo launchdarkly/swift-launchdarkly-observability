@@ -16,7 +16,7 @@ extension ExportSampler {
     
     func sampledLog(_ record: ReadableLogRecord) -> ReadableLogRecord? {
         guard isSamplingEnabled() else {
-            return nil
+            return record
         }
         
         let sampleResult = sampleLog(record)
