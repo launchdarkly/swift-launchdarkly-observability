@@ -17,6 +17,7 @@ public enum NetworkError: Error, CustomStringConvertible {
 }
 
 public protocol HttpServicing {
+    @discardableResult
     func send(_ request: URLRequest) async throws -> Data
 }
 

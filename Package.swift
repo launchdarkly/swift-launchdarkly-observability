@@ -53,7 +53,16 @@ let package = Package(
         .target(
             name: "LaunchDarklySessionReplay",
             dependencies: [
+                "LaunchDarklyObservability",
                 "SessionReplay",
+            ]
+        ),
+        .target(
+            name: "LaunchDarklyObservability",
+            dependencies: [
+                "Observability",
+                "Common",
+                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
             ]
         ),
         
@@ -90,13 +99,5 @@ let package = Package(
             ],
             resources: [.process("GraphQL/Queries")]
         ),
-        .target(
-            name: "LaunchDarklyObservability",
-            dependencies: [
-                "Observability",
-                "Common",
-                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
-            ]
-        )
     ]
 )
