@@ -18,22 +18,7 @@ extension LogsService {
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(CommonOTelPath.logsPath) else {
             throw InstrumentationError.invalidLogExporterUrl
         }
-        
-        let otlpExporter = OtlpHttpLogExporter(
-            endpoint: url,
-            envVarHeaders: options.customHeaders.map({ ($0.key, $0.value) })
-        )
 
-        let samplingExporter = SamplingLogExporterDecorator(
-            exporter: otlpExporter,
-            sampler: sampler
-        )
-            
-//        let exporter = MultiLogRecordExporter(
-//            logRecordExporters: options.isDebug ?
-//            [samplingExporter,  LDStdoutExporter(logger: options.log)] : [samplingExporter]
-//        )
-    
         return build(
             sessionService: sessionService,
             options: options,
