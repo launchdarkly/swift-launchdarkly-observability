@@ -1,6 +1,7 @@
 import Testing
 import OpenTelemetryApi
 import Observability
+//import LaunchDarklyObservability
 
 struct DomainModelOtelTests {
     @Test
@@ -21,7 +22,7 @@ struct DomainModelOtelTests {
                 #expect(values.values[index].description == array[index])
             }
         } else {
-            #expect(array.isEmpty) /// this always will fail, XCTFail() workaround
+            Issue.record("Expected to get an .array value from the OTEL AttributeValue, but got something else")
         }
     }
     

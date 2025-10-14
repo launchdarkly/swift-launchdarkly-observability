@@ -1,5 +1,5 @@
 import Testing
-import Shared
+import Common
 
 struct StringifyableObject: Encodable {
     let name: String
