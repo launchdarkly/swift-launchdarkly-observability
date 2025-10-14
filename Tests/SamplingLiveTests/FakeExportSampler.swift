@@ -1,8 +1,6 @@
 @testable import OpenTelemetrySdk
 import OpenTelemetryApi
-
-import Sampling
-@testable import SamplingLive
+@testable import Observability
 
 extension ExportSampler {
     static func fake(

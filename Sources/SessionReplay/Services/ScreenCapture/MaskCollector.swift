@@ -26,12 +26,12 @@ final class MaskCollector {
                 return true
             }
             
-            if maskTextInputs, let textInput = view as? UITextInput {
+            if maskTextInputs, let _ = view as? UITextInput {
                 return SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? true
             }
             
             if maskImages, let imageView = view as? UIImageView {
-                return SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? true
+                return SessionReplayAssociatedObjects.shouldMaskUIView(imageView) ?? true
             }
             
             if SessionReplayAssociatedObjects.shouldMaskSwiftUI(view) ?? false {
@@ -89,7 +89,7 @@ final class MaskCollector {
               //  }
             }
         
-            if let sublayers = layer.sublayers?.sorted { $0.zPosition < $1.zPosition } {
+            if let sublayers = layer.sublayers?.sorted(by: { $0.zPosition < $1.zPosition }) {
                 sublayers.forEach(visit)
             }
         }
@@ -108,7 +108,7 @@ final class MaskCollector {
     }
     
     func createMask(_ rPresenation: CALayer, root: CALayer, layer: CALayer, scale: CGFloat) -> Mask? {
-        var scale = 1.0 // scale is already in layers
+        let scale = 1.0 // scale is already in layers
        // let rBounds = rPresenation.bounds
         let lBounds = layer.bounds
         guard lBounds.width > 0, lBounds.height > 0 else { return nil }
@@ -128,8 +128,8 @@ final class MaskCollector {
                                                     ty: ty).scaledBy(x: scale, y: scale)
             return Mask.affine(rect: lBounds, transform: affineTransform)
         } else { // 3D animations
-            let corner0 = CGPoint.zero
-            let corner1 = CGPoint(x: lBounds.width, y: 0)
+//            let corner0 = CGPoint.zero
+//            let corner1 = CGPoint(x: lBounds.width, y: 0)
             
         }
         
@@ -150,7 +150,7 @@ final class MaskCollector {
 
 extension PrivacySettings {
     func buildMaskClasses() -> Set<ObjectIdentifier> {
-        var ids = Set(maskUIViews.map(ObjectIdentifier.init))
+        let ids = Set(maskUIViews.map(ObjectIdentifier.init))
         
         
 //            if privacySettings.maskTextInputs {

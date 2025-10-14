@@ -1,7 +1,7 @@
 import UIKit
 import LaunchDarkly
 import LaunchDarklyObservability
-//import LaunchDarklySessionReplay
+import LaunchDarklySessionReplay
 //import SessionReplay
 //let mobileKey = "mob-48fd3788-eab7-4b72-b607-e41712049dbd"
 //let mobileKey = "mob-a211d8b4-9f80-4170-ba05-0120566a7bd7" // Andrey Sessions stg production

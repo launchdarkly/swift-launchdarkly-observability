@@ -1,5 +1,5 @@
 import Foundation
-import ApplicationServices
+import Observability
 
 class SnapshotTaker: EventSource {
     let queue: EventQueue

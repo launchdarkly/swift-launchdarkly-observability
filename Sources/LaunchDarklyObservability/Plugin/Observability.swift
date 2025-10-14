@@ -1,9 +1,6 @@
 import OSLog
-
 import LaunchDarkly
-
-import ApplicationServices
-import ObservabilityServiceLive
+import Observability
 
 public final class Observability: Plugin {
     private let options: Options

@@ -1,8 +1,7 @@
 import Foundation
 import LaunchDarkly
-
 import Common
-import ApplicationServices
+import Observability
 
 public final class EvalTracingHook: Hook {
     private let queue = DispatchQueue(label: "com.launchdarkly.eval.tracing.hook")

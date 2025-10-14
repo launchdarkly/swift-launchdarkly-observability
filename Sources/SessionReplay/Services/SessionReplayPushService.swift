@@ -1,6 +1,6 @@
 import Foundation
 import Common
-import ApplicationServices
+import Observability
 
 actor SessionReplayExporter: EventExporting {
     let replayApiService: SessionReplayAPIService
@@ -54,7 +54,7 @@ actor SessionReplayExporter: EventExporting {
         guard let firstEvent = events.first else { return }
         
         if let currentSession, !fakePayloadOnce {
-            //fakePayloadOnce = true
+            fakePayloadOnce = true
             try await pushPayload(session: currentSession, resource: "payload2", timestamp: firstEvent.timestamp)
         }
         try await pushPayload(events: events)
@@ -76,7 +76,9 @@ actor SessionReplayExporter: EventExporting {
                 // TODO: make it through real event, when we subscribe device events
                 events.append(reloadEvent(timestamp: timestamp))
                 // fake movement
-                events.append(mouseEvent(timestamp: timestamp))
+                if let mouseEvent = mouseEvent(timestamp: timestamp, x: 0, y: 0, timeOffset: 0) {
+                    events.append(mouseEvent)
+                }
                 shouldReload = false
             }
             
@@ -85,33 +87,19 @@ actor SessionReplayExporter: EventExporting {
                lastExportImage.originalWidth == exportImage.originalWidth,
                lastExportImage.originalHeight == exportImage.originalHeight {
                 events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
-                events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
                 appendFullSnapshotEvents(exportImage, timestamp, &events)
             }
             
         case let touchEvent as TouchItemPayload:
-            tapEvent(touch: touchEvent.touchEvent, events: &events, timestamp: item.timestamp)
+            appendTouchEvents(touch: touchEvent.touchEvent, events: &events, timestamp: item.timestamp)
         default:
             () //
         }
     }
     
-    func tapEvent(touch: TouchEvent, events: inout [Event], timestamp: Int64) {
-        var type: MouseInteractions?
-        switch touch.phase {
-        case .began:
-            type = .touchStart
-        case .ended:
-            type = .touchEnd
-        case .moved:
-            () // NO-OP
-        }
-        guard let type else {
-            return
-        }
-        
+    fileprivate func addTouchInteraction(_ type: MouseInteractions, _ touch: TouchEvent, _ timestamp: Int64, _ events: inout [Event]) {
         let eventData = EventData(source: .mouseInteraction,
                                   type: type,
                                   id: imageId,
@@ -122,6 +110,36 @@ actor SessionReplayExporter: EventExporting {
                           timestamp: timestamp,
                           _sid: nextSid)
         events.append(event)
+    }
+    
+    func appendTouchEvents(touch: TouchEvent, events: inout [Event], timestamp: Int64) {
+        var type: MouseInteractions?
+        switch touch.phase {
+        case .began:
+            type = .touchStart
+//            if let mouseEvent = mouseEvent(timestamp: timestamp,
+//                                           x: touch.location.x,
+//                                           y: touch.location.y,
+//                                           timeOffset: 100) {
+//                events.append(mouseEvent)
+//            }
+        case .ended:
+            type = .touchEnd
+            if let mouseEvent = mouseEvent(timestamp: timestamp,
+                                           x: touch.location.x,
+                                           y: touch.location.y,
+                                           timeOffset: 900) {
+                events.append(mouseEvent)
+            }
+            
+        case .moved:
+            () // NO-OP
+        }
+        guard let type else {
+            return
+        }
+        
+        addTouchInteraction(type, touch, timestamp, &events)
         
         if let clickEvent = clickEvent(touchEvent: touch, timestamp: timestamp) {
             events.append(clickEvent)
@@ -221,8 +239,10 @@ actor SessionReplayExporter: EventExporting {
         return event
     }
     
-    func mouseEvent(timestamp: Int64) -> Event {
-        let eventData = MouseMoveEventData(source: .mouseMove, positions: [.init(x: 0, y: 0, id: "1", timeOffset: 0)])
+    func mouseEvent(timestamp: Int64, x: CGFloat, y: CGFloat, timeOffset: Int64) -> Event? {
+        guard let imageId else { return nil }
+        let x = Int(x), y = Int(y)
+        let eventData = MouseMoveEventData(source: .mouseMove, positions: [.init(x: x, y: y, id: "\(imageId)", timeOffset: timeOffset)])
         let event = Event(type: .IncrementalSnapshot,
                           data: AnyEventData(eventData),
                           timestamp: timestamp,

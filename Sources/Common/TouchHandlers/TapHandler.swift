@@ -24,10 +24,10 @@ public final class TapHandler {
                     )
                 }
             case .ended:
-                if let startPoint {
+                //if let startPoint {
                     let endPoint = touch.location(in: window)
-                    let dx = endPoint.x - startPoint.x
-                    let dy = endPoint.y - startPoint.y
+                    let dx = endPoint.x - (startPoint?.x ?? 0)
+                    let dy = endPoint.y - (startPoint?.y ?? 0)
                     var viewName: String?
                     var accessibilityIdentifier: String?
                     var title: String?
@@ -44,7 +44,7 @@ public final class TapHandler {
                             accessibilityIdentifier: accessibilityIdentifier,
                             scale: targetView.window?.screen.scale ?? UIScreen.main.scale)
                     )
-                }
+                //}
                 //startPoint = nil
             default:
                 break

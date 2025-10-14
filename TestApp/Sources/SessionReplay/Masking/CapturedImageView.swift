@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SessionReplay
 import UIKit
 
 struct CapturedImageView: View {

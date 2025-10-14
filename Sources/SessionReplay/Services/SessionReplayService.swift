@@ -1,6 +1,6 @@
 import Foundation
 import Common
-import ApplicationServices
+import Observability
 
 struct ScreenImageItem: EventQueueItemPayload {
     func cost() -> Int {

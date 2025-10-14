@@ -14,7 +14,7 @@ private struct GetUserOut: Codable, Equatable {
 
 private struct Vars: Encodable { let id: String }
 
-private final class MockNetworkClient: NetworkClient {
+private final class MockNetworkClient: HttpServicing {
     enum Mode {
         case succeed(Data),
              fail(Error)

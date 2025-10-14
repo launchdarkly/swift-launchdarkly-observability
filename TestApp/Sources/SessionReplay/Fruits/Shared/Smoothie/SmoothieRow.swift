@@ -6,7 +6,9 @@ A row used by SmoothieList that adjusts its layout based on environment and plat
 */
 
 import SwiftUI
-import SessionReplay
+import LaunchDarkly
+import LaunchDarklyObservability
+import LaunchDarklySessionReplay
 
 struct SmoothieRow: View {
     var smoothie: Smoothie
