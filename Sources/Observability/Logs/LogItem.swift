@@ -5,6 +5,6 @@ public struct LogItem: EventQueueItemPayload {
     public let log: ReadableLogRecord
     
     public func cost() -> Int {
-        300
+        300 + log.attributes.count * 100
     }
 }
