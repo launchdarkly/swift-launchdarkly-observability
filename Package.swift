@@ -58,22 +58,25 @@ let package = Package(
         ),
         
         /***     Tests       */
-//        .testTarget(
-//            name: "OTelInstrumentationServiceTests",
-//            dependencies: [
-//                "Observability",
-//                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-//                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-//                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
-//            ]
-//        ),
+        .testTarget(
+            name: "OTelInstrumentationServiceTests",
+            dependencies: [
+                "Observability",
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
+                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
+            ]
+        ),
+//  TODO: Fix hanging sampling tests
 //        .testTarget(
 //            name: "SamplingLiveTests",
 //            dependencies: [
 //                "Observability",
 //                "Common",
 //                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-//                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift")
+//                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+//                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
 //            ],
 //            resources: [
 //                .copy("Resources/Stubs/Config.json"),
