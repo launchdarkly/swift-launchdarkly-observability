@@ -3,15 +3,9 @@ import Common
 import Foundation
 import OpenTelemetryProtocolExporterCommon
 
-public final class ObservabilityExporter: EventExporting {
+public final class OtlpLogExporter: EventExporting {
     let otlpHttpClient: OtlpHttpClient
-    //let logRecordExporter: LogRecordExporter
-    
-//    public init(logRecordExporter: LogRecordExporter,  {
-//        self.logRecordExporter = logRecordExporter
-//        self.otlpHttpClient = otlpHttpClient
-//    }
-//    
+
     public init(endpoint: URL,
                         config: OtlpConfiguration = OtlpConfiguration(),
                         useSession: URLSession? = nil,

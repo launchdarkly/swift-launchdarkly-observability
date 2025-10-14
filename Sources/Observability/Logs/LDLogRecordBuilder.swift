@@ -2,7 +2,7 @@ import Foundation
 import OpenTelemetryApi
 import OpenTelemetrySdk
 
-public class ObservabilityLogRecordBuilder: EventBuilder {
+public class LDLogRecordBuilder: EventBuilder {
     private var limits: LogLimits
     private var instrumentationScope: InstrumentationScopeInfo
     private var includeSpanContext: Bool

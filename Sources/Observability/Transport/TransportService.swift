@@ -12,15 +12,6 @@ public protocol TransportServicing {
     func stop()
 }
 
-//public final class NoOpTransportService: TransportServicing {
-//    public var eventQueue = EventQueue()
-//    public var batchWorker = BatchWorker(eventQueue: EventQueue())
-//
-//    public init() {}
-//    public func start() {}
-//    public func stop() {}
-//}
-
 public final class TransportService: TransportServicing {
     public let eventQueue: EventQueue
     public let sessionService: SessionService
@@ -34,10 +25,6 @@ public final class TransportService: TransportServicing {
         self.sessionService = sessionService
     }
     
-//    public func add(_ eventSource: EventSource) {
-//        eventSources.append(eventSource)
-//    }
-    
     public func start() {
         guard !isRunnung else { return }
         
@@ -46,10 +33,6 @@ public final class TransportService: TransportServicing {
     
     public func stop() {
         guard isRunnung else { return }
-
-//        for eventSource in eventSources {
-//            eventSource.stop()
-//        }
         batchWorker.stop()
     }
 }

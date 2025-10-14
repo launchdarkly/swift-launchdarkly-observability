@@ -54,7 +54,7 @@ extension ObservabilityService {
             throw InstrumentationError.invalidLogExporterUrl
         }
         
-        let logExporter = ObservabilityExporter(endpoint: url)
+        let logExporter = OtlpLogExporter(endpoint: url)
         Task {
             await batchWorker.addExporter(logExporter)
         }

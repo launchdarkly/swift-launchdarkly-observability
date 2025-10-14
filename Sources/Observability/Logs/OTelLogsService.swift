@@ -37,7 +37,7 @@ final class OTelLogsService {
             attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
         }
         
-        let logBuilder = ObservabilityLogRecordBuilder(queue: eventQueue,
+        let logBuilder = LDLogRecordBuilder(queue: eventQueue,
                                                        sampler: sampler,
                                                        resource: resource,
                                                        clock: MillisClock(),

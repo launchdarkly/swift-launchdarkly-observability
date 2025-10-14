@@ -39,7 +39,7 @@ let package = Package(
                 .product(name: "Installations", package: "KSCrash"),
             ],
             resources: [
-                .process("ObservabilityServiceLive/Resources"),
+                .process("Sampling/Queries"),
             ]
         ),
         .target(

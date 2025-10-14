@@ -2,6 +2,7 @@ import OpenTelemetryApi
 import OpenTelemetrySdk
 import Common
 
+/** Shared info between plugins */
 public struct ObservabilityContext {
     public let sdkKey: String
     public let options: Options
