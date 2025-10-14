@@ -1,10 +1,6 @@
 import Foundation
 import Common
 
-public protocol EventQueueItemPayload {
-    func cost() -> Int
-}
-
 public struct TouchItemPayload: EventQueueItemPayload {
     public let touchEvent: TouchEvent
 

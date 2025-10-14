@@ -1,6 +1,5 @@
 import SwiftUI
 import UIKit
-import SessionReplay
 
 public extension View {
     func ldPrivate(isEnabled: Bool = true) -> some View {

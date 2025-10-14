@@ -2,7 +2,7 @@ import OpenTelemetryApi
 import ResourceExtension
 import Common
 
-extension Observability.AttributeValue {
+extension AttributeValue {
     public func toOTel() -> OpenTelemetryApi.AttributeValue {
         switch self {
         case .string(let string):
@@ -31,7 +31,7 @@ extension Observability.AttributeValue {
 }
 
 extension OpenTelemetryApi.AttributeValue {
-    public func toODomain() -> Observability.AttributeValue {
+    public func toODomain() -> AttributeValue {
         switch self {
         case .string(let string):
             return .string(string)
@@ -59,7 +59,7 @@ extension OpenTelemetryApi.AttributeValue {
 
 
 
-extension Observability.Severity {
+extension Severity {
     public func toOtel() -> OpenTelemetryApi.Severity {
         return OpenTelemetryApi.Severity(rawValue: self.rawValue) ?? OpenTelemetryApi.Severity.fatal
     }

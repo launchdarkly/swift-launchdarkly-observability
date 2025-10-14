@@ -2,18 +2,6 @@ import OpenTelemetrySdk
 import OpenTelemetryApi
 
 extension ExportSampler {
-    func sampleLogs(
-        items: [ReadableLogRecord]
-    ) -> [ReadableLogRecord] {
-        guard isSamplingEnabled() else {
-            return items
-        }
-        
-        return items.compactMap { item in
-            sampledLog(item)
-        }
-    }
-    
     func sampledLog(_ record: ReadableLogRecord) -> ReadableLogRecord? {
         guard isSamplingEnabled() else {
             return record
