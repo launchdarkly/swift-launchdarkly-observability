@@ -89,8 +89,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 }
 ```
 
-### Configure additional instrumentations
-
+### Configure Session Replay
+```
+```
 
 ### Advanced Configuration
 

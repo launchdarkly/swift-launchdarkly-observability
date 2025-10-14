@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-import Sampling
+import Observability
 
 struct ConfigCodableTests {
     @Test

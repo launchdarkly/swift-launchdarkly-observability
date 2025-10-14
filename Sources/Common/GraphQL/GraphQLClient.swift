@@ -1,13 +1,15 @@
 import Foundation
+import DataCompression
 
 public final class GraphQLClient {
     public let endpoint: URL
-    private let network: NetworkClient
+    private let network: HttpServicing
     private let decoder: JSONDecoder
     private let defaultHeaders: [String: String]
-
+    private var cvsString: String = ""
+     
     public init(endpoint: URL,
-                network: NetworkClient = URLSessionNetworkClient(),
+                network: HttpServicing = HttpService(),
                 decoder: JSONDecoder = JSONDecoder(),
                 defaultHeaders: [String: String] = [
                     "Content-Type": "application/json",
@@ -34,12 +36,28 @@ public final class GraphQLClient {
         let gqlRequest = GraphQLRequest(query: query, variables: variables, operationName: operationName)
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
+        
+        let rawData = try gqlRequest.httpBody()
+        if let compressedData = rawData.gzip() {
+          request.httpBody = compressedData
+          request.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
+            
+          cvsString.append("\(Date().timeIntervalSince1970), \(compressedData.count)\n")
+          print(cvsString)
+        } else {
+          request.httpBody = rawData
+        }
+
         request.httpBody = try gqlRequest.httpBody()
 
+        print("🔹Sending request: \(String(data: request.httpBody!, encoding: .utf8) ?? "(no body)")")
+        
         let combinedHeaders = defaultHeaders.merging(headers) { _, new in new }
         combinedHeaders.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
 
         let data = try await network.send(request)
+    
+        print("GraphQL response: \(String(data: data, encoding: .utf8) ?? "(no data)")")
 
         do {
             let envelope = try decoder.decode(GraphQLResponse<Output>.self, from: data)

@@ -1,13 +1,11 @@
 import OSLog
-
 import LaunchDarkly
-
-import ApplicationServices
-import ObservabilityServiceLive
+import Observability
 
 public final class Observability: Plugin {
     private let options: Options
-    
+    static var associatedObjectKey: Int = 0
+        
     public init(options: Options) {
         self.options = options
     }
@@ -32,7 +30,9 @@ public final class Observability: Plugin {
         options.customHeaders = customHeaders
         
         do {
-            LDObserve.shared.set(service: try ObservabilityService.build(mobileKey: mobileKey, options: options))
+            let observabilityService = try ObservabilityService.build(mobileKey: mobileKey, options: options)
+            client.observabilityService = observabilityService
+            LDObserve.shared.set(service: observabilityService)
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Observability Service initialization failed with error: \(error)")
         }
@@ -44,3 +44,4 @@ public final class Observability: Plugin {
         ]
     }
 }
+

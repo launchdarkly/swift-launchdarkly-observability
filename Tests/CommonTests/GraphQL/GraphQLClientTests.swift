@@ -14,7 +14,7 @@ private struct GetUserOut: Codable, Equatable {
 
 private struct Vars: Encodable { let id: String }
 
-private final class MockNetworkClient: NetworkClient {
+private final class MockNetworkClient: HttpServicing {
     enum Mode {
         case succeed(Data),
              fail(Error)
@@ -182,7 +182,6 @@ struct GraphQLClientTests {
         let mock = MockNetworkClient(mode: .succeed(payload))
         let client = GraphQLClient(endpoint: URL(string: "https://example.com/graphql")!, network: mock)
         
-        let bundle = Bundle(for: DummyClass.self)
         let out: GetUserOut = try await client.executeFromFile(
             resource: "getUser",
             bundle: Bundle.module,

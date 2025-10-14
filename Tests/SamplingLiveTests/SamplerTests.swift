@@ -1,7 +1,5 @@
 import Testing
-
-import Sampling
-@testable import SamplingLive
+@testable import Observability
 
 struct SamplerTests {
     

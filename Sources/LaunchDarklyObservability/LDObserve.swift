@@ -1,6 +1,6 @@
 import Foundation
 
-@_exported import ApplicationServices
+@_exported import Observability
 
 public final class LDObserve {
     private let queue = DispatchQueue(label: "com.launchdarkly.observability.sdk.client", attributes: .concurrent)

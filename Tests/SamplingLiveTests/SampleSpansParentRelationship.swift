@@ -2,10 +2,7 @@ import Testing
 
 @testable import OpenTelemetrySdk
 import OpenTelemetryApi
-
-import Common
-import Sampling
-@testable import SamplingLive
+@testable import Observability
 
 struct SampleSpansParentRelationship {
     @Test("should remove child and grandchild spans when parent is not sampled")

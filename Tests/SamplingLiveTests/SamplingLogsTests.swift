@@ -2,11 +2,7 @@ import Testing
 
 @testable import OpenTelemetrySdk
 import OpenTelemetryApi
-
-import DomainModels
-import Common
-import Sampling
-@testable import SamplingLive
+@testable import Observability
 
 struct SamplingLogsTests {
     @Test func threadSafeSampler() {
