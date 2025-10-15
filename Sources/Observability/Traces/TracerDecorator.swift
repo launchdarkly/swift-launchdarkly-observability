@@ -84,6 +84,12 @@ extension TracerDecorator: TracesApi {
     }
     
     func flush() -> Bool {
-        spanProcessor.forceFlush(timeout: 5.0) == ()
+        /// span processor flush method differs from metrics and logs, it doesn't return a Result type
+        /// Processes all span events that have not yet been processed.
+        /// This method is executed synchronously on the calling thread
+        /// - Parameter timeout: Maximum time the flush complete or abort. If nil, it will wait indefinitely
+        /// func forceFlush(timeout: TimeInterval?)
+        spanProcessor.forceFlush(timeout: 5.0)
+        return true
     }
 }
