@@ -6,13 +6,13 @@ import Common
 public struct ObservabilityContext {
     public let sdkKey: String
     public let options: Options
-    public var sessionService: Session
+    public var sessionService: SessionManaging
     public var transportService: TransportServicing
 
     public init(
         sdkKey: String,
         options: Options,
-        sessionService: Session,
+        sessionService: SessionManaging,
         transportService: TransportServicing) {
         self.sdkKey = sdkKey
         self.options = options

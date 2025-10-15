@@ -14,12 +14,12 @@ public protocol TransportServicing {
 
 final class TransportService: TransportServicing {
     public let eventQueue: EventQueue
-    public let sessionService: Session
+    public let sessionService: SessionManaging
     public private(set) var isRunnung: Bool = false
     
     public var batchWorker: BatchWorker
     
-    public init(eventQueue: EventQueue, batchWorker: BatchWorker, sessionService: Session) {
+    public init(eventQueue: EventQueue, batchWorker: BatchWorker, sessionService: SessionManaging) {
         self.eventQueue = eventQueue
         self.batchWorker = batchWorker
         self.sessionService = sessionService

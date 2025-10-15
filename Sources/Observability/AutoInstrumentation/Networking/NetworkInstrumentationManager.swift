@@ -4,7 +4,7 @@ import URLSessionInstrumentation
 final class NetworkInstrumentationManager: AutoInstrumentation {
     private let uRLSessionInstrumentation: URLSessionInstrumentation
     
-    init(options: Options, tracer: Tracer, session: Session) {
+    init(options: Options, tracer: Tracer, session: SessionManaging) {
         let defaults = ConfigurationDefaults(options: options, session: session)
         let configuration = URLSessionInstrumentationConfiguration(
             shouldInstrument: defaults.shouldInstrument(urlRequest:),
@@ -20,9 +20,9 @@ final class NetworkInstrumentationManager: AutoInstrumentation {
 
 fileprivate struct ConfigurationDefaults {
     private let options: Options
-    private let session: Session
+    private let session: SessionManaging
     
-    init(options: Options,  session: Session) {
+    init(options: Options,  session: SessionManaging) {
         self.options = options
         self.session = session
     }

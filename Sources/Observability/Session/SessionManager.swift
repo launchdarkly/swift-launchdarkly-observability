@@ -3,14 +3,14 @@ import UIKit.UIApplication
 import OSLog
 import OpenTelemetryApi
 
-public protocol Session {
+public protocol SessionManaging {
     var sessionAttributes: [String: AttributeValue] { get }
     var sessionInfo: SessionInfo { get }
     var onSessionDidChange: ((SessionInfo) -> Void)? { get set }
     var onStateDidChange: ((SessionState, SessionInfo) -> Void)? { get set }
 }
 
-final class SessionManager: Session {
+final class SessionManager: SessionManaging {
     private var id: String
     private var startTime: Date
     private var backgroundTime: Date?

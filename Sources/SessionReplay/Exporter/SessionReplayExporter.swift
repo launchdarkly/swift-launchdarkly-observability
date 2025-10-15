@@ -5,7 +5,7 @@ import Observability
 actor SessionReplayExporter: EventExporting {
     let replayApiService: SessionReplayAPIService
     let context: SessionReplayContext
-    let sessionService: Session
+    let sessionService: SessionManaging
 
     var payloadId = 0
     var nextPayloadId: Int {
@@ -30,7 +30,7 @@ actor SessionReplayExporter: EventExporting {
     var lastExportImage: ExportImage?
     var shouldReload = true
     
-    init(context: SessionReplayContext, sessionService: Session, replayApiService: SessionReplayAPIService) {
+    init(context: SessionReplayContext, sessionService: SessionManaging, replayApiService: SessionReplayAPIService) {
         self.context = context
         self.replayApiService = replayApiService
         self.sessionService = sessionService

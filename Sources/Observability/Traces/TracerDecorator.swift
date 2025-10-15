@@ -3,12 +3,12 @@ import OpenTelemetrySdk
 
 final class TracerDecorator: Tracer {
     private let options: Options
-    private let sessionManager: SessionManager
+    private let sessionManager: SessionManaging
     private let tracerProvider: any TracerProvider
     private let spanProcessor: any SpanProcessor
     private let tracer: any Tracer
 
-    init(options: Options, sessionManager: SessionManager, exporter: SpanExporter) {
+    init(options: Options, sessionManager: SessionManaging, exporter: SpanExporter) {
         self.options = options
         self.sessionManager = sessionManager
         /// Using the default values from OpenTelemetry for Swift
