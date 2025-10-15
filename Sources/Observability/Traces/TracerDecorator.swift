@@ -63,7 +63,7 @@ extension TracerDecorator: TracesApi {
         
         let span = builder.startSpan()
         span.setAttributes(attributes)
-        span.recordException(NSError(domain: String(describing: error), code: 1), attributes: attributes)
+        span.recordException(SpanError(error: error), attributes: attributes)
         span.end()
     }
     

@@ -8,7 +8,9 @@ struct SpanError: SpanException {
     }
     
     var message: String? {
-        String(describing: error)
+        var string = ""
+        dump(error, to: &string)
+        return "\(String(describing: error))\n\(string)"
     }
     
     var stackTrace: [String]? {
