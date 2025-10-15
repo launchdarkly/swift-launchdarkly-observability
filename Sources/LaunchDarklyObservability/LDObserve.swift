@@ -47,7 +47,7 @@ extension LDObserve: Observe {
     }
     
     public func flush() -> Bool {
-        true
+        client.flush()
     }
     
     public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue]) {
