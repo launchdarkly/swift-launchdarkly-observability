@@ -1,0 +1,11 @@
+{
+	"packages": {
+		".": {
+			"package-name": "swift-launchdarkly-observability",
+			"release-type": "simple",
+			"versioning": "default",
+			"include-v-in-tag": true,
+			"bump-minor-pre-major": true
+		}
+	}
+}
