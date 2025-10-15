@@ -29,17 +29,29 @@ let package = Package(
             name: "Observability",
             dependencies: [
                 "Common",
-                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
+                .product(name: "Installations", package: "KSCrash"),
+                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
                 .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift"),
                 .product(name: "ResourceExtension", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
-                .product(name: "InMemoryExporter", package: "opentelemetry-swift"),
-                .product(name: "OTelSwiftLog", package: "opentelemetry-swift"),
-                .product(name: "Installations", package: "KSCrash"),
+                .product(name: "LaunchDarkly", package: "ios-client-sdk")
             ],
             resources: [
                 .process("Sampling/Queries"),
+            ]
+        ),
+        .target(
+            name: "LaunchDarklyObservability",
+            dependencies: [
+                "Observability",
+                .product(name: "LaunchDarkly", package: "ios-client-sdk")
+            ]
+        ),
+        .testTarget(
+            name: "ObservabilityTests",
+            dependencies: [
+                "Observability"
             ]
         ),
         .target(
@@ -57,41 +69,6 @@ let package = Package(
                 "SessionReplay",
             ]
         ),
-        .target(
-            name: "LaunchDarklyObservability",
-            dependencies: [
-                "Observability",
-                "Common",
-                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
-            ]
-        ),
-        
-        /***     Tests       */
-        .testTarget(
-            name: "OTelInstrumentationServiceTests",
-            dependencies: [
-                "Observability",
-                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
-                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
-            ]
-        ),
-//  TODO: Fix hanging sampling tests
-//        .testTarget(
-//            name: "SamplingLiveTests",
-//            dependencies: [
-//                "Observability",
-//                "Common",
-//                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-//                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-//                .product(name: "LaunchDarkly", package: "ios-client-sdk"),
-//            ],
-//            resources: [
-//                .copy("Resources/Stubs/Config.json"),
-//                .copy("Resources/Stubs/MinConfig.json")
-//            ]
-//        ),
         .testTarget(
             name: "CommonTests",
             dependencies: [

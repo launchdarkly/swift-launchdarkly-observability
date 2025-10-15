@@ -1,9 +1,8 @@
 import Foundation
-import OpenTelemetryApi
 import OpenTelemetrySdk
 import Common
 
-final class CustomSampler {
+final class CustomSampler: ExportSampler {
     private let sampler: (Int) -> Bool
     private let queue = DispatchQueue(label: "com.launchdarkly.sampler.custom", attributes: .concurrent)
     private var _config: SamplingConfig?
@@ -12,7 +11,7 @@ final class CustomSampler {
             queue.sync { [weak self] in self?._config }
         }
         set {
-            queue.async(flags: .barrier) { [weak self] in self?._config = newValue }
+            queue.sync(flags: .barrier) { [weak self] in self?._config = newValue }
         }
     }
     
@@ -64,12 +63,15 @@ final class CustomSampler {
     /// Check if sampling is enabled.
     /// Sampling is enabled if there is at least one configuration in either the log or span sampling.
     /// - Returns: true if sampling is enabled
-    func isSamplingEnabled() -> Bool {
-        guard let config else {
-            return false
+    var isSamplingEnabled: Bool {
+        get {
+            queue.sync { [weak self] in
+                guard let config = self?.config else {
+                    return false
+                }
+                return config.spans?.isEmpty == false || config.logs?.isEmpty == false
+            }
         }
-        
-        return config.spans?.isEmpty == false || config.logs?.isEmpty == false
     }
     
     private func matchesValue(

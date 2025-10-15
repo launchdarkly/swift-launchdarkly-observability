@@ -1,70 +1,64 @@
 import Foundation
-
 @_exported import Observability
 
-public final class LDObserve {
-    private let queue = DispatchQueue(label: "com.launchdarkly.observability.sdk.client", attributes: .concurrent)
-    private var observabilityService = ObservabilityService.noOp
-    public static let shared = LDObserve()
-    
-    private init() {}
-    
-    func set(service: ObservabilityService) {
-        queue.async(flags: .barrier) {
-            self.observabilityService = service
+public final class LDObserve  {
+    private let clientQueue = DispatchQueue(label: "com.launchdarkly.LDObserve.client")
+    private var _client: Observe
+    var client: Observe {
+        get {
+            clientQueue.sync {
+                _client
+            }
+        }
+        set {
+            clientQueue.sync(flags: .barrier) {
+                _client = newValue
+            }
         }
     }
+    public static let shared = LDObserve()
+    public var context: ObservabilityContext?
     
-    // MARK: - API
+    init(client: Observe = ObservabilityClientFactory.noOp()) {
+        self._client = client
+    }
+}
+
+extension LDObserve: Observe {
+    
     public func recordMetric(metric: Metric) {
-        queue.sync {
-            observabilityService.recordMetric(metric: metric)
-        }
+        client.recordMetric(metric: metric)
     }
     
     public func recordCount(metric: Metric) {
-        queue.sync {
-            observabilityService.recordCount(metric: metric)
-        }
+        client.recordCount(metric: metric)
     }
     
     public func recordIncr(metric: Metric) {
-        queue.sync {
-            observabilityService.recordIncr(metric: metric)
-        }
+        client.recordIncr(metric: metric)
     }
     
     public func recordHistogram(metric: Metric) {
-        queue.sync {
-            observabilityService.recordHistogram(metric: metric)
-        }
+        client.recordHistogram(metric: metric)
     }
     
     public func recordUpDownCounter(metric: Metric) {
-        queue.sync {
-            observabilityService.recordUpDownCounter(metric: metric)
-        }
+        client.recordUpDownCounter(metric: metric)
     }
     
-    public func recordError(error: any Error, attributes: [String : AttributeValue] = [:]) {
-        queue.sync {
-            observabilityService.recordError(error: error, attributes: attributes)
-        }
+    public func flush() -> Bool {
+        true
     }
     
-    public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue] = [:]) {
-        queue.sync {
-            observabilityService.recordLog(message: message, severity: severity, attributes: attributes)
-        }
+    public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue]) {
+        client.recordLog(message: message, severity: severity, attributes: attributes)
     }
     
-    public func startSpan(name: String, attributes: [String : AttributeValue] = [:]) -> Span {
-        queue.sync {
-            observabilityService.startSpan(name: name, attributes: attributes)
-        }
+    public func recordError(error: any Error, attributes: [String : AttributeValue]) {
+        client.recordError(error: error, attributes: attributes)
     }
     
-    @discardableResult public func flush() async -> Bool {
-        await observabilityService.flush()
+    public func startSpan(name: String, attributes: [String : AttributeValue]) -> any Span {
+        client.startSpan(name: name, attributes: attributes)
     }
 }

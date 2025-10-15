@@ -12,14 +12,14 @@ public protocol TransportServicing {
     func stop()
 }
 
-public final class TransportService: TransportServicing {
+final class TransportService: TransportServicing {
     public let eventQueue: EventQueue
-    public let sessionService: SessionService
+    public let sessionService: Session
     public private(set) var isRunnung: Bool = false
     
     public var batchWorker: BatchWorker
     
-    public init(eventQueue: EventQueue, batchWorker: BatchWorker, sessionService: SessionService) {
+    public init(eventQueue: EventQueue, batchWorker: BatchWorker, sessionService: Session) {
         self.eventQueue = eventQueue
         self.batchWorker = batchWorker
         self.sessionService = sessionService
