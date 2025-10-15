@@ -12,13 +12,17 @@ final class MaskCollector {
         var maskImages: Bool
         var minimumAlpha: CGFloat
         var maskClasses: Set<ObjectIdentifier>
+        var maskAccessibilityIdentifiers: Set<String>
+        var ignoreAccessibilityIdentifiers: Set<String>
         
         init(privacySettings: PrivacySettings) {
-            self.maskiOS26ViewTypes = Set(privacySettings.maskiOS26TypeIds)
+            self.maskiOS26ViewTypes = Set(["CameraUI.ChromeSwiftUIView"])
             self.maskTextInputs = privacySettings.maskTextInputs
             self.maskImages = privacySettings.maskImages
             self.minimumAlpha = privacySettings.minimumAlpha
             self.maskClasses = privacySettings.buildMaskClasses()
+            self.maskAccessibilityIdentifiers = Set(privacySettings.maskAccessibilityIdentifiers)
+            self.ignoreAccessibilityIdentifiers = Set(privacySettings.ignoreAccessibilityIdentifiers)
         }
               
         func shouldMask(_ view: UIView) -> Bool {
@@ -42,7 +46,6 @@ final class MaskCollector {
                 return true
             }
             
-           
 //            if let imageView = view as? UILabel {
 //                return true
 //            }

@@ -5,17 +5,17 @@ import OpenTelemetryProtocolExporterCommon
 
 public final class OtlpLogExporter: EventExporting {
     let otlpHttpClient: OtlpHttpClient
-
+    
     public init(endpoint: URL,
-                        config: OtlpConfiguration = OtlpConfiguration(),
-                        useSession: URLSession? = nil,
-                        envVarHeaders: [(String, String)]? = EnvVarHeaders.attributes) {
+                config: OtlpConfiguration = OtlpConfiguration(),
+                useSession: URLSession? = nil,
+                envVarHeaders: [(String, String)]? = EnvVarHeaders.attributes) {
         self.otlpHttpClient = OtlpHttpClient(endpoint: endpoint,
-                config: config,
-                useSession: useSession,
-                envVarHeaders: envVarHeaders)
+                                             config: config,
+                                             useSession: useSession,
+                                             envVarHeaders: envVarHeaders)
     }
-
+    
     public func export(items: [EventQueueItem]) async throws {
         let logRecords: [OpenTelemetrySdk.ReadableLogRecord] = items.compactMap { item in
             (item.payload as? LogItem)?.log

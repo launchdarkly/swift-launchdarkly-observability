@@ -1,10 +1,3 @@
-//
-//  File.swift
-//  swift-launchdarkly-observability
-//
-//  Created by Andrey Belonogov on 9/19/25.
-//
-
 import Foundation
 
 struct Event: Codable {

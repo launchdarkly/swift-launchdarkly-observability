@@ -241,6 +241,7 @@ actor SessionReplayExporter: EventExporting {
     
     func mouseEvent(timestamp: Int64, x: CGFloat, y: CGFloat, timeOffset: Int64) -> Event? {
         guard let imageId else { return nil }
+       
         let x = Int(x), y = Int(y)
         let eventData = MouseMoveEventData(source: .mouseMove, positions: [.init(x: x, y: y, id: "\(imageId)", timeOffset: timeOffset)])
         let event = Event(type: .IncrementalSnapshot,
