@@ -28,7 +28,7 @@ struct SamplingLogsTests {
     
     @Test("Given a empty list of logs, when sampling is enabled, then exporter should return empty result")
     func enablingSampling() {
-        let sampler = FakeExportSampler(isSamplingEnabled: false)
+        let sampler = FakeExportSampler(isSamplingEnabled: true)
         
         let result = sampler.sampleLogs(items: [])
         
