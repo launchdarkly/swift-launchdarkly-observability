@@ -1,38 +1,40 @@
 import Foundation
 import LaunchDarkly
 import Common
-import Observability
 
 public final class EvalTracingHook: Hook {
     private let queue = DispatchQueue(label: "com.launchdarkly.eval.tracing.hook")
     private let withSpans: Bool
     private let withValue: Bool
     private let version: String
+    private let options: Options
     
-    public init(withSpans: Bool, withValue: Bool, version: String) {
+    public init(withSpans: Bool, withValue: Bool, version: String, options: Options) {
         self.withSpans = withSpans
         self.withValue = withValue
         self.version = version
+        self.options = options
     }
     
     public func beforeEvaluation(
         seriesContext: EvaluationSeriesContext,
         seriesData: EvaluationSeriesData
     ) -> EvaluationSeriesData {
-        queue.sync {
+//        queue.sync {
             guard withSpans else { return seriesData }
             
             /// Requirement 1.2.3.6
             /// https://github.com/launchdarkly/sdk-specs/tree/main/specs/OTEL-openteletry-integration#requirement-1236
             let span = LDObserve.shared.startSpan(
-                name: "LDClient.\(seriesContext.methodName)"
+                name: "LDClient.\(seriesContext.methodName)",
+                attributes: options.resourceAttributes
             )
             
             var mutableSeriesData = seriesData
             mutableSeriesData[Self.DATA_KEY_SPAN] = span
             
             return mutableSeriesData
-        }
+//        }
     }
     
     public func afterEvaluation(
@@ -40,7 +42,7 @@ public final class EvalTracingHook: Hook {
         seriesData: EvaluationSeriesData,
         evaluationDetail: LDEvaluationDetail<LDValue>
     ) -> EvaluationSeriesData {
-        queue.sync {
+//        queue.sync {
             /// Requirement 1.2.2.2
             /// The feature_flag event MUST have the following attributes: feature_flag.key, feature_flag.provider.name, and feature_flag.context.id.
             var resourceAttributes = [String: AttributeValue]()
@@ -71,7 +73,7 @@ public final class EvalTracingHook: Hook {
             }
             
             return seriesData
-        }
+//        }
     }
 }
 

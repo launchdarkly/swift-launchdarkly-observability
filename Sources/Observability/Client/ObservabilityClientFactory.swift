@@ -1,0 +1,116 @@
+import Foundation
+import OpenTelemetrySdk
+import OpenTelemetryProtocolExporterHttp
+
+public struct ObservabilityClientFactory {
+    public static func noOp() -> Observe {
+        return ObservabilityClient(
+            tracer: NoOpTracer(),
+            logger: NoOpLogger(),
+            meter: NoOpMeter(),
+            crashReportsApi: NoOpCrashReport(),
+            autoInstrumentation: [],
+            options: .init(),
+            context: nil
+        )
+    }
+    public static func instantiate(
+        withOptions options: Options,
+        mobileKey: String
+    ) throws -> Observe {
+        let sessionManager = SessionManager(
+            options: .init(
+                timeout: options.sessionBackgroundTimeout,
+                isDebug: options.isDebug,
+                log: options.log)
+        )
+        var autoInstrumentation = [AutoInstrumentation]()
+        let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
+        let meter: MetricsApi
+        let logger: LogsApi
+        let tracer: TracesApi
+        
+        let eventQueue = EventQueue()
+        let batchWorker = BatchWorker(eventQueue: eventQueue)
+
+        let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionManager: sessionManager)
+        
+        guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.logsPath) else {
+            throw InstrumentationError.invalidLogExporterUrl
+        }
+        
+        if options.logs == .enabled {
+            logger = LoggerDecorator(options: options, sessionManager: sessionManager, eventQueue: eventQueue, sampler: sampler)
+            let logExporter = OtlpLogExporter(endpoint: url)
+            Task {
+                await batchWorker.addExporter(logExporter)
+            }
+        } else {
+            logger = NoOpLogger()
+        }
+        
+        
+        guard  let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.tracesPath) else {
+            throw InstrumentationError.invalidTraceExporterUrl
+        }
+        if options.traces == .enabled {
+            let tracesExporter = SamplingTraceExporterDecorator(
+                exporter: OtlpHttpTraceExporter(
+                    endpoint: url,
+                    config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
+                ),
+                sampler: sampler
+            )
+            let decorator = TracerDecorator(options: options, sessionManager: sessionManager, exporter: tracesExporter)
+            /// tracer is enabled
+            if options.autoInstrumentation.contains(.urlSession) {
+                autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
+                autoInstrumentation.append(UserInteractionManager(tracesApi: decorator, eventQueue: eventQueue))
+            }
+            tracer = decorator
+        } else {
+            tracer = NoOpTracer()
+        }
+        
+        
+        guard  let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.metricsPath) else {
+            throw InstrumentationError.invalidTraceExporterUrl
+        }
+        
+        if options.metrics == .enabled {
+            let metricsExporter = OtlpHttpMetricExporter(
+                endpoint: url,
+                config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
+            )
+            meter = MeterDecorator(options: options, exporter: metricsExporter)
+        } else {
+            meter = NoOpMeter()
+        }
+        
+        let crashReporting: CrashReporting
+        if options.crashReporting == .enabled {
+            crashReporting = try KSCrashReportService(logsApi: logger, log: options.log)
+        } else {
+            crashReporting = NoOpCrashReport()
+        }
+        
+        let context = ObservabilityContext(
+            sdkKey: mobileKey,
+            options: options,
+            sessionManager: sessionManager,
+            transportService: transportService
+        )
+        
+        transportService.start()
+
+        return ObservabilityClient(
+            tracer: tracer,
+            logger: logger,
+            meter: meter,
+            crashReportsApi: crashReporting,
+            autoInstrumentation: autoInstrumentation,
+            options: options,
+            context: context
+        )
+    }
+}
