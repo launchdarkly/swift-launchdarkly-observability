@@ -4,14 +4,15 @@ import Common
 
 final class CustomSampler: ExportSampler {
     private let sampler: (Int) -> Bool
-    private let queue = DispatchQueue(label: "com.launchdarkly.sampler.custom", attributes: .concurrent)
+    private let configQueue = DispatchQueue(label: "com.launchdarkly.sampler.custom.config", attributes: .concurrent)
+    private let isSamplingEnabledQueue = DispatchQueue(label: "com.launchdarkly.sampler.isSamplingEnabled")
     private var _config: SamplingConfig?
     private var config: SamplingConfig? {
         get {
-            queue.sync { [weak self] in self?._config }
+            configQueue.sync { [weak self] in self?._config }
         }
         set {
-            queue.sync(flags: .barrier) { [weak self] in self?._config = newValue }
+            configQueue.sync(flags: .barrier) { [weak self] in self?._config = newValue }
         }
     }
     
@@ -65,7 +66,7 @@ final class CustomSampler: ExportSampler {
     /// - Returns: true if sampling is enabled
     var isSamplingEnabled: Bool {
         get {
-            queue.sync { [weak self] in
+            isSamplingEnabledQueue.sync { [weak self] in
                 guard let config = self?.config else {
                     return false
                 }
