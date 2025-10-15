@@ -33,7 +33,7 @@ public struct ObservabilityClientFactory {
         let eventQueue = EventQueue()
         let batchWorker = BatchWorker(eventQueue: eventQueue)
 
-        let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionService: sessionManager)
+        let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionManager: sessionManager)
         
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.logsPath) else {
             throw InstrumentationError.invalidLogExporterUrl
@@ -97,7 +97,7 @@ public struct ObservabilityClientFactory {
         let context = ObservabilityContext(
             sdkKey: mobileKey,
             options: options,
-            sessionService: sessionManager,
+            sessionManager: sessionManager,
             transportService: transportService
         )
         
