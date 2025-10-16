@@ -90,7 +90,133 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 ```
 
 ### Configure Session Replay
+
+Session Replay captures user interactions and screen recordings to help you understand how users interact with your application. To enable Session Replay, add the `SessionReplay` plugin alongside the `Observability` plugin:
+
+```swift
+import UIKit
+import LaunchDarkly
+import LaunchDarklyObservability
+import LaunchDarklySessionReplay
+
+let mobileKey = "your-mobile-key"
+let config = { () -> LDConfig in
+    var config = LDConfig(
+        mobileKey: mobileKey,
+        autoEnvAttributes: .enabled
+    )
+    config.plugins = [
+        // Observability plugin must be added before SessionReplay
+        Observability(options: .init(
+            serviceName: "ios-app",
+            sessionBackgroundTimeout: 3)),
+        SessionReplay(options: .init(
+            isEnabled: true,
+            privacy: .init(
+                maskTextInputs: true,
+                maskImages: false,
+                maskAccessibilityIdentifiers: ["email-field", "password-field"]
+            )
+        ))
+    ]
+    return config
+}()
+
+let context = { () -> LDContext in
+    var contextBuilder = LDContextBuilder(key: "12345")
+    contextBuilder.kind("user")
+    do {
+        return try contextBuilder.build().get()
+    } catch {
+        abort()
+    }
+}()
+
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
+    ) -> Bool {
+        LDClient.start(
+            config: config,
+            context: context,
+            startWaitSeconds: 5.0,
+            completion: { (timedOut: Bool) -> Void in
+                if timedOut {
+                    // Client may not have the most recent flags for the configured context
+                } else {
+                    // Client has received flags for the configured context
+                }
+            }
+        )
+        return true
+    }
+}
 ```
+
+#### Privacy Options
+
+Configure privacy settings to control what data is captured:
+
+- **maskTextInputs**: Mask all text input fields (default: `true`)
+- **maskLabels**: Mask all text labels (default: `false`)
+- **maskImages**: Mask all images (default: `false`)
+- **maskAccessibilityIdentifiers**: Array of accessibility identifiers to mask
+- **ignoreAccessibilityIdentifiers**: Array of accessibility identifiers to ignore from masking
+- **maskUIViews**: Array of UIView classes to mask
+- **ignoreUIViews**: Array of UIView classes to ignore from masking
+- **minimumAlpha**: Minimum alpha value for view visibility (default: `0.02`)
+
+#### Fine-grained Masking Control
+
+You can override the default privacy settings on individual views using modifiers:
+
+**SwiftUI Views:**
+```swift
+import SwiftUI
+import LaunchDarklySessionReplay
+
+struct ContentView: View {
+    var body: some View {
+        VStack {
+            // Mask this specific view
+            Text("Sensitive information")
+                .ldPrivate()
+
+            // Unmask this view (even if it would be masked by default)
+            Image("profile-photo")
+                .ldUnmask()
+
+            // Conditionally mask based on a flag
+            TextField("Email", text: $email)
+                .ldPrivate(isEnabled: shouldMaskEmail)
+        }
+    }
+}
+```
+
+**UIKit Views:**
+```swift
+import UIKit
+import LaunchDarklySessionReplay
+
+class CreditCardViewController: UIViewController {
+    let cvvField = UITextField()
+    let nameField = UITextField()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Mask the CVV container
+        cvvField.ldPrivate()
+
+        // Unmask the name field (even if text inputs are masked by default)
+        nameField.ldUnmask()
+
+        // Conditionally mask based on a flag
+        cvvField.ldPrivate(isEnabled: true)
+    }
+}
 ```
 
 ### Advanced Configuration
