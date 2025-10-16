@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E7904AD42E6A528B00A15337 /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD32E6A528B00A15337 /* LaunchDarkly */; };
 		E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */; };
 /* End PBXBuildFile section */
 
@@ -29,7 +28,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */,
-				E7904AD42E6A528B00A15337 /* LaunchDarkly in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,7 +70,6 @@
 			);
 			name = ExampleApp;
 			packageProductDependencies = (
-				E7904AD32E6A528B00A15337 /* LaunchDarkly */,
 				E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */,
 			);
 			productName = ExampleApp;
@@ -104,7 +101,6 @@
 			mainGroup = E7904ABB2E6A523D00A15337;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				E7904AD22E6A528A00A15337 /* XCRemoteSwiftPackageReference "ios-client-sdk" */,
 				E7904AD52E6A52CE00A15337 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -341,23 +337,7 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		E7904AD22E6A528A00A15337 /* XCRemoteSwiftPackageReference "ios-client-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/launchdarkly/ios-client-sdk.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 9.15.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
-		E7904AD32E6A528B00A15337 /* LaunchDarkly */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = E7904AD22E6A528A00A15337 /* XCRemoteSwiftPackageReference "ios-client-sdk" */;
-			productName = LaunchDarkly;
-		};
 		E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LaunchDarklyObservability;

@@ -5,7 +5,7 @@ import Observability
 actor SessionReplayExporter: EventExporting {
     let replayApiService: SessionReplayAPIService
     let context: SessionReplayContext
-    let sessionService: SessionService
+    let sessionManager: SessionManaging
 
     var payloadId = 0
     var nextPayloadId: Int {
@@ -30,10 +30,10 @@ actor SessionReplayExporter: EventExporting {
     var lastExportImage: ExportImage?
     var shouldReload = true
     
-    init(context: SessionReplayContext, sessionService: SessionService, replayApiService: SessionReplayAPIService) {
+    init(context: SessionReplayContext, sessionManager: SessionManaging, replayApiService: SessionReplayAPIService) {
         self.context = context
         self.replayApiService = replayApiService
-        self.sessionService = sessionService
+        self.sessionManager = sessionManager
     }
     
     var notScreenItems = [EventQueueItem]()
@@ -41,7 +41,7 @@ actor SessionReplayExporter: EventExporting {
     
     func export(items: [EventQueueItem]) async throws {
         if currentSession == nil {
-            let session = try await initializeSession(sessionSecureId: sessionService.sessionInfo().id)
+            let session = try await initializeSession(sessionSecureId: sessionManager.sessionInfo.id)
             try await identifySession(session: session)
             currentSession = session
         }

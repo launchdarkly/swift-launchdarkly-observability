@@ -16,12 +16,12 @@ final class LDCrashFilter: NSObject, CrashReportFilter {
         case flushFailed
         case underlyingError(Error)
     }
-    private let logsService: LogsService
+    private let logsApi: LogsApi
     
     init(
-        logsService: LogsService
+        logsApi: LogsApi
     ) {
-        self.logsService = logsService
+        self.logsApi = logsApi
     }
     
     func filterReports(
@@ -60,7 +60,7 @@ final class LDCrashFilter: NSObject, CrashReportFilter {
                 attributes["exception.stacktrace"] = .string(crashReportString)
                 attributes["exception.message"] = .string(exceptionCodes)
                 
-                logsService.recordLog(
+                logsApi.recordLog(
                     message: incidentIdentifier.replacingOccurrences(of: "\"", with: ""),
                     severity: .fatal,
                     attributes: attributes
@@ -68,7 +68,7 @@ final class LDCrashFilter: NSObject, CrashReportFilter {
             }
             
             Task { [weak self] in
-                guard await self?.logsService.flush() == true else {
+                guard self?.logsApi.flush() == true else {
                     onCompletion?(reports, LaunchDarklyCrashFilterError.flushFailed)
                     return
                 }

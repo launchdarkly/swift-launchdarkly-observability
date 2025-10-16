@@ -2,7 +2,7 @@ import Foundation
 import OpenTelemetryApi
 import OpenTelemetrySdk
 
-public class LDLogRecordBuilder: EventBuilder {
+class LDLogRecordBuilder: EventBuilder {
     private var limits: LogLimits
     private var instrumentationScope: InstrumentationScopeInfo
     private var includeSpanContext: Bool
@@ -17,7 +17,7 @@ public class LDLogRecordBuilder: EventBuilder {
     private var queue: EventQueuing
     private let sampler: ExportSampler
     
-    public init(queue: EventQueuing,
+    init(queue: EventQueuing,
                 sampler: ExportSampler,
                 resource: Resource,
                 clock: Clock,

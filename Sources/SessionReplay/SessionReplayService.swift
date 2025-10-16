@@ -47,7 +47,7 @@ public final class SessionReplayService {
         
         let replayApiService = SessionReplayAPIService(gqlClient: graphQLClient)
         let replayPushService = SessionReplayExporter(context: sessionReplayContext,
-                                                      sessionService: context.sessionService,
+                                                      sessionManager: context.sessionManager,
                                                       replayApiService: replayApiService)
         Task {
             await transportService.batchWorker.addExporter(replayPushService)

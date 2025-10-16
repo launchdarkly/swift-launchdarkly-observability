@@ -5,7 +5,7 @@ extension ExportSampler {
     func sampleSpans(
         items: [SpanData]
     ) -> [SpanData] {
-        if !isSamplingEnabled() {
+        if !isSamplingEnabled {
             return items
         }
         
