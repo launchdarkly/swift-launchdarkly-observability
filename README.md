@@ -174,7 +174,7 @@ You can override the default privacy settings on individual views using modifier
 **SwiftUI Views:**
 ```swift
 import SwiftUI
-import SessionReplay
+import LaunchDarklySessionReplay
 
 struct ContentView: View {
     var body: some View {
@@ -198,7 +198,7 @@ struct ContentView: View {
 **UIKit Views:**
 ```swift
 import UIKit
-import SessionReplay
+import LaunchDarklySessionReplay
 
 class CreditCardViewController: UIViewController {
     let cvvField = UITextField()
