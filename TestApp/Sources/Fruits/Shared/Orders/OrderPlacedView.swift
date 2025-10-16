@@ -5,6 +5,8 @@ Abstract:
 A view presented to the user once they order a smoothie, and when it's ready to be picked up.
 */
 
+#if os(iOS)
+
 import SwiftUI
 import AuthenticationServices
 import StoreKit
@@ -182,3 +184,5 @@ struct OrderPlacedView_Previews: PreviewProvider {
         }
     }
 }
+
+#endif

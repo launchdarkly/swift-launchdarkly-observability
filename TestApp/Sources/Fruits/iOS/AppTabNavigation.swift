@@ -5,6 +5,8 @@ Abstract:
 Tab based app structure.
 */
 
+#if os(iOS)
+
 import SwiftUI
 
 struct AppTabNavigation: View {
@@ -87,3 +89,5 @@ struct AppTabNavigation_Previews: PreviewProvider {
         AppTabNavigation()
     }
 }
+
+#endif

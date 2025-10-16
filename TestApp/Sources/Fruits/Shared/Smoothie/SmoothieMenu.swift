@@ -4,6 +4,7 @@ See LICENSE folder for this sample’s licensing information.
 Abstract:
 The menu tab or content list that includes all smoothies.
 */
+#if os(iOS)
 
 import SwiftUI
 
@@ -22,3 +23,5 @@ struct SmoothieMenu_Previews: PreviewProvider {
             .environmentObject(Model())
     }
 }
+
+#endif

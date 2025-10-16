@@ -5,6 +5,8 @@ Abstract:
 The primary entry point for the app's user interface. Can change between tab-based and sidebar-based navigation.
 */
 
+#if os(iOS)
+
 import SwiftUI
 
 struct FruitContentView: View {
@@ -30,3 +32,6 @@ struct ContentView_Previews: PreviewProvider {
         FruitContentView()
     }
 }
+
+
+#endif

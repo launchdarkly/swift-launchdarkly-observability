@@ -5,6 +5,8 @@ Abstract:
 A view that offers controls that tilt the view when incrementing or decrementing a value
 */
 
+#if os(iOS)
+
 import SwiftUI
 
 // MARK: - StepperView
@@ -78,3 +80,5 @@ struct StepperView_Previews: PreviewProvider {
         .padding()
     }
 }
+
+#endif

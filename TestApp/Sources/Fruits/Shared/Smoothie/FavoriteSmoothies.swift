@@ -5,6 +5,8 @@ Abstract:
 The favorites tab or content list that includes smoothies marked as favorites.
 */
 
+#if os(iOS)
+
 import SwiftUI
 
 struct FavoriteSmoothies: View {
@@ -37,3 +39,5 @@ struct FavoriteSmoothies_Previews: PreviewProvider {
             .environmentObject(Model())
     }
 }
+
+#endif

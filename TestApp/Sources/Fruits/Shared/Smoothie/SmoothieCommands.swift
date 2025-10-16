@@ -5,6 +5,7 @@ Abstract:
 Custom commands that you add to the application's Main Menu.
 */
 
+#if os(iOS)
 import SwiftUI
 
 struct SmoothieCommands: Commands {
@@ -18,3 +19,4 @@ struct SmoothieCommands: Commands {
         }
     }
 }
+#endif

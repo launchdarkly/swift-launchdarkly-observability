@@ -5,6 +5,8 @@ Abstract:
 The smoothie detail view that offers the smoothie for sale and lists its ingredients.
 */
 
+#if os(iOS)
+
 import SwiftUI
 
 #if APPCLIP
@@ -205,3 +207,5 @@ struct SmoothieView_Previews: PreviewProvider {
         .environmentObject(Model())
     }
 }
+
+#endif 

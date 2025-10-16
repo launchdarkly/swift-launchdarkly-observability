@@ -5,6 +5,8 @@ Abstract:
 The view that summarizes the smoothie and adjusts its layout based on the environment and platform.
 */
 
+#if os(iOS)
+
 import SwiftUI
 
 struct SmoothieHeaderView: View {
@@ -92,3 +94,5 @@ struct SmoothieHeaderView_Previews: PreviewProvider {
         SmoothieHeaderView(smoothie: .berryBlue)
     }
 }
+
+#endif

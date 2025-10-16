@@ -5,6 +5,8 @@ Abstract:
 A button that hosts PKPaymentButton for simulating smoothie purchases with Apple Pay.
 */
 
+#if os(iOS)
+
 import SwiftUI
 import PassKit
 
@@ -96,3 +98,5 @@ struct PaymentButton_Previews: PreviewProvider {
         .previewLayout(.sizeThatFits)
     }
 }
+
+#endif

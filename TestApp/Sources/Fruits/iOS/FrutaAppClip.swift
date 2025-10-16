@@ -4,6 +4,7 @@ See LICENSE folder for this sample’s licensing information.
 Abstract:
 The single entry point for the Fruta App Clip.
 */
+#if os(iOS)
 
 import SwiftUI
 import AppClip
@@ -59,3 +60,5 @@ struct FrutaAppClip: App {
         }
     }
 }
+
+#endif

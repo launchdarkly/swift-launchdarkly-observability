@@ -5,6 +5,8 @@ Abstract:
 The single entry point for the Fruta app on iOS and macOS.
 */
 
+#if os(iOS)
+
 import SwiftUI
 /// - Tag: SingleAppDefinitionTag
 
@@ -24,3 +26,5 @@ struct FrutaAppView: View {
        // }
     }
 }
+
+#endif

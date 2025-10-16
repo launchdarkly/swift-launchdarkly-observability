@@ -5,6 +5,9 @@ Abstract:
 A list of unlocked smoothies' recipes, and a call to action to purchase all recipes.
 */
 
+#if os(iOS)
+
+
 import SwiftUI
 
 struct RecipeList: View {
@@ -106,3 +109,5 @@ struct RecipeList_Previews: PreviewProvider {
         }
     }
 }
+
+#endif

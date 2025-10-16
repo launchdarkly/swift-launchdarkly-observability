@@ -5,6 +5,8 @@ Abstract:
 A button to favorite a smoothie, can be placed in a toolbar.
 */
 
+#if os(iOS)
+
 import SwiftUI
 
 struct SmoothieFavoriteButton: View {
@@ -49,3 +51,4 @@ struct SmoothieFavoriteButton_Previews: PreviewProvider {
             .environmentObject(Model())
     }
 }
+#endif

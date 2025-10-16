@@ -1,6 +1,7 @@
 import UIKit
 
 // MARK: - Model
+#if os(iOS)
 
 public struct CreditCard: Equatable {
     public var cardholder: String
@@ -565,3 +566,5 @@ struct MaskingCreditCardUIKitView: View {
         }
     }
 }
+
+#endif

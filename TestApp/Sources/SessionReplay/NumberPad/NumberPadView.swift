@@ -1,31 +1,30 @@
 //
-//  SwiftUIView.swift
-//  swift-launchdarkly-observability
+//  MaskingElementsView.swift
+//  TestApp
 //
-//  Created by Andrey Belonogov on 9/28/25.
+//  Created by Andrey Belonogov on 10/15/25.
 //
+
 
 import SwiftUI
 
-struct MaskingElementsView: View {
+struct NumberPadView: View {
     @State var text = ""
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
         NavigationStack {
             VStack {
-                VStack(alignment: .leading) {
-                    TextField("TexField", text: $text)
-                        .keyboardType(.numberPad)
-                        .border(Color.gray)
-                        .frame(width: 200, height: 32)
+                NumberPatternGrid { sequence in 
                 }
-                Spacer()
+#if os(iOS)
+                .background(Color(.systemBackground))
+                #endif
             }
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .navigationTitle("Masking Elements (UIKit)")
+            .navigationTitle("Number Pad (SwiftUI)")
             .toolbar {
                 Button {
                     dismiss()
@@ -39,5 +38,7 @@ struct MaskingElementsView: View {
 }
 
 #Preview {
-    MaskingElementsView()
+    NumberPadView()
 }
+
+

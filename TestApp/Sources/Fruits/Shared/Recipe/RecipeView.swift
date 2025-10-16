@@ -5,6 +5,9 @@ Abstract:
 A view that displays the recipe for a smoothie.
 */
 
+#if os(iOS)
+
+
 import SwiftUI
 
 struct RecipeView: View {
@@ -122,3 +125,5 @@ struct RecipeView_Previews: PreviewProvider {
             .environmentObject(Model())
     }
 }
+
+#endif

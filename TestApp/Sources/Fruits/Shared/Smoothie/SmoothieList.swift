@@ -5,6 +5,7 @@ Abstract:
 A reusable view that can display a list of arbritary smoothies.
 */
 
+#if os(iOS)
 import SwiftUI
 
 struct SmoothieList: View {
@@ -72,3 +73,5 @@ struct SmoothieList_Previews: PreviewProvider {
         }
     }
 }
+
+#endif 

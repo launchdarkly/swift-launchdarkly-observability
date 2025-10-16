@@ -5,6 +5,8 @@ Abstract:
 The app's navigation with a configuration that offers a sidebar, content list, and detail pane.
 */
 
+#if os(iOS)
+
 import SwiftUI
 
 struct AppSidebarNavigation: View {
@@ -121,3 +123,5 @@ struct AppSidebarNavigationPocket_Previews: PreviewProvider {
             .frame(width: 300)
     }
 }
+
+#endif
