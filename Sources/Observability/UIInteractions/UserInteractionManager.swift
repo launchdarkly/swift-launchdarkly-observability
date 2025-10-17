@@ -21,7 +21,7 @@ fileprivate final class UserInteractions {
     }
     
     func start() {
-        UIWindowSendEvent.inject { [weak self] uiWindow, uiEvent in
+        UIWindowSwizzleSource.inject { [weak self] uiWindow, uiEvent in
             self?.tapHandler.handle(event: uiEvent, window: uiWindow) { touchEvent in
                 Task {
                     await self?.eventQueue.send(EventQueueItem(payload: TouchItemPayload(touchEvent: touchEvent)))
