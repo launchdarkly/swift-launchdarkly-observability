@@ -3,10 +3,7 @@ import UIKit
 private enum TouchConstants {
     static let tapMaxDistance = 12.0
     static let tapMaxDistanceSquared: CGFloat = tapMaxDistance * tapMaxDistance
-    static let tapMaxDuration: TimeInterval = 0.25
-    
-    static let swipeMinDistance: CGFloat = 72.0
-    static let swipeMaxDuration: TimeInterval = 0.5
+    static let touchMoveMaxDuration: TimeInterval = 0.11
 }
 
 final class TouchIntepreter {
@@ -50,7 +47,7 @@ final class TouchIntepreter {
             
             let previousTimestamp = (track.points.last?.timestamp ?? track.start)
             let duration = touchSample.timestamp + uptimeDifference - previousTimestamp
-            guard duration >= TouchConstants.tapMaxDuration else {
+            guard duration >= TouchConstants.touchMoveMaxDuration else {
                 return
             }
             

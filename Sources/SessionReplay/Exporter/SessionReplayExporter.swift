@@ -132,8 +132,6 @@ actor SessionReplayExporter: EventExporting {
                               data: AnyEventData(touchEventData),
                               timestamp: interaction.timestamp,
                               _sid: nextSid)
-            let data = try! JSONEncoder().encode(event)
-            print(String(data: data, encoding: .utf8) as! NSString)
             events.append(event)
         }
         
