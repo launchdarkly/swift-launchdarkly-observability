@@ -30,13 +30,13 @@ let package = Package(
             name: "Observability",
             dependencies: [
                 "Common",
-                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift"),
-                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift"),
-                .product(name: "Installations", package: "KSCrash"),
-                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift"),
-                .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift"),
-                .product(name: "ResourceExtension", package: "opentelemetry-swift"),
-                .product(name: "LaunchDarkly", package: "ios-client-sdk")
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift", condition: .when(platforms: [.iOS, .tvOS])),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift", condition: .when(platforms: [.iOS, .tvOS])),
+                .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),
+                .product(name: "OpenTelemetryProtocolExporterHTTP", package: "opentelemetry-swift", condition: .when(platforms: [.iOS, .tvOS])),
+                .product(name: "URLSessionInstrumentation", package: "opentelemetry-swift", condition: .when(platforms: [.iOS, .tvOS])),
+                .product(name: "ResourceExtension", package: "opentelemetry-swift", condition: .when(platforms: [.iOS, .tvOS])),
+                .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))
             ],
             resources: [
                 .process("Sampling/Queries"),
@@ -46,7 +46,7 @@ let package = Package(
             name: "LaunchDarklyObservability",
             dependencies: [
                 "Observability",
-                .product(name: "LaunchDarkly", package: "ios-client-sdk")
+                .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))
             ]
         ),
         .testTarget(
