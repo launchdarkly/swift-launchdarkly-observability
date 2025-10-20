@@ -253,7 +253,7 @@ extension SessionReplayExporter  {
         let preparedJsonDict = try preparePayload(filename: "\(resource).json",
                                                   session: session,
                                                   payloadId: "\(nextPayloadId)",
-                                                  timestamp: TimeInterval(Date().timeIntervalSince1970 * 1000.0),
+                                                  timestamp: timestamp,
                                                   imageNode: imageNode)
         
         try await pushPreparedPayload(preparedJsonDict)
@@ -346,7 +346,7 @@ extension SessionReplayExporter  {
         for (i, event) in subEvents.enumerated() {
             var event = event
             if event["timestamp"] != nil {
-                event["timestamp"] = timestamp + TimeInterval(i * 1)
+                event["timestamp"] = Int(1000 * (timestamp + TimeInterval(i * 1)))
             }
             event["_sid"] = nextSid
             subEvents[i] = processNode(event, imageNode: imageNode)

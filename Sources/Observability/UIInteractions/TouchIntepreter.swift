@@ -2,7 +2,7 @@ import UIKit
 
 private enum TouchConstants {
     static let tapMaxDistance = 12.0
-    static let tapMaxMovementSquared: CGFloat = tapMaxDistance * tapMaxDistance
+    static let tapMaxDistanceSquared: CGFloat = tapMaxDistance * tapMaxDistance
     static let tapMaxDuration: TimeInterval = 0.25
     
     static let swipeMinDistance: CGFloat = 72.0
@@ -17,21 +17,29 @@ final class TouchIntepreter {
         var points: [TouchPoint]
         var target: TouchTarget?
     }
-    
     private var tracks = [ObjectIdentifier: Track]()
     
+    var id: Int = 100
+    var incrementingId: Int {
+        // TODO: implement multifinger swipe with it
+        defer { id += 1 }
+        return id
+    }
+    
     func process(touchSample: TouchSample, yield: UIInteractionYield) {
+        let uptimeDifference = Date().timeIntervalSince1970 - ProcessInfo.processInfo.systemUptime
         switch touchSample.phase {
         case .began:
             let track = Track(start: touchSample.timestamp,
                               end: touchSample.timestamp,
                               startPoint: touchSample.location,
-                              points: [TouchPoint(position: touchSample.location, timeOffset: 0)],
+                              points: [TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference)],
                               target: touchSample.target)
             tracks[touchSample.id] = track
             
-            let downInteraction = UIInteraction(kind: .touchDown(touchSample.location),
-                                                timestamp: touchSample.timestamp,
+            let downInteraction = UIInteraction(id: incrementingId,
+                                                kind: .touchDown(touchSample.location),
+                                                timestamp: touchSample.timestamp + uptimeDifference,
                                                 target: touchSample.target)
             yield(downInteraction)
             
@@ -40,32 +48,57 @@ final class TouchIntepreter {
             track.end = touchSample.timestamp
             track.target = touchSample.target
             
-            let duration = touchSample.timestamp - track.start
+            let previousTimestamp = (track.points.last?.timestamp ?? track.start)
+            let duration = touchSample.timestamp + uptimeDifference - previousTimestamp
             guard duration >= TouchConstants.tapMaxDuration else {
                 return
             }
             
             let distance = squareDistance(from: track.startPoint, to: touchSample.location)
-            guard distance >= TouchConstants.tapMaxDistance else {
+            guard distance >= TouchConstants.tapMaxDistanceSquared else {
                 return
             }
             
-            track.points.append(TouchPoint(position: touchSample.location, timeOffset: duration))
+            track.points.append(TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference))
             tracks[touchSample.id] = track
             
+            let trackDuration = track.end - track.start
+            if trackDuration > 0.9 {
+                // flush movements of long touch path do not have dead time in the replay player
+                flushMovements(touchSample: touchSample, uptimeDifference: uptimeDifference, yield: yield)
+            }
+            
         case .ended, .cancelled:
-            let upInteraction = UIInteraction(kind: .touchUp(touchSample.location),
-                                              timestamp: touchSample.timestamp,
+            let upInteraction = UIInteraction(id: incrementingId,
+                                              kind: .touchUp(touchSample.location),
+                                              timestamp: touchSample.timestamp + uptimeDifference,
                                               target: touchSample.target)
             yield(upInteraction)
             
-            guard let track = tracks.removeValue(forKey: touchSample.id), track.points.isNotEmpty else { return }
-            
-            let moveInteraction = UIInteraction(kind: .touchPath(points: track.points),
-                                                timestamp: touchSample.timestamp,
-                                                target: touchSample.target)
-            yield(moveInteraction)
+            flushTrack(touchSample: touchSample, uptimeDifference: uptimeDifference, yield: yield)
         }
+    }
+    
+    func flushMovements(touchSample: TouchSample, uptimeDifference: TimeInterval, yield: UIInteractionYield) {
+        guard var track = tracks[touchSample.id], track.points.isNotEmpty else { return }
+        
+        let moveInteraction = UIInteraction(id: incrementingId,
+                                            kind: .touchPath(points: track.points),
+                                            timestamp: touchSample.timestamp + uptimeDifference,
+                                            target: touchSample.target)
+        track.points.removeAll()
+        tracks[touchSample.id] = track
+        yield(moveInteraction)
+    }
+    
+    func flushTrack(touchSample: TouchSample, uptimeDifference: TimeInterval, yield: UIInteractionYield) {
+        guard let track = tracks.removeValue(forKey: touchSample.id), track.points.isNotEmpty else { return }
+        
+        let moveInteraction = UIInteraction(id: incrementingId,
+                                            kind: .touchPath(points: track.points),
+                                            timestamp: touchSample.timestamp + uptimeDifference,
+                                            target: touchSample.target)
+        yield(moveInteraction)
     }
     
     func squareDistance(from: CGPoint, to: CGPoint) -> CGFloat {
@@ -73,5 +106,4 @@ final class TouchIntepreter {
         let dy = from.y - to.y
         return dx * dx + dy * dy
     }
-    
 }

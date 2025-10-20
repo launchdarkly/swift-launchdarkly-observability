@@ -81,6 +81,7 @@ public struct ObservabilityClientFactory {
                 tracer.startSpan(name: span.name, attributes: span.attributes)
             }
         }
+        userInteractionManager.start()
         
         guard  let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.metricsPath) else {
             throw InstrumentationError.invalidTraceExporterUrl

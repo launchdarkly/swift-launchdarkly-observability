@@ -2,6 +2,8 @@ import Foundation
 import UIKit
 
 struct ExportImage: Equatable {
+    static var padding = CGPoint(x: 11, y: 11)
+
     var data: Data
     var originalWidth: Int
     var originalHeight: Int
@@ -50,11 +52,11 @@ struct ExportImage: Equatable {
     }
     
     var paddedWidth: Int {
-        originalWidth * 105 / 100
+        originalWidth + Int(ExportImage.padding.x) * 2
     }
     
     var paddedHeight: Int {
-        originalHeight * 105 / 100
+        originalHeight + Int(ExportImage.padding.y) * 2
     }
 }
 

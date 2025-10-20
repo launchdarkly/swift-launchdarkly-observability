@@ -38,6 +38,7 @@ actor SessionReplayExporter: EventExporting {
     
     var notScreenItems = [EventQueueItem]()
     var fakePayloadOnce = false
+    let positionCorrection = ExportImage.padding
     
     func export(items: [EventQueueItem]) async throws {
         if currentSession == nil {
@@ -105,23 +106,24 @@ actor SessionReplayExporter: EventExporting {
             EventData(source: .mouseInteraction,
                       type: .touchStart,
                       id: imageId,
-                      x: point.x,
-                      y: point.y)
+                      x: point.x + positionCorrection.x,
+                      y: point.y + positionCorrection.y)
             
         case .touchUp(let point):
             EventData(source: .mouseInteraction,
                       type: .touchEnd,
                       id: imageId,
-                      x: point.x,
-                      y: point.y)
+                      x: point.x + positionCorrection.x,
+                      y: point.y + positionCorrection.y)
             
         case .touchPath(let points):
             MouseMoveEventData(
                 source: .touchMove,
                 positions: points.map { p in MouseMoveEventData.Position(
-                    x: p.position.x,
-                    y: p.position.y,
-                    timeOffset: p.timeOffset) })
+                    x: p.position.x + positionCorrection.x,
+                    y: p.position.y + positionCorrection.y,
+                    id: imageId,
+                    timeOffset: p.timestamp - interaction.timestamp) })
 
         default:
             Optional<EventData>.none
@@ -130,6 +132,8 @@ actor SessionReplayExporter: EventExporting {
                               data: AnyEventData(touchEventData),
                               timestamp: interaction.timestamp,
                               _sid: nextSid)
+            let data = try! JSONEncoder().encode(event)
+            print(String(data: data, encoding: .utf8) as! NSString)
             events.append(event)
         }
         
@@ -235,7 +239,7 @@ actor SessionReplayExporter: EventExporting {
     func mouseEvent(timestamp: TimeInterval, x: CGFloat, y: CGFloat, timeOffset: TimeInterval) -> Event? {
         guard let imageId else { return nil }
         
-        let eventData = MouseMoveEventData(source: .mouseMove, positions: [.init(x: x, y: y, id: "\(imageId)", timeOffset: timeOffset)])
+        let eventData = MouseMoveEventData(source: .mouseMove, positions: [.init(x: x, y: y, id: imageId, timeOffset: timeOffset)])
         let event = Event(type: .IncrementalSnapshot,
                           data: AnyEventData(eventData),
                           timestamp: timestamp,

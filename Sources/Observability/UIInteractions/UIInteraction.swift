@@ -3,7 +3,7 @@ import UIKit
 
 public struct TouchPoint: Sendable {
     public let position: CGPoint
-    public let timeOffset: TimeInterval
+    public let timestamp: TimeInterval
 }
 
 public enum UIInteractionKind: Sendable {
@@ -21,6 +21,7 @@ public enum UIInteractionKind: Sendable {
 }
 
 public struct UIInteraction: Sendable {
+    public let id: Int
     public let kind: UIInteractionKind
     public let timestamp: TimeInterval
     public let target: TouchTarget?

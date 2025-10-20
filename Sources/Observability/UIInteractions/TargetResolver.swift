@@ -8,6 +8,17 @@ public struct TouchTarget: Sendable {
     public let rectOnScreen: CGRect
     public let rowIndex: IndexPath?
     public let sceneId: String?
+    
+    public init(className: String?, accessibilityIdentifier: String?, isAccessibilityElement: Bool?, rectInWindow: CGRect, rectOnScreen: CGRect, rowIndex: IndexPath?, sceneId: String?) {
+        // Make sure we have Swift string not NSString to transer struct between threads
+        self.className = className.map { String($0) }
+        self.accessibilityIdentifier = accessibilityIdentifier.map { String($0) }
+        self.isAccessibilityElement = isAccessibilityElement
+        self.rectInWindow = rectInWindow
+        self.rectOnScreen = rectOnScreen
+        self.rowIndex = rowIndex
+        self.sceneId = sceneId
+    }
 }
 
 protocol TargetResolving {

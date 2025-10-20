@@ -4,10 +4,10 @@ public struct MouseMoveEventData: EventDataProtocol {
     public struct Position: Codable {
         var x: Int
         var y: Int
-        var id: String?
+        var id: Int?
         var timeOffset: Int64
         
-        init(x: CGFloat, y: CGFloat, id: String? = nil, timeOffset: TimeInterval) {
+        init(x: CGFloat, y: CGFloat, id: Int? = nil, timeOffset: TimeInterval) {
             self.x = Int(x)
             self.y = Int(y)
             self.id = id
@@ -16,9 +16,9 @@ public struct MouseMoveEventData: EventDataProtocol {
     }
     
     var source: IncrementalSource
-    var positions: [Position]?
+    var positions: [Position]
     
-    init(source: IncrementalSource, positions: [Position]? = nil) {
+    init(source: IncrementalSource, positions: [Position]) {
         self.source = source
         self.positions = positions
     }
