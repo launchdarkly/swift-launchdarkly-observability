@@ -37,9 +37,7 @@ public final class GraphQLClient {
         request.httpMethod = "POST"
         
         let rawData = try gqlRequest.httpBody()
-        
-       // print("rawData", String(data: rawData, encoding: .utf8) ?? "")
-        
+         
         if let compressedData = rawData.gzip() {
           request.httpBody = compressedData
           request.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
