@@ -237,7 +237,7 @@ extension SessionReplayExporter  {
         }
     }
     
-    func pushPayload(session: InitializeSessionResponse, resource: String, exportImage: ExportImage? = nil, timestamp: Int64) async throws {
+    func pushPayload(session: InitializeSessionResponse, resource: String, exportImage: ExportImage? = nil, timestamp: TimeInterval) async throws {
         let imageNode = exportImage?.eventNode(id: 16)
         let preparedJsonDict = try preparePayload(filename: "\(resource).json",
                                                   session: session,
@@ -248,18 +248,18 @@ extension SessionReplayExporter  {
         try await pushPreparedPayload(preparedJsonDict)
     }
     
-    func pushPayloadIncr(session: InitializeSessionResponse, resource: String, exportImage: ExportImage? = nil, timestamp: Int64) async throws {
+    func pushPayloadIncr(session: InitializeSessionResponse, resource: String, exportImage: ExportImage? = nil, timestamp: TimeInterval) async throws {
         guard let imageNode = exportImage?.eventNode(id: 16) else { return }
         let preparedJsonDict = try preparePayload(filename: "\(resource).json",
                                                   session: session,
                                                   payloadId: "\(nextPayloadId)",
-                                                  timestamp: Int64(Date().timeIntervalSince1970 * 1000.0),
+                                                  timestamp: TimeInterval(Date().timeIntervalSince1970 * 1000.0),
                                                   imageNode: imageNode)
         
         try await pushPreparedPayload(preparedJsonDict)
     }
     
-    func pushPayloadReplaceImg(session: InitializeSessionResponse, timestamp: Int64, exportImage: ExportImage? = nil) async throws {
+    func pushPayloadReplaceImg(session: InitializeSessionResponse, timestamp: TimeInterval, exportImage: ExportImage? = nil) async throws {
         guard var eventNode = exportImage?.eventNode(id: 16) else { return }
         //let eventData = EventData(source: .mutation,
         //                          attributes: [EventData.Attributes(id: sid, attributes: eventNode.attributes)])
@@ -331,7 +331,7 @@ extension SessionReplayExporter  {
     func preparePayload(filename: String,
                         session: InitializeSessionResponse,
                         payloadId: String,
-                        timestamp: Int64,
+                        timestamp: TimeInterval,
                         imageNode: EventNode? = nil) throws -> [String: Any] {
         guard let jsonDict = Bundle.module.loadJSONDictionary(from: filename) else {
             throw ScreenshotServiceError.loadingJSONFailed(filename)
@@ -346,7 +346,7 @@ extension SessionReplayExporter  {
         for (i, event) in subEvents.enumerated() {
             var event = event
             if event["timestamp"] != nil {
-                event["timestamp"] = timestamp + Int64(i * 1)
+                event["timestamp"] = timestamp + TimeInterval(i * 1)
             }
             event["_sid"] = nextSid
             subEvents[i] = processNode(event, imageNode: imageNode)

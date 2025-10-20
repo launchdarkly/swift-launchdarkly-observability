@@ -3,6 +3,10 @@ import Common
 import Observability
 
 struct ScreenImageItem: EventQueueItemPayload {
+    var timestamp: TimeInterval {
+        exportImage.timestamp
+    }
+    
     func cost() -> Int {
         exportImage.data.count
     }
@@ -39,7 +43,10 @@ public final class SessionReplayService {
         
         let captureService = ScreenCaptureService(options: sessonReplayOptions)
         self.transportService = context.transportService
-        self.screenshotManager = SnapshotTaker(queue: transportService.eventQueue, captureService: captureService)
+        self.screenshotManager = SnapshotTaker(captureService: captureService) { exportImage in
+            await context.transportService.eventQueue.send(EventQueueItem(payload: ScreenImageItem(exportImage: exportImage)))
+        }
+        
         let sessionReplayContext = SessionReplayContext(
             sdkKey: context.sdkKey,
             serviceName: context.options.serviceName,

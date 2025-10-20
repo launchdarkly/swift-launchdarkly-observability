@@ -6,7 +6,7 @@ actor SessionReplayExporter: EventExporting {
     let replayApiService: SessionReplayAPIService
     let context: SessionReplayContext
     let sessionManager: SessionManaging
-
+    
     var payloadId = 0
     var nextPayloadId: Int {
         payloadId += 1
@@ -55,7 +55,7 @@ actor SessionReplayExporter: EventExporting {
         
         if let currentSession, !fakePayloadOnce {
             fakePayloadOnce = true
-            try await pushPayload(session: currentSession, resource: "payload2", timestamp: firstEvent.timestamp)
+            try await pushPayload(session: currentSession, resource: "payload2", timestamp: Double(firstEvent.timestamp) / 1000.0)
         }
         try await pushPayload(events: events)
     }
@@ -92,70 +92,63 @@ actor SessionReplayExporter: EventExporting {
                 appendFullSnapshotEvents(exportImage, timestamp, &events)
             }
             
-        case let touchEvent as TouchItemPayload:
-            appendTouchEvents(touch: touchEvent.touchEvent, events: &events, timestamp: item.timestamp)
+        case let interaction as UIInteraction:
+            appendTouchInteraction(interaction: interaction, events: &events)
         default:
             () //
         }
     }
     
-    fileprivate func addTouchInteraction(_ type: MouseInteractions, _ touch: TouchEvent, _ timestamp: Int64, _ events: inout [Event]) {
-        let eventData = EventData(source: .mouseInteraction,
-                                  type: type,
-                                  id: imageId,
-                                  x: touch.location.x,
-                                  y: touch.location.y)
-        let event = Event(type: .IncrementalSnapshot,
-                          data: AnyEventData(eventData),
-                          timestamp: timestamp,
-                          _sid: nextSid)
-        events.append(event)
-    }
-    
-    func appendTouchEvents(touch: TouchEvent, events: inout [Event], timestamp: Int64) {
-        var type: MouseInteractions?
-        switch touch.phase {
-        case .began:
-            type = .touchStart
-//            if let mouseEvent = mouseEvent(timestamp: timestamp,
-//                                           x: touch.location.x,
-//                                           y: touch.location.y,
-//                                           timeOffset: 100) {
-//                events.append(mouseEvent)
-//            }
-        case .ended:
-            type = .touchEnd
-            if let mouseEvent = mouseEvent(timestamp: timestamp,
-                                           x: touch.location.x,
-                                           y: touch.location.y,
-                                           timeOffset: 900) {
-                events.append(mouseEvent)
-            }
+    fileprivate func appendTouchInteraction(interaction: UIInteraction, events: inout [Event]) {
+        if let touchEventData: EventDataProtocol = switch interaction.kind {
+        case .touchDown(let point):
+            EventData(source: .mouseInteraction,
+                      type: .touchStart,
+                      id: imageId,
+                      x: point.x,
+                      y: point.y)
             
-        case .moved:
-            () // NO-OP
-        }
-        guard let type else {
-            return
+        case .touchUp(let point):
+            EventData(source: .mouseInteraction,
+                      type: .touchEnd,
+                      id: imageId,
+                      x: point.x,
+                      y: point.y)
+            
+        case .touchPath(let points):
+            MouseMoveEventData(
+                source: .touchMove,
+                positions: points.map { p in MouseMoveEventData.Position(
+                    x: p.position.x,
+                    y: p.position.y,
+                    timeOffset: p.timeOffset) })
+
+        default:
+            Optional<EventData>.none
+        } {
+            let event = Event(type: .IncrementalSnapshot,
+                              data: AnyEventData(touchEventData),
+                              timestamp: interaction.timestamp,
+                              _sid: nextSid)
+            events.append(event)
         }
         
-        addTouchInteraction(type, touch, timestamp, &events)
-        
-        if let clickEvent = clickEvent(touchEvent: touch, timestamp: timestamp) {
+        if let clickEvent = clickEvent(interaction: interaction) {
             events.append(clickEvent)
         }
     }
     
-    func clickEvent(touchEvent: TouchEvent, timestamp: Int64) -> Event? {
-        guard touchEvent.phase == .ended, let viewName = touchEvent.viewName else { return nil }
-            
+    func clickEvent(interaction: UIInteraction) -> Event? {
+        guard case .touchDown = interaction.kind else { return nil }
+        
+        let viewName = interaction.target?.className
         let eventData = CustomEventData(tag: .click, payload: ClickPayload(
-            clickTarget: viewName,
-            clickTextContent: touchEvent.title ?? "",
-            clickSelector: touchEvent.accessibilityIdentifier ?? "view"))
+            clickTarget: interaction.target?.className ?? "",
+            clickTextContent: interaction.target?.accessibilityIdentifier ?? "",
+            clickSelector: interaction.target?.accessibilityIdentifier ?? "view"))
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
-                          timestamp: timestamp,
+                          timestamp: interaction.timestamp,
                           _sid: nextSid)
         return event
     }
@@ -184,7 +177,7 @@ actor SessionReplayExporter: EventExporting {
                            "key":"unknown"])
     }
     
-    func windowEvent(href: String, width: Int, height: Int, timestamp: Int64) -> Event {
+    func windowEvent(href: String, width: Int, height: Int, timestamp: TimeInterval) -> Event {
         let eventData = EventData(href: href, width: width, height: height)
         let event = Event(type: .Meta,
                           data: AnyEventData(eventData),
@@ -193,7 +186,7 @@ actor SessionReplayExporter: EventExporting {
         return event
     }
     
-    func reloadEvent(timestamp: Int64) -> Event {
+    func reloadEvent(timestamp: TimeInterval) -> Event {
         let eventData = CustomEventData(tag: .reload, payload: "iOS Demo")
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
@@ -202,7 +195,7 @@ actor SessionReplayExporter: EventExporting {
         return event
     }
     
-    func viewPortEvent(exportImage: ExportImage, timestamp: Int64) -> Event {
+    func viewPortEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
         let payload = ViewportPayload(width: exportImage.originalWidth,
                                       height: exportImage.originalHeight,
                                       availWidth: exportImage.originalWidth,
@@ -218,7 +211,7 @@ actor SessionReplayExporter: EventExporting {
         return event
     }
     
-    func drawImageEvent(exportImage: ExportImage, timestamp: Int64, imageId: Int) -> Event {
+    func drawImageEvent(exportImage: ExportImage, timestamp: TimeInterval, imageId: Int) -> Event {
         let clearRectCommand = ClearRect(x: 0, y: 0, width: exportImage.originalWidth, height: exportImage.originalHeight)
         let arrayBuffer = RRArrayBuffer(base64: exportImage.data.base64EncodedString())
         let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportImage.mimeType))
@@ -239,10 +232,9 @@ actor SessionReplayExporter: EventExporting {
         return event
     }
     
-    func mouseEvent(timestamp: Int64, x: CGFloat, y: CGFloat, timeOffset: Int64) -> Event? {
+    func mouseEvent(timestamp: TimeInterval, x: CGFloat, y: CGFloat, timeOffset: TimeInterval) -> Event? {
         guard let imageId else { return nil }
-       
-        let x = Int(x), y = Int(y)
+        
         let eventData = MouseMoveEventData(source: .mouseMove, positions: [.init(x: x, y: y, id: "\(imageId)", timeOffset: timeOffset)])
         let event = Event(type: .IncrementalSnapshot,
                           data: AnyEventData(eventData),
@@ -251,7 +243,7 @@ actor SessionReplayExporter: EventExporting {
         return event
     }
     
-    func fullSnapshotEvent(exportImage: ExportImage, timestamp: Int64, isEmpty: Bool) -> Event {
+    func fullSnapshotEvent(exportImage: ExportImage, timestamp: TimeInterval, isEmpty: Bool) -> Event {
         id = 0
         let rootNode = fullSnapshotNode(exportImage: exportImage, emtpyCanvas: isEmpty)
         let eventData = EventData(node: rootNode)
@@ -276,10 +268,10 @@ actor SessionReplayExporter: EventExporting {
         return rootNode
     }
     
-    private func appendFullSnapshotEvents(_ exportImage: ExportImage, _ timestamp: Int64, _ events: inout [Event]) {
+    private func appendFullSnapshotEvents(_ exportImage: ExportImage, _ timestamp: TimeInterval, _ events: inout [Event]) {
         events.append(windowEvent(href: "", width: exportImage.paddedWidth, height: exportImage.paddedHeight, timestamp: timestamp))
         events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp, isEmpty: false))
-       
+        
         // Workaround to solve session player flicker. TODO: optimize but not generating base64 twice in case it persists
         events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp, isEmpty: true))
         if let imageId {
@@ -289,7 +281,7 @@ actor SessionReplayExporter: EventExporting {
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
     }
     
-    func pushPayloadFullSnapshot(session: InitializeSessionResponse, exportImage: ExportImage? = nil, timestamp: Int64) async throws {
+    func pushPayloadFullSnapshot(session: InitializeSessionResponse, exportImage: ExportImage? = nil, timestamp: TimeInterval) async throws {
         var events = [Event]()
         guard let exportImage else {
             return
@@ -301,7 +293,7 @@ actor SessionReplayExporter: EventExporting {
         try await replayApiService.pushPayload(input)
     }
     
-    func pushPayloadDrawImage(session: InitializeSessionResponse, timestamp: Int64, exportImage: ExportImage, imageId: Int) async throws {
+    func pushPayloadDrawImage(session: InitializeSessionResponse, timestamp: TimeInterval, exportImage: ExportImage, imageId: Int) async throws {
         let event = drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId)
         let input = PushPayloadVariables(sessionSecureId: session.secureId, payloadId: "\(nextPayloadId)", events: [event])
         try await replayApiService.pushPayload(input)

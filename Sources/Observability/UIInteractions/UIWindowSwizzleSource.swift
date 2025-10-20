@@ -2,58 +2,39 @@
 
 import UIKit.UIWindow
 
-final class UIWindowSwizzleSource: UIEventSource {
+final class UIWindowSwizzleSource: UIEventSource, AnyObject {
     typealias SendEventRef = @convention(c) (UIWindow, Selector, UIEvent) -> Void
     private static let sendEvenSelector = #selector(UIWindow.sendEvent(_:))
-    private var yield: (TouchSample) -> Void
     private var isActive: Bool = false
-    private let receiverChecker = UIEventReceiverChecker()
-    private let targetResolver: TargetResolving
     private var originalIMP: IMP?
     
-    init(targetResolver: TargetResolving, yield: @escaping (UIWindow, UIEvent) -> Void) {
-        self.targetResolver = targetResolver
-        self.yield = yield
+    init() {
     }
     
-    func start() {
+    func start(yield: @escaping (UIEvent, UIWindow) -> Void) {
         guard !isActive else { return }
         
-        inject()
+        guard let originalMethod = class_getInstanceMethod(UIWindow.self, UIWindowSwizzleSource.sendEvenSelector) else { return }
+        
+        let swizzledSendEventBlock: @convention(block) (UIWindow, UIEvent) -> Void = { [weak self] window, event in
+            guard let self else { return }
+            
+            if let originalIMP = self.originalIMP {
+                let castedIMP = unsafeBitCast(originalIMP, to: SendEventRef.self)
+                castedIMP(window, UIWindowSwizzleSource.sendEvenSelector, event)
+            }
+            
+            yield(event, window)
+        }
+        
+        let swizzledIMP = imp_implementationWithBlock(unsafeBitCast(swizzledSendEventBlock, to: AnyObject.self))
+        originalIMP = method_setImplementation(originalMethod, swizzledIMP)
     }
     
     func stop() {
         guard isActive else { return }
         
         disable()
-    }
-    
-    private func inject() {
-        guard let originalMethod = class_getInstanceMethod(UIWindow.self, sendEvenSelector) else { return }
-        
-        let swizzledSendEventBlock: @convention(block) (UIWindow, UIEvent) -> Void = { window, event in
-            if let originalIMP = originalIMP {
-                let castedIMP = unsafeBitCast(originalIMP, to: SendEventRef.self)
-                castedIMP(window, sendEvenSelector, event)
-            }
-            
-            guard receiverChecker.shouldTrack(window) else {
-                return
-            }
-            
-            guard let interaction = targetResolver.resolve() else {
-                return
-            }
-            
-            if let touches = event.allTouches() {
-                for t in touches {
-                    yield(TouchSample(touch: t, window: window))
-                }
-            }
-        }
-        
-        let swizzledIMP = imp_implementationWithBlock(unsafeBitCast(swizzledSendEventBlock, to: AnyObject.self))
-        originalIMP = method_setImplementation(originalMethod, swizzledIMP)
     }
     
     private func disable() {

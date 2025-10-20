@@ -1,14 +1,16 @@
 import Foundation
 import Observability
 
+typealias ExportImageYield = @Sendable (ExportImage) async -> Void
+
 class SnapshotTaker: EventSource {
-    let queue: EventQueue
     let captureService: ScreenCaptureService
     var timer: Timer?
-    
-    init(queue: EventQueue, captureService: ScreenCaptureService) {
-        self.queue = queue
+    private let yield: ExportImageYield
+
+    init(captureService: ScreenCaptureService, yield: @escaping ExportImageYield) {
         self.captureService = captureService
+        self.yield = yield
     }
     
     func start() {
@@ -32,11 +34,12 @@ class SnapshotTaker: EventSource {
         Task {
             guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
                                                                     originalSize: capturedImage.renderSize,
-                                                                    scale: capturedImage.scale) else {
+                                                                    scale: capturedImage.scale,
+                                                                    timestamp: capturedImage.timestamp) else {
                 return
             }
             
-            await queue.send(EventQueueItem(payload: ScreenImageItem(exportImage: exportImage)))
+            await yield(exportImage)
         }
     }
 }

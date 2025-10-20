@@ -41,7 +41,7 @@ public final class BatchWorker {
     
     func send(items: [EventQueueItem]) async {
         do {
-            //try await multiExporter.export(items: items)
+            try await multiExporter.export(items: items)
         } catch {
             print(error)
         }

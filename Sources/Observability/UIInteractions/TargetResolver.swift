@@ -1,22 +1,34 @@
 import UIKit
 
+public struct TouchTarget: Sendable {
+    public let className: String?
+    public let accessibilityIdentifier: String?
+    public let isAccessibilityElement: Bool?
+    public let rectInWindow: CGRect
+    public let rectOnScreen: CGRect
+    public let rowIndex: IndexPath?
+    public let sceneId: String?
+}
+
 protocol TargetResolving {
-    
+    func resolve(view: UIView?, window: UIWindow, event: UIEvent) -> TouchTarget?
 }
 
 final class TargetResolver: TargetResolving {
-
-    func interaction(view: UIView?, window: UIWindow, event: UIEvent) -> TouchTarget? {
+    init() {
+        
+    }
+    
+    func resolve(view: UIView?, window: UIWindow, event: UIEvent) -> TouchTarget? {
         guard let firstTouch = event.allTouches?.first else {
             return nil
         }
         
-        guard firstTouch.type == .direct else {
+        let point = firstTouch.location(in: window)
+        guard let hitView = window.hitTest(point, with: nil) ?? view else {
             return nil
         }
         
-        let point = firstTouch.location(in: window)
-        let hitView = window.hitTest(point, with: nil) ?? view
         let semanticView = nearestSemanticView(view: hitView)
         let rectWin = semanticView.convert(semanticView.bounds, to: window)
         let target = TouchTarget(className: String(describing: type(of: semanticView)),
@@ -24,12 +36,12 @@ final class TargetResolver: TargetResolving {
                                  isAccessibilityElement: semanticView.isAccessibilityElement,
                                  rectInWindow: rectWin,
                                  rectOnScreen: window.convert(rectWin, to: nil),
-                                 rowIndex: nil)
-        
+                                 rowIndex: nil,
+                                 sceneId: window.windowScene?.session.persistentIdentifier)
         return target
     }
     
-    private func nearestSemanticView(view: UIView) -> UIVIew {
+    private func nearestSemanticView(view: UIView) -> UIView {
         var v: UIView? = view
         while let cur = v {
             if cur is UIControl

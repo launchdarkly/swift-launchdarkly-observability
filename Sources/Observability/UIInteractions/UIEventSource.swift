@@ -1,7 +1,7 @@
-import Foundation
+import UIKit
 
 public protocol UIEventSource: AnyObject {
-    func start()
+    func start(yield: @escaping (UIEvent, UIWindow) -> Void)
     func stop()
 }
 

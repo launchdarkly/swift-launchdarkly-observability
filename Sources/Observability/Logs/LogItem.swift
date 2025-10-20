@@ -7,4 +7,8 @@ public struct LogItem: EventQueueItemPayload {
     public func cost() -> Int {
         300 + log.attributes.count * 100
     }
+    
+    public var timestamp: TimeInterval  {
+        log.timestamp.timeIntervalSince1970
+    }
 }

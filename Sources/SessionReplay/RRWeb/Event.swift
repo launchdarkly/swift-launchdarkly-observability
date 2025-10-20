@@ -6,10 +6,10 @@ struct Event: Codable {
     var timestamp: Int64
     var _sid: Int
     
-    public init(type: EventType, data: AnyEventData, timestamp: Int64, _sid: Int) {
+    public init(type: EventType, data: AnyEventData, timestamp: TimeInterval, _sid: Int) {
         self.type = type
         self.data = data
-        self.timestamp = timestamp
+        self.timestamp = timestamp.milliseconds
         self._sid = _sid
     }
 }
