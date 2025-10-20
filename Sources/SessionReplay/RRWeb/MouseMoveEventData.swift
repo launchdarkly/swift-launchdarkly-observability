@@ -1,22 +1,24 @@
+import Foundation
+
 public struct MouseMoveEventData: EventDataProtocol {
     public struct Position: Codable {
         var x: Int
         var y: Int
-        var id: String?
+        var id: Int?
         var timeOffset: Int64
         
-        init(x: Int, y: Int, id: String? = nil, timeOffset: Int64) {
-            self.x = x
-            self.y = y
+        init(x: CGFloat, y: CGFloat, id: Int? = nil, timeOffset: TimeInterval) {
+            self.x = Int(x)
+            self.y = Int(y)
             self.id = id
-            self.timeOffset = timeOffset
+            self.timeOffset = timeOffset.milliseconds
         }
     }
     
     var source: IncrementalSource
-    var positions: [Position]?
+    var positions: [Position]
     
-    init(source: IncrementalSource, positions: [Position]? = nil) {
+    init(source: IncrementalSource, positions: [Position]) {
         self.source = source
         self.positions = positions
     }

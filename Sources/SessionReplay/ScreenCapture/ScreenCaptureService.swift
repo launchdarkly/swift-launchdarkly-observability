@@ -6,6 +6,7 @@ public struct CapturedImage {
     public let image: UIImage
     public let scale: CGFloat
     public let renderSize: CGSize
+    public let timestamp: TimeInterval
 }
 
 public final class ScreenCaptureService {
@@ -24,14 +25,6 @@ public final class ScreenCaptureService {
         return captureCompositeImageOfAllWindows()
     }
 
-
-//    /// Async-style convenience with closure.
-//    public func captureUIImage(completion: @escaping (CapturedImage?) -> Void) {
-//        runOnMain {
-//            completion(self.captureUIImage())
-//        }
-//    }
-
     // MARK: - Internals
 
     private func captureCompositeImageOfAllWindows() -> CapturedImage? {
@@ -49,7 +42,10 @@ public final class ScreenCaptureService {
             drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
         }
         
-        return CapturedImage(image: image, scale: scale, renderSize: enclosingBounds.size)
+        return CapturedImage(image: image,
+                             scale: scale,
+                             renderSize: enclosingBounds.size,
+                             timestamp: Date().timeIntervalSince1970)
     }
 
     private func allWindowsInZOrder() -> [UIWindow] {

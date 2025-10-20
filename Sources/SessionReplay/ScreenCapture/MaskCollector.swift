@@ -5,20 +5,29 @@ import Common
 
 typealias PrivacySettings = SessionReplayOptions.PrivacyOptions
 
+
 final class MaskCollector {
+    enum Constants {
+        static let maskiOS26ViewTypes = Set(["CameraUI.ChromeSwiftUIView"])
+    }
+
     struct Settings {
         var maskiOS26ViewTypes: Set<String>
         var maskTextInputs: Bool
         var maskImages: Bool
         var minimumAlpha: CGFloat
         var maskClasses: Set<ObjectIdentifier>
+        var maskAccessibilityIdentifiers: Set<String>
+        var ignoreAccessibilityIdentifiers: Set<String>
         
         init(privacySettings: PrivacySettings) {
-            self.maskiOS26ViewTypes = Set(privacySettings.maskiOS26TypeIds)
+            self.maskiOS26ViewTypes = Constants.maskiOS26ViewTypes
             self.maskTextInputs = privacySettings.maskTextInputs
             self.maskImages = privacySettings.maskImages
             self.minimumAlpha = privacySettings.minimumAlpha
             self.maskClasses = privacySettings.buildMaskClasses()
+            self.maskAccessibilityIdentifiers = Set(privacySettings.maskAccessibilityIdentifiers)
+            self.ignoreAccessibilityIdentifiers = Set(privacySettings.ignoreAccessibilityIdentifiers)
         }
               
         func shouldMask(_ view: UIView) -> Bool {
@@ -41,11 +50,6 @@ final class MaskCollector {
             if SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? false {
                 return true
             }
-            
-           
-//            if let imageView = view as? UILabel {
-//                return true
-//            }
             
             return false
         }

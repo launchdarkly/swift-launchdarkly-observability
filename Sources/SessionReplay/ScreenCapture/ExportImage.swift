@@ -2,11 +2,14 @@ import Foundation
 import UIKit
 
 struct ExportImage: Equatable {
+    static var padding = CGPoint(x: 11, y: 11)
+
     var data: Data
     var originalWidth: Int
     var originalHeight: Int
     var scale: CGFloat
     var format: ExportFormat
+    var timestamp: TimeInterval
     
     func eventNode(id: Int, use_rr_dataURL: Bool = true) -> EventNode {
         if use_rr_dataURL {
@@ -49,22 +52,23 @@ struct ExportImage: Equatable {
     }
     
     var paddedWidth: Int {
-        originalWidth * 105 / 100
+        originalWidth + Int(ExportImage.padding.x) * 2
     }
     
     var paddedHeight: Int {
-        originalHeight * 105 / 100
+        originalHeight + Int(ExportImage.padding.y) * 2
     }
 }
 
 extension UIImage {
-    func exportImage(format: ExportFormat, originalSize: CGSize, scale: CGFloat) -> ExportImage? {
+    func exportImage(format: ExportFormat, originalSize: CGSize, scale: CGFloat, timestamp: TimeInterval) -> ExportImage? {
         guard let data = asData(format: format) else { return nil }
         return ExportImage(data: data,
                            originalWidth: Int(originalSize.width),
                            originalHeight: Int(originalSize.height),
                            scale: scale,
-                           format: format)
+                           format: format,
+                           timestamp: timestamp)
     }
 }
 

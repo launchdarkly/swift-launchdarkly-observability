@@ -19,6 +19,8 @@ enum Failure: LocalizedError {
 struct ContentView: View {
     @State private var isMaskingUIKitOneFieldEnabled: Bool = false
     @State private var isMaskingUIKitCreditCardEnabled: Bool = false
+    @State private var isNumberPadEnabled: Bool = false
+    @State private var isNotebookEnabled: Bool = false
 
     @State private var buttonPressed: Bool = false
     @State private var errorPressed: Bool = false
@@ -35,16 +37,22 @@ struct ContentView: View {
             }
             
             List {
+                #if os(iOS)
                 NavigationLink(destination: FrutaAppView()) {
                     Text("Fruta (SwiftUI)")
                 }
-                
+                #endif
                 NavigationLink(destination: MaskingElementsView()) {
                     Text("Masking Elements (SwiftUI)")
                 }
-                
+
                 FauxLinkToggleRow(title: "Masking One TextField (UIKit)", isOn: $isMaskingUIKitOneFieldEnabled)
+#if os(iOS)
                 FauxLinkToggleRow(title: "Masking Credit Card (UIKit)", isOn: $isMaskingUIKitCreditCardEnabled)
+                FauxLinkToggleRow(title: "Number Pad (SwiftUI)", isOn: $isNumberPadEnabled)
+#endif
+
+                FauxLinkToggleRow(title: "Notebook (SwiftUI)", isOn: $isNotebookEnabled)
                 
                 Button {
                     buttonPressed.toggle()
@@ -156,10 +164,18 @@ struct ContentView: View {
             } catch {
                 networkPressed.toggle()
             }
-        }.sheet(isPresented: $isMaskingUIKitCreditCardEnabled) {
+        }
+#if os(iOS)
+        .sheet(isPresented: $isMaskingUIKitCreditCardEnabled) {
             MaskingCreditCardUIKitView()
-        }.sheet(isPresented: $isMaskingUIKitOneFieldEnabled) {
+        }.sheet(isPresented: $isNotebookEnabled) {
+            NotebookView()
+        }
+        #endif
+        .sheet(isPresented: $isMaskingUIKitOneFieldEnabled) {
             MaskingElementsSimpleUIKitView()
+        }.sheet(isPresented: $isNumberPadEnabled) {
+            NumberPadView()
         }
     }
 }

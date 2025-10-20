@@ -49,10 +49,10 @@ public struct ObservabilityClientFactory {
             logger = NoOpLogger()
         }
         
-        
-        guard  let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.tracesPath) else {
+        guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.tracesPath) else {
             throw InstrumentationError.invalidTraceExporterUrl
         }
+        
         if options.traces == .enabled {
             let tracesExporter = SamplingTraceExporterDecorator(
                 exporter: OtlpHttpTraceExporter(
@@ -65,13 +65,23 @@ public struct ObservabilityClientFactory {
             /// tracer is enabled
             if options.autoInstrumentation.contains(.urlSession) {
                 autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
-                autoInstrumentation.append(UserInteractionManager(tracesApi: decorator, eventQueue: eventQueue))
             }
             tracer = decorator
         } else {
             tracer = NoOpTracer()
         }
         
+        let userInteractionManager = UserInteractionManager(options: options) { interaction in
+            Task {
+                await eventQueue.send(EventQueueItem(payload: interaction))
+            }
+            
+            // TODO: move to LD buffering
+            if let span = interaction.span() {
+                tracer.startSpan(name: span.name, attributes: span.attributes)
+            }
+        }
+        userInteractionManager.start()
         
         guard  let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.metricsPath) else {
             throw InstrumentationError.invalidTraceExporterUrl

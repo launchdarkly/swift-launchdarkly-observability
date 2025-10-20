@@ -1,7 +1,7 @@
 import UIKit
 
 public final class SimpleNestedViewController: UIViewController {
-    public weak var delegate: CreditCardViewControllerDelegate?
+    public weak var delegate: SimpleNestedViewControllerDelegate?
     
     private lazy var cvvField: UITextField = {
         let field = UITextField()
@@ -25,7 +25,9 @@ public final class SimpleNestedViewController: UIViewController {
     
     public override func viewDidLoad() {
         super.viewDidLoad()
+        #if os(iOS)
         view.backgroundColor = .systemBackground
+        #endif
         view.accessibilityIdentifier = "nestedViewController"
 
         view.addSubview(cvvContainer)
@@ -86,13 +88,13 @@ struct SimpleNestedViewControllerWrapper: UIViewControllerRepresentable {
         let parent: SimpleNestedViewControllerWrapper
         init(_ parent: SimpleNestedViewControllerWrapper) { self.parent = parent }
         
-        func creditCardViewController(_ vc: SimpleNestedViewController, didSave card: CreditCard) {
-            parent.presentationMode.wrappedValue.dismiss()
-        }
-        
-        func creditCardViewControllerDidCancel(_ vc: SimpleNestedViewController) {
-            parent.presentationMode.wrappedValue.dismiss()
-        }
+//        func creditCardViewController(_ vc: SimpleNestedViewController, didSave card: CreditCard) {
+//            parent.presentationMode.wrappedValue.dismiss()
+//        }
+//        
+//        func creditCardViewControllerDidCancel(_ vc: SimpleNestedViewController) {
+//            parent.presentationMode.wrappedValue.dismiss()
+//        }
     }
 }
 
@@ -102,7 +104,9 @@ struct MaskingElementsSimpleUIKitView: View {
     var body: some View {
         NavigationStack {
             SimpleNestedViewControllerWrapper()
+#if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+#endif
                 .navigationTitle("Masking Simple View (UIKit)")
                 .toolbar {
                     Button {

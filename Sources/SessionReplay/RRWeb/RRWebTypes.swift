@@ -30,11 +30,11 @@ public enum IncrementalSource: Int, Codable {
          mediaInteraction = 7,
          styleSheetRule = 8,
          canvasMutation = 9,
-         font,
-         log,
-         drag,
-         styleDeclaration,
-         selection,
+         font = 10,
+         log = 11,
+         drag = 12,
+         styleDeclaration = 13,
+         selection = 14,
          adoptedStyleSheet,
          customElement
 }

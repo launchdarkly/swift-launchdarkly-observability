@@ -15,7 +15,6 @@ public struct SessionReplayOptions {
         public var ignoreAccessibilityIdentifiers: [String]
         
         public var minimumAlpha: CGFloat
-        public var maskiOS26TypeIds = ["CameraUI.ChromeSwiftUIView"]
         
         public init(maskTextInputs: Bool = true,
                     maskLabels: Bool = false,

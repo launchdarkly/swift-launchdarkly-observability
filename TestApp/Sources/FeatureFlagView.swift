@@ -22,5 +22,4 @@ struct FeatureFlagView: View {
             )
         }
     }
-  
 }

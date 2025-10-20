@@ -22,7 +22,9 @@ struct MaskingElementsView: View {
                 }
                 Spacer()
             }
+#if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .navigationTitle("Masking Elements (UIKit)")
             .toolbar {
                 Button {

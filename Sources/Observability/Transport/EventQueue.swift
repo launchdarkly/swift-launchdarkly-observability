@@ -3,19 +3,15 @@ import Common
 
 public struct EventQueueItem {
     public var payload: EventQueueItemPayload
-    public var timeIntervalSince1970: TimeInterval
+    public var cost: Int
     
-    public init(payload: EventQueueItemPayload, date: Date = Date()) {
+    public init(payload: EventQueueItemPayload) {
         self.payload = payload
-        self.timeIntervalSince1970 = date.timeIntervalSince1970
+        self.cost = payload.cost()
     }
     
-    public var timestamp: Int64 {
-        Int64(timeIntervalSince1970 * 1000.0)
-    }
-    
-    public func cost() -> Int {
-        payload.cost()
+    public var timestamp: TimeInterval {
+        payload.timestamp
     }
 }
 
@@ -27,36 +23,23 @@ public protocol EventQueuing: Actor {
 public actor EventQueue: EventQueuing {
     var storage = [EventQueueItem]()
     var lastEventTime: TimeInterval = 0
-    
-    public init() {
-        
+    let limitSize: Int
+    var currentSize = 0
+
+    public init(limitSize: Int = 5_000_000 /* 5 mb */) {
+        self.limitSize = limitSize
     }
     
     public func send(_ item: EventQueueItem) {
-        storage.append(item)
-        lastEventTime = item.timeIntervalSince1970
-    }
-     
-    func dequeue() -> EventQueueItem? {
-        guard !storage.isEmpty else {
-            return nil
-        }
-        // TODO: verify that is O(1) in this case
-        return storage.removeFirst()
-    }
-    
-    func dequeue(count: Int) -> [EventQueueItem] {
-        guard !storage.isEmpty else {
-            return []
+        guard currentSize + item.cost <= limitSize else {
+            return
         }
         
-        let availableCount = min(count, storage.count)
-        let result = Array(storage[0..<availableCount])
-        // TODO: verify that is O(count) in this case if not use another structure
-        storage.removeFirst(availableCount)
-        return result
+        storage.append(item)
+        lastEventTime = item.timestamp
+        currentSize += item.cost
     }
-    
+         
     func dequeue(cost: Int, limit: Int) -> [EventQueueItem] {
         guard !storage.isEmpty else {
             return []
@@ -67,14 +50,17 @@ public actor EventQueue: EventQueuing {
         for (i, item) in storage.enumerated() {
             result.append(item)
             
-            sumCost += item.cost()
+            sumCost += item.cost
+            
             if i >= limit || sumCost > cost {
+                currentSize -= item.cost
                 storage.removeFirst(i + 1)
                 return result
             }
         }
         
         storage.removeAll()
+        currentSize = 0
         return result
     }
 }
