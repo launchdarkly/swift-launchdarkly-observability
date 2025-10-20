@@ -6,7 +6,8 @@ public final class GraphQLClient {
     private let network: HttpServicing
     private let decoder: JSONDecoder
     private let defaultHeaders: [String: String]
-     
+    private let isCompressed: Bool = false
+    
     public init(endpoint: URL,
                 network: HttpServicing = HttpService(),
                 decoder: JSONDecoder = JSONDecoder(),
@@ -38,7 +39,7 @@ public final class GraphQLClient {
         
         let rawData = try gqlRequest.httpBody()
          
-        if let compressedData = rawData.gzip() {
+        if isCompressed, let compressedData = rawData.gzip() {
           request.httpBody = compressedData
           request.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
         } else {
@@ -48,9 +49,9 @@ public final class GraphQLClient {
         let combinedHeaders = defaultHeaders.merging(headers) { _, new in new }
         combinedHeaders.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
 
-        let data = try await network.send(request)
-    
         do {
+            let data = try await network.send(request)
+            
             let envelope = try decoder.decode(GraphQLResponse<Output>.self, from: data)
             if let errors = envelope.errors, !errors.isEmpty {
                 throw GraphQLClientError.graphQLErrors(errors)
