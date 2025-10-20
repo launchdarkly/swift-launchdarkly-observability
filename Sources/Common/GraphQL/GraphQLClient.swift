@@ -44,8 +44,6 @@ public final class GraphQLClient {
         } else {
           request.httpBody = rawData
         }
-
-        request.httpBody = try gqlRequest.httpBody()
         
         let combinedHeaders = defaultHeaders.merging(headers) { _, new in new }
         combinedHeaders.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }

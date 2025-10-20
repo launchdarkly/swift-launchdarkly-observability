@@ -39,28 +39,7 @@ public actor EventQueue: EventQueuing {
         lastEventTime = item.timestamp
         currentSize += item.cost
     }
-     
-    func dequeue() -> EventQueueItem? {
-        guard !storage.isEmpty else {
-            return nil
-        }
-        
-        // TODO: verify that is O(1) in this case
-        return storage.removeFirst()
-    }
-    
-    func dequeue(count: Int) -> [EventQueueItem] {
-        guard !storage.isEmpty else {
-            return []
-        }
-        
-        let availableCount = min(count, storage.count)
-        let result = Array(storage[0..<availableCount])
-        // TODO: verify that is O(count) in this case if not use another structure
-        storage.removeFirst(availableCount)
-        return result
-    }
-    
+         
     func dequeue(cost: Int, limit: Int) -> [EventQueueItem] {
         guard !storage.isEmpty else {
             return []
@@ -72,6 +51,8 @@ public actor EventQueue: EventQueuing {
             result.append(item)
             
             sumCost += item.cost
+            currentSize -= item.cost
+            
             if i >= limit || sumCost > cost {
                 storage.removeFirst(i + 1)
                 return result
@@ -79,6 +60,7 @@ public actor EventQueue: EventQueuing {
         }
         
         storage.removeAll()
+        currentSize = 0
         return result
     }
 }

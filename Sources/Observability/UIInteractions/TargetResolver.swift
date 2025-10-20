@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import UIKit
 
 public struct TouchTarget: Sendable {
@@ -60,13 +61,14 @@ final class TargetResolver: TargetResolving {
                 || cur is UICollectionViewCell
                 || cur is UINavigationBar
                 || cur is UITabBar { return cur }
-            
             if cur.isAccessibilityElement { return cur }
-            if let id = cur.accessibilityIdentifier, !id.isEmpty { return cur }
             if cur.superview == nil { return cur }
+            if let id = cur.accessibilityIdentifier, !id.isEmpty { return cur }
+            
             v = cur.superview
         }
         
         return view
     }
 }
+#endif

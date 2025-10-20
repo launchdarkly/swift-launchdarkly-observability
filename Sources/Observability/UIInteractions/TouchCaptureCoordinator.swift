@@ -72,7 +72,7 @@ final class TouchCaptureCoordinator {
             }
         }
         
-        Task.detached { [weak self] in
+        Task.detached(priority: .background) { [weak self] in
             guard let self else { return }
             // Bg thread part of work
             for await touchSample in touchSampleStream {

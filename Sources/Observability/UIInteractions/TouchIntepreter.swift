@@ -24,6 +24,7 @@ final class TouchIntepreter {
     }
     
     func process(touchSample: TouchSample, yield: UIInteractionYield) {
+        // UITouch and UIEvent use time based on systemUptime getting this needed adjustment for proper time
         let uptimeDifference = Date().timeIntervalSince1970 - ProcessInfo.processInfo.systemUptime
         switch touchSample.phase {
         case .began:
@@ -51,7 +52,7 @@ final class TouchIntepreter {
                 return
             }
             
-            let distance = squareDistance(from: track.startPoint, to: touchSample.location)
+            let distance = squaredDistance(from: track.startPoint, to: touchSample.location)
             guard distance >= TouchConstants.tapMaxDistanceSquared else {
                 return
             }
@@ -98,7 +99,7 @@ final class TouchIntepreter {
         yield(moveInteraction)
     }
     
-    func squareDistance(from: CGPoint, to: CGPoint) -> CGFloat {
+    func squaredDistance(from: CGPoint, to: CGPoint) -> CGFloat {
         let dx = from.x - to.x
         let dy = from.y - to.y
         return dx * dx + dy * dy
