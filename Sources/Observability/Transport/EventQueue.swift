@@ -51,9 +51,9 @@ public actor EventQueue: EventQueuing {
             result.append(item)
             
             sumCost += item.cost
-            currentSize -= item.cost
             
             if i >= limit || sumCost > cost {
+                currentSize -= item.cost
                 storage.removeFirst(i + 1)
                 return result
             }
