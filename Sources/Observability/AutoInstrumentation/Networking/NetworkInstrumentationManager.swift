@@ -4,6 +4,8 @@ import URLSessionInstrumentation
 final class NetworkInstrumentationManager: AutoInstrumentation {
     private let uRLSessionInstrumentation: URLSessionInstrumentation
     
+    func start() {}
+    
     init(options: Options, tracer: Tracer, session: SessionManaging) {
         let defaults = ConfigurationDefaults(options: options, session: session)
         let configuration = URLSessionInstrumentationConfiguration(

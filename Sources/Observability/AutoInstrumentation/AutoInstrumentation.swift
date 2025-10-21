@@ -1,1 +1,3 @@
-protocol AutoInstrumentation {}
+protocol AutoInstrumentation {
+    func start()
+}
