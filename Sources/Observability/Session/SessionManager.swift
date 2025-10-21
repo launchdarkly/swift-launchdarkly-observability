@@ -1,7 +1,6 @@
 import Foundation
 import UIKit.UIApplication
 import OSLog
-import OpenTelemetryApi
 
 public protocol SessionManaging {
     var sessionAttributes: [String: AttributeValue] { get }
