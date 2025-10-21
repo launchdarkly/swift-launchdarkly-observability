@@ -22,7 +22,7 @@ final class CpuUtilizationManager: AutoInstrumentation {
         task = Task { [weak self] in
             while true {
                 try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-                guard let usage = self?.currentCPUUsage() else { return }
+                guard let usage = self?.currentCPUUsage() else { continue }
                 self?.metricsApi.recordMetric(metric: .init(name: "system.cpu.utilization", value: usage))
             }
         }
