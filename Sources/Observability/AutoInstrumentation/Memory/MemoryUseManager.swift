@@ -27,7 +27,7 @@ final class MemoryUseManager: AutoInstrumentation {
             while true {
                 try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
                 guard let usage = self?.memoryReport() else { return }
-                metricsApi.recordMetric(
+                self?.metricsApi.recordMetric(
                     metric: .init(name: "system.memory.utilization", value: Double(usage.appMemoryMB))
                 )
             }
