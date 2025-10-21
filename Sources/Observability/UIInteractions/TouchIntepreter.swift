@@ -24,7 +24,7 @@ final class TouchIntepreter {
     }
     
     func process(touchSample: TouchSample, yield: UIInteractionYield) {
-        // UITouch and UIEvent use time based on systemUptime getting this needed adjustment for proper time
+        // UITouch and UIEvent use time based on systemUptime getting and we needed adjustment for proper time
         let uptimeDifference = Date().timeIntervalSince1970 - ProcessInfo.processInfo.systemUptime
         switch touchSample.phase {
         case .began:
