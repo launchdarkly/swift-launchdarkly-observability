@@ -33,8 +33,8 @@ final class MeasurementTask: AutoInstrumentation {
         task = Task(priority: .background) { [weak self] in
             guard let self else { return }
             while self.isRunning && !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
                 await self.operation(self.metricsApi)
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
             }
         }
     }

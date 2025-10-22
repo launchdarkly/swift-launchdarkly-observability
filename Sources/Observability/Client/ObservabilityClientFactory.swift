@@ -103,23 +103,27 @@ public struct ObservabilityClientFactory {
                 options: options,
                 reader: reader
             )
-
-            autoInstrumentation.append(
-                MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
-                    guard let report = MemoryUseManager.memoryReport() else { return }
-                    api.recordMetric(
-                        metric: .init(name: SemanticConvention.systemMemoryAppUsageMb, value: Double(report.appMemoryMB))
-                    )
-                }
-            )
-            autoInstrumentation.append(
-                MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
-                    guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
-                    api.recordMetric(
-                        metric: .init(name: SemanticConvention.systemCpuUtilization, value: value)
-                    )
-                }
-            )
+            
+            if options.autoInstrumentation.contains(.memory) {
+                autoInstrumentation.append(
+                    MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                        guard let report = MemoryUseManager.memoryReport() else { return }
+                        api.recordMetric(
+                            metric: .init(name: SemanticConvention.systemMemoryAppUsageMb, value: Double(report.appMemoryMB))
+                        )
+                    }
+                )
+            }
+            if options.autoInstrumentation.contains(.cpu) {
+                autoInstrumentation.append(
+                    MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                        guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
+                        api.recordMetric(
+                            metric: .init(name: SemanticConvention.systemCpuUtilization, value: value)
+                        )
+                    }
+                )
+            }
         } else {
             meter = NoOpMeter()
         }
