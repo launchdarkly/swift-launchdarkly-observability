@@ -8,4 +8,5 @@ public enum SemanticConvention {
     public static let serviceNamespace = "service.namespace"
     public static let systemCpuUtilization = "system.cpu.utilization"
     public static let systemMemoryAppUsageMb = "system.memory.app_usage_mb"
+    public static let systemMemoryAppTotalMb = "system.memory.app_total_mb"
 }
