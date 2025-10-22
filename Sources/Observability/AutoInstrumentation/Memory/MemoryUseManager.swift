@@ -1,8 +1,9 @@
 import Foundation
+import OSLog
 import Darwin
 
 struct MemoryUseManager {    
-    static func memoryReport() -> MemoryReport? {
+    static func memoryReport(log: OSLog) -> MemoryReport? {
         // --- SYSTEM MEMORY STATS ---
         var stats = vm_statistics64()
         let HOST_VM_INFO64_COUNT = mach_msg_type_number_t(MemoryLayout<vm_statistics64_data_t>.size / MemoryLayout<integer_t>.size)
@@ -16,7 +17,7 @@ struct MemoryUseManager {
         }
         
         guard result == KERN_SUCCESS else {
-            print("Failed to fetch system memory stats")
+            os_log("%{public}@", log: log, type: .error, "Failed to fetch system memory stats")
             return nil
         }
         

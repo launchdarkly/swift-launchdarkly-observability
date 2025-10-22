@@ -107,7 +107,7 @@ public struct ObservabilityClientFactory {
             if options.autoInstrumentation.contains(.memory) {
                 autoInstrumentation.append(
                     MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
-                        guard let report = MemoryUseManager.memoryReport() else { return }
+                        guard let report = MemoryUseManager.memoryReport(log: options.log) else { return }
                         api.recordMetric(
                             metric: .init(name: SemanticConvention.systemMemoryAppUsageMb, value: Double(report.appMemoryMB))
                         )
