@@ -109,10 +109,10 @@ public struct ObservabilityClientFactory {
                     MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
                         guard let report = MemoryUseManager.memoryReport(log: options.log) else { return }
                         api.recordMetric(
-                            metric: .init(name: SemanticConvention.systemMemoryAppUsageMb, value: Double(report.appMemoryMB))
+                            metric: .init(name: SemanticConvention.systemMemoryAppUsageBytes, value: Double(report.appMemoryBytes))
                         )
                         api.recordMetric(
-                            metric: .init(name: SemanticConvention.systemMemoryAppTotalMb, value: Double(report.systemTotalBytes))
+                            metric: .init(name: SemanticConvention.systemMemoryAppTotalBytes, value: Double(report.systemTotalBytes))
                         )
                     }
                 )

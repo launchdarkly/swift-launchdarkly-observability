@@ -29,7 +29,7 @@ final class MeasurementTask: AutoInstrumentation {
         task = nil
     }
     
-    func startReporting(interval: TimeInterval = 5.0) {
+    private func startReporting(interval: TimeInterval = 5.0) {
         task = Task(priority: .background) { [weak self] in
             guard let self else { return }
             while !Task.isCancelled {

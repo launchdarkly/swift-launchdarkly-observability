@@ -6,5 +6,5 @@ struct MemoryReport {
     let systemUtilizationPercent: Double
 
     // App-specific memory
-    let appMemoryMB: Double
+    let appMemoryBytes: Double
 }

@@ -60,7 +60,7 @@ struct MemoryUseManager {
             systemFreeBytes: freeBytes,
             systemTotalBytes: totalBytes,
             systemUtilizationPercent: systemUtilization,
-            appMemoryMB: appMemoryBytes
+            appMemoryBytes: appMemoryBytes
         )
     }
 }
