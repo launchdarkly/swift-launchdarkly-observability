@@ -32,7 +32,7 @@ final class MeasurementTask: AutoInstrumentation {
     func startReporting(interval: TimeInterval = 5.0) {
         task = Task(priority: .background) { [weak self] in
             guard let self else { return }
-            while self.isRunning && !Task.isCancelled {
+            while !Task.isCancelled {
                 await self.operation(self.metricsApi)
                 try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
             }
