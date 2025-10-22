@@ -1,51 +1,40 @@
 import SwiftUI
 
 struct SystemUnderPressureView: View {
-    @ObservedObject var memoryPressureMonitor = MemoryPressureMonitor()
+    @StateObject private var monitor = MemoryPressureMonitorV2()
+    private let memoryPressureSimulator = MemoryPressureSimulator()
     var body: some View {
         VStack(spacing: 34.0) {
             Label {
-                Text(
-                    { () -> String in
-                        switch memoryPressureMonitor.level {
-                        case .all:
-                         return "All"
-                        case .critical:
-                            return "Critical"
-                        case .warning:
-                            return "Warning"
-                        case .normal:
-                            return "Normal"
-                        default:
-                            return "Normal"
-                        }
-                    }()
-                )
+                Text(monitor.memoryPressureStatus)
+                    .font(.headline)
+                    .padding()
             } icon: {
                 Image(systemName: "memorychip")
             }
 
             Button {
-                simulateMemoryWarning(level: .low)
+                memoryPressureSimulator.simulatePressure(level: .low)
             } label: {
                 Text("Low Memory Pressure")
             }
             Button {
-                simulateMemoryWarning(level: .veryLow)
+                memoryPressureSimulator.simulatePressure(level: .veryLow)
             } label: {
                 Text("Very Low Memory Pressure")
             }
             Button {
-                simulateMemoryWarning(level: .criticalLow)
+                memoryPressureSimulator.simulatePressure(level: .criticalLow)
             } label: {
                 Text("Critical Low Memory Pressure")
             }
         }
         .onAppear {
-            memoryPressureMonitor.start()
+            monitor.activate()
         }
         .onDisappear {
-            memoryPressureMonitor.stop()
+            monitor.deactivate()
+            memoryPressureSimulator.releaseBuffers()
         }
     }
 }
@@ -59,7 +48,7 @@ final class MemoryPressureMonitor: ObservableObject {
         guard !isMonitoring else { return }
         isMonitoring.toggle()
         dispatchSource = DispatchSource.makeMemoryPressureSource(
-            eventMask: .all,
+            eventMask: [.critical, .warning, .normal],
             queue: .main
         )
         dispatchSource?.setEventHandler { [weak self] in
@@ -74,7 +63,7 @@ final class MemoryPressureMonitor: ObservableObject {
                 // Respond to critical memory pressure
             }
         }
-        dispatchSource?.resume()
+        dispatchSource?.activate()
     }
     
     func stop() {
@@ -83,3 +72,45 @@ final class MemoryPressureMonitor: ObservableObject {
         dispatchSource = nil
     }
 }
+
+class MemoryPressureMonitorV2: ObservableObject {
+        @Published var memoryPressureStatus: String = "Normal"
+        private var memoryPressureSource: DispatchSourceMemoryPressure?
+
+        init() {
+            memoryPressureSource = DispatchSource.makeMemoryPressureSource(
+                eventMask: [.critical, .warning, .normal],
+                queue: .main // Use the main queue for UI updates
+            )
+
+            memoryPressureSource?.setEventHandler { [weak self] in
+                guard let self = self else { return }
+                let event = self.memoryPressureSource?.data
+                if event?.contains(.critical) == true {
+                    self.memoryPressureStatus = "Critical Memory Pressure!"
+                    // Perform critical memory cleanup actions here
+                } else if event?.contains(.warning) == true {
+                    self.memoryPressureStatus = "Memory Warning!"
+                    // Perform less aggressive memory cleanup actions here
+                } else if event?.contains(.normal) == true {
+                    self.memoryPressureStatus = "Normal Memory Pressure"
+                }
+            }
+
+            memoryPressureSource?.setCancelHandler {
+                print("Memory pressure source cancelled.")
+            }
+        }
+
+        func activate() {
+            memoryPressureSource?.activate()
+        }
+
+        func deactivate() {
+            memoryPressureSource?.cancel()
+        }
+
+        deinit {
+            deactivate()
+        }
+    }
