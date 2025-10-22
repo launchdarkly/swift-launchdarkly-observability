@@ -3,11 +3,7 @@ import OSLog
 import Darwin
 
 struct MemoryUseManager {
-    enum ReportUnit: Hashable {
-        case bytes
-        case mBytes
-    }
-    static func memoryReport(log: OSLog, unit: ReportUnit = .bytes) -> MemoryReport? {
+    static func memoryReport(log: OSLog) -> MemoryReport? {
         // --- SYSTEM MEMORY STATS ---
         var stats = vm_statistics64()
         let HOST_VM_INFO64_COUNT = mach_msg_type_number_t(MemoryLayout<vm_statistics64_data_t>.size / MemoryLayout<integer_t>.size)
@@ -26,7 +22,6 @@ struct MemoryUseManager {
         }
         
         let pageSize = Double(vm_kernel_page_size)
-        let bytesToMB = unit == .mBytes ? 1024.0 * 1024.0 : 1.0
         
         let freeBytes = Double(stats.free_count) * pageSize
         let activeBytes = Double(stats.active_count) * pageSize
@@ -41,9 +36,6 @@ struct MemoryUseManager {
             return nil
         }
         
-        let systemUsedMB = usedBytes / bytesToMB
-        let systemFreeMB = freeBytes / bytesToMB
-        let systemTotalMB = totalBytes / bytesToMB
         let systemUtilization = (usedBytes / totalBytes) * 100.0
         
         // --- APP MEMORY STATS ---
@@ -62,14 +54,13 @@ struct MemoryUseManager {
         }
         
         let appMemoryBytes = Double(taskInfo.phys_footprint)
-        let appMemoryMB = appMemoryBytes / bytesToMB
         
         return MemoryReport(
-            systemUsedMB: systemUsedMB,
-            systemFreeMB: systemFreeMB,
-            systemTotalMB: systemTotalMB,
+            systemUsedMB: usedBytes,
+            systemFreeMB: freeBytes,
+            systemTotalMB: totalBytes,
             systemUtilizationPercent: systemUtilization,
-            appMemoryMB: appMemoryMB
+            appMemoryMB: appMemoryBytes
         )
     }
 }
