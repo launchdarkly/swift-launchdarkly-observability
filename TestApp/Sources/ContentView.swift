@@ -104,6 +104,10 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
+                NavigationLink(destination: SystemUnderPressureView()) {
+                    Text("Simulate System Under Pressure")
+                }
+
                 
             }.background(Color.clear)
         }
