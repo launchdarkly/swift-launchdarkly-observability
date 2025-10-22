@@ -112,7 +112,7 @@ public struct ObservabilityClientFactory {
                             metric: .init(name: SemanticConvention.systemMemoryAppUsageMb, value: Double(report.appMemoryMB))
                         )
                         api.recordMetric(
-                            metric: .init(name: SemanticConvention.systemMemoryAppTotalMb, value: Double(report.systemTotalMB))
+                            metric: .init(name: SemanticConvention.systemMemoryAppTotalMb, value: Double(report.systemTotalBytes))
                         )
                     }
                 )

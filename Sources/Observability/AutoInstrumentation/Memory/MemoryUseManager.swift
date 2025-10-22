@@ -56,9 +56,9 @@ struct MemoryUseManager {
         let appMemoryBytes = Double(taskInfo.phys_footprint)
         
         return MemoryReport(
-            systemUsedMB: usedBytes,
-            systemFreeMB: freeBytes,
-            systemTotalMB: totalBytes,
+            systemUsedBytes: usedBytes,
+            systemFreeBytes: freeBytes,
+            systemTotalBytes: totalBytes,
             systemUtilizationPercent: systemUtilization,
             appMemoryMB: appMemoryBytes
         )
