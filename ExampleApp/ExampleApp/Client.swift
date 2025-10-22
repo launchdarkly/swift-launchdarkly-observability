@@ -15,7 +15,9 @@ struct Client {
                     isDebug: true,
                     logs: .enabled,
                     traces: .enabled,
-                    metrics: .enabled
+                    metrics: .enabled,
+                    crashReporting: .disabled,
+                    autoInstrumentation: [.urlSession, .userTaps, .memory, .cpu]
                 )
             )
         ]

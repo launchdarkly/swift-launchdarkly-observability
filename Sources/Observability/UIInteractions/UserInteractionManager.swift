@@ -12,4 +12,6 @@ final class UserInteractionManager: AutoInstrumentation {
     func start() {
         touchCaptureCoordinator.start()
     }
+    
+    func stop() {}
 }
