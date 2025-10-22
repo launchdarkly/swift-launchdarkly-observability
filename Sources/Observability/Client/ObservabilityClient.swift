@@ -24,6 +24,10 @@ final class ObservabilityClient {
         self.options = options
         self.context = context
     }
+    
+    deinit {
+        autoInstrumentation.forEach { $0.stop() }
+    }
 }
 
 extension ObservabilityClient: Observe {
