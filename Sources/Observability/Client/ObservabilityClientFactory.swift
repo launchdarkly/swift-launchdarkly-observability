@@ -104,12 +104,22 @@ public struct ObservabilityClientFactory {
                 reader: reader
             )
 
-            
-            let cpu = CpuUtilizationManager(options: options, metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval)
-            autoInstrumentation.append(cpu)
-
-            let memory = MemoryUseManager(options: options, metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval)
-            autoInstrumentation.append(memory)
+            autoInstrumentation.append(
+                MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                    guard let report = MemoryUseManager.memoryReport() else { return }
+                    api.recordMetric(
+                        metric: .init(name: "system.memory.utilization", value: Double(report.appMemoryMB))
+                    )
+                }
+            )
+            autoInstrumentation.append(
+                MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                    guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
+                    api.recordMetric(
+                        metric: .init(name: "system.cpu.utilization", value: value)
+                    )
+                }
+            )
         } else {
             meter = NoOpMeter()
         }

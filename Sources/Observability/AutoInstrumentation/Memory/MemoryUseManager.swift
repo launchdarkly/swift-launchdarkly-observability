@@ -1,45 +1,8 @@
 import Foundation
 import Darwin
-import OpenTelemetryApi
 
-final class MemoryUseManager: AutoInstrumentation {
-    private let metricsApi: MetricsApi
-    private let options: Options
-    private let samplingInterval: TimeInterval
-    private var task: Task<Void, Never>?
-
-    init(options: Options, metricsApi: MetricsApi, samplingInterval: TimeInterval = 5.0) {
-        self.options = options
-        self.metricsApi = metricsApi
-        self.samplingInterval = samplingInterval
-    }
-    
-    func start() {
-        startReporting(interval: samplingInterval)
-    }
-    
-    func stop() {
-        stopReporting()
-    }
-
-    func startReporting(interval: TimeInterval = 5.0) {
-        task = Task { [weak self] in
-            while true {
-                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-                guard let usage = self?.memoryReport() else { continue }
-                self?.metricsApi.recordMetric(
-                    metric: .init(name: "system.memory.utilization", value: Double(usage.appMemoryMB))
-                )
-            }
-        }
-    }
-
-    func stopReporting() {
-        task?.cancel()
-        task = nil
-    }
-    
-    func memoryReport() -> MemoryReport? {
+struct MemoryUseManager {    
+    static func memoryReport() -> MemoryReport? {
         // --- SYSTEM MEMORY STATS ---
         var stats = vm_statistics64()
         let HOST_VM_INFO64_COUNT = mach_msg_type_number_t(MemoryLayout<vm_statistics64_data_t>.size / MemoryLayout<integer_t>.size)

@@ -1,39 +1,8 @@
 import Foundation
 import Darwin
-import OpenTelemetryApi
 
-final class CpuUtilizationManager: AutoInstrumentation {
-    private let metricsApi: MetricsApi
-    private let options: Options
-    private let samplingInterval: TimeInterval
-    private var task: Task<Void, Never>?
-    
-    init(options: Options, metricsApi: MetricsApi, samplingInterval: TimeInterval = 5.0) {
-        self.options = options
-        self.metricsApi = metricsApi
-        self.samplingInterval = samplingInterval
-    }
-    
-    func start() {
-        startReporting(interval: samplingInterval)
-    }
-    
-    func startReporting(interval: TimeInterval = 5.0) {
-        task = Task { [weak self] in
-            while true {
-                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-                guard let usage = self?.currentCPUUsage() else { continue }
-                self?.metricsApi.recordMetric(metric: .init(name: "system.cpu.utilization", value: usage))
-            }
-        }
-    }
-    
-    func stop() {
-        task?.cancel()
-        task = nil
-    }
-    
-    func currentCPUUsage() -> Double? {
+struct CpuUtilizationManager {
+    static func currentCPUUsage() -> Double? {
         var threadList: thread_act_array_t? = nil
         var threadCount: mach_msg_type_number_t = 0
         

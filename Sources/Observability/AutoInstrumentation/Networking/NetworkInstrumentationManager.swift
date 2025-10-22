@@ -5,6 +5,7 @@ final class NetworkInstrumentationManager: AutoInstrumentation {
     private let uRLSessionInstrumentation: URLSessionInstrumentation
     
     func start() {}
+    func stop() {}
     
     init(options: Options, tracer: Tracer, session: SessionManaging) {
         let defaults = ConfigurationDefaults(options: options, session: session)
