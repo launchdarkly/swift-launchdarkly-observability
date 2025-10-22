@@ -53,7 +53,7 @@ struct MemoryUseManager {
         }
         
         guard taskResult == KERN_SUCCESS else {
-            print("Failed to get app memory usage")
+            os_log("%{public}@", log: log, type: .error, "Failed to get app memory usage")
             return nil
         }
         
