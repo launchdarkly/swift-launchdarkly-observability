@@ -12,9 +12,10 @@ fileprivate final class MemoryPressureMonitor {
             queue: .main
         )
         self.dispatchSource.setEventHandler { [weak self] in
-            guard let event = self?.dispatchSource.data else { return }
-            self?.level = event
-            self?.onLevelDidChange?(event)
+            guard let self else { return }
+            let event = self.dispatchSource.data
+            self.level = event
+            self.onLevelDidChange?(event)
         }
         self.dispatchSource.activate()
     }
