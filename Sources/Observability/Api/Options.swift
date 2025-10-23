@@ -33,6 +33,8 @@ public struct Options {
     public enum AutoInstrumented {
         case urlSession
         case userTaps
+        case memory
+        case cpu
     }
     public var serviceName: String
     public var serviceVersion: String

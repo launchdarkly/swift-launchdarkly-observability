@@ -52,12 +52,8 @@ actor SessionReplayExporter: EventExporting {
             appendEvents(item: item, events: &events)
         }
         
-        guard let firstEvent = events.first else { return }
+        guard events.isNotEmpty else { return }
         
-        if let currentSession, !fakePayloadOnce {
-            fakePayloadOnce = true
-            try await pushPayload(session: currentSession, resource: "payload2", timestamp: Double(firstEvent.timestamp) / 1000.0)
-        }
         try await pushPayload(events: events)
     }
     

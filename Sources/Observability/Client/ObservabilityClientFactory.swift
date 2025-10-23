@@ -24,6 +24,9 @@ public struct ObservabilityClientFactory {
                 isDebug: options.isDebug,
                 log: options.log)
         )
+        /// Discuss adding autoInstrumentationSamplingInterval to options worth it
+        /// Maybe could be by instrument or single global sampling interval
+        let autoInstrumentationSamplingInterval: TimeInterval = 5.0
         var autoInstrumentation = [AutoInstrumentation]()
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
         let meter: MetricsApi
@@ -92,7 +95,38 @@ public struct ObservabilityClientFactory {
                 endpoint: url,
                 config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
             )
-            meter = MeterDecorator(options: options, exporter: metricsExporter)
+            let reader = PeriodicMetricReaderBuilder(exporter: metricsExporter)
+                .setInterval(timeInterval: 10.0)
+                .build()
+
+            meter = MetricsApiFactory.make(
+                options: options,
+                reader: reader
+            )
+            
+            if options.autoInstrumentation.contains(.memory) {
+                autoInstrumentation.append(
+                    MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                        guard let report = MemoryUseManager.memoryReport(log: options.log) else { return }
+                        api.recordMetric(
+                            metric: .init(name: SemanticConvention.systemMemoryAppUsageBytes, value: Double(report.appMemoryBytes))
+                        )
+                        api.recordMetric(
+                            metric: .init(name: SemanticConvention.systemMemoryAppTotalBytes, value: Double(report.systemTotalBytes))
+                        )
+                    }
+                )
+            }
+            if options.autoInstrumentation.contains(.cpu) {
+                autoInstrumentation.append(
+                    MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                        guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
+                        api.recordMetric(
+                            metric: .init(name: SemanticConvention.systemCpuUtilization, value: value)
+                        )
+                    }
+                )
+            }
         } else {
             meter = NoOpMeter()
         }
@@ -112,6 +146,7 @@ public struct ObservabilityClientFactory {
         )
         
         transportService.start()
+        autoInstrumentation.forEach { $0.start() }
 
         return ObservabilityClient(
             tracer: tracer,

@@ -22,6 +22,8 @@ public final class Observability: Plugin {
         
         resourceAttributes[SemanticConvention.launchdarklySdkVersion] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
         resourceAttributes[SemanticConvention.highlightProjectId] = .string(mobileKey)
+        resourceAttributes[SemanticConvention.serviceName] = .string(options.serviceName)
+        resourceAttributes[SemanticConvention.serviceVersion] = .string(options.serviceVersion)
         
         customHeaders[SemanticConvention.highlightProjectId] = mobileKey
         
