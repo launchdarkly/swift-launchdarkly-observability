@@ -25,7 +25,6 @@ final class MemoryPressureMonitor: AutoInstrumentation {
         )
         source?.setEventHandler { [weak self] in
             Task {
-                print("MEMORY WARNING...")
                 guard let self, let event = self.source?.data else { return }
                 /// Report only if memory pressure is warning or critical
                 guard [DispatchSource.MemoryPressureEvent.warning, .critical].contains(event) else {
