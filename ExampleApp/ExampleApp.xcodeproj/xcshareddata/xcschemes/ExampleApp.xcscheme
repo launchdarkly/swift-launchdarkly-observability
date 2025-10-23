@@ -58,7 +58,7 @@
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "OPTL_ENDPOINT"
-            value = "http://192.168.1.237:4318"
+            value = "https://otel.observability.app.launchdarkly.com:4318"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
