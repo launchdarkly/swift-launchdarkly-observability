@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct ExampleAppApp: App {
-    @State private var browser = Browser()
+    @StateObject private var browser = Browser()
     @State private var client = Client()
     
     var body: some Scene {
@@ -19,10 +19,12 @@ struct ExampleAppApp: App {
                             NetworkRequestView()
                         case .evaluation:
                             FeatureFlagView()
+                        case .stressSamples:
+                            SystemUnderPressureView()
                         }
                     }
             }
-            .environment(browser)
+            .environmentObject(browser)
             .onAppear {
                 client.start()
             }

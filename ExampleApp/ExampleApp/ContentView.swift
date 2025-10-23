@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @Environment(Browser.self) var browser
+    @EnvironmentObject var browser: Browser
     
     var body: some View {
         VStack(spacing: 32) {
