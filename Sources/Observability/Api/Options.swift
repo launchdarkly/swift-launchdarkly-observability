@@ -34,6 +34,7 @@ public struct Options {
         case urlSession
         case userTaps
         case memory
+        case memoryWarnings
         case cpu
     }
     public var serviceName: String
