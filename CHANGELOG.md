@@ -1,0 +1,38 @@
+# Changelog
+
+## [0.4.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/swift-launchdarkly-observability-v0.3.0...swift-launchdarkly-observability-v0.4.0) (2025-10-23)
+
+
+### Features
+
+* Add GraphQL Client ([5e52365](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/5e5236594cc71cae09ecc116d64c43c45fffd2e5))
+* add gzip compression ([d2133a7](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/d2133a7f37360c7bc643542cad652b3c4bb905d6))
+* Add LightWeight GraphQL Client ([ed9f6b5](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/ed9f6b574d4efa8f3b2ee4e55816c8aec7c7b24d))
+* Add LightWeight GraphQL Client ([#12](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/12)) ([ed9f6b5](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/ed9f6b574d4efa8f3b2ee4e55816c8aec7c7b24d))
+* add standard output logger for debug ([#16](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/16)) ([435f4cb](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/435f4cbc02741c03b9b946f1c199fe3316d67b69))
+* add tap handler, send span ([#7](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/7)) ([96cf5ef](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/96cf5efdcf52e9e60036ee03f54edc75f1c6a024))
+* add timeout for custom crash filter as param (10s default) ([daaa111](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/daaa111e1c07ab98404118d780368077c1781615))
+* instrumentation and session managers ([b6f1c05](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/b6f1c0569fed64a366d238d206157876c7a43ed6))
+* instrumentation and session managers ([#1](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/1)) ([a072154](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/a07215428effa396df84a625c66c23600592608e))
+* instrumentation, client, sdk, crash report, network ([2255e48](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2255e4835db75261f35ac4a02887d4f27ae24256))
+* instrumentation, client, sdk, crash report, network ([#5](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/5)) ([df712ab](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/df712abbd45e20021fcdc0fcc4bb902f770480be))
+* ios26 transition ([0853a19](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/0853a192fe3ae4735e6a27ddc9969cf74056965a))
+* plugin implementation ([c38588c](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/c38588ca04b0c1f7e73af6e4f28ecaacf0f4f9da))
+* plugin implementation ([#4](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/4)) ([1849209](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/184920966ba6973829e5efdd6d58435a428e09aa))
+* sampling api ([#10](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/10)) ([242149f](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/242149fd2bcf7c3b519a1f6a2c20df7c99c067d7))
+* set sampling config via graphql client ([#19](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/19)) ([500f550](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/500f550c51aac65a6c47a18a402668b15fdad52f))
+* swipe tracker ([4fca19d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/4fca19d30942554a981cb9a3a44a5f9233cc3e95))
+* swipe tracker ([#13](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/13)) ([0a302d7](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/0a302d75e26c73f4a63dc6f577761cce937c9061))
+* **system-metrics:** add auto instrumentation for cpu and memory ([#36](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/36)) ([95ca6fc](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/95ca6fc1799af4c2786ce21f8207fc1e02815c44))
+* use apple format for crash report ([1390973](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/1390973f075f5d3185e31681dc8bbe3f7b5013b1))
+
+
+### Bug Fixes
+
+* compilation ([bdd3e22](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/bdd3e22cdf88f55271a120be9157db81477358c6))
+* eval hook ([2749468](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/27494681da2b1116ad0ed17e26b9bd57a145bb15))
+* eval hook ([#8](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/8)) ([4b60b80](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/4b60b80ce25c3e19760b59efbe9446b8bda41484))
+* get sampling config ([#21](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/21)) ([12e35c7](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/12e35c71dfc99662f4da5738dea2546d4ded70ec))
+* guard inconsistent [weak self] ([59dce74](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/59dce7445a70463731ea6d7295bafc9dc1774e89))
+* Limit Package.swift to iOS and TV ([#34](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/34)) ([7d76b65](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/7d76b655947baebd59228a629d2195737316bc2e))
+* requirement 1.2.3.6 span name in eval hook ([#14](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/14)) ([ad15ef9](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/ad15ef97142d196a1af09532690bbb3d03eda253))
