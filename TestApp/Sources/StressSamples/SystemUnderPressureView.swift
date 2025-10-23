@@ -1,116 +1,67 @@
 import SwiftUI
 
 struct SystemUnderPressureView: View {
-    @StateObject private var monitor = MemoryPressureMonitorV2()
-    private let memoryPressureSimulator = MemoryPressureSimulator()
+    @StateObject private var cpuLoadGenerator = CpuLoadGenerator()
+    @StateObject private var pressurizer = MemoryPressurizer()
+    @State private var isProcessing = false
+    @State private var cpuLoad: Double = 0.5
+    @State private var cpuThreads: Double = 1.0
+    
     var body: some View {
         VStack(spacing: 34.0) {
             Label {
-                Text(monitor.memoryPressureStatus)
+                Text(pressurizer.memoryPressureLevel.name)
                     .font(.headline)
                     .padding()
             } icon: {
                 Image(systemName: "memorychip")
             }
-
-            Button {
-                memoryPressureSimulator.simulatePressure(level: .low)
-            } label: {
-                Text("Low Memory Pressure")
-            }
-            Button {
-                memoryPressureSimulator.simulatePressure(level: .veryLow)
-            } label: {
-                Text("Very Low Memory Pressure")
-            }
-            Button {
-                memoryPressureSimulator.simulatePressure(level: .criticalLow)
-            } label: {
-                Text("Critical Low Memory Pressure")
-            }
-        }
-        .onAppear {
-            monitor.activate()
-        }
-        .onDisappear {
-            monitor.deactivate()
-            memoryPressureSimulator.releaseBuffers()
-        }
-    }
-}
-
-final class MemoryPressureMonitor: ObservableObject {
-    @Published var level: DispatchSource.MemoryPressureEvent = .normal
-    private var dispatchSource: DispatchSourceMemoryPressure?
-    @State private var isMonitoring = false
-    
-    func start() {
-        guard !isMonitoring else { return }
-        isMonitoring.toggle()
-        dispatchSource = DispatchSource.makeMemoryPressureSource(
-            eventMask: [.critical, .warning, .normal],
-            queue: .main
-        )
-        dispatchSource?.setEventHandler { [weak self] in
-            let event = self?.dispatchSource?.data
-            self?.level = event ?? .normal
-            if event?.contains(.warning) == true {
-                print("Memory pressure warning detected!")
-                // Respond to memory warning
-            }
-            if event?.contains(.critical) == true {
-                print("Critical memory pressure detected!")
-                // Respond to critical memory pressure
-            }
-        }
-        dispatchSource?.activate()
-    }
-    
-    func stop() {
-        isMonitoring = false
-        dispatchSource?.cancel()
-        dispatchSource = nil
-    }
-}
-
-class MemoryPressureMonitorV2: ObservableObject {
-        @Published var memoryPressureStatus: String = "Normal"
-        private var memoryPressureSource: DispatchSourceMemoryPressure?
-
-        init() {
-            memoryPressureSource = DispatchSource.makeMemoryPressureSource(
-                eventMask: [.critical, .warning, .normal],
-                queue: .main // Use the main queue for UI updates
-            )
-
-            memoryPressureSource?.setEventHandler { [weak self] in
-                guard let self = self else { return }
-                let event = self.memoryPressureSource?.data
-                if event?.contains(.critical) == true {
-                    self.memoryPressureStatus = "Critical Memory Pressure!"
-                    // Perform critical memory cleanup actions here
-                } else if event?.contains(.warning) == true {
-                    self.memoryPressureStatus = "Memory Warning!"
-                    // Perform less aggressive memory cleanup actions here
-                } else if event?.contains(.normal) == true {
-                    self.memoryPressureStatus = "Normal Memory Pressure"
+            ForEach(MemoryPressurizer.MemoryPressureLoadSize.allCases, id: \.self) { size in
+                Button {
+                    pressurizer.pressurize(by: size)
+                } label: {
+                    Text("Increase memory usage by \(size.megabytes) MB")
                 }
             }
-
-            memoryPressureSource?.setCancelHandler {
-                print("Memory pressure source cancelled.")
+            Divider()
+            Text("CPU load: \(Int(cpuLoad * 100)) %")
+                .font(.largeTitle)
+                .foregroundColor(cpuLoad > 0.75 ? .red : cpuLoad > 0.50 ? .yellow : .blue)
+            Slider(value: $cpuLoad, in: 0...1, step: 0.1) {
+                Text("CPU load")
+            } minimumValueLabel: {
+                Text("0 %")
+            } maximumValueLabel: {
+                Text("100 %")
             }
+            .padding(.horizontal)
+            .disabled(isProcessing)
+            Text("CPU threads: \(cpuThreads)")
+                .font(.largeTitle)
+            Slider(value: $cpuThreads, in: 0...64, step: 1) {
+                Text("CPU load")
+            } minimumValueLabel: {
+                Text("0 %")
+            } maximumValueLabel: {
+                Text("100 %")
+            }
+            .padding(.horizontal)
+            .disabled(isProcessing)
+            Toggle(isProcessing ? "Stop processing" : "Start processing", isOn: $isProcessing)
+                .padding(.horizontal)
+                .task(id: isProcessing) {
+                    if isProcessing {
+                        cpuLoadGenerator.startLoad(
+                            threads: Int(cpuThreads),
+                            load: cpuLoad
+                        )
+                    } else {
+                        cpuLoadGenerator.stopLoad()
+                    }
+                }
         }
-
-        func activate() {
-            memoryPressureSource?.activate()
-        }
-
-        func deactivate() {
-            memoryPressureSource?.cancel()
-        }
-
-        deinit {
-            deactivate()
+        .onDisappear {
+            pressurizer.release()
         }
     }
+}
