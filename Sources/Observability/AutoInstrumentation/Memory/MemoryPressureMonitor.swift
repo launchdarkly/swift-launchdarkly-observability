@@ -40,7 +40,7 @@ final class MemoryPressureMonitor: AutoInstrumentation {
                 )
             }
         }
-        source?.resume()
+        source?.activate()
     }
     
     private func stopMonitoring() {

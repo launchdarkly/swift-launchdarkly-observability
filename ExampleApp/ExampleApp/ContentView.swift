@@ -34,6 +34,11 @@ struct ContentView: View {
             }
 //            NetworkRequestView()
 //            FeatureFlagView()
+            Button {
+                browser.navigate(to: .stressSamples)
+            } label: {
+                Text("Stress Samples")
+            }
         }
         .padding()
     }
