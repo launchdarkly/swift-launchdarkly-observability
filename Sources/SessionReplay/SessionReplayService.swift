@@ -1,6 +1,7 @@
 import Foundation
 import Common
 import Observability
+import OSLog
 
 struct ScreenImageItem: EventQueueItemPayload {
     var timestamp: TimeInterval {
@@ -22,16 +23,21 @@ public struct SessionReplayContext {
     public var sdkKey: String
     public var serviceName: String
     public var backendUrl: URL
+    public var log: OSLog
     
-    public init(sdkKey: String, serviceName: String, backendUrl: URL) {
+    public init(sdkKey: String,
+                serviceName: String,
+                backendUrl: URL,
+                log: OSLog) {
         self.sdkKey = sdkKey
         self.serviceName = serviceName
         self.backendUrl = backendUrl
+        self.log = log
     }
 }
 
 public final class SessionReplayService {
-    let screenshotManager: SnapshotTaker
+    let snapshotTaker: SnapshotTaker
     var transportService: TransportServicing
     
     public init(context: ObservabilityContext,
@@ -43,14 +49,16 @@ public final class SessionReplayService {
         
         let captureService = ScreenCaptureService(options: sessonReplayOptions)
         self.transportService = context.transportService
-        self.screenshotManager = SnapshotTaker(captureService: captureService) { exportImage in
+        self.snapshotTaker = SnapshotTaker(captureService: captureService,
+                                           appLifecycleManager: context.appLifecycleManager) { exportImage in
             await context.transportService.eventQueue.send(EventQueueItem(payload: ScreenImageItem(exportImage: exportImage)))
         }
         
         let sessionReplayContext = SessionReplayContext(
             sdkKey: context.sdkKey,
             serviceName: context.options.serviceName,
-            backendUrl: url)
+            backendUrl: url,
+            log: context.options.log)
         
         let replayApiService = SessionReplayAPIService(gqlClient: graphQLClient)
         let replayPushService = SessionReplayExporter(context: sessionReplayContext,
@@ -59,7 +67,6 @@ public final class SessionReplayService {
         Task {
             await transportService.batchWorker.addExporter(replayPushService)
         }
-        screenshotManager.start()
         
         // it maybe already started if observability plugin is used.
         transportService.start()

@@ -18,12 +18,15 @@ public struct ObservabilityClientFactory {
         withOptions options: Options,
         mobileKey: String
     ) throws -> Observe {
+        let appLifecycleManager = AppLifecycleManager()
         let sessionManager = SessionManager(
             options: .init(
                 timeout: options.sessionBackgroundTimeout,
                 isDebug: options.isDebug,
-                log: options.log)
+                log: options.log),
+            appLifecycleManager: appLifecycleManager
         )
+        
         var autoInstrumentation = [AutoInstrumentation]()
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
         let meter: MetricsApi
@@ -107,6 +110,7 @@ public struct ObservabilityClientFactory {
         let context = ObservabilityContext(
             sdkKey: mobileKey,
             options: options,
+            appLifecycleManager: appLifecycleManager,
             sessionManager: sessionManager,
             transportService: transportService
         )
