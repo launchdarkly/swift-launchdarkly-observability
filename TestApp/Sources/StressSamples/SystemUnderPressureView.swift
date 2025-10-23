@@ -41,9 +41,9 @@ struct SystemUnderPressureView: View {
             Slider(value: $cpuThreads, in: 0...64, step: 1) {
                 Text("CPU load")
             } minimumValueLabel: {
-                Text("0 %")
+                Text("1")
             } maximumValueLabel: {
-                Text("100 %")
+                Text("64")
             }
             .padding(.horizontal)
             .disabled(isProcessing)
