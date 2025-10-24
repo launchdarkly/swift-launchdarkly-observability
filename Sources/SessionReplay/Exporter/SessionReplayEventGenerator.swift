@@ -43,12 +43,17 @@ actor SessionReplayEventGenerator {
             let timestamp = item.timestamp
             
             if shouldMoveMouseOnce {
-                // TODO: make it through real event, when we subscribe device events
                 events.append(reloadEvent(timestamp: timestamp))
                 // artificial mouse movement to wake up session replay player
-                if let mouseEvent = mouseEvent(timestamp: timestamp, x: 0, y: 0, timeOffset: 0) {
-                    events.append(mouseEvent)
-                }
+                let event = Event(type: .IncrementalSnapshot,
+                                  data: AnyEventData(EventData(source: .mouseInteraction,
+                                                               type: .touchStart,
+                                                               id: imageId,
+                                                               x: positionCorrection.x,
+                                                               y: positionCorrection.y)),
+                                  timestamp: timestamp,
+                                  _sid: nextSid)
+                events.append(event)
                 shouldMoveMouseOnce = false
             }
             

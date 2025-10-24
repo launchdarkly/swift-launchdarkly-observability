@@ -15,9 +15,22 @@
 		E7904AC42E6A523D00A15337 /* TestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		50F16AB32EAC36EB0095C618 /* Exceptions for "Sources" folder in "TestApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			platformFiltersByRelativePath = {
+				Storyboard/StoryboardiOS.storyboard = (ios, );
+			};
+			target = E7904AC32E6A523D00A15337 /* TestApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E7904AC62E6A523D00A15337 /* Sources */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				50F16AB32EAC36EB0095C618 /* Exceptions for "Sources" folder in "TestApp" target */,
+			);
 			path = Sources;
 			sourceTree = "<group>";
 		};
