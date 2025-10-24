@@ -12,6 +12,7 @@ actor SessionReplayExporter: EventExporting {
     var log: OSLog
     var initializedSession: InitializeSessionResponse?
     var sessionInfo: SessionInfo?
+    private var sessionChangesTask: Task<Void, Never>?
     
     var payloadId = 0
     var nextPayloadId: Int {
@@ -29,11 +30,14 @@ actor SessionReplayExporter: EventExporting {
         self.log = context.log
         self.sessionInfo = sessionManager.sessionInfo
         
-        Task(priority: .background) {
-            for await newSessionInfo in await self.sessionManager.sessionChanges() {
-                await updateSessionInfo(newSessionInfo)
+        self.sessionChangesTask = Task(priority: .background) { [weak self, sessionManager] in
+            let stream = await sessionManager.sessionChanges()
+            for await newSessionInfo in stream {
+                guard let self else { break }
+                await self.updateSessionInfo(newSessionInfo)
+                if Task.isCancelled { break }
             }
-        }        
+        }
     }
     
     func updateSessionInfo(_ sessionInfo: SessionInfo) async {
@@ -98,5 +102,9 @@ actor SessionReplayExporter: EventExporting {
                            "feature_flag.set.id":"548f6741c1efad40031b18ae",
                            "feature_flag.provider.name":"LaunchDarkly",
                            "key":"test"])
+    }
+
+    deinit {
+        sessionChangesTask?.cancel()
     }
 }

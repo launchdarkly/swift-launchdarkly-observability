@@ -9,12 +9,12 @@ public protocol SessionManaging {
 }
 
 final class SessionManager: SessionManaging {
-    let appLifecycleManager: AppLifecycleManaging
+    private let appLifecycleManager: AppLifecycleManaging
     private let options: SessionOptions
     private let broadcaster: Broadcaster<SessionInfo>
     private var _sessionInfo = SessionInfo()
     private var backgroundTime: DispatchTime?
-    
+        
     private let stateQueue = DispatchQueue(
         label: "com.launchdarkly.observability.state-queue",
         attributes: .concurrent)
