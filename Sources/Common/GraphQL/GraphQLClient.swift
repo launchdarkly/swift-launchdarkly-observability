@@ -62,6 +62,8 @@ public final class GraphQLClient {
             return value
         } catch let error as GraphQLClientError {
             throw error
+        } catch let error as NetworkError {
+            throw error
         } catch {
             throw GraphQLClientError.decoding(error)
         }

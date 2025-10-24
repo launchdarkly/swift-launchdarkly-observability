@@ -18,12 +18,15 @@ public struct ObservabilityClientFactory {
         withOptions options: Options,
         mobileKey: String
     ) throws -> Observe {
+        let appLifecycleManager = AppLifecycleManager()
         let sessionManager = SessionManager(
             options: .init(
                 timeout: options.sessionBackgroundTimeout,
                 isDebug: options.isDebug,
-                log: options.log)
+                log: options.log),
+            appLifecycleManager: appLifecycleManager
         )
+        
         /// Discuss adding autoInstrumentationSamplingInterval to options worth it
         /// Maybe could be by instrument or single global sampling interval
         let autoInstrumentationSamplingInterval: TimeInterval = 5.0
@@ -145,6 +148,7 @@ public struct ObservabilityClientFactory {
         let context = ObservabilityContext(
             sdkKey: mobileKey,
             options: options,
+            appLifecycleManager: appLifecycleManager,
             sessionManager: sessionManager,
             transportService: transportService
         )

@@ -1,128 +1,96 @@
 import Foundation
 import UIKit.UIApplication
 import OSLog
-import OpenTelemetryApi
+import Common
 
 public protocol SessionManaging {
-    var sessionAttributes: [String: AttributeValue] { get }
+    func sessionChanges() async -> AsyncStream<SessionInfo>
     var sessionInfo: SessionInfo { get }
-    var onSessionDidChange: ((SessionInfo) -> Void)? { get set }
-    var onStateDidChange: ((SessionState, SessionInfo) -> Void)? { get set }
 }
 
 final class SessionManager: SessionManaging {
-    private var id: String
-    private var startTime: Date
-    private var backgroundTime: Date?
-    private var options: SessionOptions
-    var sessionAttributes: [String: AttributeValue] {
-        [
-            "session.id": .string(id),
-            "session.start_time": .string(String(format: "%.0f", startTime.timeIntervalSince1970))
-        ]
-    }
+    private let appLifecycleManager: AppLifecycleManaging
+    private let options: SessionOptions
+    private let broadcaster: Broadcaster<SessionInfo>
+    private var _sessionInfo = SessionInfo()
+    private var backgroundTime: DispatchTime?
+        
     private let stateQueue = DispatchQueue(
         label: "com.launchdarkly.observability.state-queue",
         attributes: .concurrent)
     
-    private var currentState: SessionState = .notRunning
-    var onSessionDidChange: ((SessionInfo) -> Void)?
-    var onStateDidChange: ((SessionState, SessionInfo) -> Void)?
+    init(options: SessionOptions, appLifecycleManager: AppLifecycleManaging) {
+        self.options = options
+        self.appLifecycleManager = appLifecycleManager
+        self._sessionInfo = SessionInfo()
+        self.broadcaster = Broadcaster()
+        
+        Task(priority: .background) { [weak self, weak appLifecycleManager] in
+            guard let self, let appLifecycleManager else { return }
+
+            let eventsStream = await appLifecycleManager.events()
+            for await event in eventsStream {
+                self.transition(to: event)
+            }
+        }
+    }
     
     var sessionInfo: SessionInfo {
-        .init(
-            id: id,
-            startTime: startTime
-        )
+        // Consider using atomic synchronization
+        stateQueue.sync() {
+            return _sessionInfo
+        }
+    }
+
+    func sessionChanges() async -> AsyncStream<SessionInfo> {
+        await broadcaster.stream()
     }
     
-    init(
-        id: String = SecureIDGenerator.generateSecureID(),
-        startTime: Date = Date(),
-        options: SessionOptions
-    ) {
-        self.id = id
-        self.startTime = startTime
-        self.options = options
-        observeLifecycleNotifications()
-    }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-    
-    private func observeLifecycleNotifications() {
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleWillResignActive), name: UIApplication.willResignActiveNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleWillEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleWillTerminate), name: UIApplication.willTerminateNotification, object: nil)
-    }
-    
-    @objc private func handleDidBecomeActive() {
-        transition(to: .active)
-    }
-    
-    @objc private func handleWillResignActive() {
-        transition(to: .inactive)
-    }
-    
-    @objc private func handleDidEnterBackground() {
-        transition(to: .background)
-    }
-    
-    @objc private func handleWillEnterForeground() {
-        transition(to: .inactive)
-    }
-    
-    @objc private func handleWillTerminate() {
-        transition(to: .notRunning)
-    }
-    
-    private func transition(to newState: SessionState) {
-        stateQueue.sync(flags: .barrier) { [weak self] in
-            guard let self else { return }
-            guard self.currentState != newState else { return }
-            self.currentState = newState
+    private func transition(to newState: AppLifeCycleEvent) {
             switch newState {
-            case .background:
+            case .didEnterBackground:
                 self.handleBackgroundState()
-            case .active:
+            case .willEnterForeground:
                 self.handleActiveState()
             default:
                 break
             }
-            self.onStateDidChange?(newState, self.sessionInfo)
-        }
     }
     
     private func handleActiveState() {
-        guard let backgroundTime = self.backgroundTime else { return }
-        let timeInBackground = Date().timeIntervalSince1970 - backgroundTime.timeIntervalSince1970
-        if timeInBackground >= self.options.timeout {
-            self.resetSession()
+        stateQueue.sync(flags: .barrier) { [weak self] in
+            guard let self else { return }
+
+            guard let backgroundTime = self.backgroundTime else { return }
+            let timeInBackground = Double(DispatchTime.now().uptimeNanoseconds - backgroundTime.uptimeNanoseconds) / Double(NSEC_PER_SEC)
+            if timeInBackground >= self.options.timeout {
+                self.resetSession()
+            }
+            self.backgroundTime = nil
         }
-        self.backgroundTime = nil
     }
     
     private func handleBackgroundState() {
-        self.backgroundTime = Date()
+        stateQueue.sync(flags: .barrier) { [weak self] in
+            guard let self else { return }
+
+            self.backgroundTime = DispatchTime.now()
+        }
     }
     
     private func resetSession() {
-        let oldSessionId = sessionInfo.id
-        let newSessionId = SecureIDGenerator.generateSecureID()
-        let oldStartTime = startTime
+        let oldSession = _sessionInfo
+        let newSession = SessionInfo()
+        self._sessionInfo = newSession
         
-        id = newSessionId
-        let newStartTime = Date()
-        startTime = newStartTime
+        Task {
+            await broadcaster.send(newSession)
+        }
         
         if options.isDebug {
-            os_log("%{public}@", log: options.log, type: .info, "🔄 Session reset: \(oldSessionId) -> \(sessionInfo.id)")
-            let dateInterval = DateInterval(start: oldStartTime, end: newStartTime)
+            os_log("%{public}@", log: options.log, type: .info, "🔄 Session reset: \(oldSession.id) -> \(_sessionInfo.id)")
+            let dateInterval = DateInterval(start: oldSession.startTime, end: newSession.startTime)
             os_log("%{public}@", log: options.log, type: .info, "Session duration: \(dateInterval.duration) seconds")
         }
-        onSessionDidChange?(sessionInfo)
     }
 }

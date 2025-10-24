@@ -18,5 +18,4 @@ public final class SessionReplayAPIService {
                                            network: networkClient,
                                            defaultHeaders: headers))
     }
-
 }

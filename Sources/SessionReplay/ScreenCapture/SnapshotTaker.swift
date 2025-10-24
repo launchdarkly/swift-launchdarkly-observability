@@ -3,14 +3,38 @@ import Observability
 
 typealias ExportImageYield = @Sendable (ExportImage) async -> Void
 
-class SnapshotTaker: EventSource {
-    let captureService: ScreenCaptureService
-    var timer: Timer?
+final class SnapshotTaker: EventSource {
+    private let captureService: ScreenCaptureService
     private let yield: ExportImageYield
-
-    init(captureService: ScreenCaptureService, yield: @escaping ExportImageYield) {
+    private let appLifecycleManager: AppLifecycleManaging
+    private var timer: Timer?
+    
+    init(captureService: ScreenCaptureService,
+         appLifecycleManager: AppLifecycleManaging,
+         yield: @escaping ExportImageYield) {
         self.captureService = captureService
         self.yield = yield
+        self.appLifecycleManager = appLifecycleManager
+        
+        Task(priority: .background) { [weak self, weak appLifecycleManager] in
+            guard let self, let appLifecycleManager else { return }
+
+            let eventsStream = await appLifecycleManager.events()
+            for await event in eventsStream {
+                switch event {
+                case .didBecomeActive:
+                    await MainActor.run { [weak self] in
+                        self?.start()
+                    }
+                case .willResignActive, .willTerminate:
+                    await MainActor.run { [weak self] in
+                        self?.stop()
+                    }
+                case .didFinishLaunching, .willEnterForeground, .didEnterBackground:
+                    continue
+                }
+            }
+        }
     }
     
     func start() {
@@ -27,7 +51,8 @@ class SnapshotTaker: EventSource {
     }
     
     @objc func queueSnapshot() {
-        guard let capturedImage = captureService.captureUIImage() else {
+        guard let timer,
+              let capturedImage = captureService.captureUIImage() else {
             return
         }
         

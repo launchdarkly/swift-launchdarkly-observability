@@ -93,10 +93,6 @@ public final class ScreenCaptureService {
             context.restoreGState()
         }
     }
-
-//    private func runOnMain(_ work: @escaping () -> Void) {
-//        if Thread.isMainThread { work() } else { DispatchQueue.main.async { work() } }
-//    }
 }
 
 #endif

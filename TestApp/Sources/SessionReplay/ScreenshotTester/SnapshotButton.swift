@@ -5,7 +5,7 @@ struct SnapshotButton: View {
 
     var body: some View {
         Button {
-            viewModel.captureScreenShot()
+            viewModel.captureShapShot()
         } label: {
             Image(systemName: "camera")
         }.sheet(isPresented: $viewModel.isImagePresented) {
