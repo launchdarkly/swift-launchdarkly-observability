@@ -62,10 +62,4 @@ extension ObservabilityClient: Observe {
     func startSpan(name: String, attributes: [String : AttributeValue]) -> any Span {
         tracer.startSpan(name: name, attributes: attributes)
     }
-    
-    func flush() -> Bool {
-        tracer.flush() &&
-        meter.flush() &&
-        logger.flush()
-    }
 }

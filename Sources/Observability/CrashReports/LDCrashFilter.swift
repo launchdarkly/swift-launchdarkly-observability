@@ -66,14 +66,6 @@ final class LDCrashFilter: NSObject, CrashReportFilter {
                     attributes: attributes
                 )
             }
-            
-            Task { [weak self] in
-                guard self?.logsApi.flush() == true else {
-                    onCompletion?(reports, LaunchDarklyCrashFilterError.flushFailed)
-                    return
-                }
-                onCompletion?(reports, nil)
-            }
         } catch let error {
             onCompletion?(reports, error)
         }

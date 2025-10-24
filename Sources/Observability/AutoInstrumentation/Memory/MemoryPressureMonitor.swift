@@ -1,13 +1,16 @@
 import Foundation
+import OpenTelemetrySdk
 
 final class MemoryPressureMonitor: AutoInstrumentation {
     private let options: Options
-    private let logsApi: LogsApi
+    private let appLogBuilder: AppLogBuilder
+    private let yield: (ReadableLogRecord) async -> Void
     private var source: DispatchSourceMemoryPressure?
     
-    init(options: Options, logsApi: LogsApi) {
+    init(options: Options, appLogBuilder: AppLogBuilder, yield: @escaping (ReadableLogRecord) async -> Void) {
         self.options = options
-        self.logsApi = logsApi
+        self.appLogBuilder = appLogBuilder
+        self.yield = yield
     }
     
     func start() {
@@ -23,6 +26,7 @@ final class MemoryPressureMonitor: AutoInstrumentation {
             eventMask: [.critical, .warning],
             queue: .global(qos: .background)
         )
+        let localYield = yield
         source?.setEventHandler { [weak self] in
             Task {
                 guard let self, let event = self.source?.data else { return }
@@ -30,13 +34,14 @@ final class MemoryPressureMonitor: AutoInstrumentation {
                 guard [DispatchSource.MemoryPressureEvent.warning, .critical].contains(event) else {
                     return
                 }
-                self.logsApi.recordLog(
-                    message: "applicationDidReceiveMemoryWarning",
-                    severity: .warn,
-                    attributes: [
-                        SemanticConvention.systemMemoryWarning: .string(event.name)
-                    ]
-                )
+                
+                guard let log = self.appLogBuilder.buildLog(message: "applicationDidReceiveMemoryWarning",
+                                                            severity: .warn,
+                                                            attributes: [SemanticConvention.systemMemoryWarning: .string(event.name)]) else {
+                    return
+                }
+                
+                await localYield(log)
             }
         }
         source?.activate()

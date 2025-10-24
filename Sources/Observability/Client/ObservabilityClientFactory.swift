@@ -46,15 +46,25 @@ public struct ObservabilityClientFactory {
         }
         
         if options.logs == .enabled {
-            logger = LoggerDecorator(options: options, sessionManager: sessionManager, eventQueue: eventQueue, sampler: sampler)
+            let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
+            logger = LoggerDecorator(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
             let logExporter = OtlpLogExporter(endpoint: url)
             Task {
                 await batchWorker.addExporter(logExporter)
             }
             if options.autoInstrumentation.contains(.memoryWarnings) {
-                let memoryWarningMonitor = MemoryPressureMonitor(options: options, logsApi: logger)
+                let memoryWarningMonitor = MemoryPressureMonitor(options: options, appLogBuilder: appLogBuilder) { log in
+                    await eventQueue.send(EventQueueItem(payload: LogItem(log: log)))
+                }
                 autoInstrumentation.append(memoryWarningMonitor)
             }
+            
+            let appLifecycleLogger = AppLifecycleLogger(appLifecycleManager: appLifecycleManager, appLogBuilder: appLogBuilder) { log in
+                Task {
+                    await eventQueue.send(EventQueueItem(payload: LogItem(log: log)))
+                }
+            }
+            autoInstrumentation.append(appLifecycleLogger)
         } else {
             logger = NoOpLogger()
         }
@@ -124,6 +134,7 @@ public struct ObservabilityClientFactory {
                     }
                 )
             }
+            
             if options.autoInstrumentation.contains(.cpu) {
                 autoInstrumentation.append(
                     MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in

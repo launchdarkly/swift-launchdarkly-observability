@@ -46,10 +46,6 @@ extension LDObserve: Observe {
         client.recordUpDownCounter(metric: metric)
     }
     
-    public func flush() -> Bool {
-        client.flush()
-    }
-    
     public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue]) {
         client.recordLog(message: message, severity: severity, attributes: attributes)
     }
