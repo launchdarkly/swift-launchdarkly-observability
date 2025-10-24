@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 import Common
 import Observability
 
@@ -67,14 +70,14 @@ actor SessionReplayEventGenerator {
                 appendFullSnapshotEvents(exportImage, timestamp, &events)
             }
             
-        case let interaction as UIInteraction:
+        case let interaction as TouchInteraction:
             appendTouchInteraction(interaction: interaction, events: &events)
         default:
             () //
         }
     }
     
-    fileprivate func appendTouchInteraction(interaction: UIInteraction, events: inout [Event]) {
+    fileprivate func appendTouchInteraction(interaction: TouchInteraction, events: inout [Event]) {
         if let touchEventData: EventDataProtocol = switch interaction.kind {
         case .touchDown(let point):
             EventData(source: .mouseInteraction,
@@ -114,7 +117,7 @@ actor SessionReplayEventGenerator {
         }
     }
     
-    func clickEvent(interaction: UIInteraction) -> Event? {
+    func clickEvent(interaction: TouchInteraction) -> Event? {
         guard case .touchDown = interaction.kind else { return nil }
         
         let viewName = interaction.target?.className
@@ -150,13 +153,18 @@ actor SessionReplayEventGenerator {
     }
     
     func viewPortEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
+        #if os(iOS)
+        let currentOrientation = UIDevice.current.orientation.isLandscape ? 1 : 0
+        #else
+        let currentOrientation = 0
+        #endif
         let payload = ViewportPayload(width: exportImage.originalWidth,
                                       height: exportImage.originalHeight,
                                       availWidth: exportImage.originalWidth,
                                       availHeight: exportImage.originalHeight,
                                       colorDepth: 30,
                                       pixelDepth: 30,
-                                      orientation: Int.random(in: 0...1))
+                                      orientation: currentOrientation)
         let eventData = CustomEventData(tag: .viewport, payload: payload)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
