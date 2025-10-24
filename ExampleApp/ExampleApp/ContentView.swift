@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @Environment(Browser.self) var browser
+    @EnvironmentObject var browser: Browser
     
     var body: some View {
         VStack(spacing: 32) {
@@ -34,6 +34,11 @@ struct ContentView: View {
             }
 //            NetworkRequestView()
 //            FeatureFlagView()
+            Button {
+                browser.navigate(to: .stressSamples)
+            } label: {
+                Text("Stress Samples")
+            }
         }
         .padding()
     }

@@ -9,4 +9,5 @@ public enum SemanticConvention {
     public static let systemCpuUtilization = "system.cpu.utilization"
     public static let systemMemoryAppUsageBytes = "system.memory.app_usage_bytes"
     public static let systemMemoryAppTotalBytes = "system.memory.app_total_bytes"
+    public static let systemMemoryWarning = "system.memory.memory_warning"
 }
