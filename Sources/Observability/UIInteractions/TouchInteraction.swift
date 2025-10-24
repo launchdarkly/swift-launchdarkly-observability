@@ -6,7 +6,7 @@ public struct TouchPoint: Sendable {
     public let timestamp: TimeInterval
 }
 
-public enum UIInteractionKind: Sendable {
+public enum TouchKind: Sendable {
     case touchDown(CGPoint)
     case touchUp(CGPoint)
     case swipe(from: CGPoint, to: CGPoint, swipeDirection: SwipeDirection)
@@ -20,9 +20,9 @@ public enum UIInteractionKind: Sendable {
     }
 }
 
-public struct UIInteraction: Sendable {
+public struct TouchInteraction: Sendable {
     public let id: Int
-    public let kind: UIInteractionKind
+    public let kind: TouchKind
     public let timestamp: TimeInterval
     public let target: TouchTarget?
 }

@@ -31,7 +31,7 @@ public struct TouchSample: Sendable {
     }
 }
 
-typealias UIInteractionYield = @Sendable (UIInteraction) -> Void
+typealias UIInteractionYield = @Sendable (TouchInteraction) -> Void
 
 final class TouchCaptureCoordinator {
     private let source: UIEventSource
