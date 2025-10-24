@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.4.0...v0.5.0) (2025-10-24)
+
+
+### Features
+
+* log memory warnings instrumentation ([#40](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/40)) ([4f9ccf0](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/4f9ccf0e7e4fb42891eb3ef8b059cb002768cc4c))
+* maskWebView option and accesibilityIdentifier support ([#44](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/44)) ([7d029bd](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/7d029bde30c4ce0d12bfd8c0ada9eef32c0cec6a))
+* Session Replay App Life Cycle ([#45](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/45)) ([5a2fc4d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/5a2fc4d94bd979afcf43e78b31dc0055ea2f7e61))
+* **system-metrics:** add auto instrumentation for cpu and memory ([#36](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/36)) ([95ca6fc](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/95ca6fc1799af4c2786ce21f8207fc1e02815c44))
+
+
+### Bug Fixes
+
+* Limit Package.swift to iOS and TV ([#34](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/34)) ([7d76b65](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/7d76b655947baebd59228a629d2195737316bc2e))
+
 ## [0.4.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/swift-launchdarkly-observability-v0.3.0...swift-launchdarkly-observability-v0.4.0) (2025-10-23)
 
 
