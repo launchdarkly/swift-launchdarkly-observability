@@ -33,8 +33,9 @@ let config = { () -> LDConfig in
             isEnabled: true,
             privacy: .init(
                 maskTextInputs: true,
+                maskWebViews: false,
                 maskImages: false,
-                maskAccessibilityIdentifiers: ["email-field", "password-field"],
+                maskAccessibilityIdentifiers: ["email-field", "password-field", "card-brand-chip"],
             )
         ))
     ]

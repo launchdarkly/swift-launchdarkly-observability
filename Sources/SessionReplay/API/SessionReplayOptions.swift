@@ -5,6 +5,7 @@ public struct SessionReplayOptions {
     
     public struct PrivacyOptions {
         public var maskTextInputs: Bool
+        public var maskWebViews: Bool
         public var maskLabels: Bool
         public var maskImages: Bool
         
@@ -17,6 +18,7 @@ public struct SessionReplayOptions {
         public var minimumAlpha: CGFloat
         
         public init(maskTextInputs: Bool = true,
+                    maskWebViews: Bool = false,
                     maskLabels: Bool = false,
                     maskImages: Bool = false,
                     maskUIViews: [AnyClass] = [],
@@ -25,6 +27,7 @@ public struct SessionReplayOptions {
                     ignoreAccessibilityIdentifiers: [String] = [],
                     minimumAlpha: CGFloat = 0.02) {
             self.maskTextInputs = maskTextInputs
+            self.maskWebViews = maskWebViews
             self.maskLabels = maskLabels
             self.maskImages = maskImages
             self.maskUIViews = maskUIViews
