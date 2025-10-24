@@ -21,6 +21,8 @@ struct ContentView: View {
     @State private var isMaskingUIKitCreditCardEnabled: Bool = false
     @State private var isNumberPadEnabled: Bool = false
     @State private var isNotebookEnabled: Bool = false
+    @State private var isStoryboardEnabled: Bool = false
+    @State private var isWebviewEnabled: Bool = false
 
     @State private var buttonPressed: Bool = false
     @State private var errorPressed: Bool = false
@@ -53,27 +55,35 @@ struct ContentView: View {
 #endif
 
                 FauxLinkToggleRow(title: "Notebook (SwiftUI)", isOn: $isNotebookEnabled)
+                FauxLinkToggleRow(title: "Storyboad (UIKit)", isOn: $isStoryboardEnabled)
+                FauxLinkToggleRow(title: "WebView (WebKit)", isOn: $isWebviewEnabled)
                 
-                Button {
-                    buttonPressed.toggle()
-                } label: {
-                    Text("span")
+                NavigationLink(destination: SystemUnderPressureView()) {
+                    Text("Simulate System Under Pressure")
                 }
-                .buttonStyle(.borderedProminent)
                 
-                Button {
-                    logsPressed.toggle()
-                } label: {
-                    Text("logs")
+                HStack {
+                    Button {
+                        buttonPressed.toggle()
+                    } label: {
+                        Text("span")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    
+                    Button {
+                        logsPressed.toggle()
+                    } label: {
+                        Text("logs")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    
+                    Button {
+                        counterMetricPressed.toggle()
+                    } label: {
+                        Text("metric: counter")
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
-                .buttonStyle(.borderedProminent)
-                
-                Button {
-                    counterMetricPressed.toggle()
-                } label: {
-                    Text("metric: counter")
-                }
-                .buttonStyle(.borderedProminent)
                 
                 Button {
                     networkPressed.toggle()
@@ -88,27 +98,27 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(networkPressed)
+               
+                HStack {
+                    Button {
+                        errorPressed.toggle()
+                    } label: {
+                        Text("error")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    
+                    Button {
+                        crashPressed.toggle()
+                    } label: {
+                        Text("Crash")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                }
                 
-                Button {
-                    errorPressed.toggle()
-                } label: {
-                    Text("error")
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                
-                Button {
-                    crashPressed.toggle()
-                } label: {
-                    Text("Crash")
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                NavigationLink(destination: SystemUnderPressureView()) {
-                    Text("Simulate System Under Pressure")
-                }
 
-                
+
             }.background(Color.clear)
         }
         .task(id: errorPressed) {
@@ -180,6 +190,10 @@ struct ContentView: View {
             MaskingElementsSimpleUIKitView()
         }.sheet(isPresented: $isNumberPadEnabled) {
             NumberPadView()
+        }.sheet(isPresented: $isStoryboardEnabled) {
+            StoryboardRootView()
+        }.sheet(isPresented: $isWebviewEnabled) {
+            WebViewControllertView()
         }
     }
 }
