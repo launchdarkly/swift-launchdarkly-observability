@@ -36,9 +36,6 @@ public protocol LogsApi {
     /// - severity The severity of the log message
     /// - attributes The attributes to record with the log message
     func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue])
-    /// Flushes all pending telemetry data (traces, logs, metrics).
-    /// - true if all flush operations succeeded, false otherwise
-    func flush() -> Bool
 }
 
 public protocol TracesApi {

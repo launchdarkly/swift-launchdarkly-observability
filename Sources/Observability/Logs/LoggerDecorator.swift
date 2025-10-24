@@ -41,6 +41,14 @@ extension LoggerDecorator: LogsApi {
         severity: Severity,
         attributes: [String: AttributeValue]
     ) {
+        buildLog(message: message,
+                 severity: severity,
+                 attributes: attributes)?.emit()
+    }
+    
+    public func buildLog(message: String,
+                         severity: Severity,
+                         attributes: [String: AttributeValue]) -> LDLogRecordBuilder? {
         var attributes = attributes
         let sessionId = sessionManager.sessionInfo.id
         if !sessionId.isEmpty {
@@ -51,7 +59,6 @@ extension LoggerDecorator: LogsApi {
             .setTimestamp(Date())
             .setSeverity(severity)
             .setAttributes(attributes)
-            .emit()
     }
     
     public func flush() -> Bool {

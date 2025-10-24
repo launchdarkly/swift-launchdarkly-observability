@@ -1,6 +1,9 @@
 import Foundation
 
 enum AppLifeCycleLogState: String, Sendable {
+    static let eventName = "device.app.lifecycle"
+    static let attributeName = "ios.app.state"
+    
     // The app has become active. Associated with UIKit notification applicationDidBecomeActive.
     case active = "active"
     // The app is now in the background. This value is associated with UIKit notification applicationDidEnterBackground.
@@ -14,13 +17,13 @@ enum AppLifeCycleLogState: String, Sendable {
 }
 
 public protocol AppLifecycleLogging {
-   
+    
 }
 
 final class AppLifecycleLogger: AppLifecycleLogging {
     let appLifecycleManager: AppLifecycleManaging
     
-    init(appLifecycleManager: AppLifecycleManaging) {
+    init(appLifecycleManager: AppLifecycleManaging, yield: @escaping (LDLogRecordBuilder) -> Void) {
         self.appLifecycleManager = appLifecycleManager
         
         Task(priority: .background) { [weak self] in
