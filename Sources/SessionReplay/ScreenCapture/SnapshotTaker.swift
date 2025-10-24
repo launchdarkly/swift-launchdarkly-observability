@@ -16,19 +16,19 @@ final class SnapshotTaker: EventSource {
         self.yield = yield
         self.appLifecycleManager = appLifecycleManager
         
-        let _appLifecycleManager = appLifecycleManager
-        Task(priority: .background) { [weak self] in
-            guard let self else { return }
-            
-            for await event in await _appLifecycleManager.events() {
+        Task(priority: .background) { [weak self, weak appLifecycleManager] in
+            guard let self, let appLifecycleManager else { return }
+
+            let eventsStream = await appLifecycleManager.events()
+            for await event in eventsStream {
                 switch event {
                 case .didBecomeActive:
                     await MainActor.run { [weak self] in
-                        start()
+                        self?.start()
                     }
                 case .willResignActive, .willTerminate:
                     await MainActor.run { [weak self] in
-                        stop()
+                        self?.stop()
                     }
                 case .didFinishLaunching, .willEnterForeground, .didEnterBackground:
                     () // NO-OP

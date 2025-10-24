@@ -25,11 +25,12 @@ final class SessionManager: SessionManaging {
         self._sessionInfo = SessionInfo()
         self.broadcaster = Broadcaster()
         
-        Task(priority: .background) { [weak self] in
-            guard let self else { return }
-            
-            for await event in await appLifecycleManager.events() {
-                transition(to: event)
+        Task(priority: .background) { [weak self, weak appLifecycleManager] in
+            guard let self, let appLifecycleManager else { return }
+
+            let eventsStream = await appLifecycleManager.events()
+            for await event in eventsStream {
+                self.transition(to: event)
             }
         }
     }
