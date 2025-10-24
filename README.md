@@ -114,6 +114,7 @@ let config = { () -> LDConfig in
             isEnabled: true,
             privacy: .init(
                 maskTextInputs: true,
+                maskWebViews: false,
                 maskImages: false,
                 maskAccessibilityIdentifiers: ["email-field", "password-field"]
             )
@@ -159,6 +160,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 Configure privacy settings to control what data is captured:
 
 - **maskTextInputs**: Mask all text input fields (default: `true`)
+- **maskWebViews**: Mask contents of Web Views (default: `false`)
 - **maskLabels**: Mask all text labels (default: `false`)
 - **maskImages**: Mask all images (default: `false`)
 - **maskAccessibilityIdentifiers**: Array of accessibility identifiers to mask

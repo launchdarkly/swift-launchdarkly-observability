@@ -34,7 +34,8 @@ final class MaskCollector {
         }
               
         func shouldMask(_ view: UIView) -> Bool {
-            if let shouldUnmask = SessionReplayAssociatedObjects.shouldMaskUIView(view), shouldUnmask {
+            if let shouldUnmask = SessionReplayAssociatedObjects.shouldMaskUIView(view),
+                !shouldUnmask {
                 return false
             }
             
