@@ -41,8 +41,8 @@ actor SessionReplayEventGenerator {
                 lastExportImage = exportImage
             }
             let timestamp = item.timestamp
-            
-            if shouldMoveMouseOnce {
+        
+            if let imageId, shouldMoveMouseOnce {
                 events.append(reloadEvent(timestamp: timestamp))
                 // artificial mouse movement to wake up session replay player
                 let event = Event(type: .IncrementalSnapshot,
