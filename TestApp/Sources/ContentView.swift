@@ -57,7 +57,11 @@ struct ContentView: View {
                 FauxLinkToggleRow(title: "Notebook (SwiftUI)", isOn: $isNotebookEnabled)
                 FauxLinkToggleRow(title: "Storyboad (UIKit)", isOn: $isStoryboardEnabled)
                 FauxLinkToggleRow(title: "WebView (WebKit)", isOn: $isWebviewEnabled)
-
+                
+                NavigationLink(destination: SystemUnderPressureView()) {
+                    Text("Simulate System Under Pressure")
+                }
+                
                 HStack {
                     Button {
                         buttonPressed.toggle()
@@ -94,27 +98,27 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(networkPressed)
+               
+                HStack {
+                    Button {
+                        errorPressed.toggle()
+                    } label: {
+                        Text("error")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    
+                    Button {
+                        crashPressed.toggle()
+                    } label: {
+                        Text("Crash")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                }
                 
-                Button {
-                    errorPressed.toggle()
-                } label: {
-                    Text("error")
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                
-                Button {
-                    crashPressed.toggle()
-                } label: {
-                    Text("Crash")
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                NavigationLink(destination: SystemUnderPressureView()) {
-                    Text("Simulate System Under Pressure")
-                }
 
-                
+
             }.background(Color.clear)
         }
         .task(id: errorPressed) {
