@@ -1,3 +1,5 @@
+#if os(iOS)
+
 import SwiftUI
 
 struct SystemUnderPressureView: View {
@@ -65,3 +67,5 @@ struct SystemUnderPressureView: View {
         }
     }
 }
+
+#endif

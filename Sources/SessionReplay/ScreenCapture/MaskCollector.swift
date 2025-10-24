@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(WebKit)
 import WebKit
+#endif
 import UIKit
 import SwiftUI
 import Common
@@ -52,19 +54,28 @@ final class MaskCollector {
             }
             
             if maskWebViews {
+#if canImport(WebKit)
                 if let wkWebView = view as? WKWebView {
                     return true
                 }
                 if let uiWebView = view as? UIWebView {
                     return true
                 }
+#endif
             }
             
             if maskTextInputs  {
                 if let textInput = view as? UITextInput {
+#if canImport(WebKit)
                     if stringViewType != "WKContentView" {
                         return true
                     }
+#else
+                    return true
+#endif
+                }
+                if stringViewType == "UIKeyboard" {
+                    return true
                 }
             }
             

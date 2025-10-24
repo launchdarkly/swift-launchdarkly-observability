@@ -1,3 +1,6 @@
+#if canImport(WebKit)
+
+
 import UIKit
 import WebKit
 import SwiftUI
@@ -32,3 +35,5 @@ struct WebViewControllertView: UIViewControllerRepresentable {
     }
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 }
+
+#endif
