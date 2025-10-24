@@ -66,6 +66,7 @@ final class LDCrashFilter: NSObject, CrashReportFilter {
                     attributes: attributes
                 )
             }
+            onCompletion?(reports, nil)
         } catch let error {
             onCompletion?(reports, error)
         }

@@ -3,7 +3,6 @@ import OpenTelemetrySdk
 
 final class AppLogBuilder {
     private let options: Options
-    //private var logger: any Logger { self }
     private let sessionManager: SessionManager
     private let sampler: ExportSampler
     

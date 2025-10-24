@@ -55,7 +55,7 @@ final class LDLogRecordBuilder {
             return nil
         }
         
-        return log
+        return sampledLog
     }
     
     public func setTimestamp(_ timestamp: Date) -> Self {
