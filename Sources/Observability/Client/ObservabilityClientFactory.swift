@@ -51,6 +51,10 @@ public struct ObservabilityClientFactory {
             Task {
                 await batchWorker.addExporter(logExporter)
             }
+            if options.autoInstrumentation.contains(.memoryWarnings) {
+                let memoryWarningMonitor = MemoryPressureMonitor(options: options, logsApi: logger)
+                autoInstrumentation.append(memoryWarningMonitor)
+            }
         } else {
             logger = NoOpLogger()
         }

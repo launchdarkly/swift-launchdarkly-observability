@@ -17,7 +17,7 @@ struct Client {
                     traces: .enabled,
                     metrics: .enabled,
                     crashReporting: .disabled,
-                    autoInstrumentation: [.urlSession, .userTaps, .memory, .cpu]
+                    autoInstrumentation: [.urlSession, .userTaps, .memory, .cpu, .memoryWarnings]
                 )
             )
         ]
