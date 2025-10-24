@@ -31,7 +31,7 @@ final class SnapshotTaker: EventSource {
                         self?.stop()
                     }
                 case .didFinishLaunching, .willEnterForeground, .didEnterBackground:
-                    () // NO-OP
+                    continue
                 }
             }
         }

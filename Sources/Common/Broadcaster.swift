@@ -2,7 +2,7 @@ import Foundation
 
 public actor Broadcaster<Value: Sendable> {
     private var continuations = [Int: AsyncStream<Value>.Continuation]()
-    private var nextIdentifier = 0
+    private var streamIdentifier = 0
     private var finished = false
     
     public init() { }
@@ -10,8 +10,8 @@ public actor Broadcaster<Value: Sendable> {
     public func stream(
         bufferingPolicy: AsyncStream<Value>.Continuation.BufferingPolicy = .unbounded
     ) -> AsyncStream<Value> {
-        let id = nextIdentifier
-        nextIdentifier &+= 1
+        let id = streamIdentifier
+        streamIdentifier &+= 1
         var continuationRef: AsyncStream<Value>.Continuation?
         
         let stream = AsyncStream<Value>(bufferingPolicy: bufferingPolicy) { continuation in
