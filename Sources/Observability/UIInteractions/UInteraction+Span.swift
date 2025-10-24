@@ -5,7 +5,7 @@ struct UIInteractionSpan {
     let name: String
 }
 
-extension UIInteraction {
+extension TouchInteraction {
     func span() -> UIInteractionSpan? {
         guard kind.isTapLike else { return nil }
         
