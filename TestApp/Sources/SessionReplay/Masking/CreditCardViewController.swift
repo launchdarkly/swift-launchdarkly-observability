@@ -115,7 +115,8 @@ public final class CreditCardViewController: UIViewController {
         setupLayout()
         updateSaveButton()
         
-        //nameField.ldUnmask()
+        nameField.ldUnmask()
+        brandChip.accessibilityIdentifier = "card-brand-chip"
     }
     
     public override func viewDidAppear(_ animated: Bool) {

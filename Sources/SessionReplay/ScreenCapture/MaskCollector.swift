@@ -1,4 +1,5 @@
 import Foundation
+import WebKit
 import UIKit
 import SwiftUI
 import Common
@@ -14,6 +15,7 @@ final class MaskCollector {
     struct Settings {
         var maskiOS26ViewTypes: Set<String>
         var maskTextInputs: Bool
+        var maskWebViews: Bool
         var maskImages: Bool
         var minimumAlpha: CGFloat
         var maskClasses: Set<ObjectIdentifier>
@@ -23,6 +25,7 @@ final class MaskCollector {
         init(privacySettings: PrivacySettings) {
             self.maskiOS26ViewTypes = Constants.maskiOS26ViewTypes
             self.maskTextInputs = privacySettings.maskTextInputs
+            self.maskWebViews = privacySettings.maskWebViews
             self.maskImages = privacySettings.maskImages
             self.minimumAlpha = privacySettings.minimumAlpha
             self.maskClasses = privacySettings.buildMaskClasses()
@@ -31,16 +34,41 @@ final class MaskCollector {
         }
               
         func shouldMask(_ view: UIView) -> Bool {
-            if maskiOS26ViewTypes.contains(String(describing: type(of: view))) {
+            if let shouldUnmask = SessionReplayAssociatedObjects.shouldMaskUIView(view), shouldUnmask {
+                return false
+            }
+            
+            if let accessibilityIdentifier = view.accessibilityIdentifier,
+              ignoreAccessibilityIdentifiers.contains(accessibilityIdentifier) {
+                return false
+            }
+            
+            let viewType = type(of: view)
+            let stringViewType = String(describing: viewType)
+            
+            if maskiOS26ViewTypes.contains(stringViewType) {
                 return true
             }
             
-            if maskTextInputs, let _ = view as? UITextInput {
-                return SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? true
+            if maskWebViews {
+                if let wkWebView = view as? WKWebView {
+                    return true
+                }
+                if let uiWebView = view as? UIWebView {
+                    return true
+                }
+            }
+            
+            if maskTextInputs  {
+                if let textInput = view as? UITextInput {
+                    if stringViewType != "WKContentView" {
+                        return true
+                    }
+                }
             }
             
             if maskImages, let imageView = view as? UIImageView {
-                return SessionReplayAssociatedObjects.shouldMaskUIView(imageView) ?? true
+                return true
             }
             
             if SessionReplayAssociatedObjects.shouldMaskSwiftUI(view) ?? false {
@@ -48,6 +76,11 @@ final class MaskCollector {
             }
             
             if SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? false {
+                return true
+            }
+            
+            if let accessibilityIdentifier = view.accessibilityIdentifier,
+               maskAccessibilityIdentifiers.contains(accessibilityIdentifier) {
                 return true
             }
             
