@@ -2,7 +2,7 @@ import Foundation
 import OpenTelemetryApi
 import OpenTelemetrySdk
 
-class LDLogRecordBuilder: EventBuilder {
+final class LDLogRecordBuilder {
     private var limits: LogLimits
     private var instrumentationScope: InstrumentationScopeInfo
     private var includeSpanContext: Bool
@@ -14,16 +14,13 @@ class LDLogRecordBuilder: EventBuilder {
     private var spanContext: SpanContext?
     private var resource: Resource
     private var clock: Clock
-    private var queue: EventQueuing
     private let sampler: ExportSampler
     
-    init(queue: EventQueuing,
-                sampler: ExportSampler,
-                resource: Resource,
-                clock: Clock,
-                instrumentationScope: InstrumentationScopeInfo,
-                includeSpanContext: Bool) {
-        self.queue = queue
+    init(sampler: ExportSampler,
+         resource: Resource,
+         clock: Clock,
+         instrumentationScope: InstrumentationScopeInfo,
+         includeSpanContext: Bool) {
         self.sampler = sampler
         self.resource = resource
         self.clock = clock
@@ -33,6 +30,32 @@ class LDLogRecordBuilder: EventBuilder {
         self.instrumentationScope = instrumentationScope
         self.attributes = AttributesDictionary(capacity: logLimits.maxAttributeCount,
                                                valueLengthLimit: logLimits.maxAttributeLength)
+        
+    }
+    
+    public func readableLogRecord() -> ReadableLogRecord? {
+        if spanContext == nil, includeSpanContext {
+            spanContext = OpenTelemetry.instance.contextProvider.activeSpan?.context
+        }
+        
+        let attrs = attributes.reduce(into: [String: OpenTelemetryApi.AttributeValue]()) { result, element in
+            result[element.0] = element.1
+        }
+        
+        let log = ReadableLogRecord(resource: resource,
+                                    instrumentationScopeInfo: instrumentationScope,
+                                    timestamp: timestamp ?? clock.now,
+                                    observedTimestamp: observedTimestamp,
+                                    spanContext: spanContext,
+                                    severity: severity,
+                                    body: body,
+                                    attributes: attrs)
+        
+        guard let sampledLog = sampler.sampledLog(log) else {
+            return nil
+        }
+        
+        return sampledLog
     }
     
     public func setTimestamp(_ timestamp: Date) -> Self {
@@ -68,32 +91,5 @@ class LDLogRecordBuilder: EventBuilder {
     public func setData(_ attributes: [String: OpenTelemetryApi.AttributeValue]) -> Self {
         self.attributes["event.data"] = OpenTelemetryApi.AttributeValue(AttributeSet(labels: attributes))
         return self
-    }
-    
-    public func emit() {
-        if spanContext == nil, includeSpanContext {
-            spanContext = OpenTelemetry.instance.contextProvider.activeSpan?.context
-        }
-    
-        Task {
-            let attrs = attributes.reduce(into: [String: OpenTelemetryApi.AttributeValue]()) { result, element in
-                result[element.0] = element.1
-            }
-        
-            let log = ReadableLogRecord(resource: resource,
-                                        instrumentationScopeInfo: instrumentationScope,
-                                        timestamp: timestamp ?? clock.now,
-                                        observedTimestamp: observedTimestamp,
-                                        spanContext: spanContext,
-                                        severity: severity,
-                                        body: body,
-                                        attributes: attrs)
-            
-            guard let sampledLog = sampler.sampledLog(log) else {
-                return
-            }
-            
-            await queue.send(EventQueueItem(payload: LogItem(log: sampledLog)))
-        }
     }
 }

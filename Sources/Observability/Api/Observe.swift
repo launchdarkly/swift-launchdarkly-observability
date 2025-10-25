@@ -25,9 +25,6 @@ public protocol MetricsApi {
     /// Record an up/down counter metric.
     /// - metric The up/down counter metric to record
     func recordUpDownCounter(metric: Metric)
-    /// Flushes all pending telemetry data (traces, logs, metrics).
-    /// - true if all flush operations succeeded, false otherwise
-    func flush() -> Bool
 }
 
 public protocol LogsApi {
@@ -36,9 +33,6 @@ public protocol LogsApi {
     /// - severity The severity of the log message
     /// - attributes The attributes to record with the log message
     func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue])
-    /// Flushes all pending telemetry data (traces, logs, metrics).
-    /// - true if all flush operations succeeded, false otherwise
-    func flush() -> Bool
 }
 
 public protocol TracesApi {
@@ -50,7 +44,4 @@ public protocol TracesApi {
     /// - name The name of the span
     /// - attributes The attributes to record with the span
     func startSpan(name: String, attributes: [String : AttributeValue]) -> Span
-    /// Flushes all pending telemetry data (traces, logs, metrics).
-    /// - true if all flush operations succeeded, false otherwise
-    func flush() -> Bool
 }

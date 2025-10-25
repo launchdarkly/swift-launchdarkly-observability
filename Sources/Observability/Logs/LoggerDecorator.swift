@@ -1,22 +1,18 @@
 import Foundation
 import OpenTelemetrySdk
 
-final class LoggerDecorator: Logger {
+final class AppLogBuilder {
     private let options: Options
-    private var logger: any Logger { self }
     private let sessionManager: SessionManager
-    private let eventQueue: EventQueue
     private let sampler: ExportSampler
     
     init(
         options: Options,
         sessionManager: SessionManager,
-        eventQueue: EventQueue,
         sampler: ExportSampler
     ) {
         self.options = options
         self.sessionManager = sessionManager
-        self.eventQueue = eventQueue
         self.sampler = sampler
     }
     
@@ -25,13 +21,38 @@ final class LoggerDecorator: Logger {
         DefaultLoggerProvider.instance.get(instrumentationScopeName: "").eventBuilder(name: name)
     }
     
-    func logRecordBuilder() -> LogRecordBuilder {
-        LDLogRecordBuilder(queue: eventQueue,
-                           sampler: sampler,
-                           resource: Resource(attributes: options.resourceAttributes),
-                           clock: MillisClock(),
-                           instrumentationScope: .init(name: options.serviceName),
-                           includeSpanContext: true)
+    public func buildLog(message: String,
+                         severity: Severity,
+                         attributes: [String: AttributeValue]) -> ReadableLogRecord? {
+        var attributes = attributes
+        let sessionId = sessionManager.sessionInfo.id
+        if !sessionId.isEmpty {
+            attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
+        }
+        
+        let logBuilder = LDLogRecordBuilder(
+            sampler: sampler,
+            resource: Resource(attributes: options.resourceAttributes),
+            clock: MillisClock(),
+            instrumentationScope: .init(name: options.serviceName),
+            includeSpanContext: true)
+        
+        logBuilder.setBody(.string(message))
+        logBuilder.setTimestamp(Date())
+        logBuilder.setSeverity(severity)
+        logBuilder.setAttributes(attributes)
+        
+        return logBuilder.readableLogRecord()
+    }
+}
+
+final class LoggerDecorator {
+    private let eventQueue: EventQueue
+    private let appLogBuilder: AppLogBuilder
+    
+    init(eventQueue: EventQueue, appLogBuilder: AppLogBuilder) {
+        self.eventQueue = eventQueue
+        self.appLogBuilder = appLogBuilder
     }
 }
 
@@ -41,22 +62,14 @@ extension LoggerDecorator: LogsApi {
         severity: Severity,
         attributes: [String: AttributeValue]
     ) {
-        var attributes = attributes
-        let sessionId = sessionManager.sessionInfo.id
-        if !sessionId.isEmpty {
-            attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
+        Task {
+            guard let log = appLogBuilder.buildLog(message: message,
+                                                   severity: severity,
+                                                   attributes: attributes) else {
+                return
+            }
+            
+            await eventQueue.send(EventQueueItem(payload: LogItem(log: log)))
         }
-        logRecordBuilder()
-            .setBody(.string(message))
-            .setTimestamp(Date())
-            .setSeverity(severity)
-            .setAttributes(attributes)
-            .emit()
-    }
-    
-    public func flush() -> Bool {
-        // TODO: Implement flush API since we are using LDLogRecordBuilder now.
-//        logRecordProcessor.forceFlush(explicitTimeout: CommonOTelConfiguration.flushTimeout) == .success
-        true
     }
 }
