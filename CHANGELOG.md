@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.5.0...v0.6.0) (2025-10-25)
+
+
+### Features
+
+* App life cycle logging ([#48](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/48)) ([ada7cdf](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/ada7cdf19503f6fe6acbbd6420c6f544f362573b))
+* hide TV app keyboard ([65215ef](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/65215ef6c312aae1cb3ed287593ceaf4d2e59da1))
+* hide TV app keyboard ([#49](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/49)) ([65215ef](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/65215ef6c312aae1cb3ed287593ceaf4d2e59da1))
+* pass orientation flag ([a7bb21a](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/a7bb21a597594b652f7506d29e86fd23c6366f58))
+* pass orientation flag ([#50](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/50)) ([a7bb21a](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/a7bb21a597594b652f7506d29e86fd23c6366f58))
+
 ## [0.5.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.4.0...v0.5.0) (2025-10-24)
 
 
