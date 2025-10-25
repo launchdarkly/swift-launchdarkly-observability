@@ -35,7 +35,7 @@ final class TouchIntepreter {
                               target: touchSample.target)
             tracks[touchSample.id] = track
             
-            let downInteraction = UIInteraction(id: incrementingId,
+            let downInteraction = TouchInteraction(id: incrementingId,
                                                 kind: .touchDown(touchSample.location),
                                                 timestamp: touchSample.timestamp + uptimeDifference,
                                                 target: touchSample.target)
@@ -67,7 +67,7 @@ final class TouchIntepreter {
             }
             
         case .ended, .cancelled:
-            let upInteraction = UIInteraction(id: incrementingId,
+            let upInteraction = TouchInteraction(id: incrementingId,
                                               kind: .touchUp(touchSample.location),
                                               timestamp: touchSample.timestamp + uptimeDifference,
                                               target: touchSample.target)
@@ -80,7 +80,7 @@ final class TouchIntepreter {
     func flushMovements(touchSample: TouchSample, uptimeDifference: TimeInterval, yield: UIInteractionYield) {
         guard var track = tracks[touchSample.id], track.points.isNotEmpty else { return }
         
-        let moveInteraction = UIInteraction(id: incrementingId,
+        let moveInteraction = TouchInteraction(id: incrementingId,
                                             kind: .touchPath(points: track.points),
                                             timestamp: touchSample.timestamp + uptimeDifference,
                                             target: touchSample.target)
@@ -92,7 +92,7 @@ final class TouchIntepreter {
     func flushTrack(touchSample: TouchSample, uptimeDifference: TimeInterval, yield: UIInteractionYield) {
         guard let track = tracks.removeValue(forKey: touchSample.id), track.points.isNotEmpty else { return }
         
-        let moveInteraction = UIInteraction(id: incrementingId,
+        let moveInteraction = TouchInteraction(id: incrementingId,
                                             kind: .touchPath(points: track.points),
                                             timestamp: touchSample.timestamp + uptimeDifference,
                                             target: touchSample.target)

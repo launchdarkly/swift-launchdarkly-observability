@@ -1,7 +1,7 @@
 import Foundation
 import Common
 
-extension UIInteraction: EventQueueItemPayload {
+extension TouchInteraction: EventQueueItemPayload {
     public func cost() -> Int {
         300
     }

@@ -56,11 +56,14 @@ struct ContentView: View {
 
                 FauxLinkToggleRow(title: "Notebook (SwiftUI)", isOn: $isNotebookEnabled)
                 FauxLinkToggleRow(title: "Storyboad (UIKit)", isOn: $isStoryboardEnabled)
+#if canImport(WebKit)
                 FauxLinkToggleRow(title: "WebView (WebKit)", isOn: $isWebviewEnabled)
-                
+#endif
+#if os(iOS)
                 NavigationLink(destination: SystemUnderPressureView()) {
                     Text("Simulate System Under Pressure")
                 }
+#endif
                 
                 HStack {
                     Button {
@@ -163,10 +166,8 @@ struct ContentView: View {
         }
         .task(id: crashPressed) {
             guard crashPressed else { return }
-            
+        
             fatalError()
-            
-            crashPressed.toggle()
         }
         .task(id: networkPressed) {
             guard networkPressed else { return }
@@ -185,16 +186,19 @@ struct ContentView: View {
         }.sheet(isPresented: $isNotebookEnabled) {
             NotebookView()
         }
-        #endif
+#endif
         .sheet(isPresented: $isMaskingUIKitOneFieldEnabled) {
             MaskingElementsSimpleUIKitView()
         }.sheet(isPresented: $isNumberPadEnabled) {
             NumberPadView()
         }.sheet(isPresented: $isStoryboardEnabled) {
             StoryboardRootView()
-        }.sheet(isPresented: $isWebviewEnabled) {
+        }
+#if canImport(WebKit)
+        .sheet(isPresented: $isWebviewEnabled) {
             WebViewControllertView()
         }
+#endif
     }
 }
 

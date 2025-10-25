@@ -6,5 +6,5 @@ public protocol UIEventSource: AnyObject {
 }
 
 public protocol UIEventBus: Sendable {
-    func publish(_ event: UIInteraction)
+    func publish(_ event: TouchInteraction)
 }
