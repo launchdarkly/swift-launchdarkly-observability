@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.6.0...0.7.0) (2025-10-28)
+
+
+### Features
+
+* Session Replay improvements ([#53](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/53)) ([45c4cbc](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/45c4cbc96778086ec194639e2215b589a6f36ccb))
+
 ## [0.6.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.5.0...0.6.0) (2025-10-27)
 
 
