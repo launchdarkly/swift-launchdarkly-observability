@@ -71,17 +71,13 @@ actor SessionReplayExporter: EventExporting {
     
     func export(items: [EventQueueItem]) async throws {
         try await initializeSessionIfNeeded()
-        
         guard let initializedSession else { return }
         
         let events = await eventGenerator.generateEvents(items: items)
-        guard events.isNotEmpty else { return }
-        
-        try await pushPayload(events: events)
+        try await pushPayload(initializedSession: initializedSession, events: events)
     }
     
-    func pushPayload(events: [Event]) async throws {
-        guard let initializedSession else { return }
+    func pushPayload(initializedSession: InitializeSessionResponse, events: [Event]) async throws {
         guard events.isNotEmpty else { return }
         
         let input = PushPayloadVariables(sessionSecureId: initializedSession.secureId, payloadId: "\(nextPayloadId)", events: events)

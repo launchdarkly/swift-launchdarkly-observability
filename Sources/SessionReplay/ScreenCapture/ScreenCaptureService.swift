@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 
 import UIKit
+import Darwin
 
 public struct CapturedImage {
     public let image: UIImage
@@ -22,7 +23,16 @@ public final class ScreenCaptureService {
     /// Capture as UIImage (must be on main thread).
     public func captureUIImage() -> CapturedImage? {
         assert(Thread.isMainThread, "Call on main thread.")
-        return captureCompositeImageOfAllWindows()
+        // Measure CPU time consumed by the main thread during capture
+//        let cpuStart = currentThreadCPUTimeSeconds()
+//        let wallStart = CFAbsoluteTimeGetCurrent()
+       let capturedImage = captureCompositeImageOfAllWindows()
+//        let wallEnd = CFAbsoluteTimeGetCurrent()
+//        let cpuEnd = currentThreadCPUTimeSeconds()
+//        let cpuElapsed = cpuEnd - cpuStart
+//        let wallElapsed = wallEnd - wallStart
+//        print("ScreenCaptureService.captureUIImage main-thread CPU: \(cpuElapsed) s (wall: \(wallElapsed) s)")
+        return capturedImage
     }
 
     // MARK: - Internals
@@ -92,6 +102,31 @@ public final class ScreenCaptureService {
             //window.layer.render(in: context)
             context.restoreGState()
         }
+    }
+}
+
+// MARK: - Thread CPU Time
+private extension ScreenCaptureService {
+    func currentThreadCPUTimeSeconds() -> TimeInterval {
+        let thread: thread_act_t = mach_thread_self()
+        defer { mach_port_deallocate(mach_task_self_, thread) }
+
+        var info = thread_basic_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<thread_basic_info_data_t>.size / MemoryLayout<integer_t>.size)
+
+        let result: kern_return_t = withUnsafeMutablePointer(to: &info) { infoPtr in
+            infoPtr.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { intPtr in
+                thread_info(thread, thread_flavor_t(THREAD_BASIC_INFO), intPtr, &count)
+            }
+        }
+
+        guard result == KERN_SUCCESS else { return 0 }
+
+        let user = info.user_time
+        let sys = info.system_time
+        let seconds = Double(user.seconds + sys.seconds)
+        let microseconds = Double(user.microseconds + sys.microseconds)
+        return seconds + (microseconds / 1_000_000)
     }
 }
 

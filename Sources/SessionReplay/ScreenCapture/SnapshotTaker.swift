@@ -40,8 +40,8 @@ final class SnapshotTaker: EventSource {
     func start() {
         guard timer == nil else { return }
         
-        let timer = Timer(timeInterval: 1.0, target: self, selector: #selector(queueSnapshot), userInfo: nil, repeats: true)
-        RunLoop.main.add(timer, forMode: .default)
+        let timer = Timer(timeInterval: 0.02, target: self, selector: #selector(queueSnapshot), userInfo: nil, repeats: true)
+        RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }
     

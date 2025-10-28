@@ -9,7 +9,9 @@ public enum NetworkError: Error, CustomStringConvertible {
     public var description: String {
         switch self {
         case .invalidResponse: return "Invalid response type"
-        case .httpStatus(let code, _): return "HTTP status \(code)"
+        case .httpStatus(let code, let data):
+            let dataString = data.map { String(data: $0, encoding: .utf8) } ?? "None"
+            return "HTTP status \(code), data \(dataString)"
         case .transport(let error): return "Transport error: \(error)"
         case .invalidRequest(let cause): return "Invalid request: \(cause)"
         }

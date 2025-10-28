@@ -6,6 +6,7 @@ import Common
 import Observability
 
 actor SessionReplayEventGenerator {    
+    let padding = CGSize(width: 11, height: 11)
     var sid = 0
     var nextSid: Int {
         sid += 1
@@ -20,7 +21,8 @@ actor SessionReplayEventGenerator {
     var shouldMoveMouseOnce = true
     var imageId: Int?
     var lastExportImage: ExportImage?
-    let positionCorrection = ExportImage.padding
+    var stats = SessionReplayStats()
+    var statsPublished = DispatchTime.now()
     
     init() {
     }
@@ -30,6 +32,13 @@ actor SessionReplayEventGenerator {
         for item in items {
             appendEvents(item: item, events: &events)
         }
+        
+        let elapsed = Double(DispatchTime.now().uptimeNanoseconds - statsPublished.uptimeNanoseconds) / Double(NSEC_PER_SEC)
+        if elapsed >= 5.0 {
+            print(stats.report())
+            statsPublished = DispatchTime.now()
+        }
+        
         return events
     }
     
@@ -43,6 +52,9 @@ actor SessionReplayEventGenerator {
             defer {
                 lastExportImage = exportImage
             }
+            
+            stats.addExportImage(exportImage)
+            
             let timestamp = item.timestamp
         
             if let imageId, shouldMoveMouseOnce {
@@ -52,8 +64,8 @@ actor SessionReplayEventGenerator {
                                   data: AnyEventData(EventData(source: .mouseInteraction,
                                                                type: .touchStart,
                                                                id: imageId,
-                                                               x: positionCorrection.x,
-                                                               y: positionCorrection.y)),
+                                                               x: padding.width,
+                                                               y: padding.height)),
                                   timestamp: timestamp,
                                   _sid: nextSid)
                 events.append(event)
@@ -77,28 +89,36 @@ actor SessionReplayEventGenerator {
         }
     }
     
+    func paddedWidth(_ width: Int) -> Int {
+        width + Int(padding.width) * 2
+    }
+    
+    func paddedHeight(_ height: Int) -> Int {
+        height + Int(padding.height) * 2
+    }
+    
     fileprivate func appendTouchInteraction(interaction: TouchInteraction, events: inout [Event]) {
         if let touchEventData: EventDataProtocol = switch interaction.kind {
         case .touchDown(let point):
             EventData(source: .mouseInteraction,
                       type: .touchStart,
                       id: imageId,
-                      x: point.x + positionCorrection.x,
-                      y: point.y + positionCorrection.y)
+                      x: point.x + padding.width,
+                      y: point.y + padding.height)
             
         case .touchUp(let point):
             EventData(source: .mouseInteraction,
                       type: .touchEnd,
                       id: imageId,
-                      x: point.x + positionCorrection.x,
-                      y: point.y + positionCorrection.y)
+                      x: point.x + padding.width,
+                      y: point.y + padding.height)
             
         case .touchPath(let points):
             MouseMoveEventData(
                 source: .touchMove,
                 positions: points.map { p in MouseMoveEventData.Position(
-                    x: p.position.x + positionCorrection.x,
-                    y: p.position.y + positionCorrection.y,
+                    x: p.position.x + padding.width,
+                    y: p.position.y + padding.height,
                     id: imageId,
                     timeOffset: p.timestamp - interaction.timestamp) })
 
@@ -231,7 +251,7 @@ actor SessionReplayEventGenerator {
     }
     
     private func appendFullSnapshotEvents(_ exportImage: ExportImage, _ timestamp: TimeInterval, _ events: inout [Event]) {
-        events.append(windowEvent(href: "", width: exportImage.paddedWidth, height: exportImage.paddedHeight, timestamp: timestamp))
+        events.append(windowEvent(href: "", width: paddedWidth(exportImage.originalWidth), height: paddedHeight(exportImage.originalHeight), timestamp: timestamp))
         events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp, isEmpty: false))
         
         // Workaround to solve session player flicker. TODO: optimize but not generating base64 twice in case it persists
