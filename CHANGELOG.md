@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.7.0...0.7.1) (2025-10-28)
+
+
+### Bug Fixes
+
+* fetching exact version of package ([#55](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/55)) ([b924acb](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/b924acbbbfea6e035f29171b7b5753a436a0df3e))
+
 ## [0.7.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.6.0...0.7.0) (2025-10-28)
 
 
