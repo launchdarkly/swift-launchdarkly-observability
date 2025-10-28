@@ -40,7 +40,7 @@ public final class BatchWorker {
                 await self.send(items: items)
                 
                 let elapsed = Double(DispatchTime.now().uptimeNanoseconds - sendStart.uptimeNanoseconds) / Double(NSEC_PER_SEC)
-                let seconds = max(interval - elapsed, minInterval)
+                let seconds = max(min(interval - elapsed, interval), minInterval)
                 try? await Task.sleep(seconds: seconds)
             }
         }
