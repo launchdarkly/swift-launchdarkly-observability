@@ -50,9 +50,8 @@ public final class SessionReplayService {
         let captureService = ScreenCaptureService(options: sessonReplayOptions)
         self.transportService = context.transportService
         self.snapshotTaker = SnapshotTaker(captureService: captureService,
-                                           appLifecycleManager: context.appLifecycleManager) { exportImage in
-            await context.transportService.eventQueue.send(EventQueueItem(payload: ScreenImageItem(exportImage: exportImage)))
-        }
+                                           appLifecycleManager: context.appLifecycleManager,
+                                           eventQueue: transportService.eventQueue)
         snapshotTaker.start()
         
         let sessionReplayContext = SessionReplayContext(

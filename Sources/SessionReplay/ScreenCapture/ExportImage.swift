@@ -2,14 +2,23 @@ import Foundation
 import UIKit
 
 struct ExportImage: Equatable {
-    static var padding = CGPoint(x: 11, y: 11)
-
-    var data: Data
-    var originalWidth: Int
-    var originalHeight: Int
-    var scale: CGFloat
-    var format: ExportFormat
-    var timestamp: TimeInterval
+    let data: Data
+    let dataHashValue: Int
+    let originalWidth: Int
+    let originalHeight: Int
+    let scale: CGFloat
+    let format: ExportFormat
+    let timestamp: TimeInterval
+    
+    init(data: Data, originalWidth: Int, originalHeight: Int, scale: CGFloat, format: ExportFormat, timestamp: TimeInterval) {
+        self.data = data
+        self.dataHashValue = data.hashValue
+        self.originalWidth = originalWidth
+        self.originalHeight = originalHeight
+        self.scale = scale
+        self.format = format
+        self.timestamp = timestamp
+    }
     
     func eventNode(id: Int, use_rr_dataURL: Bool = true) -> EventNode {
         if use_rr_dataURL {
@@ -48,15 +57,7 @@ struct ExportImage: Equatable {
     }
     
     static func == (lhs: ExportImage, rhs: ExportImage) -> Bool {
-        return lhs.data == rhs.data
-    }
-    
-    var paddedWidth: Int {
-        originalWidth + Int(ExportImage.padding.x) * 2
-    }
-    
-    var paddedHeight: Int {
-        originalHeight + Int(ExportImage.padding.y) * 2
+        lhs.dataHashValue == rhs.dataHashValue && lhs.data.elementsEqual(rhs.data)
     }
 }
 
