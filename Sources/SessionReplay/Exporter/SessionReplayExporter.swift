@@ -4,18 +4,18 @@ import Observability
 import OSLog
 
 actor SessionReplayExporter: EventExporting {
-    let replayApiService: SessionReplayAPIService
-    let context: SessionReplayContext
-    let sessionManager: SessionManaging
-    var isInitializing = false
-    var eventGenerator: SessionReplayEventGenerator
-    var log: OSLog
-    var initializedSession: InitializeSessionResponse?
-    var sessionInfo: SessionInfo?
+    private let replayApiService: SessionReplayAPIService
+    private let context: SessionReplayContext
+    private let sessionManager: SessionManaging
+    private var isInitializing = false
+    private var eventGenerator: SessionReplayEventGenerator
+    private var log: OSLog
+    private var initializedSession: InitializeSessionResponse?
+    private var sessionInfo: SessionInfo?
     private var sessionChangesTask: Task<Void, Never>?
     
-    var payloadId = 0
-    var nextPayloadId: Int {
+    private var payloadId = 0
+    private var nextPayloadId: Int {
         payloadId += 1
         return payloadId
     }
@@ -26,7 +26,7 @@ actor SessionReplayExporter: EventExporting {
         self.context = context
         self.replayApiService = replayApiService
         self.sessionManager = sessionManager
-        self.eventGenerator = SessionReplayEventGenerator()
+        self.eventGenerator = SessionReplayEventGenerator(log: context.log)
         self.log = context.log
         self.sessionInfo = sessionManager.sessionInfo
         
@@ -40,32 +40,32 @@ actor SessionReplayExporter: EventExporting {
         }
     }
     
-    func updateSessionInfo(_ sessionInfo: SessionInfo) async {
+    private func updateSessionInfo(_ sessionInfo: SessionInfo) async {
         self.sessionInfo = sessionInfo
-        self.eventGenerator = SessionReplayEventGenerator()
+        self.eventGenerator = SessionReplayEventGenerator(log: log)
         self.initializedSession = nil
     }
     
     private func initializeSessionIfNeeded() async throws {
-        if initializedSession == nil {
-            guard !isInitializing else { return }
-            isInitializing = true
-            defer {
-                isInitializing = false
+        guard initializedSession == nil else { return }
+      
+        guard !isInitializing else { return }
+        isInitializing = true
+        defer {
+            isInitializing = false
+        }
+        
+        do {
+            guard let sessionInfo else {
+                return
             }
             
-            do {
-                guard let sessionInfo else {
-                    return
-                }
-                
-                let session = try await initializeSession(sessionSecureId: sessionInfo.id)
-                try await identifySession(session: session)
-                initializedSession = session
-            } catch {
-                initializedSession = nil
-                os_log("%{public}@", log: log, type: .error, "Failed to initialize Session Replay:\n\(error)")
-            }
+            let session = try await initializeSession(sessionSecureId: sessionInfo.id)
+            try await identifySession(session: session)
+            initializedSession = session
+        } catch {
+            initializedSession = nil
+            os_log("%{public}@", log: log, type: .error, "Failed to initialize Session Replay:\n\(error)")
         }
     }
     
@@ -77,23 +77,23 @@ actor SessionReplayExporter: EventExporting {
         try await pushPayload(initializedSession: initializedSession, events: events)
     }
     
-    func pushPayload(initializedSession: InitializeSessionResponse, events: [Event]) async throws {
+    private func pushPayload(initializedSession: InitializeSessionResponse, events: [Event]) async throws {
         guard events.isNotEmpty else { return }
         
         let input = PushPayloadVariables(sessionSecureId: initializedSession.secureId, payloadId: "\(nextPayloadId)", events: events)
         try await replayApiService.pushPayload(input)
     }
     
-    func initializeSession(sessionSecureId: String) async throws -> InitializeSessionResponse {
+    private func initializeSession(sessionSecureId: String) async throws -> InitializeSessionResponse {
         try await replayApiService.initializeSession(context: context,
                                                      sessionSecureId: sessionSecureId,
                                                      userIdentifier: "abelonogov@launchdarkly.com")
     }
     
-    func identifySession(session: InitializeSessionResponse) async throws {
+    private func identifySession(session: InitializeSessionResponse) async throws {
         try await replayApiService.identifySession(
             sessionSecureId: session.secureId,
-            userObject:   ["telemetry.sdk.name":"JSClient",
+            userObject:   ["telemetry.sdk.name":"SwiftClient",
                            "telemetry.sdk.version":"3.8.1",
                            "feature_flag.set.id":"548f6741c1efad40031b18ae",
                            "feature_flag.provider.name":"LaunchDarkly",

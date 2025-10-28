@@ -8,6 +8,7 @@ final class MaskingElementsViewModel: ObservableObject {
     var capturedImage: CapturedImage?
     @Published var isImagePresented: Bool = false
     
+    @MainActor
     func captureShapShot() {
         guard let image = screenCaptureService.captureUIImage() else {
             return
@@ -17,4 +18,3 @@ final class MaskingElementsViewModel: ObservableObject {
         self.isImagePresented = true
     }
 }
-

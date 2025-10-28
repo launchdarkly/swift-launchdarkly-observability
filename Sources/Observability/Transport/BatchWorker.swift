@@ -1,15 +1,21 @@
 import Foundation
 import Common
+import OSLog
 
 public final class BatchWorker {
-    let eventQueue: EventQueue
-    let interval = TimeInterval(2)
-    var task: Task<Void, Never>?
-    let multiExporter: MultiEventExporting
+    private let eventQueue: EventQueue
+    private let interval = TimeInterval(2)
+    private let minInterval = TimeInterval(1)
+    private var task: Task<Void, Never>?
+    private let multiExporter: MultiEventExporting
+    private var log: OSLog
     
-    public init(eventQueue: EventQueue, multiExporter: MultiEventExporting = MultiEventExporter(exporters: [])) {
+    public init(eventQueue: EventQueue,
+                log: OSLog,
+                multiExporter: MultiEventExporting = MultiEventExporter(exporters: [])) {
         self.eventQueue = eventQueue
         self.multiExporter = multiExporter
+        self.log = log
     }
     
     public func addExporter(_ exporter: EventExporting) async {
@@ -24,12 +30,18 @@ public final class BatchWorker {
             
             while !Task.isCancelled {
                 let items = await eventQueue.dequeue(cost: 30000, limit: 20)
-                if items.isNotEmpty {
-                    await self.send(items: items)
+              
+                guard items.isNotEmpty else {
+                    try? await Task.sleep(seconds: interval)
                     continue
                 }
                 
-                try? await Task.sleep(seconds: interval)
+                let sendStart = DispatchTime.now()
+                await self.send(items: items)
+                
+                let elapsed = Double(DispatchTime.now().uptimeNanoseconds - sendStart.uptimeNanoseconds) / Double(NSEC_PER_SEC)
+                let seconds = max(interval - elapsed, minInterval)
+                try? await Task.sleep(seconds: seconds)
             }
         }
     }
@@ -43,7 +55,7 @@ public final class BatchWorker {
         do {
             try await multiExporter.export(items: items)
         } catch {
-            print(error)
+            os_log("%{public}@", log: log, type: .error, "BatchWorked has failed to send items: \(error)")
         }
     }
 }

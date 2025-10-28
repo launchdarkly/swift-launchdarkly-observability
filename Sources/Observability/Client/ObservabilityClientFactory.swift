@@ -37,7 +37,7 @@ public struct ObservabilityClientFactory {
         let tracer: TracesApi
         
         let eventQueue = EventQueue()
-        let batchWorker = BatchWorker(eventQueue: eventQueue)
+        let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
 
         let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionManager: sessionManager)
         
@@ -54,14 +54,14 @@ public struct ObservabilityClientFactory {
             }
             if options.autoInstrumentation.contains(.memoryWarnings) {
                 let memoryWarningMonitor = MemoryPressureMonitor(options: options, appLogBuilder: appLogBuilder) { log in
-                    await eventQueue.send(EventQueueItem(payload: LogItem(log: log)))
+                    await eventQueue.send(LogItem(log: log))
                 }
                 autoInstrumentation.append(memoryWarningMonitor)
             }
             
             let appLifecycleLogger = AppLifecycleLogger(appLifecycleManager: appLifecycleManager, appLogBuilder: appLogBuilder) { log in
                 Task {
-                    await eventQueue.send(EventQueueItem(payload: LogItem(log: log)))
+                    await eventQueue.send(LogItem(log: log))
                 }
             }
             autoInstrumentation.append(appLifecycleLogger)
@@ -93,7 +93,7 @@ public struct ObservabilityClientFactory {
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
             Task {
-                await eventQueue.send(EventQueueItem(payload: interaction))
+                await eventQueue.send(interaction)
             }
             
             // TODO: move to LD buffering

@@ -21,6 +21,7 @@ public final class ScreenCaptureService {
     // MARK: - Capture
 
     /// Capture as UIImage (must be on main thread).
+    @MainActor
     public func captureUIImage() -> CapturedImage? {
         assert(Thread.isMainThread, "Call on main thread.")
         // Measure CPU time consumed by the main thread during capture

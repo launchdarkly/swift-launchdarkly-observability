@@ -1,19 +1,17 @@
 import Foundation
 import Observability
 
-typealias ExportImageYield = @Sendable (ExportImage) async -> Void
-
 final class SnapshotTaker: EventSource {
     private let captureService: ScreenCaptureService
-    private let yield: ExportImageYield
     private let appLifecycleManager: AppLifecycleManaging
     private var timer: Timer?
+    private let eventQueue: EventQueue
     
     init(captureService: ScreenCaptureService,
          appLifecycleManager: AppLifecycleManaging,
-         yield: @escaping ExportImageYield) {
+         eventQueue: EventQueue) {
         self.captureService = captureService
-        self.yield = yield
+        self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
         
         Task(priority: .background) { [weak self, weak appLifecycleManager] in
@@ -40,7 +38,10 @@ final class SnapshotTaker: EventSource {
     func start() {
         guard timer == nil else { return }
         
-        let timer = Timer(timeInterval: 0.02, target: self, selector: #selector(queueSnapshot), userInfo: nil, repeats: true)
+        let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            queueSnapshot()
+        }
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }
@@ -50,13 +51,16 @@ final class SnapshotTaker: EventSource {
         timer = nil
     }
     
-    @objc func queueSnapshot() {
-        guard let timer,
-              let capturedImage = captureService.captureUIImage() else {
+    func queueSnapshot() {
+        guard let timer else {
             return
         }
         
         Task {
+            // check if buffer is full before doing hard work
+            guard await !eventQueue.isFull() else { return }
+            
+            guard let capturedImage = await captureService.captureUIImage() else { return }
             guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
                                                                     originalSize: capturedImage.renderSize,
                                                                     scale: capturedImage.scale,
@@ -64,7 +68,7 @@ final class SnapshotTaker: EventSource {
                 return
             }
             
-            await yield(exportImage)
+            await eventQueue.send(ScreenImageItem(exportImage: exportImage))
         }
     }
 }

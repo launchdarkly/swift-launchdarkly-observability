@@ -4,8 +4,9 @@ import UIKit
 #endif
 import Common
 import Observability
+import OSLog
 
-actor SessionReplayEventGenerator {    
+actor SessionReplayEventGenerator {
     let padding = CGSize(width: 11, height: 11)
     var sid = 0
     var nextSid: Int {
@@ -18,25 +19,23 @@ actor SessionReplayEventGenerator {
         id += 1
         return id
     }
+    
     var shouldMoveMouseOnce = true
     var imageId: Int?
     var lastExportImage: ExportImage?
-    var stats = SessionReplayStats()
-    var statsPublished = DispatchTime.now()
+    var stats: SessionReplayStats?
+    let isDebug = false
     
-    init() {
+    init(log: OSLog) {
+        if isDebug {
+            stats = SessionReplayStats(log: log)
+        }
     }
     
     func generateEvents(items: [EventQueueItem]) -> [Event] {
         var events = [Event]()
         for item in items {
             appendEvents(item: item, events: &events)
-        }
-        
-        let elapsed = Double(DispatchTime.now().uptimeNanoseconds - statsPublished.uptimeNanoseconds) / Double(NSEC_PER_SEC)
-        if elapsed >= 5.0 {
-            print(stats.report())
-            statsPublished = DispatchTime.now()
         }
         
         return events
@@ -53,7 +52,7 @@ actor SessionReplayEventGenerator {
                 lastExportImage = exportImage
             }
             
-            stats.addExportImage(exportImage)
+            stats?.addExportImage(exportImage)
             
             let timestamp = item.timestamp
         

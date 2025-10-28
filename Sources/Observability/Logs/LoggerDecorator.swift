@@ -69,7 +69,7 @@ extension LoggerDecorator: LogsApi {
                 return
             }
             
-            await eventQueue.send(EventQueueItem(payload: LogItem(log: log)))
+            await eventQueue.send(LogItem(log: log))
         }
     }
 }
