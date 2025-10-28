@@ -13,6 +13,7 @@ actor SessionReplayExporter: EventExporting {
     private var initializedSession: InitializeSessionResponse?
     private var sessionInfo: SessionInfo?
     private var sessionChangesTask: Task<Void, Never>?
+    private var shouldWakeUpSession = true
     
     private var payloadId = 0
     private var nextPayloadId: Int {
@@ -73,8 +74,16 @@ actor SessionReplayExporter: EventExporting {
         try await initializeSessionIfNeeded()
         guard let initializedSession else { return }
         
+ 
         let events = await eventGenerator.generateEvents(items: items)
         try await pushPayload(initializedSession: initializedSession, events: events)
+        
+        if shouldWakeUpSession {
+            let events = await eventGenerator.generateWakeUpEvents(items: items)
+            // we need a separate payload to wake up player
+            try await pushPayload(initializedSession: initializedSession, events: events)
+            shouldWakeUpSession = false
+        }
     }
     
     private func pushPayload(initializedSession: InitializeSessionResponse, events: [Event]) async throws {

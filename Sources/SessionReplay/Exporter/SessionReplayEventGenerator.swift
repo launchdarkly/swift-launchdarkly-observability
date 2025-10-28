@@ -20,7 +20,6 @@ actor SessionReplayEventGenerator {
         return id
     }
     
-    var shouldMoveMouseOnce = true
     var imageId: Int?
     var lastExportImage: ExportImage?
     var stats: SessionReplayStats?
@@ -41,6 +40,35 @@ actor SessionReplayEventGenerator {
         return events
     }
     
+    func generateWakeUpEvents(items: [EventQueueItem]) -> [Event] {
+        var events = [Event]()
+        if let imageId, let firstItem = items.first {
+            events.append(reloadEvent(timestamp: firstItem.timestamp))
+            wakeUpPlayerEvents(&events, imageId, firstItem.timestamp)
+        }
+        return events
+    }
+    
+    fileprivate func wakeUpPlayerEvents(_ events: inout [Event], _ imageId: Int, _ timestamp: TimeInterval) {
+        // artificial mouse movement to wake up session replay player
+        events.append(Event(type: .IncrementalSnapshot,
+                            data: AnyEventData(EventData(source: .mouseInteraction,
+                                                         type: .mouseDown,
+                                                         id: imageId,
+                                                         x: padding.width,
+                                                         y: padding.height)),
+                            timestamp: timestamp,
+                            _sid: nextSid))
+        events.append(Event(type: .IncrementalSnapshot,
+                            data: AnyEventData(EventData(source: .mouseInteraction,
+                                                         type: .mouseUp,
+                                                         id: imageId,
+                                                         x: padding.width,
+                                                         y: padding.height)),
+                            timestamp: timestamp,
+                            _sid: nextSid))
+    }
+    
     func appendEvents(item: EventQueueItem, events: inout [Event]) {
         switch item.payload {
         case let payload as ScreenImageItem:
@@ -55,21 +83,6 @@ actor SessionReplayEventGenerator {
             stats?.addExportImage(exportImage)
             
             let timestamp = item.timestamp
-        
-            if let imageId, shouldMoveMouseOnce {
-                events.append(reloadEvent(timestamp: timestamp))
-                // artificial mouse movement to wake up session replay player
-                let event = Event(type: .IncrementalSnapshot,
-                                  data: AnyEventData(EventData(source: .mouseInteraction,
-                                                               type: .touchStart,
-                                                               id: imageId,
-                                                               x: padding.width,
-                                                               y: padding.height)),
-                                  timestamp: timestamp,
-                                  _sid: nextSid)
-                events.append(event)
-                shouldMoveMouseOnce = false
-            }
             
             if let imageId,
                let lastExportImage,

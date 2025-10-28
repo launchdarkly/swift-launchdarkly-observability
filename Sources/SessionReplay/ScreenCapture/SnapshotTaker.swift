@@ -38,7 +38,7 @@ final class SnapshotTaker: EventSource {
     func start() {
         guard timer == nil else { return }
         
-        let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self else { return }
             queueSnapshot()
         }
