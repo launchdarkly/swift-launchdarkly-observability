@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.7.2...0.8.0) (2025-10-29)
+
+
+### Features
+
+* Bump ios-sdk version to 10.0.0 ([ed5958d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/ed5958d45651880704ef6ad15ed473b3908b11a3))
+* Bump ios-sdk version to 10.0.0 ([#60](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/60)) ([ed5958d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/ed5958d45651880704ef6ad15ed473b3908b11a3))
+
 ## [0.7.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.7.1...0.7.2) (2025-10-29)
 
 
