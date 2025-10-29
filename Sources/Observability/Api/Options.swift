@@ -91,5 +91,7 @@ public struct Options {
         self.log = log
         self.crashReporting = crashReporting
         self.autoInstrumentation = autoInstrumentation
+        LaunchTimeTracker.shared.markLaunchStart()
+        LaunchPerformanceTiming.instance.trackLaunch()
     }
 }

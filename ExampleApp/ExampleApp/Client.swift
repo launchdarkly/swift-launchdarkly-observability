@@ -2,6 +2,8 @@ import UIKit
 import LaunchDarklyObservability
 
 struct Client {
+    private let launch = LaunchPerformanceTiming.instance
+    
     let config = { () -> LDConfig in
         var config = LDConfig(
             mobileKey: Env.mobileKey,
