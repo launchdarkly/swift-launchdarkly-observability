@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.7.1...0.7.2) (2025-10-29)
+
+
+### Bug Fixes
+
+* put Package.resolved into gitignore ([61b9d78](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/61b9d78a8932a86b776ef52bce79a73aa75ef557))
+* put Package.resolved into gitignore ([#57](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/57)) ([61b9d78](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/61b9d78a8932a86b776ef52bce79a73aa75ef557))
+
 ## [0.7.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.7.0...0.7.1) (2025-10-28)
 
 
