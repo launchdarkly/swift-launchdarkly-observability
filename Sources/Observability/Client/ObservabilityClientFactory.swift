@@ -87,6 +87,17 @@ public struct ObservabilityClientFactory {
                 autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
             }
             tracer = decorator
+            
+            LaunchMeter.shared.subscribe { statistics in
+                for element in statistics {
+                    let span = decorator.startSpan(
+                        name: "AppStart",
+                        attributes: ["start.type": .string(element.launchType.description)],
+                        startTime: element.startTime
+                    )
+                    span.end(time: element.endTime)
+                }
+            }         
         } else {
             tracer = NoOpTracer()
         }
@@ -145,6 +156,20 @@ public struct ObservabilityClientFactory {
                     }
                 )
             }
+            
+            LaunchMeter.shared.subscribe { statistics in
+                for element in statistics {
+                    meter.recordHistogram(
+                        metric: .init(
+                            name: "AppStart",
+                            value: element.elapsedTime,
+                            attributes: ["start.type": .string(element.launchType.description)],
+                            timestamp: element.endTime
+                        )
+                    )
+                }
+            }
+            
         } else {
             meter = NoOpMeter()
         }

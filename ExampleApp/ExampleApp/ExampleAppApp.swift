@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct ExampleAppApp: App {
     @StateObject private var browser = Browser()
-    @State private var client = Client()
+    @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
     
     var body: some Scene {
         WindowGroup {
@@ -25,9 +25,6 @@ struct ExampleAppApp: App {
                     }
             }
             .environmentObject(browser)
-            .onAppear {
-                client.start()
-            }
         }
     }
 }
