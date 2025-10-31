@@ -31,14 +31,14 @@ public struct TouchSample: Sendable {
     }
 }
 
-public typealias UIInteractionYield = @Sendable (TouchInteraction) -> Void
+public typealias TouchInteractionYield = @Sendable (TouchInteraction) -> Void
 
 final class TouchCaptureCoordinator {
     private let source: UIEventSource
     private let targetResolver: TargetResolving
     private let touchIntepreter: TouchIntepreter
     private let receiverChecker: UIEventReceiverChecker
-    var yield: UIInteractionYield?
+    var yield: TouchInteractionYield?
     
     init(targetResolver: TargetResolving = TargetResolver(),
          receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker()) {

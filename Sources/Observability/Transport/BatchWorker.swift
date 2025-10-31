@@ -82,14 +82,6 @@ public final class BatchWorker {
         task?.cancel()
         task = nil
     }
-    
-//    func send(items: [EventQueueItem]) async {
-//        do {
-//            try await multiExporter.export(items: items)
-//        } catch {
-//            os_log("%{public}@", log: log, type: .error, "BatchWorked has failed to send items: \(error)")
-//        }
-//    }
 }
 
 
