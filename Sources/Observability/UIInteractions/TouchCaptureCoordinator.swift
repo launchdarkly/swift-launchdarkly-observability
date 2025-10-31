@@ -31,23 +31,21 @@ public struct TouchSample: Sendable {
     }
 }
 
-typealias UIInteractionYield = @Sendable (TouchInteraction) -> Void
+public typealias UIInteractionYield = @Sendable (TouchInteraction) -> Void
 
 final class TouchCaptureCoordinator {
     private let source: UIEventSource
     private let targetResolver: TargetResolving
     private let touchIntepreter: TouchIntepreter
-    private let yield: UIInteractionYield
     private let receiverChecker: UIEventReceiverChecker
-
+    var yield: UIInteractionYield?
+    
     init(targetResolver: TargetResolving = TargetResolver(),
-         receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker(),
-         yield: @escaping UIInteractionYield) {
+         receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker()) {
         self.targetResolver = targetResolver
         self.touchIntepreter = TouchIntepreter()
         self.source = UIWindowSwizzleSource()
         self.receiverChecker = receiverChecker
-        self.yield = yield
     }
     
     func start() {
@@ -73,7 +71,7 @@ final class TouchCaptureCoordinator {
         }
         
         Task.detached(priority: .background) { [weak self] in
-            guard let self else { return }
+            guard let self, let yield else { return }
             // Bg thread part of work
             for await touchSample in touchSampleStream {
                 touchIntepreter.process(touchSample: touchSample, yield: yield)

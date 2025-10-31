@@ -4,10 +4,17 @@ import Common
 public struct EventQueueItem {
     public var payload: EventQueueItemPayload
     public var cost: Int
+    public var exporterTypeId: ObjectIdentifier
     
     public init(payload: EventQueueItemPayload) {
+        let type = type(of: payload.exporterClass)
+        self.init(payload: payload, exporterTypeId: ObjectIdentifier(type))
+    }
+    
+    public init(payload: EventQueueItemPayload, exporterTypeId: ObjectIdentifier) {
         self.payload = payload
         self.cost = payload.cost()
+        self.exporterTypeId = exporterTypeId
     }
     
     public var timestamp: TimeInterval {
@@ -47,8 +54,8 @@ public actor EventQueue: EventQueuing {
         lastEventTime = item.timestamp
         currentSize += item.cost
     }
-         
-    func dequeue(cost: Int, limit: Int) -> [EventQueueItem] {
+    
+    func first(cost: Int, limit: Int) -> [EventQueueItem] {
         guard !storage.isEmpty else {
             return []
         }
@@ -62,13 +69,18 @@ public actor EventQueue: EventQueuing {
             
             if i >= limit || sumCost > cost {
                 currentSize -= item.cost
-                storage.removeFirst(i + 1)
                 return result
             }
         }
         
-        storage.removeAll()
         currentSize = 0
         return result
+    }
+    
+    func removeFirst(_ count: Int) {
+        for i in 0..<count {
+            currentSize -= storage[i].cost
+        }
+        storage.removeFirst(count)
     }
 }

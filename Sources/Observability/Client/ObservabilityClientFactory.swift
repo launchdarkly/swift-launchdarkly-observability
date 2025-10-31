@@ -92,10 +92,6 @@ public struct ObservabilityClientFactory {
         }
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
-            Task {
-                await eventQueue.send(interaction)
-            }
-            
             // TODO: move to LD buffering
             if let span = interaction.span() {
                 tracer.startSpan(name: span.name, attributes: span.attributes)
@@ -161,7 +157,8 @@ public struct ObservabilityClientFactory {
             options: options,
             appLifecycleManager: appLifecycleManager,
             sessionManager: sessionManager,
-            transportService: transportService
+            transportService: transportService,
+            userInteractionManager: userInteractionManager
         )
         
         transportService.start()
