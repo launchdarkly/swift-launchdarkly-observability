@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct ExampleAppApp: App {
     @StateObject private var browser = Browser()
-    @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
+    @State private var client = Client()
     
     var body: some Scene {
         WindowGroup {

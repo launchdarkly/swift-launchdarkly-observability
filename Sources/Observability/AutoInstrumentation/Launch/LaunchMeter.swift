@@ -2,6 +2,7 @@
 import Foundation
 import UIKit
 import Common
+import StartupMetrics
 
 enum LaunchType {
     case cold, warm, hot
@@ -49,16 +50,15 @@ public final class LaunchMeter {
     private let store: Store<State, Action>
     
     private var displayLink: CADisplayLink?
-    private var buffer = AtomicArray<LaunchStats>()
     private let processInfo: ProcessInfo
     
     private var observers = [UUID: DidGetStatistics]()
-    public static let shared = LaunchMeter()
     
-    private init() {
+    
+    public init() {
         let processInfo = ProcessInfo.processInfo
         self.store = .init(
-            state: .init(launchStartUpDate: Date(), launchStartUptime: processInfo.systemUptime),
+            state: .init(launchStartUpDate: AppStartTime.stats.startDate, launchStartUptime: AppStartTime.stats.startTime),
             reducer: LaunchMeter.reduce(state:action:)
         )
         self.processInfo = processInfo
@@ -123,9 +123,7 @@ public final class LaunchMeter {
         displayLink = nil
         
         guard let statistics = store.state.statistics.last else { return }
-        observers.values.forEach { $0([statistics]) }
-        print("🚀 Launch: \(store.state.launchType.description), ⏱️ duration: \(store.state.lastLaunchDuration)s")
-        
+        observers.values.forEach { $0([statistics]) }        
     }
     
     // MARK: - Update State
@@ -148,12 +146,7 @@ public final class LaunchMeter {
             }
 
             state.lastLaunchDuration = currentUptime - (state.lastDidBecomeActiveUpTime ?? 0.0)
-            if let lastBackgroundUptime = state.lastBackgroundUptime {
-                let timeSinceBackground = currentUptime - lastBackgroundUptime
-                state.launchType = (timeSinceBackground < 5) ? .hot : .warm
-            } else {
-                state.launchType = .warm
-            }
+            state.launchType = .warm
             
             let statistics = LaunchStats(
                 startTime: state.lastDidBecomeActiveUpDate ?? Date(),
@@ -163,12 +156,12 @@ public final class LaunchMeter {
             )
             state.statistics.append(statistics)
             
-        case .didEnterBackground(let currentUptime, let currentUpDate):
+        case .didEnterBackground(let currentUptime, _):
             state.lastBackgroundUptime = currentUptime
         case .willEnterForegroundNotification(let currentUptime, let currentUpDate):
             state.lastDidBecomeActiveUpTime = currentUptime
             state.lastDidBecomeActiveUpDate = currentUpDate
-        case .appDidBecomeActive(let currentUptime, let currentUpDate):
+        case .appDidBecomeActive(_, _):
             state.hasRenderedFirstFrame = false
         case .releaseBuffer:
             state.statistics.removeAll()
