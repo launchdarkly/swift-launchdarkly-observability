@@ -2,6 +2,10 @@ import Foundation
 import OpenTelemetrySdk
 
 public struct LogItem: EventQueueItemPayload {
+    public var exporterClass: AnyClass {
+        OtlpLogExporter.self
+    }
+    
     public let log: ReadableLogRecord
     
     public func cost() -> Int {
