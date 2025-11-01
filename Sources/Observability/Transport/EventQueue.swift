@@ -65,15 +65,12 @@ public actor EventQueue: EventQueuing {
         for (i, item) in storage.enumerated() {
             result.append(item)
             
-            sumCost += item.cost
-            
+            sumCost += item.cost            
             if i >= limit || sumCost > cost {
-                currentSize -= item.cost
                 return result
             }
         }
         
-        currentSize = 0
         return result
     }
     

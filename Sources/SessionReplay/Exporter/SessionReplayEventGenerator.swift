@@ -69,8 +69,7 @@ actor SessionReplayEventGenerator {
                             _sid: nextSid))
     }
     
-    func appendEvents(item: EventQueueItem, events: inout [Event]) -> Bool {
-        var taken = true
+    func appendEvents(item: EventQueueItem, events: inout [Event]) {
         switch item.payload {
         case let payload as ScreenImageItem:
             let exportImage = payload.exportImage
@@ -98,11 +97,8 @@ actor SessionReplayEventGenerator {
         case let interaction as TouchInteraction:
             appendTouchInteraction(interaction: interaction, events: &events)
         default:
-            // Item wasn't needed for SessionReplay
-            taken = false
+            break // Item wasn't needed for SessionReplay
         }
-        
-        return taken
     }
     
     func paddedWidth(_ width: Int) -> Int {

@@ -12,10 +12,9 @@ public final class BatchWorker {
     private var failedItems = [ObjectIdentifier: [EventQueueItem]]()
     
     public init(eventQueue: EventQueue,
-                log: OSLog,
-                multiExporter: MultiEventExporting = MultiEventExporter(exporters: [])) {
+                log: OSLog) {
         self.eventQueue = eventQueue
-        self.multiExporter = multiExporter
+        self.multiExporter = MultiEventExporter(exporters: [], log: log)
         self.log = log
     }
     
@@ -53,7 +52,7 @@ public final class BatchWorker {
         case .partialFailure(let results):
             failedItems = results.groupItems
         case .failure:
-            () // no-op
+            break // no-op
         }
     }
     
@@ -74,7 +73,7 @@ public final class BatchWorker {
             await eventQueue.removeFirst(items.count)
             failedItems = results.groupItems
         case .failure:
-            () // no-op
+            break // no-op
         }
     }
     
