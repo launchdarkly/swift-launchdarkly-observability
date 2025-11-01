@@ -36,7 +36,7 @@ struct Client {
         }
     }()
     
-    func start() {
+    init() {
         LDClient.start(
             config: config,
             context: context,
