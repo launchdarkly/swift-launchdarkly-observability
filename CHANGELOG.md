@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.8.0...0.8.1) (2025-10-29)
+
+
+### Bug Fixes
+
+* report SDK version in resource attributes ([#63](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/63)) ([8a79ddb](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/8a79ddbeea5478dc3606f936fe139fe2c125cda2))
+* report SDK version in resource attributes (fixup! [#63](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/63)) ([#65](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/65)) ([14a5cbe](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/14a5cbe201125f782b586a3d017c516d3a307fbf))
+
 ## [0.8.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.7.2...0.8.0) (2025-10-29)
 
 
