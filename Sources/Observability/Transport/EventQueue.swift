@@ -93,14 +93,18 @@ public actor EventQueue: EventQueuing {
     }
     
     func removeFirst(id: ObjectIdentifier, count: Int) {
-        guard let items = storage[id] else {
+        guard var items = storage[id], count > 0 else {
             return
         }
         
-        for i in 0..<count {
-            currentSize -= items[i].cost
+        let removeCount = min(count, items.count)
+        var removedCost = 0
+        for i in 0..<removeCount {
+            removedCost += items[i].cost
         }
+        currentSize -= removedCost
         
-        storage[id]?.removeFirst(count)
+        items.removeFirst(removeCount)
+        storage[id] = items.isEmpty ? nil : items
     }
 }

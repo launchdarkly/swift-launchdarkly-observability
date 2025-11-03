@@ -111,8 +111,7 @@ public final actor BatchWorker {
             let backoff = min(Constants.baseBackoffSeconds * pow(2, Double(max(0, attempts - 1))), Constants.maxBackoffSeconds)
             let jitter = backoff * Constants.backoffJitter
             let jittered = max(0, backoff + Double.random(in: -jitter...jitter))
-            let delayMs = Int(jittered * 1000)
-            let until = DispatchTime.now() + .milliseconds(delayMs)
+            let until = DispatchTime.now() + .milliseconds(Int(jittered * 1000))
             exporterBackoff[exporterId] = BackOffExporterInfo(until: until, attempts: attempts)
         } else {
             await eventQueue.removeFirst(id: exporterId, count: itemsCount)
