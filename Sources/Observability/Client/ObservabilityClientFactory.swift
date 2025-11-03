@@ -99,16 +99,21 @@ public struct ObservabilityClientFactory {
         }
         userInteractionManager.start()
         
-        guard  let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.metricsPath) else {
+        guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.metricsPath) else {
             throw InstrumentationError.invalidTraceExporterUrl
         }
         
         if options.metrics == .enabled {
-            let metricsExporter = OtlpHttpMetricExporter(
+            let metricsEventExporter = OtlpMetricEventExporter(
                 endpoint: url,
                 config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
             )
-            let reader = PeriodicMetricReaderBuilder(exporter: metricsExporter)
+            let metricsEventExporter = OtlpMetricScheduleExporter()
+            let metricsExporterOld = OtlpHttpMetricExporter(
+                endpoint: url,
+                config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
+            )
+            let reader = PeriodicMetricReaderBuilder(exporter: metricsExporterOld)
                 .setInterval(timeInterval: 10.0)
                 .build()
 

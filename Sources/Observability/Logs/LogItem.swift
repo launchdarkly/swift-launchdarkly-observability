@@ -3,7 +3,7 @@ import OpenTelemetrySdk
 
 public struct LogItem: EventQueueItemPayload {
     public var exporterClass: AnyClass {
-        OtlpLogExporter.self
+        Observability.OtlpLogExporter.self
     }
     
     public let log: ReadableLogRecord
