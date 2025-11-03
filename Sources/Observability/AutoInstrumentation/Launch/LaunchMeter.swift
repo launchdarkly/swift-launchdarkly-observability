@@ -167,9 +167,14 @@ public final class LaunchMeter {
             state.lastLaunchDuration = currentUptime - (state.lastWillEnterForegroundTime ?? 0.0)
             state.launchType = .warm
             
+            guard
+                let lastWillEnterForegroundDate = state.lastWillEnterForegroundDate,
+                let launchEndUpDate = state.launchEndUpDate
+            else { return }
+            
             let statistics = LaunchStats(
-                startTime: state.lastWillEnterForegroundDate ?? Date(),
-                endTime: state.launchEndUpDate ?? Date(),
+                startTime: lastWillEnterForegroundDate,
+                endTime: launchEndUpDate,
                 elapsedTime: state.lastLaunchDuration,
                 launchType: state.launchType
             )
