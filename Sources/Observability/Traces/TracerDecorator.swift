@@ -93,3 +93,23 @@ extension TracerDecorator: TracesApi {
         return true
     }
 }
+
+/// Internal method used to set span start date
+extension TracerDecorator {
+    func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date = Date()) -> any Span {
+        let builder = tracer.spanBuilder(spanName: name)
+        
+        if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
+            builder.setParent(parent)
+        }
+        
+        attributes.forEach {
+            builder.setAttribute(key: $0.key, value: $0.value)
+        }
+        builder.setStartTime(time: startTime)
+        let span = builder.startSpan()
+        span.setAttributes(attributes)
+        
+        return span
+    }
+}

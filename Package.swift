@@ -22,6 +22,11 @@ let package = Package(
         .package(url: "https://github.com/mw99/DataCompression", from: "3.8.0")
     ],
     targets: [
+        // C target (no Swift files here)
+        .target(
+            name: "ObjCBridge",
+            publicHeadersPath: "."
+        ),
         .target(name: "Common",
                 dependencies: [
                     .product(name: "DataCompression", package: "DataCompression"),
@@ -30,6 +35,7 @@ let package = Package(
             name: "Observability",
             dependencies: [
                 "Common",
+                "ObjCBridge",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),
