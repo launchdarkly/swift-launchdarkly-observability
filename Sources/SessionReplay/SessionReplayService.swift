@@ -78,9 +78,7 @@ public final class SessionReplayService {
                                                       replayApiService: replayApiService)
         Task {
             await transportService.batchWorker.addExporter(replayPushService)
+            transportService.start()
         }
-        
-        // it maybe already started if observability plugin is used.
-        transportService.start()
     }
 }
