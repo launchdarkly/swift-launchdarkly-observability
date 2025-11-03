@@ -2,7 +2,6 @@
 import Foundation
 import UIKit
 import Common
-//import StartupMetrics
 
 enum LaunchType {
     case cold, warm
