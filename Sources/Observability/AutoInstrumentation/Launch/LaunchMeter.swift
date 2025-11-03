@@ -62,6 +62,27 @@ public final class LaunchMeter {
         self.processInfo = processInfo
         self.addObservers()
     }
+    
+    deinit {
+        displayLink?.invalidate()
+        displayLink = nil
+        observers.removeAll()
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+    }
 
     @discardableResult
     func subscribe(block: @escaping DidGetStatistics) -> UUID {
