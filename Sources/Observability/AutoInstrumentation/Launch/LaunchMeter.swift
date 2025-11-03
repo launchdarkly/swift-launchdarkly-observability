@@ -29,8 +29,8 @@ public final class LaunchMeter {
         var launchEndUptime: TimeInterval?
         var lastBackgroundUptime: TimeInterval?
         
-        var lastDidBecomeActiveUpTime: TimeInterval?
-        var lastDidBecomeActiveUpDate: Date?
+        var lastWillEnterForegroundTime: TimeInterval?
+        var lastWillEnterForegroundDate: Date?
         var isFirstLaunchInProcess = true
         var hasRenderedFirstFrame = false
         var launchType = LaunchType.cold
@@ -143,11 +143,11 @@ public final class LaunchMeter {
                 return state.statistics.append(statistics)
             }
 
-            state.lastLaunchDuration = currentUptime - (state.lastDidBecomeActiveUpTime ?? 0.0)
+            state.lastLaunchDuration = currentUptime - (state.lastWillEnterForegroundTime ?? 0.0)
             state.launchType = .warm
             
             let statistics = LaunchStats(
-                startTime: state.lastDidBecomeActiveUpDate ?? Date(),
+                startTime: state.lastWillEnterForegroundDate ?? Date(),
                 endTime: state.launchEndUpDate ?? Date(),
                 elapsedTime: state.lastLaunchDuration,
                 launchType: state.launchType
@@ -157,8 +157,8 @@ public final class LaunchMeter {
         case .didEnterBackground(let currentUptime, _):
             state.lastBackgroundUptime = currentUptime
         case .willEnterForegroundNotification(let currentUptime, let currentUpDate):
-            state.lastDidBecomeActiveUpTime = currentUptime
-            state.lastDidBecomeActiveUpDate = currentUpDate
+            state.lastWillEnterForegroundTime = currentUptime
+            state.lastWillEnterForegroundDate = currentUpDate
         case .appDidBecomeActive(_, _):
             state.hasRenderedFirstFrame = false
         case .releaseBuffer:
