@@ -28,7 +28,7 @@ public protocol EventQueuing: Actor {
 
 // TODO: make it optimal
 public actor EventQueue: EventQueuing {
-    private var storage = [EventQueueItem]()
+    private var storage = [ObjectIdentifier: [EventQueueItem]]()
     private var lastEventTime: TimeInterval = 0
     private let limitSize: Int
     private var currentSize = 0
@@ -50,34 +50,57 @@ public actor EventQueue: EventQueuing {
             return
         }
         
-        storage.append(item)
+        storage[item.exporterTypeId, default: []].append(item)
         lastEventTime = item.timestamp
         currentSize += item.cost
     }
     
-    func first(cost: Int, limit: Int) -> [EventQueueItem] {
-        guard !storage.isEmpty else {
-            return []
-        }
-        
-        var result = [EventQueueItem]()
-        var sumCost = 0
-        for (i, item) in storage.enumerated() {
-            result.append(item)
-            
-            sumCost += item.cost            
-            if i >= limit || sumCost > cost {
-                return result
+    func earliest(cost: Int, limit: Int, except: Set<ObjectIdentifier>) -> (id: ObjectIdentifier, items: [EventQueueItem], cost: Int)? {
+        var earlistEvent: (id: ObjectIdentifier, items: [EventQueueItem], firstTimestamp: TimeInterval)?
+        for (id, items) in storage where except.contains(id) == false {
+            guard let firstItem = items.first else {
+                continue
             }
+            if let earlistEventUnwrapped = earlistEvent, firstItem.timestamp >= earlistEventUnwrapped.firstTimestamp {
+                continue
+            }
+            
+            earlistEvent = (id, items, firstItem.timestamp)
         }
         
-        return result
+        guard let earlistEvent else { return nil }
+        
+        guard let (items, cost) = first(cost: cost, limit: limit, items: earlistEvent.items) else {
+            return nil
+        }
+        
+        return (id: earlistEvent.id, items: items, cost: cost)
     }
     
-    func removeFirst(_ count: Int) {
-        for i in 0..<count {
-            currentSize -= storage[i].cost
+    private func first(cost: Int, limit: Int, items: [EventQueueItem]) -> (items: [EventQueueItem], cost: Int)? {
+         var sumCost = 0
+         var resultItems = [EventQueueItem]()
+         for (i, item) in items.enumerated() {
+             resultItems.append(item)
+             sumCost += item.cost
+             
+             if i > limit || sumCost > cost {
+                 break
+             }
+         }
+         
+         return (items: resultItems, sumCost)
+    }
+    
+    func removeFirst(id: ObjectIdentifier, count: Int) {
+        guard let items = storage[id] else {
+            return
         }
-        storage.removeFirst(count)
+        
+        for i in 0..<count {
+            currentSize -= items[i].cost
+        }
+        
+        storage[id]?.removeFirst(count)
     }
 }

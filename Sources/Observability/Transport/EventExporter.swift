@@ -1,7 +1,7 @@
 import Foundation
 import Common
 
-public protocol EventExporting {
+public protocol EventExporting: Sendable {
     func export(items: [EventQueueItem]) async throws
 }
 
