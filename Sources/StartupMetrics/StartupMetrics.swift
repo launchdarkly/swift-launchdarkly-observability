@@ -6,11 +6,6 @@ public final class AppStartTime: NSObject {
         public let startTime: TimeInterval
         public let startDate: Date
     }
-    /// Captures uptime when initialized.
-    public static var startTime: TimeInterval = {
-        let t = ProcessInfo.processInfo.systemUptime
-        return t
-    }()
     
     /// Captures uptime when initialized.
     public static var stats: AppStartStats = {
@@ -25,5 +20,4 @@ public final class AppStartTime: NSObject {
 @_silgen_name("SwiftStartupMetricsInitialize")
 public func SwiftStartupMetricsInitialize() {
     _ = AppStartTime.stats
-    _ = AppStartTime.startTime
 }
