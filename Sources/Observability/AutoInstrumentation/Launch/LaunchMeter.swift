@@ -5,13 +5,12 @@ import Common
 //import StartupMetrics
 
 enum LaunchType {
-    case cold, warm, hot
+    case cold, warm
     
     var description: String {
         switch self {
         case .cold: return "cold"
         case .warm: return "warm"
-        case .hot: return "hot"
         }
     }
 }
