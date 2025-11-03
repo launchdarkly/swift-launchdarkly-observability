@@ -1,3 +1,11 @@
+//
+//  AppStartTime.swift
+//  swift-launchdarkly-observability
+//
+//  Created by Mario Canto on 03/11/25.
+//
+
+
 import Foundation
 
 @objcMembers

@@ -14,11 +14,6 @@ let package = Package(
         .library(
             name: "LaunchDarklySessionReplay",
             targets: ["LaunchDarklySessionReplay"]),
-        .library(
-            name: "StartupMetrics",
-            type: .static, // static library ensures it links early
-            targets: ["StartupMetrics"]
-        ),
     ],
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift", exact: "2.0.0"),
@@ -27,14 +22,9 @@ let package = Package(
         .package(url: "https://github.com/mw99/DataCompression", from: "3.8.0")
     ],
     targets: [
-        // Swift target depends on the C target
-        .target(
-            name: "StartupMetrics",
-            dependencies: ["StartupMetricsC"]
-        ),
         // C target (no Swift files here)
         .target(
-            name: "StartupMetricsC",
+            name: "ObjCBridge",
             publicHeadersPath: "."
         ),
         .target(name: "Common",
@@ -45,7 +35,7 @@ let package = Package(
             name: "Observability",
             dependencies: [
                 "Common",
-                "StartupMetrics",
+                "ObjCBridge",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),
