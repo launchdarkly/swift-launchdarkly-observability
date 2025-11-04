@@ -42,7 +42,6 @@ struct TraceView: View {
                 .task(id: started) {
                     guard started else {
                         span?.end()
-                        _ = LDObserve.shared.flush()
                         return name = ""
                     }
                     span = LDObserve.shared.startSpan(name: name, attributes: [:])

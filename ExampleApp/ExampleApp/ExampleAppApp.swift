@@ -25,9 +25,6 @@ struct ExampleAppApp: App {
                     }
             }
             .environmentObject(browser)
-            .onAppear {
-                client.start()
-            }
         }
     }
 }
