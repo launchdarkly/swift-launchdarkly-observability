@@ -28,6 +28,12 @@ public protocol EventQueuing: Actor {
 
 // TODO: make it optimal
 public actor EventQueue: EventQueuing {
+    public struct EarliestItemsResult {
+        let id: ObjectIdentifier
+        let items: [EventQueueItem]
+        let cost: Int
+    }
+
     private var storage = [ObjectIdentifier: [EventQueueItem]]()
     private var lastEventTime: TimeInterval = 0
     private let limitSize: Int
@@ -54,8 +60,8 @@ public actor EventQueue: EventQueuing {
         lastEventTime = item.timestamp
         currentSize += item.cost
     }
-    
-    func earliest(cost: Int, limit: Int, except: Set<ObjectIdentifier>) -> (id: ObjectIdentifier, items: [EventQueueItem], cost: Int)? {
+
+    func earliest(cost: Int, limit: Int, except: Set<ObjectIdentifier>) -> EarliestItemsResult? {
         var earlistEvent: (id: ObjectIdentifier, items: [EventQueueItem], firstTimestamp: TimeInterval)?
         for (id, items) in storage where except.contains(id) == false {
             guard let firstItem = items.first else {
@@ -74,7 +80,7 @@ public actor EventQueue: EventQueuing {
             return nil
         }
         
-        return (id: earlistEvent.id, items: items, cost: cost)
+        return EarliestItemsResult(id: earlistEvent.id, items: items, cost: cost)
     }
     
     private func first(cost: Int, limit: Int, items: [EventQueueItem]) -> (items: [EventQueueItem], cost: Int)? {

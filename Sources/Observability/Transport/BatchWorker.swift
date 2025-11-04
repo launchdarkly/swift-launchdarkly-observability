@@ -66,11 +66,14 @@ public final actor BatchWorker {
                 except.insert(id)
             }
 
-            guard let (exporterId, items, cost) = await eventQueue.earliest(cost: budget,
-                                                                            limit: Constants.maxConcurrentItems,
-                                                                            except: except) else {
+            guard let earliest = await eventQueue.earliest(cost: budget,
+                                                           limit: Constants.maxConcurrentItems,
+                                                           except: except) else {
                 break
             }
+            let exporterId = earliest.id
+            let items = earliest.items
+            let cost = earliest.cost
             
             guard let exporter = exporters[exporterId] else {
                 os_log("%{public}@", log: log, type: .error, "Dropping \(items.count) items: exporter not found for id \(exporterId)")
