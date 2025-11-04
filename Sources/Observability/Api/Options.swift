@@ -36,6 +36,7 @@ public struct Options {
         case memory
         case memoryWarnings
         case cpu
+        case launchTimes
     }
     public var serviceName: String
     public var serviceVersion: String
@@ -54,6 +55,7 @@ public struct Options {
     public var log: OSLog
     public var crashReporting: FeatureFlag
     public var autoInstrumentation: Set<AutoInstrumented>
+    let launchMeter = LaunchMeter()
     
     public init(
         serviceName: String = "observability-swift",

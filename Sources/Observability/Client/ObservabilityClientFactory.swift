@@ -87,6 +87,18 @@ public struct ObservabilityClientFactory {
                 autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
             }
             tracer = decorator
+            if options.autoInstrumentation.contains(.launchTimes) {
+                options.launchMeter.subscribe { statistics in
+                    for element in statistics {
+                        let span = decorator.startSpan(
+                            name: "AppStart",
+                            attributes: ["start.type": .string(element.launchType.description)],
+                            startTime: element.startTime
+                        )
+                        span.end(time: element.endTime)
+                    }
+                }
+            }
         } else {
             tracer = NoOpTracer()
         }
