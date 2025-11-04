@@ -74,7 +74,7 @@ actor SessionReplayEventGenerator {
         case let payload as ScreenImageItem:
             let exportImage = payload.exportImage
             guard lastExportImage != exportImage else {
-                return
+                break
             }
             defer {
                 lastExportImage = exportImage
@@ -97,7 +97,7 @@ actor SessionReplayEventGenerator {
         case let interaction as TouchInteraction:
             appendTouchInteraction(interaction: interaction, events: &events)
         default:
-            () //
+            break // Item wasn't needed for SessionReplay
         }
     }
     

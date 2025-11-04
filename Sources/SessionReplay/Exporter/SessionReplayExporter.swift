@@ -73,8 +73,7 @@ actor SessionReplayExporter: EventExporting {
     func export(items: [EventQueueItem]) async throws {
         try await initializeSessionIfNeeded()
         guard let initializedSession else { return }
-        
- 
+
         let events = await eventGenerator.generateEvents(items: items)
         try await pushPayload(initializedSession: initializedSession, events: events)
         

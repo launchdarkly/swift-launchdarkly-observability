@@ -24,7 +24,9 @@ public final class Observability: Plugin {
         resourceAttributes[SemanticConvention.highlightProjectId] = .string(mobileKey)
         resourceAttributes[SemanticConvention.serviceName] = .string(options.serviceName)
         resourceAttributes[SemanticConvention.serviceVersion] = .string(options.serviceVersion)
-        
+        resourceAttributes[SemanticConvention.telemetryDistroName] = .string("swift-launchdarkly-observability")
+        resourceAttributes[SemanticConvention.telemetryDistroVersion] = .string(sdkVersion)
+
         customHeaders[SemanticConvention.highlightProjectId] = mobileKey
         
         options.resourceAttributes = resourceAttributes

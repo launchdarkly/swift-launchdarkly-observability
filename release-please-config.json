@@ -6,7 +6,10 @@
 			"package-name": "swift-launchdarkly-observability",
 			"release-type": "simple",
 			"versioning": "default",
-			"bump-minor-pre-major": true
+			"bump-minor-pre-major": true,
+			"extra-files": [
+				"Sources/LaunchDarklyObservability/Version.swift"
+			]
 		}
 	}
 }

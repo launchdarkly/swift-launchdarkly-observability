@@ -1,12 +1,20 @@
 import Common
 
-final class UserInteractionManager: AutoInstrumentation {
+public final class UserInteractionManager: AutoInstrumentation {
     private var touchCaptureCoordinator: TouchCaptureCoordinator
-
-    init(options: Options, yield: @escaping UIInteractionYield) {
+    private var yields: [TouchInteractionYield]
+    
+    init(options: Options, yield: @escaping TouchInteractionYield) {
         let targetResolver = TargetResolver()
-        self.touchCaptureCoordinator = TouchCaptureCoordinator(targetResolver: targetResolver,
-                                                               yield: yield)
+        self.yields = [yield]
+        self.touchCaptureCoordinator = TouchCaptureCoordinator(targetResolver: targetResolver)
+        self.touchCaptureCoordinator.yield = { [weak self] interaction in
+            self?.yields.forEach { $0(interaction) }
+        }
+    }
+    
+    public func addYield(_ yield: @escaping TouchInteractionYield) {
+        yields.append(yield)
     }
     
     func start() {

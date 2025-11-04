@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.9.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.8.1...0.9.0) (2025-11-04)
+
+
+### Features
+
+* cold, warm and hot launch times meter ([#66](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/66)) ([060338b](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/060338b8e982a1cc4e84cf309a0ee337b7d94fab))
+
+
+### Bug Fixes
+
+* Make Session Replay stable for offline or intermittent network ([#67](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/67)) ([4ff18c5](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/4ff18c5a6ed951d3e3a0710d48574df7257061b5))
+
+## [0.8.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.8.0...0.8.1) (2025-10-29)
+
+
+### Bug Fixes
+
+* report SDK version in resource attributes ([#63](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/63)) ([8a79ddb](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/8a79ddbeea5478dc3606f936fe139fe2c125cda2))
+* report SDK version in resource attributes (fixup! [#63](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/63)) ([#65](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/65)) ([14a5cbe](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/14a5cbe201125f782b586a3d017c516d3a307fbf))
+
 ## [0.8.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.7.2...0.8.0) (2025-10-29)
 
 

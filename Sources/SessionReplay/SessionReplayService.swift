@@ -4,6 +4,10 @@ import Observability
 import OSLog
 
 struct ScreenImageItem: EventQueueItemPayload {
+    var exporterClass: AnyClass {
+        SessionReplayExporter.self
+    }
+    
     var timestamp: TimeInterval {
         exportImage.timestamp
     }
@@ -54,6 +58,14 @@ public final class SessionReplayService {
                                            eventQueue: transportService.eventQueue)
         snapshotTaker.start()
         
+        let eventQueue = transportService.eventQueue
+        let userInteractionManager = context.userInteractionManager
+        userInteractionManager.addYield { interaction in
+            Task {
+                await eventQueue.send(interaction)
+            }
+        }
+        
         let sessionReplayContext = SessionReplayContext(
             sdkKey: context.sdkKey,
             serviceName: context.options.serviceName,
@@ -66,9 +78,7 @@ public final class SessionReplayService {
                                                       replayApiService: replayApiService)
         Task {
             await transportService.batchWorker.addExporter(replayPushService)
+            transportService.start()
         }
-        
-        // it maybe already started if observability plugin is used.
-        transportService.start()
     }
 }
