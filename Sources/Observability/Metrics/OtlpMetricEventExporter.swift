@@ -17,21 +17,21 @@ public final class OtlpMetricEventExporter: EventExporting {
     }
 
     public func export(items: [EventQueueItem]) async throws {
-//        let logRecords: [OpenTelemetrySdk.MetricData] = items.compactMap { item in
-//            (item.payload as? Metric)?.log
-//        }
-//        guard logRecords.isNotEmpty else {
-//            return
-//        }
-//        try await export(logRecords: logRecords)
+        let metricDatas: [OpenTelemetrySdk.MetricData] = items.compactMap { item in
+            (item.payload as? MetricItem)?.metricData
+        }
+        guard metricDatas.isNotEmpty else {
+            return
+        }
+        try await export(metricDatas: metricDatas)
     }
     
-    private func export(metrics: [MetricData],
+    private func export(metricDatas: [MetricData],
                         explicitTimeout: TimeInterval? = nil) async throws {
         let body =
         Opentelemetry_Proto_Collector_Metrics_V1_ExportMetricsServiceRequest.with { request in
             request.resourceMetrics = MetricsAdapter.toProtoResourceMetrics(
-                metricData: metrics)
+                metricData: metricDatas)
         }
         
         try await otlpHttpClient.send(body: body, explicitTimeout: explicitTimeout)

@@ -51,6 +51,12 @@ public actor EventQueue: EventQueuing {
         send(EventQueueItem(payload: payload))
     }
     
+    public func send(_ payloads: [EventQueueItemPayload]) async {
+        payloads.forEach {
+            send(EventQueueItem(payload: $0))
+        }
+    }
+    
     func send(_ item: EventQueueItem) {
         guard currentSize + item.cost <= limitSize else {
             return

@@ -120,12 +120,11 @@ public struct ObservabilityClientFactory {
                 endpoint: url,
                 config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
             )
-            let metricsEventExporter = OtlpMetricScheduleExporter()
-            let metricsExporterOld = OtlpHttpMetricExporter(
-                endpoint: url,
-                config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
-            )
-            let reader = PeriodicMetricReaderBuilder(exporter: metricsExporterOld)
+            Task {
+                await batchWorker.addExporter(metricsEventExporter)
+            }
+            let metricsScheduleExporter = OtlpMetricScheduleExporter(eventQueue: eventQueue)
+            let reader = PeriodicMetricReaderBuilder(exporter: metricsScheduleExporter)
                 .setInterval(timeInterval: 10.0)
                 .build()
 
