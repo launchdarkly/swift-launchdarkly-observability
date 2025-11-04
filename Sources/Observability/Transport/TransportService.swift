@@ -27,12 +27,15 @@ final class TransportService: TransportServicing {
     
     public func start() {
         guard !isRunnung else { return }
-        
-        batchWorker.start()
+        Task {
+            await batchWorker.start()
+        }
     }
     
     public func stop() {
         guard isRunnung else { return }
-        batchWorker.stop()
+        Task {
+            await batchWorker.stop()
+        }
     }
 }

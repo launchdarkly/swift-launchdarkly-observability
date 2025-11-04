@@ -33,6 +33,7 @@ public final class HttpService: HttpServicing {
     public func send(_ request: URLRequest) async throws -> Data {
         do {
             let (data, response) = try await session.data(for: request)
+
             guard let http = response as? HTTPURLResponse else {
                 throw NetworkError.invalidResponse
             }
