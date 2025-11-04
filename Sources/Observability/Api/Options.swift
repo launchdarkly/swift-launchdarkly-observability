@@ -21,6 +21,28 @@ import OSLog
 ///
 
 public struct Options {
+    public enum LogsAPIOptions {
+        case disabled, debug, info, warning, error, fatal
+    }
+    public struct TracesAPIOptions: Hashable {
+        public static var enabled: Self {
+            .init()
+        }
+        
+        public static var disabled: Self {
+            .init(includeErrors: false, includeSpans: false)
+        }
+        
+        public init(includeErrors: Bool = true, includeSpans: Bool = true) {
+            self.includeErrors = includeErrors
+            self.includeSpans = includeSpans
+        }
+        var includeErrors = true
+        var includeSpans = true
+    }
+    public enum MetricsAPIOptions {
+        case on, off
+    }
     public enum FeatureFlag {
         case enabled
         case disabled
