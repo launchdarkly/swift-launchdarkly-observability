@@ -1,6 +1,5 @@
 import Foundation
 import OpenTelemetrySdk
-import OpenTelemetryProtocolExporterHttp
 
 public struct ObservabilityClientFactory {
     public static func noOp() -> Observe {
