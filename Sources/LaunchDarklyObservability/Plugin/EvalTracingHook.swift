@@ -25,9 +25,14 @@ public final class EvalTracingHook: Hook {
             
             /// Requirement 1.2.3.6
             /// https://github.com/launchdarkly/sdk-specs/tree/main/specs/OTEL-openteletry-integration#requirement-1236
+            var resourceAttributes = options.resourceAttributes
+            resourceAttributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(seriesContext.flagKey)
+            resourceAttributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
+            resourceAttributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(seriesContext.context.fullyQualifiedKey())
+        
             let span = LDObserve.shared.startSpan(
-                name: "LDClient.\(seriesContext.methodName)",
-                attributes: options.resourceAttributes
+                name: seriesContext.methodName,
+                attributes: resourceAttributes
             )
             
             var mutableSeriesData = seriesData
@@ -83,12 +88,13 @@ extension EvalTracingHook {
     static let INSTRUMENTATION_NAME: String = "com.launchdarkly.observability"
     static let DATA_KEY_SPAN: String = "variationSpan"
     static let EVENT_NAME: String = "feature_flag" /// RN = FEATURE_FLAG_SCOPE
-    static let SEMCONV_FEATURE_FLAG_CONTEXT_ID: String = "feature_flag.context.id"
     static let SEMCONV_FEATURE_FLAG_PROVIDER_NAME: String = "feature_flag.provider.name"
     static let SEMCONV_FEATURE_FLAG_KEY: String = "feature_flag.key"
     static let SEMCONV_FEATURE_FLAG_RESULT_VALUE: String = "feature_flag.result.value"
+    static let SEMCONV_FEATURE_FLAG_CONTEXT_ID: String = "feature_flag.context.id"
     static let CUSTOM_FEATURE_FLAG_RESULT_VARIATION_INDEX: String = "feature_flag.result.variationIndex"
     static let CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT: String = "feature_flag.result.reason.inExperiment"
+    
     static let FEATURE_FLAG_SPAN_NAME = "evaluation" /// FEATURE_FLAG_SPAN_NAME
     static let FEATURE_FLAG_CONTEXT_ATTR = "feature_flag.contextKeys"
 }
