@@ -14,7 +14,7 @@ struct SpanItem: EventQueueItemPayload {
         self.timestamp = spanData.endTime.timeIntervalSince1970
     }
     
-    public func cost() -> Int {
+    func cost() -> Int {
         300 + spanData.events.count * 100 + spanData.attributes.count * 100
     }
 }

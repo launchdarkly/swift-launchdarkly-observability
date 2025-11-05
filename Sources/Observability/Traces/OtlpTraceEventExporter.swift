@@ -3,10 +3,10 @@ import Common
 import Foundation
 import OpenTelemetryProtocolExporterCommon
 
-public final class OtlpTraceEventExporter: EventExporting {
-    let otlpHttpClient: OtlpHttpClient
+final class OtlpTraceEventExporter: EventExporting {
+    private let otlpHttpClient: OtlpHttpClient
     
-    public init(endpoint: URL,
+    init(endpoint: URL,
                 config: OtlpConfiguration = OtlpConfiguration(),
                 useSession: URLSession? = nil,
                 envVarHeaders: [(String, String)]? = EnvVarHeaders.attributes) {
@@ -16,7 +16,7 @@ public final class OtlpTraceEventExporter: EventExporting {
                                              envVarHeaders: envVarHeaders)
     }
     
-    public func export(items: [EventQueueItem]) async throws {
+    func export(items: [EventQueueItem]) async throws {
         let spanDatas: [OpenTelemetrySdk.SpanData] = items.compactMap { item in
             (item.payload as? SpanItem)?.spanData
         }
