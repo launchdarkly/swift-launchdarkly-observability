@@ -28,7 +28,9 @@ struct MetricsApiFactory {
         return MeterFacade(
             options: options,
             meter: meter,
-            flush: { reader.forceFlush() == .success }
+            flush: {
+                reader.forceFlush() == .success
+            }
         )
     }
 }
