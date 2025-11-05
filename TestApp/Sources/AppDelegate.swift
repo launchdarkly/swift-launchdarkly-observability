@@ -29,7 +29,7 @@ let config = { () -> LDConfig in
 //            serviceName: "i-os-sessions",
             
             sessionBackgroundTimeout: 3,
-                      autoInstrumentation: [.memory])),
+            autoInstrumentation: [.memory, .urlSession])),
         SessionReplay(options: .init(
             isEnabled: true,
             privacy: .init(

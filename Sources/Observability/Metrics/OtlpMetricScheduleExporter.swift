@@ -3,9 +3,9 @@ import OpenTelemetryApi
 import OpenTelemetrySdk
 
 final class OtlpMetricScheduleExporter: MetricExporter {
-    let eventQueue: EventQueue
-    let aggregationTemporalitySelector: AggregationTemporalitySelector
-    let defaultAggregationSelector: DefaultAggregationSelector
+    private let eventQueue: EventQueue
+    private let aggregationTemporalitySelector: AggregationTemporalitySelector
+    private let defaultAggregationSelector: DefaultAggregationSelector
     
     init(eventQueue: EventQueue,
          aggregationTemporalitySelector: AggregationTemporalitySelector = AggregationTemporality.alwaysCumulative(),
@@ -33,17 +33,17 @@ final class OtlpMetricScheduleExporter: MetricExporter {
     }
     
     public func getAggregationTemporality(
-      for instrument: OpenTelemetrySdk.InstrumentType
+        for instrument: OpenTelemetrySdk.InstrumentType
     ) -> OpenTelemetrySdk.AggregationTemporality {
-      return aggregationTemporalitySelector.getAggregationTemporality(
-        for: instrument)
+        return aggregationTemporalitySelector.getAggregationTemporality(
+            for: instrument)
     }
-
+    
     // MARK: - DefaultAggregationSelector
-
+    
     public func getDefaultAggregation(
-      for instrument: OpenTelemetrySdk.InstrumentType
+        for instrument: OpenTelemetrySdk.InstrumentType
     ) -> OpenTelemetrySdk.Aggregation {
-      return defaultAggregationSelector.getDefaultAggregation(for: instrument)
+        return defaultAggregationSelector.getDefaultAggregation(for: instrument)
     }
 }

@@ -74,14 +74,14 @@ public struct ObservabilityClientFactory {
         }
         
         if options.traces == .enabled {
-            let tracesExporter = SamplingTraceExporterDecorator(
-                exporter: OtlpHttpTraceExporter(
-                    endpoint: url,
-                    config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
-                ),
-                sampler: sampler
+            let traceEventExporter = OtlpTraceEventExporter(
+                endpoint: url,
+                config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
             )
-            let decorator = TracerDecorator(options: options, sessionManager: sessionManager, exporter: tracesExporter)
+            Task {
+                await batchWorker.addExporter(traceEventExporter)
+            }
+            let decorator = TracerDecorator(options: options, sessionManager: sessionManager, sampler: sampler, eventQueue: eventQueue)
             /// tracer is enabled
             if options.autoInstrumentation.contains(.urlSession) {
                 autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
