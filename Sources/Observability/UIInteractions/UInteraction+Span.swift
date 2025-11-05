@@ -1,7 +1,7 @@
 import Foundation
 
 extension TouchInteraction {
-    func startSpan(tracer: Tracer) {
+    func startEndSpan(tracer: Tracer) {
         guard case let .touchUp(point) = kind else { return }
         
         var attributes: [String: AttributeValue] = [:]
