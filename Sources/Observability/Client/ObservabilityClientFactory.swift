@@ -47,7 +47,9 @@ public struct ObservabilityClientFactory {
         
         if options.logs == .enabled {
             let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
-            logger = LoggerDecorator(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
+            let apiLogger = APILogger(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
+            let loggerDecorator = APILoggerDecorator(options: options.logsApiLevel, logger: apiLogger)
+            logger = loggerDecorator
             let logExporter = OtlpLogExporter(endpoint: url)
             Task {
                 await batchWorker.addExporter(logExporter)

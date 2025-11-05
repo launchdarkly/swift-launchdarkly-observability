@@ -16,11 +16,6 @@ final class AppLogBuilder {
         self.sampler = sampler
     }
     
-    func eventBuilder(name: String) -> EventBuilder {
-        /// NoOp Meter,
-        DefaultLoggerProvider.instance.get(instrumentationScopeName: "").eventBuilder(name: name)
-    }
-    
     public func buildLog(message: String,
                          severity: Severity,
                          attributes: [String: AttributeValue]) -> ReadableLogRecord? {
@@ -36,17 +31,17 @@ final class AppLogBuilder {
             clock: MillisClock(),
             instrumentationScope: .init(name: options.serviceName),
             includeSpanContext: true)
-        
-        logBuilder.setBody(.string(message))
-        logBuilder.setTimestamp(Date())
-        logBuilder.setSeverity(severity)
-        logBuilder.setAttributes(attributes)
-        
-        return logBuilder.readableLogRecord()
+
+        return logBuilder
+            .setBody(.string(message))
+            .setTimestamp(Date())
+            .setSeverity(severity)
+            .setAttributes(attributes)
+            .readableLogRecord()
     }
 }
 
-final class LoggerDecorator {
+final class APILogger {
     private let eventQueue: EventQueue
     private let appLogBuilder: AppLogBuilder
     
@@ -56,7 +51,7 @@ final class LoggerDecorator {
     }
 }
 
-extension LoggerDecorator: LogsApi {
+extension APILogger: LogsApi {
     public func recordLog(
         message: String,
         severity: Severity,
