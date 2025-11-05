@@ -35,7 +35,7 @@ public struct ObservabilityClientFactory {
         let meter: MetricsApi
         let logger: LogsApi
         let tracer: TracesApi
-        
+        let tracerDecorator: Tracer?
         let eventQueue = EventQueue()
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
 
@@ -87,6 +87,7 @@ public struct ObservabilityClientFactory {
                 autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
             }
             tracer = decorator
+            tracerDecorator = decorator
             if options.autoInstrumentation.contains(.launchTimes) {
                 options.launchMeter.subscribe { statistics in
                     for element in statistics {
@@ -101,12 +102,12 @@ public struct ObservabilityClientFactory {
             }
         } else {
             tracer = NoOpTracer()
+            tracerDecorator = nil
         }
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
-            // TODO: move to LD buffering
-            if let span = interaction.span() {
-                tracer.startSpan(name: span.name, attributes: span.attributes)
+            if let tracerDecorator {
+                interaction.startEndSpan(tracer: tracerDecorator)
             }
         }
         userInteractionManager.start()

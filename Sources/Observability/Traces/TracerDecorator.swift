@@ -26,29 +26,29 @@ final class TracerDecorator: Tracer {
     }
     
     func spanBuilder(spanName: String) -> any SpanBuilder {
-        tracer.spanBuilder(spanName: spanName)
+        let builder = tracer.spanBuilder(spanName: spanName)
+
+        if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
+            builder.setParent(parent)
+        }
+        
+        let sessionId = sessionManager.sessionInfo.id
+        if !sessionId.isEmpty {
+            builder.setAttribute(key: SemanticConvention.sessionId, value: sessionId)
+        }
+        
+        return builder
     }
 }
 
 extension TracerDecorator: TracesApi {
     func recordError(error: any Error, attributes: [String : AttributeValue]) {
-        let builder = tracer.spanBuilder(spanName: "highlight.error")
-        
-        if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
-            builder.setParent(parent)
-        }
-        
+        let builder = spanBuilder(spanName: "highlight.error")
+    
         attributes.forEach {
             builder.setAttribute(key: $0.key, value: $0.value)
         }
-        let sessionId = sessionManager.sessionInfo.id
-        var attributes = attributes
-        if !sessionId.isEmpty {
-            builder.setAttribute(key: SemanticConvention.highlightSessionId, value: sessionId)
-            attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
-        }
-        
-        
+
         let span = builder.startSpan()
         span.setAttributes(attributes)
         span.recordException(SpanError(error: error), attributes: attributes)
@@ -56,22 +56,17 @@ extension TracerDecorator: TracesApi {
     }
     
     func startSpan(name: String, attributes: [String : AttributeValue]) -> any Span {
-        let builder = tracer.spanBuilder(spanName: name)
-        
-        if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
-            builder.setParent(parent)
-        }
-        
+        let builder = spanBuilder(spanName: name)
         attributes.forEach {
             builder.setAttribute(key: $0.key, value: $0.value)
         }
         
         let span = builder.startSpan()
-        
         return span
     }
     
     func flush() -> Bool {
+        // No-op
         return true
     }
 }
@@ -80,18 +75,13 @@ extension TracerDecorator: TracesApi {
 extension Tracer {
     func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date) -> any Span {
         let builder = spanBuilder(spanName: name)
-        
-        if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
-            builder.setParent(parent)
-        }
-        
         attributes.forEach {
             builder.setAttribute(key: $0.key, value: $0.value)
         }
-        builder.setStartTime(time: startTime)
-        let span = builder.startSpan()
-        span.setAttributes(attributes)
         
+        builder.setStartTime(time: startTime)
+        
+        let span = builder.startSpan()
         return span
     }
 }
