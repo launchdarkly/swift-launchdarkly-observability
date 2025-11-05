@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.9.1...0.9.2) (2025-11-05)
+
+
+### Bug Fixes
+
+* user snap tap ([#72](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/72)) ([341ec7a](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/341ec7a61a044aa669c33e36c553ee3084cf1a76))
+
 ## [0.9.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.9.0...0.9.1) (2025-11-05)
 
 
