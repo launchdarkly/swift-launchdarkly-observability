@@ -3,20 +3,20 @@ import Common
 import Foundation
 import OpenTelemetryProtocolExporterCommon
 
-public final class OtlpMetricEventExporter: EventExporting {
-    let otlpHttpClient: OtlpHttpClient
+final class OtlpMetricEventExporter: EventExporting {
+    private let otlpHttpClient: OtlpHttpClient
     
-    public init(endpoint: URL,
-                config: OtlpConfiguration = OtlpConfiguration(),
-                useSession: URLSession? = nil,
-                envVarHeaders: [(String, String)]? = EnvVarHeaders.attributes) {
+    init(endpoint: URL,
+         config: OtlpConfiguration = OtlpConfiguration(),
+         useSession: URLSession? = nil,
+         envVarHeaders: [(String, String)]? = EnvVarHeaders.attributes) {
         self.otlpHttpClient = OtlpHttpClient(endpoint: endpoint,
                                              config: config,
                                              useSession: useSession,
                                              envVarHeaders: envVarHeaders)
     }
-
-    public func export(items: [EventQueueItem]) async throws {
+    
+    func export(items: [EventQueueItem]) async throws {
         let metricDatas: [OpenTelemetrySdk.MetricData] = items.compactMap { item in
             (item.payload as? MetricItem)?.metricData
         }
