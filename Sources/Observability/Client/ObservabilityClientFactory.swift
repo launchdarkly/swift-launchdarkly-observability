@@ -107,7 +107,7 @@ public struct ObservabilityClientFactory {
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
             if let tracerDecorator {
-                interaction.startSpan(tracer: tracerDecorator)
+                interaction.startEndSpan(tracer: tracerDecorator)
             }
         }
         userInteractionManager.start()
