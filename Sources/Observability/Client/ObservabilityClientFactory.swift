@@ -1,5 +1,6 @@
 import Foundation
 import OpenTelemetrySdk
+import OpenTelemetryProtocolExporterHttp
 
 public struct ObservabilityClientFactory {
     public static func noOp() -> Observe {
@@ -34,7 +35,7 @@ public struct ObservabilityClientFactory {
         let meter: MetricsApi
         let logger: LogsApi
         let tracer: TracesApi
-        let internalTracer: Tracer?
+        let tracerDecorator: Tracer?
         let eventQueue = EventQueue()
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
 
@@ -86,7 +87,7 @@ public struct ObservabilityClientFactory {
                 autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
             }
             tracer = decorator
-            internalTracer = decorator
+            tracerDecorator = decorator
             if options.autoInstrumentation.contains(.launchTimes) {
                 options.launchMeter.subscribe { statistics in
                     for element in statistics {
@@ -101,16 +102,12 @@ public struct ObservabilityClientFactory {
             }
         } else {
             tracer = NoOpTracer()
-            internalTracer = nil
+            tracerDecorator = nil
         }
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
-            // TODO: move to LD buffering
-            if let internalTracer, let interactionSpan = interaction.span() {
-                let span = internalTracer.startSpan(name: interactionSpan.name,
-                                            attributes: interactionSpan.attributes,
-                                            startTime: interactionSpan.startTime)
-                span.end(time: interactionSpan.endTime)
+            if let tracerDecorator {
+                interaction.startEndSpan(tracer: tracerDecorator)
             }
         }
         userInteractionManager.start()

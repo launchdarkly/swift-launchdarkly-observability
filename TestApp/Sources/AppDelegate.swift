@@ -6,27 +6,27 @@ import LaunchDarklySessionReplay
 //let mobileKey = "mob-a211d8b4-9f80-4170-ba05-0120566a7bd7" // Andrey Sessions stg production
 
 
-//let mobileKey = "mob-d6e200b8-4a13-4c47-8ceb-7eb1f1705070" // Spree demo app Alexis Perflet config = { () -> LDConfig in
-//let config = { () -> LDConfig in
-//    var config = LDConfig(
-//            mobileKey: mobileKey,
-//            autoEnvAttributes: .enabled
-//        )
-//    config.plugins = [
-//        Observability(options: .init(
-//            serviceName: "alexis-perf",
-//            otlpEndpoint: "https://otel.observability.ld-stg.launchdarkly.com:4318",
-//            backendUrl: "https://pub.observability.ld-stg.launchdarkly.com/",
-
-let mobileKey = "mob-f2aca03d-4a84-4b9d-bc35-db20cbb4ca0a" // iOS Session Production
+let mobileKey = "mob-d6e200b8-4a13-4c47-8ceb-7eb1f1705070" // Spree demo app Alexis Perflet config = { () -> LDConfig in
 let config = { () -> LDConfig in
     var config = LDConfig(
-        mobileKey: mobileKey,
-        autoEnvAttributes: .enabled
-    )
+            mobileKey: mobileKey,
+            autoEnvAttributes: .enabled
+        )
     config.plugins = [
         Observability(options: .init(
-            serviceName: "i-os-sessions",
+            serviceName: "alexis-perf",
+            otlpEndpoint: "https://otel.observability.ld-stg.launchdarkly.com:4318",
+            backendUrl: "https://pub.observability.ld-stg.launchdarkly.com/",
+
+//let mobileKey = "mob-f2aca03d-4a84-4b9d-bc35-db20cbb4ca0a" // iOS Session Production
+//let config = { () -> LDConfig in
+//    var config = LDConfig(
+//        mobileKey: mobileKey,
+//        autoEnvAttributes: .enabled
+//    )
+//    config.plugins = [
+//        Observability(options: .init(
+//            serviceName: "i-os-sessions",
             
             sessionBackgroundTimeout: 3,
             autoInstrumentation: [.memory, .urlSession])),
