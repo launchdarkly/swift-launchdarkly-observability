@@ -3,11 +3,13 @@ import Foundation
 struct UIInteractionSpan {
     let attributes: [String: AttributeValue]
     let name: String
+    let startTime: Date
+    let endTime: Date
 }
 
 extension TouchInteraction {
     func span() -> UIInteractionSpan? {
-        guard kind.isTapLike else { return nil }
+        guard case let .touchDown(point) = kind else { return nil }
         
         var attributes: [String: AttributeValue] = [:]
         attributes["screen.name"] = .string(target?.className ?? "unknown")
@@ -15,14 +17,12 @@ extension TouchInteraction {
             attributes["target.id"] = .string(accessibilityIdentifier)
         }
         
-        if case let .touchUp(point) = kind {
-            attributes["position.x"] = .string(point.x.toString())
-            attributes["position.y"] = .string(point.y.toString())
-        } else if case let .touchDown(point) = kind {
-            attributes["position.x"] = .string(point.x.toString())
-            attributes["position.y"] = .string(point.y.toString())
-        }
+        attributes["position.x"] = .string(point.x.toString())
+        attributes["position.y"] = .string(point.y.toString())
         
-        return UIInteractionSpan(attributes: attributes, name: "user.tap")
+        return UIInteractionSpan(attributes: attributes,
+                                 name: "user.tap",
+                                 startTime: Date(timeIntervalSince1970: startTimestamp),
+                                 endTime: Date(timeIntervalSince1970: timestamp))
     }
 }

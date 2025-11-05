@@ -36,9 +36,10 @@ final class TouchIntepreter {
             tracks[touchSample.id] = track
             
             let downInteraction = TouchInteraction(id: incrementingId,
-                                                kind: .touchDown(touchSample.location),
-                                                timestamp: touchSample.timestamp + uptimeDifference,
-                                                target: touchSample.target)
+                                                   kind: .touchDown(touchSample.location),
+                                                   startTimestamp: touchSample.timestamp + uptimeDifference,
+                                                   timestamp: touchSample.timestamp + uptimeDifference,
+                                                   target: touchSample.target)
             yield(downInteraction)
             
         case .moved:
@@ -63,40 +64,46 @@ final class TouchIntepreter {
             let trackDuration = track.end - track.start
             if trackDuration > 0.9 {
                 // flush movements of long touch path do not have dead time in the replay player
-                flushMovements(touchSample: touchSample, uptimeDifference: uptimeDifference, yield: yield)
+                flushMovements(touchSample: touchSample, uptimeDifference: uptimeDifference, startTimestamp: track.start, yield: yield)
             }
             
         case .ended, .cancelled:
+            // touchUp
+            let startTimestamp = tracks[touchSample.id]?.start ?? touchSample.timestamp
             let upInteraction = TouchInteraction(id: incrementingId,
-                                              kind: .touchUp(touchSample.location),
-                                              timestamp: touchSample.timestamp + uptimeDifference,
-                                              target: touchSample.target)
+                                                 kind: .touchUp(touchSample.location),
+                                                 startTimestamp: startTimestamp + uptimeDifference,
+                                                 timestamp: touchSample.timestamp + uptimeDifference,
+                                                 target: touchSample.target)
             yield(upInteraction)
             
-            flushTrack(touchSample: touchSample, uptimeDifference: uptimeDifference, yield: yield)
+            // touchPath
+            guard let track = tracks.removeValue(forKey: touchSample.id), track.points.isNotEmpty else { return }
+            
+            let moveInteraction = TouchInteraction(id: incrementingId,
+                                                kind: .touchPath(points: track.points),
+                                                startTimestamp: startTimestamp + uptimeDifference,
+                                                timestamp: touchSample.timestamp + uptimeDifference,
+                                                target: touchSample.target)
+            yield(moveInteraction)
         }
     }
     
-    func flushMovements(touchSample: TouchSample, uptimeDifference: TimeInterval, yield: TouchInteractionYield) {
+    func flushMovements(touchSample: TouchSample, uptimeDifference: TimeInterval, startTimestamp: TimeInterval, yield: TouchInteractionYield) {
         guard var track = tracks[touchSample.id], track.points.isNotEmpty else { return }
         
         let moveInteraction = TouchInteraction(id: incrementingId,
-                                            kind: .touchPath(points: track.points),
-                                            timestamp: touchSample.timestamp + uptimeDifference,
-                                            target: touchSample.target)
+                                               kind: .touchPath(points: track.points),
+                                               startTimestamp: startTimestamp + uptimeDifference,
+                                               timestamp: touchSample.timestamp + uptimeDifference,
+                                               target: touchSample.target)
         track.points.removeAll()
         tracks[touchSample.id] = track
         yield(moveInteraction)
     }
     
     func flushTrack(touchSample: TouchSample, uptimeDifference: TimeInterval, yield: TouchInteractionYield) {
-        guard let track = tracks.removeValue(forKey: touchSample.id), track.points.isNotEmpty else { return }
-        
-        let moveInteraction = TouchInteraction(id: incrementingId,
-                                            kind: .touchPath(points: track.points),
-                                            timestamp: touchSample.timestamp + uptimeDifference,
-                                            target: touchSample.target)
-        yield(moveInteraction)
+  
     }
     
     func squaredDistance(from: CGPoint, to: CGPoint) -> CGFloat {
