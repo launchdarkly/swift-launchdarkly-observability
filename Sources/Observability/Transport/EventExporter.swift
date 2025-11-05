@@ -13,7 +13,6 @@ public final class NoOpExporter: EventExporting {
 
 extension EventExporting {
     var typeId: ObjectIdentifier {
-        let type = type(of: Self.self)
-        return ObjectIdentifier(type)
+        ObjectIdentifier(Self.self)
     }
 }

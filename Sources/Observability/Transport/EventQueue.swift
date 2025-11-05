@@ -7,7 +7,7 @@ public struct EventQueueItem {
     public var exporterTypeId: ObjectIdentifier
     
     public init(payload: EventQueueItemPayload) {
-        let type = type(of: payload.exporterClass)
+        let type = payload.exporterClass
         self.init(payload: payload, exporterTypeId: ObjectIdentifier(type))
     }
     
