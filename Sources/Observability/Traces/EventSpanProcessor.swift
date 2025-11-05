@@ -2,17 +2,16 @@ import Foundation
 import OpenTelemetryApi
 import OpenTelemetrySdk
 
-class EventSpanProcessor: SpanProcessor {
-    let eventQueue: EventQueue
-    let sampler: ExportSampler
+final class EventSpanProcessor: SpanProcessor {
+    private let eventQueue: EventQueue
+    private let sampler: ExportSampler
+    let isStartRequired = false
+    let isEndRequired = true
     
     init(eventQueue: EventQueue, sampler: ExportSampler) {
         self.eventQueue = eventQueue
         self.sampler = sampler
     }
-    
-    let isStartRequired = false
-    let isEndRequired = true
     
     func onStart(parentContext: OpenTelemetryApi.SpanContext?, span: any OpenTelemetrySdk.ReadableSpan) {
         // No-op

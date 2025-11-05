@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.9.0...0.9.1) (2025-11-05)
+
+
+### Bug Fixes
+
+* Otlp Trace Exporters to Event Exporter ([#70](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/70)) ([cfa92fb](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/cfa92fb851a4eea180ad70149a49505111916013))
+
 ## [0.9.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.8.1...0.9.0) (2025-11-04)
 
 
