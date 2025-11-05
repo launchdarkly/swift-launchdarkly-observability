@@ -1,15 +1,15 @@
 import Foundation
 import OpenTelemetrySdk
 
-public struct MetricItem: EventQueueItemPayload {
-    public var exporterClass: AnyClass {
+struct MetricItem: EventQueueItemPayload {
+    var exporterClass: AnyClass {
         Observability.OtlpMetricEventExporter.self
     }
     
-    public let metricData: OpenTelemetrySdk.MetricData
-    public var timestamp: TimeInterval
+    let metricData: OpenTelemetrySdk.MetricData
+    var timestamp: TimeInterval
     
-    public func cost() -> Int {
+    func cost() -> Int {
         300 + metricData.data.points.count * 100
     }
 }
