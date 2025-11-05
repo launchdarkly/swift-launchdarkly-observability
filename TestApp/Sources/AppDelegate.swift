@@ -18,7 +18,6 @@ let config = { () -> LDConfig in
             otlpEndpoint: "https://otel.observability.ld-stg.launchdarkly.com:4318",
             backendUrl: "https://pub.observability.ld-stg.launchdarkly.com/",
 
-
 //let mobileKey = "mob-f2aca03d-4a84-4b9d-bc35-db20cbb4ca0a" // iOS Session Production
 //let config = { () -> LDConfig in
 //    var config = LDConfig(
@@ -29,7 +28,8 @@ let config = { () -> LDConfig in
 //        Observability(options: .init(
 //            serviceName: "i-os-sessions",
             
-            sessionBackgroundTimeout: 3)),
+            sessionBackgroundTimeout: 3,
+                      autoInstrumentation: [.memory])),
         SessionReplay(options: .init(
             isEnabled: true,
             privacy: .init(
