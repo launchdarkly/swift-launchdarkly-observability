@@ -23,6 +23,7 @@ public enum TouchKind: Sendable {
 public struct TouchInteraction: Sendable {
     public let id: Int
     public let kind: TouchKind
+    public let startTimestamp: TimeInterval
     public let timestamp: TimeInterval
     public let target: TouchTarget?
 }

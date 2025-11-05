@@ -35,7 +35,7 @@ public struct ObservabilityClientFactory {
         let meter: MetricsApi
         let logger: LogsApi
         let tracer: TracesApi
-        
+        let internalTracer: Tracer?
         let eventQueue = EventQueue()
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
 
@@ -74,19 +74,20 @@ public struct ObservabilityClientFactory {
         }
         
         if options.traces == .enabled {
-            let tracesExporter = SamplingTraceExporterDecorator(
-                exporter: OtlpHttpTraceExporter(
-                    endpoint: url,
-                    config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
-                ),
-                sampler: sampler
+            let traceEventExporter = OtlpTraceEventExporter(
+                endpoint: url,
+                config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
             )
-            let decorator = TracerDecorator(options: options, sessionManager: sessionManager, exporter: tracesExporter)
+            Task {
+                await batchWorker.addExporter(traceEventExporter)
+            }
+            let decorator = TracerDecorator(options: options, sessionManager: sessionManager, sampler: sampler, eventQueue: eventQueue)
             /// tracer is enabled
             if options.autoInstrumentation.contains(.urlSession) {
                 autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
             }
             tracer = decorator
+            internalTracer = decorator
             if options.autoInstrumentation.contains(.launchTimes) {
                 options.launchMeter.subscribe { statistics in
                     for element in statistics {
@@ -101,12 +102,16 @@ public struct ObservabilityClientFactory {
             }
         } else {
             tracer = NoOpTracer()
+            internalTracer = nil
         }
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
             // TODO: move to LD buffering
-            if let span = interaction.span() {
-                tracer.startSpan(name: span.name, attributes: span.attributes)
+            if let internalTracer, let interactionSpan = interaction.span() {
+                let span = internalTracer.startSpan(name: interactionSpan.name,
+                                            attributes: interactionSpan.attributes,
+                                            startTime: interactionSpan.startTime)
+                span.end(time: interactionSpan.endTime)
             }
         }
         userInteractionManager.start()

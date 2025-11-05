@@ -5,30 +5,18 @@ final class TracerDecorator: Tracer {
     private let options: Options
     private let sessionManager: SessionManaging
     private let tracerProvider: any TracerProvider
-    private let spanProcessor: any SpanProcessor
     private let tracer: any Tracer
-
-    init(options: Options, sessionManager: SessionManaging, exporter: SpanExporter) {
+    private var activeSpan: Span?
+    
+    init(options: Options, sessionManager: SessionManaging, sampler: ExportSampler, eventQueue: EventQueue) {
         self.options = options
         self.sessionManager = sessionManager
-        /// Using the default values from OpenTelemetry for Swift
-        /// For reference check:
-        ///https://github.com/open-telemetry/opentelemetry-swift/blob/main/Sources/OpenTelemetrySdk/Trace/SpanProcessors/BatchSpanProcessor.swift
-        let processor = BatchSpanProcessor(
-            spanExporter: exporter,
-            scheduleDelay: 5,
-            exportTimeout: 30,
-            maxQueueSize: 2048,
-            maxExportBatchSize: 512,
-        )
-        self.spanProcessor = processor
+        let processor = EventSpanProcessor(eventQueue: eventQueue, sampler: sampler)
         let provider = TracerProviderBuilder()
             .add(spanProcessor: processor)
             .with(resource: Resource(attributes: options.resourceAttributes))
             .build()
         self.tracerProvider = provider
-        
-        
         self.tracer = tracerProvider.get(
             instrumentationName: options.serviceName,
             instrumentationVersion: options.serviceVersion,
@@ -84,20 +72,14 @@ extension TracerDecorator: TracesApi {
     }
     
     func flush() -> Bool {
-        /// span processor flush method differs from metrics and logs, it doesn't return a Result type
-        /// Processes all span events that have not yet been processed.
-        /// This method is executed synchronously on the calling thread
-        /// - Parameter timeout: Maximum time the flush complete or abort. If nil, it will wait indefinitely
-        /// func forceFlush(timeout: TimeInterval?)
-        spanProcessor.forceFlush(timeout: 5.0)
         return true
     }
 }
 
 /// Internal method used to set span start date
-extension TracerDecorator {
-    func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date = Date()) -> any Span {
-        let builder = tracer.spanBuilder(spanName: name)
+extension Tracer {
+    func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date) -> any Span {
+        let builder = spanBuilder(spanName: name)
         
         if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
             builder.setParent(parent)
