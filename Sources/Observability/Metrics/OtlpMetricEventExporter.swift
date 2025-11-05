@@ -23,13 +23,13 @@ final class OtlpMetricEventExporter: EventExporting {
         guard metricDatas.isNotEmpty else {
             return
         }
+        
         try await export(metricDatas: metricDatas)
     }
     
     private func export(metricDatas: [MetricData],
                         explicitTimeout: TimeInterval? = nil) async throws {
-        let body =
-        Opentelemetry_Proto_Collector_Metrics_V1_ExportMetricsServiceRequest.with { request in
+        let body = Opentelemetry_Proto_Collector_Metrics_V1_ExportMetricsServiceRequest.with { request in
             request.resourceMetrics = MetricsAdapter.toProtoResourceMetrics(
                 metricData: metricDatas)
         }

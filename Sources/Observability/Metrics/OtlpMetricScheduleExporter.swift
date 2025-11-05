@@ -33,17 +33,17 @@ final class OtlpMetricScheduleExporter: MetricExporter {
     }
     
     public func getAggregationTemporality(
-      for instrument: OpenTelemetrySdk.InstrumentType
+        for instrument: OpenTelemetrySdk.InstrumentType
     ) -> OpenTelemetrySdk.AggregationTemporality {
-      return aggregationTemporalitySelector.getAggregationTemporality(
-        for: instrument)
+        return aggregationTemporalitySelector.getAggregationTemporality(
+            for: instrument)
     }
-
+    
     // MARK: - DefaultAggregationSelector
-
+    
     public func getDefaultAggregation(
-      for instrument: OpenTelemetrySdk.InstrumentType
+        for instrument: OpenTelemetrySdk.InstrumentType
     ) -> OpenTelemetrySdk.Aggregation {
-      return defaultAggregationSelector.getDefaultAggregation(for: instrument)
+        return defaultAggregationSelector.getDefaultAggregation(for: instrument)
     }
 }
