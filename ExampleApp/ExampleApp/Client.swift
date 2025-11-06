@@ -15,7 +15,7 @@ struct Client {
                     isDebug: true,
                     logsApiLevel: .info,
                     tracesApi: .enabled,
-                    metricsApi: .on,
+                    metricsApi: .enabled,
                     crashReporting: .disabled,
                     autoInstrumentation: [.urlSession, .userTaps, .memory, .cpu, .memoryWarnings]
                 )
