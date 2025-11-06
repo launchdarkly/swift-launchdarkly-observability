@@ -1,4 +1,4 @@
-final class TracingApiClientDecorator: TracesApi {
+final class AppTraceClient: TracesApi {
     private let options: Options.TracingAPIOptions
     private let tracingApiClient: TracesApi
     

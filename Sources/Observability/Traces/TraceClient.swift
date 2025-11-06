@@ -1,6 +1,6 @@
 import Foundation.NSDate
 
-final class TracingApiClient: TracesApi {
+final class TraceClient: TracesApi {
     private let options: Options.TracingAPIOptions
     private let tracer: Tracer
     
@@ -34,7 +34,7 @@ final class TracingApiClient: TracesApi {
 }
 
 /// Internal method used to set span start date
-extension TracingApiClient {
+extension TraceClient {
     func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date) -> any Span {
         let builder = tracer.spanBuilder(spanName: name)
         attributes.forEach {

@@ -8,7 +8,7 @@ struct TracingApiClientTests {
         let apiSpy = TracingApiSpy()
         var options = Options()
         options.tracesApi = .disabled
-        let sut = TracingApiClientDecorator(
+        let sut = AppTraceClient(
             options: options.tracesApi,
             tracingApiClient: apiSpy
         )
@@ -25,7 +25,7 @@ struct TracingApiClientTests {
         let apiSpy = TracingApiSpy()
         var options = Options()
         options.tracesApi = .init(includeErrors: false, includeSpans: true)
-        let sut = TracingApiClientDecorator(
+        let sut = AppTraceClient(
             options: options.tracesApi,
             tracingApiClient: apiSpy
         )
@@ -42,7 +42,7 @@ struct TracingApiClientTests {
         let apiSpy = TracingApiSpy()
         var options = Options()
         options.tracesApi = .init(includeErrors: true, includeSpans: false)
-        let sut = TracingApiClientDecorator(
+        let sut = AppTraceClient(
             options: options.tracesApi,
             tracingApiClient: apiSpy
         )
@@ -59,7 +59,7 @@ struct TracingApiClientTests {
         let apiSpy = TracingApiSpy()
         var options = Options()
         options.tracesApi = .enabled
-        let sut = TracingApiClientDecorator(
+        let sut = AppTraceClient(
             options: options.tracesApi,
             tracingApiClient: apiSpy
         )

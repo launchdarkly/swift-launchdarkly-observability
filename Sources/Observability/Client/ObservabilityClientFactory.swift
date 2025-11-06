@@ -80,13 +80,13 @@ public struct ObservabilityClientFactory {
             sampler: sampler,
             eventQueue: eventQueue
         )
-        let tracingApiClient = TracingApiClient(
+        let traceClient = TraceClient(
             options: options.tracesApi,
             tracer: tracerDecorator
         )
-        let tracingApiClientDecorator = TracingApiClientDecorator(
+        let appTraceClient = AppTraceClient(
             options: options.tracesApi,
-            tracingApiClient: tracingApiClient
+            tracingApiClient: traceClient
         )
         if options.autoInstrumentation.contains(.urlSession) {
             autoInstrumentation.append(
@@ -100,7 +100,7 @@ public struct ObservabilityClientFactory {
         if options.autoInstrumentation.contains(.launchTimes) {
             options.launchMeter.subscribe { statistics in
                 for element in statistics {
-                    let span = tracingApiClient.startSpan(
+                    let span = traceClient.startSpan(
                         name: "AppStart",
                         attributes: ["start.type": .string(element.launchType.description)],
                         startTime: element.startTime
@@ -186,7 +186,7 @@ public struct ObservabilityClientFactory {
         autoInstrumentation.forEach { $0.start() }
 
         return ObservabilityClient(
-            tracer: tracingApiClientDecorator,
+            tracer: appTraceClient,
             logger: appLogClient,
             meter: metricsApiClientDecorator,
             crashReportsApi: crashReporting,
