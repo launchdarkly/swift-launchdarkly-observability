@@ -16,7 +16,7 @@ let package = Package(
             targets: ["LaunchDarklySessionReplay"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", from: "2.2.1"),
+        .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", exact: "2.3.0"),
         .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "10.0.0"),
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
         .package(url: "https://github.com/mw99/DataCompression", from: "3.8.0"),
@@ -38,6 +38,9 @@ let package = Package(
             dependencies: [
                 "Common",
                 "ObjCBridge",
+                "URLSessionInstrumentation",
+                "OpenTelemetryProtocolExporterCommon",
+                .product(name: "DataCompression", package: "DataCompression"),
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),
@@ -76,12 +79,29 @@ let package = Package(
             ]
         ),
         .target(
-          name: "ProtocolExporterCommon",
+          name: "OpenTelemetryProtocolExporterCommon",
           dependencies: [
             .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core"),
             .product(name: "Logging", package: "swift-log"),
             .product(name: "SwiftProtobuf", package: "swift-protobuf")
-          ]
+          ],
+          path: "Sources/OpenTelemetry/OpenTelemetryProtocolExporterCommon"
+        ),
+        .target(
+              name: "URLSessionInstrumentation",
+              dependencies: [
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core"),
+                "NetworkStatus"],
+              path: "Sources/OpenTelemetry/Instrumentation/URLSession",
+              exclude: ["README.md"]
+        ),
+        .target(
+              name: "NetworkStatus",
+              dependencies: [
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core")
+              ],
+              path: "Sources/OpenTelemetry/Instrumentation/NetworkStatus",
+              linkerSettings: [.linkedFramework("CoreTelephony", .when(platforms: [.iOS]))]
         ),
         .testTarget(
             name: "CommonTests",
