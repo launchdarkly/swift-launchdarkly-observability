@@ -45,31 +45,27 @@ public struct ObservabilityClientFactory {
             throw InstrumentationError.invalidLogExporterUrl
         }
         
-        if options.logs == .enabled {
-            let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
-            let apiLogger = APILogger(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
-            let loggerDecorator = APILoggerDecorator(options: options.logsApiLevel, logger: apiLogger)
-            logger = loggerDecorator
-            let logExporter = OtlpLogExporter(endpoint: url)
-            Task {
-                await batchWorker.addExporter(logExporter)
-            }
-            if options.autoInstrumentation.contains(.memoryWarnings) {
-                let memoryWarningMonitor = MemoryPressureMonitor(options: options, appLogBuilder: appLogBuilder) { log in
-                    await eventQueue.send(LogItem(log: log))
-                }
-                autoInstrumentation.append(memoryWarningMonitor)
-            }
-            
-            let appLifecycleLogger = AppLifecycleLogger(appLifecycleManager: appLifecycleManager, appLogBuilder: appLogBuilder) { log in
-                Task {
-                    await eventQueue.send(LogItem(log: log))
-                }
-            }
-            autoInstrumentation.append(appLifecycleLogger)
-        } else {
-            logger = NoOpLogger()
+        let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
+        let apiLogger = APILogger(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
+        let loggerDecorator = APILoggerDecorator(options: options.logsApiLevel, logger: apiLogger)
+        logger = loggerDecorator
+        let logExporter = OtlpLogExporter(endpoint: url)
+        Task {
+            await batchWorker.addExporter(logExporter)
         }
+        if options.autoInstrumentation.contains(.memoryWarnings) {
+            let memoryWarningMonitor = MemoryPressureMonitor(options: options, appLogBuilder: appLogBuilder) { log in
+                await eventQueue.send(LogItem(log: log))
+            }
+            autoInstrumentation.append(memoryWarningMonitor)
+        }
+        
+        let appLifecycleLogger = AppLifecycleLogger(appLifecycleManager: appLifecycleManager, appLogBuilder: appLogBuilder) { log in
+            Task {
+                await eventQueue.send(LogItem(log: log))
+            }
+        }
+        autoInstrumentation.append(appLifecycleLogger)
         
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.tracesPath) else {
             throw InstrumentationError.invalidTraceExporterUrl
