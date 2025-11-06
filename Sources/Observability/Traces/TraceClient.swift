@@ -1,10 +1,10 @@
 import Foundation.NSDate
 
 final class TraceClient: TracesApi {
-    private let options: Options.TracingAPIOptions
+    private let options: Options.AppTracing
     private let tracer: Tracer
     
-    init(options: Options.TracingAPIOptions, tracer: Tracer) {
+    init(options: Options.AppTracing, tracer: Tracer) {
         self.options = options
         self.tracer = tracer
     }

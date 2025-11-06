@@ -108,7 +108,7 @@ public struct Options {
             lhs.rawValue < rhs.rawValue
         }
     }
-    public struct TracingAPIOptions {
+    public struct AppTracing {
         public static var enabled: Self {
             .init()
         }
@@ -124,7 +124,7 @@ public struct Options {
         var includeErrors = true
         var includeSpans = true
     }
-    public enum MetricsAPIOptions {
+    public enum AppMetrics {
         case enabled, disabled
     }
     public enum FeatureFlag {
@@ -156,8 +156,8 @@ public struct Options {
     public var isDebug: Bool
     public var disableErrorTracking: Bool
     public var logsApiLevel: LogLevel
-    public var metricsApi: MetricsAPIOptions
-    public var tracesApi: TracingAPIOptions
+    public var metricsApi: AppMetrics
+    public var tracesApi: AppTracing
     public var log: OSLog
     public var crashReporting: FeatureFlag
     public var autoInstrumentation: Set<AutoInstrumented>
@@ -176,8 +176,8 @@ public struct Options {
         isDebug: Bool = false,
         disableErrorTracking: Bool = false,
         logsApiLevel: LogLevel = .info,
-        tracesApi: TracingAPIOptions = .enabled,
-        metricsApi: MetricsAPIOptions = .enabled,
+        tracesApi: AppTracing = .enabled,
+        metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: FeatureFlag = .enabled,
         autoInstrumentation: Set<AutoInstrumented> = [.urlSession]

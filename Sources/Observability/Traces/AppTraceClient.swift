@@ -1,9 +1,9 @@
 final class AppTraceClient: TracesApi {
-    private let options: Options.TracingAPIOptions
+    private let options: Options.AppTracing
     private let tracingApiClient: TracesApi
     
     init(
-        options: Options.TracingAPIOptions,
+        options: Options.AppTracing,
         tracingApiClient: TracesApi
     ) {
         self.options = options
