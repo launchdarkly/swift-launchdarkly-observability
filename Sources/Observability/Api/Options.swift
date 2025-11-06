@@ -21,6 +21,112 @@ import OSLog
 ///
 
 public struct Options {
+    public enum LogLevel: Int, Comparable, CustomStringConvertible, CaseIterable {
+        case
+        trace = 1,
+        trace2,
+        trace3,
+        trace4,
+        debug,
+        debug2,
+        debug3,
+        debug4,
+        info,
+        info2,
+        info3,
+        info4,
+        warn,
+        warn2,
+        warn3,
+        warn4,
+        error,
+        error2,
+        error3,
+        error4,
+        fatal,
+        fatal2,
+        fatal3,
+        fatal4,
+        `none`
+        
+        public var description: String {
+            switch self {
+            case .trace:
+                return "TRACE"
+            case .trace2:
+                return "TRACE2"
+            case .trace3:
+                return "TRACE3"
+            case .trace4:
+                return "TRACE4"
+            case .debug:
+                return "DEBUG"
+            case .debug2:
+                return "DEBUG2"
+            case .debug3:
+                return "DEBUG3"
+            case .debug4:
+                return "DEBUG4"
+            case .info:
+                return "INFO"
+            case .info2:
+                return "INFO2"
+            case .info3:
+                return "INFO3"
+            case .info4:
+                return "INFO4"
+            case .warn:
+                return "WARN"
+            case .warn2:
+                return "WARN2"
+            case .warn3:
+                return "WARN3"
+            case .warn4:
+                return "WARN4"
+            case .error:
+                return "ERROR"
+            case .error2:
+                return "ERROR2"
+            case .error3:
+                return "ERROR3"
+            case .error4:
+                return "ERROR4"
+            case .fatal:
+                return "FATAL"
+            case .fatal2:
+                return "FATAL2"
+            case .fatal3:
+                return "FATAL3"
+            case .fatal4:
+                return "FATAL4"
+            case .none:
+                return "NONE"
+            }
+        }
+        
+        public static func < (lhs: Self, rhs: Self) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+    }
+    public struct AppTracing {
+        public static var enabled: Self {
+            .init()
+        }
+        
+        public static var disabled: Self {
+            .init(includeErrors: false, includeSpans: false)
+        }
+        
+        public init(includeErrors: Bool = true, includeSpans: Bool = true) {
+            self.includeErrors = includeErrors
+            self.includeSpans = includeSpans
+        }
+        var includeErrors = true
+        var includeSpans = true
+    }
+    public enum AppMetrics {
+        case enabled, disabled
+    }
     public enum FeatureFlag {
         case enabled
         case disabled
@@ -49,9 +155,9 @@ public struct Options {
     public var sessionBackgroundTimeout: TimeInterval
     public var isDebug: Bool
     public var disableErrorTracking: Bool
-    public var logs: FeatureFlag
-    public var traces: FeatureFlag
-    public var metrics: FeatureFlag
+    public var logsApiLevel: LogLevel
+    public var metricsApi: AppMetrics
+    public var tracesApi: AppTracing
     public var log: OSLog
     public var crashReporting: FeatureFlag
     public var autoInstrumentation: Set<AutoInstrumented>
@@ -69,9 +175,9 @@ public struct Options {
         sessionBackgroundTimeout: TimeInterval = 15 * 60,
         isDebug: Bool = false,
         disableErrorTracking: Bool = false,
-        logs: FeatureFlag = .enabled,
-        traces: FeatureFlag = .enabled,
-        metrics: FeatureFlag = .enabled,
+        logsApiLevel: LogLevel = .info,
+        tracesApi: AppTracing = .enabled,
+        metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: FeatureFlag = .enabled,
         autoInstrumentation: Set<AutoInstrumented> = [.urlSession]
@@ -87,9 +193,9 @@ public struct Options {
         self.sessionBackgroundTimeout = sessionBackgroundTimeout
         self.isDebug = isDebug
         self.disableErrorTracking = disableErrorTracking
-        self.logs = logs
-        self.traces = traces
-        self.metrics = metrics
+        self.logsApiLevel = logsApiLevel
+        self.tracesApi = tracesApi
+        self.metricsApi = metricsApi
         self.log = log
         self.crashReporting = crashReporting
         self.autoInstrumentation = autoInstrumentation

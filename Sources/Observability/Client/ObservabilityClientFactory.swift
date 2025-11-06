@@ -31,83 +31,87 @@ public struct ObservabilityClientFactory {
         let autoInstrumentationSamplingInterval: TimeInterval = 5.0
         var autoInstrumentation = [AutoInstrumentation]()
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
-        let meter: MetricsApi
-        let logger: LogsApi
-        let tracer: TracesApi
-        let tracerDecorator: Tracer?
         let eventQueue = EventQueue()
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
 
         let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionManager: sessionManager)
         
+        // MARK: - Logging
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.logsPath) else {
             throw InstrumentationError.invalidLogExporterUrl
         }
         
-        if options.logs == .enabled {
-            let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
-            logger = LoggerDecorator(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
-            let logExporter = OtlpLogExporter(endpoint: url)
-            Task {
-                await batchWorker.addExporter(logExporter)
+        let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
+        let logClient = LogClient(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
+        let appLogClient = AppLogClient(logLevel: options.logsApiLevel, logger: logClient)
+        let logExporter = OtlpLogExporter(endpoint: url)
+        Task {
+            await batchWorker.addExporter(logExporter)
+        }
+        if options.autoInstrumentation.contains(.memoryWarnings) {
+            let memoryWarningMonitor = MemoryPressureMonitor(options: options, appLogBuilder: appLogBuilder) { log in
+                await eventQueue.send(LogItem(log: log))
             }
-            if options.autoInstrumentation.contains(.memoryWarnings) {
-                let memoryWarningMonitor = MemoryPressureMonitor(options: options, appLogBuilder: appLogBuilder) { log in
-                    await eventQueue.send(LogItem(log: log))
-                }
-                autoInstrumentation.append(memoryWarningMonitor)
-            }
-            
-            let appLifecycleLogger = AppLifecycleLogger(appLifecycleManager: appLifecycleManager, appLogBuilder: appLogBuilder) { log in
-                Task {
-                    await eventQueue.send(LogItem(log: log))
-                }
-            }
-            autoInstrumentation.append(appLifecycleLogger)
-        } else {
-            logger = NoOpLogger()
+            autoInstrumentation.append(memoryWarningMonitor)
         }
         
+        let appLifecycleLogger = AppLifecycleLogger(appLifecycleManager: appLifecycleManager, appLogBuilder: appLogBuilder) { log in
+            Task {
+                await eventQueue.send(LogItem(log: log))
+            }
+        }
+        autoInstrumentation.append(appLifecycleLogger)
+        
+        // MARK: - Tracing
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.tracesPath) else {
             throw InstrumentationError.invalidTraceExporterUrl
         }
         
-        if options.traces == .enabled {
-            let traceEventExporter = OtlpTraceEventExporter(
-                endpoint: url,
-                config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
+        let traceEventExporter = OtlpTraceEventExporter(
+            endpoint: url,
+            config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
+        )
+        Task {
+            await batchWorker.addExporter(traceEventExporter)
+        }
+        let tracerDecorator = TracerDecorator(
+            options: options,
+            sessionManager: sessionManager,
+            sampler: sampler,
+            eventQueue: eventQueue
+        )
+        let traceClient = TraceClient(
+            options: options.tracesApi,
+            tracer: tracerDecorator
+        )
+        let appTraceClient = AppTraceClient(
+            options: options.tracesApi,
+            tracingApiClient: traceClient
+        )
+        if options.autoInstrumentation.contains(.urlSession) {
+            autoInstrumentation.append(
+                NetworkInstrumentationManager(
+                    options: options,
+                    tracer: tracerDecorator,
+                    session: sessionManager
+                )
             )
-            Task {
-                await batchWorker.addExporter(traceEventExporter)
-            }
-            let decorator = TracerDecorator(options: options, sessionManager: sessionManager, sampler: sampler, eventQueue: eventQueue)
-            /// tracer is enabled
-            if options.autoInstrumentation.contains(.urlSession) {
-                autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
-            }
-            tracer = decorator
-            tracerDecorator = decorator
-            if options.autoInstrumentation.contains(.launchTimes) {
-                options.launchMeter.subscribe { statistics in
-                    for element in statistics {
-                        let span = decorator.startSpan(
-                            name: "AppStart",
-                            attributes: ["start.type": .string(element.launchType.description)],
-                            startTime: element.startTime
-                        )
-                        span.end(time: element.endTime)
-                    }
+        }
+        if options.autoInstrumentation.contains(.launchTimes) {
+            options.launchMeter.subscribe { statistics in
+                for element in statistics {
+                    let span = traceClient.startSpan(
+                        name: "AppStart",
+                        attributes: ["start.type": .string(element.launchType.description)],
+                        startTime: element.startTime
+                    )
+                    span.end(time: element.endTime)
                 }
             }
-        } else {
-            tracer = NoOpTracer()
-            tracerDecorator = nil
         }
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
-            if let tracerDecorator {
-                interaction.startEndSpan(tracer: tracerDecorator)
-            }
+            interaction.startEndSpan(tracer: tracerDecorator)
         }
         userInteractionManager.start()
         
@@ -115,55 +119,56 @@ public struct ObservabilityClientFactory {
             throw InstrumentationError.invalidTraceExporterUrl
         }
         
-        if options.metrics == .enabled {
-            let metricsEventExporter = OtlpMetricEventExporter(
-                endpoint: url,
-                config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
-            )
-            Task {
-                await batchWorker.addExporter(metricsEventExporter)
-            }
-            let metricsScheduleExporter = OtlpMetricScheduleExporter(eventQueue: eventQueue)
-            let reader = PeriodicMetricReaderBuilder(exporter: metricsScheduleExporter)
-                .setInterval(timeInterval: 10.0)
-                .build()
+        // MARK: - Metrics
+        let metricsEventExporter = OtlpMetricEventExporter(
+            endpoint: url,
+            config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
+        )
+        Task {
+            await batchWorker.addExporter(metricsEventExporter)
+        }
+        let metricsScheduleExporter = OtlpMetricScheduleExporter(eventQueue: eventQueue)
+        let reader = PeriodicMetricReaderBuilder(exporter: metricsScheduleExporter)
+            .setInterval(timeInterval: 10.0)
+            .build()
 
-            meter = MetricsApiFactory.make(
-                options: options,
-                reader: reader
+        let metricsClient = MetricsApiFactory.make(
+            options: options,
+            reader: reader
+        )
+        let appMetricsClient = AppMetricsClient(
+            options: options.metricsApi,
+            metricsApiClient: metricsClient
+        )
+        
+        if options.autoInstrumentation.contains(.memory) {
+            autoInstrumentation.append(
+                MeasurementTask(metricsApi: metricsClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                    guard let report = MemoryUseManager.memoryReport(log: options.log) else { return }
+                    api.recordMetric(
+                        metric: .init(name: SemanticConvention.systemMemoryAppUsageBytes, value: Double(report.appMemoryBytes))
+                    )
+                    api.recordMetric(
+                        metric: .init(name: SemanticConvention.systemMemoryAppTotalBytes, value: Double(report.systemTotalBytes))
+                    )
+                }
             )
-            
-            if options.autoInstrumentation.contains(.memory) {
-                autoInstrumentation.append(
-                    MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
-                        guard let report = MemoryUseManager.memoryReport(log: options.log) else { return }
-                        api.recordMetric(
-                            metric: .init(name: SemanticConvention.systemMemoryAppUsageBytes, value: Double(report.appMemoryBytes))
-                        )
-                        api.recordMetric(
-                            metric: .init(name: SemanticConvention.systemMemoryAppTotalBytes, value: Double(report.systemTotalBytes))
-                        )
-                    }
-                )
-            }
-            
-            if options.autoInstrumentation.contains(.cpu) {
-                autoInstrumentation.append(
-                    MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
-                        guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
-                        api.recordMetric(
-                            metric: .init(name: SemanticConvention.systemCpuUtilization, value: value)
-                        )
-                    }
-                )
-            }
-        } else {
-            meter = NoOpMeter()
+        }
+        
+        if options.autoInstrumentation.contains(.cpu) {
+            autoInstrumentation.append(
+                MeasurementTask(metricsApi: metricsClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                    guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
+                    api.recordMetric(
+                        metric: .init(name: SemanticConvention.systemCpuUtilization, value: value)
+                    )
+                }
+            )
         }
         
         let crashReporting: CrashReporting
         if options.crashReporting == .enabled {
-            crashReporting = try KSCrashReportService(logsApi: logger, log: options.log)
+            crashReporting = try KSCrashReportService(logsApi: logClient, log: options.log)
         } else {
             crashReporting = NoOpCrashReport()
         }
@@ -181,9 +186,9 @@ public struct ObservabilityClientFactory {
         autoInstrumentation.forEach { $0.start() }
 
         return ObservabilityClient(
-            tracer: tracer,
-            logger: logger,
-            meter: meter,
+            tracer: appTraceClient,
+            logger: appLogClient,
+            meter: appMetricsClient,
             crashReportsApi: crashReporting,
             autoInstrumentation: autoInstrumentation,
             options: options,

@@ -64,11 +64,6 @@ extension TracerDecorator: TracesApi {
         let span = builder.startSpan()
         return span
     }
-    
-    func flush() -> Bool {
-        // No-op
-        return true
-    }
 }
 
 /// Internal method used to set span start date
