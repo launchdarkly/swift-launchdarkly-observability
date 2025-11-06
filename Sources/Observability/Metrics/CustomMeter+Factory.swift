@@ -25,7 +25,7 @@ struct MetricsApiFactory {
             .build()
         
         let meter = provider.get(name: options.serviceName)
-        return MeterFacade(
+        return MetricsApiClient(
             options: options,
             meter: meter,
             flush: { reader.forceFlush() == .success }

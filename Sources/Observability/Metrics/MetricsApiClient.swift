@@ -1,60 +1,24 @@
-import OpenTelemetrySdk
+import OpenTelemetryApi
 import Common
 
-/// Implementation using OpenTelemetrySdk
-/// Don't use, will be remove at some point in favor of MeterFacade
-final class MeterDecorator: Meter {
-    private let meterProvider: any MeterProvider
-    private let meter: MeterSdk
-    private let meterReader: any MetricReader
-    
+final class MetricsApiClient {
+    private let options: Options
+    private let meter: any Meter
+    private let flushMetrics: () -> Bool
     private var cachedGauges = AtomicDictionary<String, DoubleGauge>()
     private var cachedCounters = AtomicDictionary<String, DoubleCounter>()
     private var cachedLongCounters = AtomicDictionary<String, LongCounter>()
     private var cachedHistograms = AtomicDictionary<String, DoubleHistogram>()
     private var cachedUpDownCounters = AtomicDictionary<String, DoubleUpDownCounter>()
     
-    init(options: Options, reader: MetricReader) {
-        self.meterReader = reader
-        
-        let provider = MeterProviderSdk.builder()
-            .setResource(resource: .init(attributes: options.resourceAttributes))
-            .registerView(
-                selector: InstrumentSelector
-                    .builder()
-                    .setInstrument(name: ".*")
-                    .build(),
-                view: View
-                    .builder()
-                    .withAggregation(aggregation: Aggregations.defaultAggregation())
-                    .build()
-            )
-            .registerMetricReader(
-                reader: reader
-            )
-            .build()
-        self.meterProvider = provider
-        self.meter = provider.get(name: options.serviceName)
-    }
-    
-    func counterBuilder(name: String) -> LongCounterMeterBuilderSdk {
-        meter.counterBuilder(name: name)
-    }
-    
-    func upDownCounterBuilder(name: String) -> LongUpDownCounterBuilderSdk {
-        meter.upDownCounterBuilder(name: name)
-    }
-
-    func histogramBuilder(name: String) -> DoubleHistogramMeterBuilderSdk {
-        meter.histogramBuilder(name: name)
-    }
-    
-    func gaugeBuilder(name: String) -> DoubleGaugeBuilderSdk {
-        meter.gaugeBuilder(name: name)
+    init(options: Options, meter: any Meter, flush: @escaping () -> Bool) {
+        self.options = options
+        self.meter = meter
+        self.flushMetrics = flush
     }
 }
 
-extension MeterDecorator: MetricsApi {
+extension MetricsApiClient: MetricsApi {
     public func recordMetric(metric: Metric) {
         var gauge = cachedGauges[metric.name]
         if gauge == nil {
@@ -103,6 +67,7 @@ extension MeterDecorator: MetricsApi {
     }
     
     public func flush() -> Bool {
-        meterReader.forceFlush() == .success
+        self.flushMetrics()
     }
 }
+

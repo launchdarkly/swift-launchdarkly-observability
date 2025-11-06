@@ -157,6 +157,7 @@ public struct Options {
     public var disableErrorTracking: Bool
     public var logsApiLevel: LogsAPIOptions
     public var logs: FeatureFlag
+    public var metricsApi: MetricsAPIOptions
     public var traces: FeatureFlag
     public var metrics: FeatureFlag
     public var log: OSLog
@@ -179,6 +180,7 @@ public struct Options {
         logsApiLevel: LogsAPIOptions = .info,
         logs: FeatureFlag = .enabled,
         traces: FeatureFlag = .enabled,
+        metricsApi: MetricsAPIOptions = .on,
         metrics: FeatureFlag = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: FeatureFlag = .enabled,
@@ -198,6 +200,7 @@ public struct Options {
         self.logsApiLevel = logsApiLevel
         self.logs = logs
         self.traces = traces
+        self.metricsApi = metricsApi
         self.metrics = metrics
         self.log = log
         self.crashReporting = crashReporting

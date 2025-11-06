@@ -117,46 +117,47 @@ public struct ObservabilityClientFactory {
             throw InstrumentationError.invalidTraceExporterUrl
         }
         
-        if options.metrics == .enabled {
-            let metricsExporter = OtlpHttpMetricExporter(
-                endpoint: url,
-                config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
-            )
-            let reader = PeriodicMetricReaderBuilder(exporter: metricsExporter)
-                .setInterval(timeInterval: 10.0)
-                .build()
+        // MARK: - Metrics
+        let metricsExporter = OtlpHttpMetricExporter(
+            endpoint: url,
+            config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
+        )
+        let reader = PeriodicMetricReaderBuilder(exporter: metricsExporter)
+            .setInterval(timeInterval: 10.0)
+            .build()
 
-            meter = MetricsApiFactory.make(
-                options: options,
-                reader: reader
+        let metricsApiClient = MetricsApiFactory.make(
+            options: options,
+            reader: reader
+        )
+        let metricsApiClientDecorator = MetricsApiClientDecorator(
+            options: options.metricsApi,
+            metricsApiClient: metricsApiClient
+        )
+        
+        if options.autoInstrumentation.contains(.memory) {
+            autoInstrumentation.append(
+                MeasurementTask(metricsApi: metricsApiClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                    guard let report = MemoryUseManager.memoryReport(log: options.log) else { return }
+                    api.recordMetric(
+                        metric: .init(name: SemanticConvention.systemMemoryAppUsageBytes, value: Double(report.appMemoryBytes))
+                    )
+                    api.recordMetric(
+                        metric: .init(name: SemanticConvention.systemMemoryAppTotalBytes, value: Double(report.systemTotalBytes))
+                    )
+                }
             )
-            
-            if options.autoInstrumentation.contains(.memory) {
-                autoInstrumentation.append(
-                    MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
-                        guard let report = MemoryUseManager.memoryReport(log: options.log) else { return }
-                        api.recordMetric(
-                            metric: .init(name: SemanticConvention.systemMemoryAppUsageBytes, value: Double(report.appMemoryBytes))
-                        )
-                        api.recordMetric(
-                            metric: .init(name: SemanticConvention.systemMemoryAppTotalBytes, value: Double(report.systemTotalBytes))
-                        )
-                    }
-                )
-            }
-            
-            if options.autoInstrumentation.contains(.cpu) {
-                autoInstrumentation.append(
-                    MeasurementTask(metricsApi: meter, samplingInterval: autoInstrumentationSamplingInterval) { api in
-                        guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
-                        api.recordMetric(
-                            metric: .init(name: SemanticConvention.systemCpuUtilization, value: value)
-                        )
-                    }
-                )
-            }
-        } else {
-            meter = NoOpMeter()
+        }
+        
+        if options.autoInstrumentation.contains(.cpu) {
+            autoInstrumentation.append(
+                MeasurementTask(metricsApi: metricsApiClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                    guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
+                    api.recordMetric(
+                        metric: .init(name: SemanticConvention.systemCpuUtilization, value: value)
+                    )
+                }
+            )
         }
         
         let crashReporting: CrashReporting
@@ -181,7 +182,7 @@ public struct ObservabilityClientFactory {
         return ObservabilityClient(
             tracer: tracer,
             logger: logger,
-            meter: meter,
+            meter: metricsApiClientDecorator,
             crashReportsApi: crashReporting,
             autoInstrumentation: autoInstrumentation,
             options: options,
