@@ -132,18 +132,18 @@ public struct ObservabilityClientFactory {
             .setInterval(timeInterval: 10.0)
             .build()
 
-        let metricsApiClient = MetricsApiFactory.make(
+        let metricsClient = MetricsApiFactory.make(
             options: options,
             reader: reader
         )
-        let metricsApiClientDecorator = MetricsApiClientDecorator(
+        let appMetricsClient = AppMetricsClient(
             options: options.metricsApi,
-            metricsApiClient: metricsApiClient
+            metricsApiClient: metricsClient
         )
         
         if options.autoInstrumentation.contains(.memory) {
             autoInstrumentation.append(
-                MeasurementTask(metricsApi: metricsApiClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                MeasurementTask(metricsApi: metricsClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
                     guard let report = MemoryUseManager.memoryReport(log: options.log) else { return }
                     api.recordMetric(
                         metric: .init(name: SemanticConvention.systemMemoryAppUsageBytes, value: Double(report.appMemoryBytes))
@@ -157,7 +157,7 @@ public struct ObservabilityClientFactory {
         
         if options.autoInstrumentation.contains(.cpu) {
             autoInstrumentation.append(
-                MeasurementTask(metricsApi: metricsApiClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
+                MeasurementTask(metricsApi: metricsClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
                     guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
                     api.recordMetric(
                         metric: .init(name: SemanticConvention.systemCpuUtilization, value: value)
@@ -188,7 +188,7 @@ public struct ObservabilityClientFactory {
         return ObservabilityClient(
             tracer: appTraceClient,
             logger: appLogClient,
-            meter: metricsApiClientDecorator,
+            meter: appMetricsClient,
             crashReportsApi: crashReporting,
             autoInstrumentation: autoInstrumentation,
             options: options,

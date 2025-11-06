@@ -25,7 +25,7 @@ struct MetricsApiFactory {
             .build()
         
         let meter = provider.get(name: options.serviceName)
-        return MetricsApiClient(
+        return MetricsClient(
             options: options,
             meter: meter,
             flush: {

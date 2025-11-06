@@ -10,7 +10,7 @@ struct MetricsApiClientTests {
         
         let metric = Metric(name: "test", value: 0.0, attributes: [:])
         options.metricsApi = .disabled
-        let sut = MetricsApiClientDecorator(
+        let sut = AppMetricsClient(
             options: options.metricsApi,
             metricsApiClient: apiSpy
         )
@@ -33,7 +33,7 @@ struct MetricsApiClientTests {
         
         let metric = Metric(name: "test", value: 0.0, attributes: [:])
         options.metricsApi = .enabled
-        let sut = MetricsApiClientDecorator(
+        let sut = AppMetricsClient(
             options: options.metricsApi,
             metricsApiClient: apiSpy
         )

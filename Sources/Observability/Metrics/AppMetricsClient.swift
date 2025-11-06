@@ -1,6 +1,6 @@
 import OpenTelemetryApi
 
-final class MetricsApiClientDecorator: MetricsApi {
+final class AppMetricsClient: MetricsApi {
     private let options: Options.MetricsAPIOptions
     private let metricsApiClient: MetricsApi
     

@@ -1,7 +1,7 @@
 import OpenTelemetryApi
 import Common
 
-final class MetricsApiClient {
+final class MetricsClient {
     private let options: Options
     private let meter: any Meter
     private let flushMetrics: () -> Bool
@@ -18,7 +18,7 @@ final class MetricsApiClient {
     }
 }
 
-extension MetricsApiClient: MetricsApi {
+extension MetricsClient: MetricsApi {
     public func recordMetric(metric: Metric) {
         var gauge = cachedGauges[metric.name]
         if gauge == nil {
