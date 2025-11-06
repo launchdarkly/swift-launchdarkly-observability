@@ -174,7 +174,7 @@ struct ContentView: View {
             
             let url = URL(string: "https://launchdarkly.com/")!
             do {
-                let (data, urlResponse) = try await URLSession.shared.data(from: url)
+                let (_, _) = try await URLSession.shared.data(from: url)
                 networkPressed.toggle()
             } catch {
                 networkPressed.toggle()

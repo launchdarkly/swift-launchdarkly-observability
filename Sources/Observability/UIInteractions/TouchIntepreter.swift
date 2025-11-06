@@ -101,11 +101,7 @@ final class TouchIntepreter {
         tracks[touchSample.id] = track
         yield(moveInteraction)
     }
-    
-    func flushTrack(touchSample: TouchSample, uptimeDifference: TimeInterval, yield: TouchInteractionYield) {
-  
-    }
-    
+
     func squaredDistance(from: CGPoint, to: CGPoint) -> CGFloat {
         let dx = from.x - to.x
         let dy = from.y - to.y
