@@ -32,10 +32,9 @@ public struct ObservabilityClientFactory {
         let autoInstrumentationSamplingInterval: TimeInterval = 5.0
         var autoInstrumentation = [AutoInstrumentation]()
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
-        let meter: MetricsApi
         let logger: LogsApi
         let tracer: TracesApi
-        
+        let tracerDecorator: Tracer?
         let eventQueue = EventQueue()
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
 
@@ -72,19 +71,20 @@ public struct ObservabilityClientFactory {
         }
         
         if options.traces == .enabled {
-            let tracesExporter = SamplingTraceExporterDecorator(
-                exporter: OtlpHttpTraceExporter(
-                    endpoint: url,
-                    config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
-                ),
-                sampler: sampler
+            let traceEventExporter = OtlpTraceEventExporter(
+                endpoint: url,
+                config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
             )
-            let decorator = TracerDecorator(options: options, sessionManager: sessionManager, exporter: tracesExporter)
+            Task {
+                await batchWorker.addExporter(traceEventExporter)
+            }
+            let decorator = TracerDecorator(options: options, sessionManager: sessionManager, sampler: sampler, eventQueue: eventQueue)
             /// tracer is enabled
             if options.autoInstrumentation.contains(.urlSession) {
                 autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
             }
             tracer = decorator
+            tracerDecorator = decorator
             if options.autoInstrumentation.contains(.launchTimes) {
                 options.launchMeter.subscribe { statistics in
                     for element in statistics {
@@ -99,26 +99,30 @@ public struct ObservabilityClientFactory {
             }
         } else {
             tracer = NoOpTracer()
+            tracerDecorator = nil
         }
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
-            // TODO: move to LD buffering
-            if let span = interaction.span() {
-                tracer.startSpan(name: span.name, attributes: span.attributes)
+            if let tracerDecorator {
+                interaction.startEndSpan(tracer: tracerDecorator)
             }
         }
         userInteractionManager.start()
         
-        guard  let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.metricsPath) else {
+        guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.metricsPath) else {
             throw InstrumentationError.invalidTraceExporterUrl
         }
         
         // MARK: - Metrics
-        let metricsExporter = OtlpHttpMetricExporter(
+        let metricsEventExporter = OtlpMetricEventExporter(
             endpoint: url,
             config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
         )
-        let reader = PeriodicMetricReaderBuilder(exporter: metricsExporter)
+        Task {
+            await batchWorker.addExporter(metricsEventExporter)
+        }
+        let metricsScheduleExporter = OtlpMetricScheduleExporter(eventQueue: eventQueue)
+        let reader = PeriodicMetricReaderBuilder(exporter: metricsScheduleExporter)
             .setInterval(timeInterval: 10.0)
             .build()
 

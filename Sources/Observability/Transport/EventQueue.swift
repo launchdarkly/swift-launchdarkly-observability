@@ -7,7 +7,7 @@ public struct EventQueueItem {
     public var exporterTypeId: ObjectIdentifier
     
     public init(payload: EventQueueItemPayload) {
-        let type = type(of: payload.exporterClass)
+        let type = payload.exporterClass
         self.init(payload: payload, exporterTypeId: ObjectIdentifier(type))
     }
     
@@ -49,6 +49,12 @@ public actor EventQueue: EventQueuing {
     
     public func send(_ payload: EventQueueItemPayload) async {
         send(EventQueueItem(payload: payload))
+    }
+    
+    public func send(_ payloads: [EventQueueItemPayload]) async {
+        payloads.forEach {
+            send(EventQueueItem(payload: $0))
+        }
     }
     
     func send(_ item: EventQueueItem) {

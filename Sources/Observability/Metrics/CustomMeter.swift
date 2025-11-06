@@ -101,8 +101,4 @@ extension CustomMeter: MetricsApi {
         }
         upDownCounter?.add(value: metric.value, attributes: metric.attributes)
     }
-    
-    public func flush() -> Bool {
-        meterReader.forceFlush() == .success
-    }
 }

@@ -59,11 +59,6 @@ fileprivate struct ConfigurationDefaults {
         if let url = urlRequest.url {
             spanBuilder.setAttribute(key: "http.url", value: url.absoluteString)
         }
-        
-        let sessionId = session.sessionInfo.id
-        if !sessionId.isEmpty {
-            spanBuilder.setAttribute(key: SemanticConvention.highlightSessionId, value: sessionId)
-        }
     }
     
     func shouldInjectTracingHeaders(urlRequest: URLRequest) -> Bool? {

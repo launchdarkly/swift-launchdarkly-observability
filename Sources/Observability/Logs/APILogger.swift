@@ -22,7 +22,7 @@ final class AppLogBuilder {
         var attributes = attributes
         let sessionId = sessionManager.sessionInfo.id
         if !sessionId.isEmpty {
-            attributes[SemanticConvention.highlightSessionId] = .string(sessionId)
+            attributes[SemanticConvention.sessionId] = .string(sessionId)
         }
         
         let logBuilder = LDLogRecordBuilder(
