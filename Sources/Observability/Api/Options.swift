@@ -23,8 +23,7 @@ import OSLog
 public struct Options {
     public enum LogsAPIOptions: Int, Comparable, CustomStringConvertible, CaseIterable {
         case
-        `none`,
-        trace,
+        trace = 1,
         trace2,
         trace3,
         trace4,
@@ -47,7 +46,8 @@ public struct Options {
         fatal,
         fatal2,
         fatal3,
-        fatal4
+        fatal4,
+        `none`
         
         public var description: String {
             switch self {

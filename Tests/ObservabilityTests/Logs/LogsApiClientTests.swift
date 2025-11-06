@@ -51,8 +51,15 @@ struct LogsApiClientTests {
             sut.recordLog(message: "message", severity: severity, attributes: [:])
         }
         
-        // any fatal level should not be logged
-        #expect(spy.invokeCount == 20)
+        var allowedLogLevels = [
+            OpenTelemetryApi.Severity.error4,
+                .fatal,
+                .fatal2,
+                .debug3,
+                .fatal4
+        ]
+        
+        #expect(spy.invokeCount == allowedLogLevels.count)
         
         
         spy = LogsApiSpy()
@@ -65,8 +72,30 @@ struct LogsApiClientTests {
             sut.recordLog(message: "message", severity: severity, attributes: [:])
         }
         
-        // up to debug level should be logged
-        #expect(spy.invokeCount == 5)
+        
+        allowedLogLevels = [
+            OpenTelemetryApi.Severity.debug,
+            .debug2,
+            .debug3,
+            .debug4,
+            .info,
+            .info2,
+            .info3,
+            .info4,
+            .warn,
+            .warn2,
+            .warn3,
+            .warn4,
+            .error,
+            .error2,
+            .error3,
+            .error4,
+            .fatal,
+            .fatal2,
+            .fatal3,
+            .fatal4
+        ]
+        #expect(spy.invokeCount == allowedLogLevels.count)
     }
 }
 

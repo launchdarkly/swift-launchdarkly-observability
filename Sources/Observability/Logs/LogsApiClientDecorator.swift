@@ -16,7 +16,7 @@ final class LogsApiClientDecorator: LogsApi {
         attributes: [String : OpenTelemetryApi.AttributeValue]
     ) {
         /// Options.LogsAPIOptions is bijective with OpenTelemetryApi.Severity
-        guard severity.rawValue <= options.rawValue else {
+        guard severity.rawValue >= options.rawValue else {
             return
         }
         
