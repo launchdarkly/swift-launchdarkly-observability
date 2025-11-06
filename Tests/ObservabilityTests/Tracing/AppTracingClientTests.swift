@@ -2,7 +2,7 @@ import Foundation.NSURLError
 import Testing
 @testable import Observability
 
-struct TracingApiClientTests {
+struct AppTracingClientTests {
     @Test("Tracing API disabled")
     func tracingDisabled() throws {
         let apiSpy = TracingApiSpy()

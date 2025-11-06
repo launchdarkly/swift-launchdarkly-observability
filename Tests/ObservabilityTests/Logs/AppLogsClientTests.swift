@@ -1,15 +1,13 @@
 import Testing
 @testable import Observability
 
-struct LogsApiClientTests {
+struct AppLogsClientTests {
     @Test("Logs disabled")
     func logsDisabled() {
         let spy = LogsApiSpy()
-        var options = Options()
         
-        options.logsApiLevel = .none
         let sut = AppLogClient(
-            options: options.logsApiLevel,
+            options: .none,
             logger: spy
         )
         
@@ -21,7 +19,7 @@ struct LogsApiClientTests {
     }
     
     @Test("Logs enabled")
-    func logsEnabled() {
+    func theSameLevelEnabled() {
         let spy = LogsApiSpy()
 
         for severity in OTelSeverities {

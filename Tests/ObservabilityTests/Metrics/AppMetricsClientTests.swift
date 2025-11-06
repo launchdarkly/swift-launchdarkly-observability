@@ -2,7 +2,7 @@ import Foundation.NSURLError
 import Testing
 @testable import Observability
 
-struct MetricsApiClientTests {
+struct AppMetricsClientTests {
     @Test("Metrics API disabled")
     func metricsDisabled() throws {
         let apiSpy = MetricsApiSpy()
