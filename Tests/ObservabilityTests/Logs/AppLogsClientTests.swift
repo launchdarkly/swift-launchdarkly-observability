@@ -23,7 +23,7 @@ struct AppLogsClientTests {
         let spy = LogsApiSpy()
 
         for severity in OTelSeverities {
-            guard let level = Options.LogsAPIOptions(rawValue: severity.rawValue) else {
+            guard let level = Options.LogLevel(rawValue: severity.rawValue) else {
                 continue
             }
             let sut = AppLogClient(
@@ -125,7 +125,7 @@ fileprivate let OTelSeverities = [
 ]
 final class LogsApiSpy: LogsApi {
     var invokeCount = 0
-    var invokeCountByLevel = Options.LogsAPIOptions.allCases.reduce([Options.LogsAPIOptions: Int]()) { table, level in
+    var invokeCountByLevel = Options.LogLevel.allCases.reduce([Options.LogLevel: Int]()) { table, level in
         guard level != .none else { return table }
         var table = table
         table[level] = 0
@@ -133,7 +133,7 @@ final class LogsApiSpy: LogsApi {
     }
     func recordLog(message: String, severity: OpenTelemetryApi.Severity, attributes: [String : OpenTelemetryApi.AttributeValue]) {
         invokeCount += 1
-        guard let level = Options.LogsAPIOptions(rawValue: severity.rawValue) else { return }
+        guard let level = Options.LogLevel(rawValue: severity.rawValue) else { return }
         invokeCountByLevel[level]? += 1
     }
 }

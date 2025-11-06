@@ -21,7 +21,7 @@ import OSLog
 ///
 
 public struct Options {
-    public enum LogsAPIOptions: Int, Comparable, CustomStringConvertible, CaseIterable {
+    public enum LogLevel: Int, Comparable, CustomStringConvertible, CaseIterable {
         case
         trace = 1,
         trace2,
@@ -155,7 +155,7 @@ public struct Options {
     public var sessionBackgroundTimeout: TimeInterval
     public var isDebug: Bool
     public var disableErrorTracking: Bool
-    public var logsApiLevel: LogsAPIOptions
+    public var logsApiLevel: LogLevel
     public var metricsApi: MetricsAPIOptions
     public var tracesApi: TracingAPIOptions
     public var log: OSLog
@@ -175,7 +175,7 @@ public struct Options {
         sessionBackgroundTimeout: TimeInterval = 15 * 60,
         isDebug: Bool = false,
         disableErrorTracking: Bool = false,
-        logsApiLevel: LogsAPIOptions = .info,
+        logsApiLevel: LogLevel = .info,
         tracesApi: TracingAPIOptions = .enabled,
         metricsApi: MetricsAPIOptions = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
