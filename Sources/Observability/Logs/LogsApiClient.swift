@@ -41,7 +41,7 @@ final class AppLogBuilder {
     }
 }
 
-final class APILogger {
+final class LogsApiClient {
     private let eventQueue: EventQueue
     private let appLogBuilder: AppLogBuilder
     
@@ -51,7 +51,7 @@ final class APILogger {
     }
 }
 
-extension APILogger: LogsApi {
+extension LogsApiClient: LogsApi {
     public func recordLog(
         message: String,
         severity: Severity,

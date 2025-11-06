@@ -21,9 +21,10 @@ import OSLog
 ///
 
 public struct Options {
-    public enum LogsAPIOptions: Int, Comparable, CustomStringConvertible {
-        case trace = 1
+    public enum LogsAPIOptions: Int, Comparable, CustomStringConvertible, CaseIterable {
         case
+        `none`,
+        trace,
         trace2,
         trace3,
         trace4,
@@ -46,8 +47,7 @@ public struct Options {
         fatal,
         fatal2,
         fatal3,
-        fatal4,
-        `none`
+        fatal4
         
         public var description: String {
             switch self {
@@ -108,7 +108,7 @@ public struct Options {
             lhs.rawValue < rhs.rawValue
         }
     }
-    public struct TracesAPIOptions: Hashable {
+    public struct TracingAPIOptions {
         public static var enabled: Self {
             .init()
         }
@@ -156,10 +156,8 @@ public struct Options {
     public var isDebug: Bool
     public var disableErrorTracking: Bool
     public var logsApiLevel: LogsAPIOptions
-    public var logs: FeatureFlag
     public var metricsApi: MetricsAPIOptions
-    public var traces: FeatureFlag
-    public var metrics: FeatureFlag
+    public var tracesApi: TracingAPIOptions
     public var log: OSLog
     public var crashReporting: FeatureFlag
     public var autoInstrumentation: Set<AutoInstrumented>
@@ -178,10 +176,8 @@ public struct Options {
         isDebug: Bool = false,
         disableErrorTracking: Bool = false,
         logsApiLevel: LogsAPIOptions = .info,
-        logs: FeatureFlag = .enabled,
-        traces: FeatureFlag = .enabled,
+        tracesApi: TracingAPIOptions = .enabled,
         metricsApi: MetricsAPIOptions = .on,
-        metrics: FeatureFlag = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: FeatureFlag = .enabled,
         autoInstrumentation: Set<AutoInstrumented> = [.urlSession]
@@ -198,10 +194,8 @@ public struct Options {
         self.isDebug = isDebug
         self.disableErrorTracking = disableErrorTracking
         self.logsApiLevel = logsApiLevel
-        self.logs = logs
-        self.traces = traces
+        self.tracesApi = tracesApi
         self.metricsApi = metricsApi
-        self.metrics = metrics
         self.log = log
         self.crashReporting = crashReporting
         self.autoInstrumentation = autoInstrumentation

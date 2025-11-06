@@ -13,9 +13,9 @@ struct Client {
                     otlpEndpoint: Env.otelHost,
                     sessionBackgroundTimeout: 3,
                     isDebug: true,
-                    logs: .enabled,
-                    traces: .enabled,
-                    metrics: .enabled,
+                    logsApiLevel: .info,
+                    tracesApi: .enabled,
+                    metricsApi: .on,
                     crashReporting: .disabled,
                     autoInstrumentation: [.urlSession, .userTaps, .memory, .cpu, .memoryWarnings]
                 )

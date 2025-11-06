@@ -32,22 +32,19 @@ public struct ObservabilityClientFactory {
         let autoInstrumentationSamplingInterval: TimeInterval = 5.0
         var autoInstrumentation = [AutoInstrumentation]()
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
-        let logger: LogsApi
-        let tracer: TracesApi
-        let tracerDecorator: Tracer?
         let eventQueue = EventQueue()
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
 
         let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionManager: sessionManager)
         
+        // MARK: - Logging
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.logsPath) else {
             throw InstrumentationError.invalidLogExporterUrl
         }
         
         let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
-        let apiLogger = APILogger(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
-        let loggerDecorator = APILoggerDecorator(options: options.logsApiLevel, logger: apiLogger)
-        logger = loggerDecorator
+        let logsApiClient = LogsApiClient(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
+        let logsApiClientDecorator = LogsApiClientDecorator(options: options.logsApiLevel, logger: logsApiClient)
         let logExporter = OtlpLogExporter(endpoint: url)
         Task {
             await batchWorker.addExporter(logExporter)
@@ -66,46 +63,56 @@ public struct ObservabilityClientFactory {
         }
         autoInstrumentation.append(appLifecycleLogger)
         
+        // MARK: - Tracing
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.tracesPath) else {
             throw InstrumentationError.invalidTraceExporterUrl
         }
         
-        if options.traces == .enabled {
-            let traceEventExporter = OtlpTraceEventExporter(
-                endpoint: url,
-                config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
+        let traceEventExporter = OtlpTraceEventExporter(
+            endpoint: url,
+            config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
+        )
+        Task {
+            await batchWorker.addExporter(traceEventExporter)
+        }
+        let tracerDecorator = TracerDecorator(
+            options: options,
+            sessionManager: sessionManager,
+            sampler: sampler,
+            eventQueue: eventQueue
+        )
+        let tracingApiClient = TracingApiClient(
+            options: options.tracesApi,
+            tracer: tracerDecorator
+        )
+        let tracingApiClientDecorator = TracingApiClientDecorator(
+            options: options.tracesApi,
+            tracingApiClient: tracingApiClient
+        )
+        if options.autoInstrumentation.contains(.urlSession) {
+            autoInstrumentation.append(
+                NetworkInstrumentationManager(
+                    options: options,
+                    tracer: tracerDecorator,
+                    session: sessionManager
+                )
             )
-            Task {
-                await batchWorker.addExporter(traceEventExporter)
-            }
-            let decorator = TracerDecorator(options: options, sessionManager: sessionManager, sampler: sampler, eventQueue: eventQueue)
-            /// tracer is enabled
-            if options.autoInstrumentation.contains(.urlSession) {
-                autoInstrumentation.append(NetworkInstrumentationManager(options: options, tracer: decorator, session: sessionManager))
-            }
-            tracer = decorator
-            tracerDecorator = decorator
-            if options.autoInstrumentation.contains(.launchTimes) {
-                options.launchMeter.subscribe { statistics in
-                    for element in statistics {
-                        let span = decorator.startSpan(
-                            name: "AppStart",
-                            attributes: ["start.type": .string(element.launchType.description)],
-                            startTime: element.startTime
-                        )
-                        span.end(time: element.endTime)
-                    }
+        }
+        if options.autoInstrumentation.contains(.launchTimes) {
+            options.launchMeter.subscribe { statistics in
+                for element in statistics {
+                    let span = tracingApiClient.startSpan(
+                        name: "AppStart",
+                        attributes: ["start.type": .string(element.launchType.description)],
+                        startTime: element.startTime
+                    )
+                    span.end(time: element.endTime)
                 }
             }
-        } else {
-            tracer = NoOpTracer()
-            tracerDecorator = nil
         }
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
-            if let tracerDecorator {
-                interaction.startEndSpan(tracer: tracerDecorator)
-            }
+            interaction.startEndSpan(tracer: tracerDecorator)
         }
         userInteractionManager.start()
         
@@ -162,7 +169,7 @@ public struct ObservabilityClientFactory {
         
         let crashReporting: CrashReporting
         if options.crashReporting == .enabled {
-            crashReporting = try KSCrashReportService(logsApi: logger, log: options.log)
+            crashReporting = try KSCrashReportService(logsApi: logsApiClient, log: options.log)
         } else {
             crashReporting = NoOpCrashReport()
         }
@@ -180,8 +187,8 @@ public struct ObservabilityClientFactory {
         autoInstrumentation.forEach { $0.start() }
 
         return ObservabilityClient(
-            tracer: tracer,
-            logger: logger,
+            tracer: tracingApiClientDecorator,
+            logger: logsApiClientDecorator,
             meter: metricsApiClientDecorator,
             crashReportsApi: crashReporting,
             autoInstrumentation: autoInstrumentation,

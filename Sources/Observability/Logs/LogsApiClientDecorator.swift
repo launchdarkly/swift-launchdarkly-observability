@@ -1,13 +1,13 @@
 import Foundation
 import OpenTelemetrySdk
 
-final class APILoggerDecorator: LogsApi {
+final class LogsApiClientDecorator: LogsApi {
     private let options: Options.LogsAPIOptions
-    private let logger: LogsApi
+    private let logsApiClient: LogsApi
     
     init(options: Options.LogsAPIOptions, logger: LogsApi) {
         self.options = options
-        self.logger = logger
+        self.logsApiClient = logger
     }
     
     func recordLog(
@@ -16,10 +16,10 @@ final class APILoggerDecorator: LogsApi {
         attributes: [String : OpenTelemetryApi.AttributeValue]
     ) {
         /// Options.LogsAPIOptions is bijective with OpenTelemetryApi.Severity
-        guard options.rawValue == severity.rawValue else {
+        guard severity.rawValue <= options.rawValue else {
             return
         }
         
-        logger.recordLog(message: message, severity: severity, attributes: attributes)
+        logsApiClient.recordLog(message: message, severity: severity, attributes: attributes)
     }
 }
