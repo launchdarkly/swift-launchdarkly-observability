@@ -1,0 +1,5 @@
+NOTICE
+
+This project includes code from the OpenTelemetry Swift project
+(https://github.com/open-telemetry/opentelemetry-swift),
+licensed under the Apache License, Version 2.0.
