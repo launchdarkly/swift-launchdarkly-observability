@@ -1,7 +1,7 @@
 import Foundation
 import OpenTelemetrySdk
 
-final class LogsApiClientDecorator: LogsApi {
+final class AppLogClient: LogsApi {
     private let options: Options.LogsAPIOptions
     private let logsApiClient: LogsApi
     

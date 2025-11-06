@@ -42,8 +42,8 @@ public struct ObservabilityClientFactory {
         }
         
         let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
-        let logsApiClient = LogsApiClient(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
-        let logsApiClientDecorator = LogsApiClientDecorator(options: options.logsApiLevel, logger: logsApiClient)
+        let logClient = LogClient(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
+        let appLogClient = AppLogClient(options: options.logsApiLevel, logger: logClient)
         let logExporter = OtlpLogExporter(endpoint: url)
         Task {
             await batchWorker.addExporter(logExporter)
@@ -168,7 +168,7 @@ public struct ObservabilityClientFactory {
         
         let crashReporting: CrashReporting
         if options.crashReporting == .enabled {
-            crashReporting = try KSCrashReportService(logsApi: logsApiClient, log: options.log)
+            crashReporting = try KSCrashReportService(logsApi: logClient, log: options.log)
         } else {
             crashReporting = NoOpCrashReport()
         }
@@ -187,7 +187,7 @@ public struct ObservabilityClientFactory {
 
         return ObservabilityClient(
             tracer: tracingApiClientDecorator,
-            logger: logsApiClientDecorator,
+            logger: appLogClient,
             meter: metricsApiClientDecorator,
             crashReportsApi: crashReporting,
             autoInstrumentation: autoInstrumentation,

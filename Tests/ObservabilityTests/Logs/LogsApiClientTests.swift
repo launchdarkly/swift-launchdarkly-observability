@@ -8,7 +8,7 @@ struct LogsApiClientTests {
         var options = Options()
         
         options.logsApiLevel = .none
-        let sut = LogsApiClientDecorator(
+        let sut = AppLogClient(
             options: options.logsApiLevel,
             logger: spy
         )
@@ -28,7 +28,7 @@ struct LogsApiClientTests {
             guard let level = Options.LogsAPIOptions(rawValue: severity.rawValue) else {
                 continue
             }
-            let sut = LogsApiClientDecorator(
+            let sut = AppLogClient(
                 options: level,
                 logger: spy
             )
@@ -42,7 +42,7 @@ struct LogsApiClientTests {
         var spy = LogsApiSpy()
 
         
-        var sut = LogsApiClientDecorator(
+        var sut = AppLogClient(
             options: .error4,
             logger: spy
         )
@@ -63,7 +63,7 @@ struct LogsApiClientTests {
         
         
         spy = LogsApiSpy()
-        sut = LogsApiClientDecorator(
+        sut = AppLogClient(
             options: .debug,
             logger: spy
         )
