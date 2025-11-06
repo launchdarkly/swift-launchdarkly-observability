@@ -9,7 +9,7 @@ struct MetricsApiClientTests {
         var options = Options()
         
         let metric = Metric(name: "test", value: 0.0, attributes: [:])
-        options.metricsApi = .off
+        options.metricsApi = .disabled
         let sut = MetricsApiClientDecorator(
             options: options.metricsApi,
             metricsApiClient: apiSpy
@@ -32,7 +32,7 @@ struct MetricsApiClientTests {
         var options = Options()
         
         let metric = Metric(name: "test", value: 0.0, attributes: [:])
-        options.metricsApi = .on
+        options.metricsApi = .enabled
         let sut = MetricsApiClientDecorator(
             options: options.metricsApi,
             metricsApiClient: apiSpy

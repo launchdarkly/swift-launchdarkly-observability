@@ -125,7 +125,7 @@ public struct Options {
         var includeSpans = true
     }
     public enum MetricsAPIOptions {
-        case on, off
+        case enabled, disabled
     }
     public enum FeatureFlag {
         case enabled
@@ -177,7 +177,7 @@ public struct Options {
         disableErrorTracking: Bool = false,
         logsApiLevel: LogsAPIOptions = .info,
         tracesApi: TracingAPIOptions = .enabled,
-        metricsApi: MetricsAPIOptions = .on,
+        metricsApi: MetricsAPIOptions = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: FeatureFlag = .enabled,
         autoInstrumentation: Set<AutoInstrumented> = [.urlSession]
