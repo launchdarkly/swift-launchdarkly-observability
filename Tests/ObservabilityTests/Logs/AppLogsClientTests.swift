@@ -7,7 +7,7 @@ struct AppLogsClientTests {
         let spy = LogsApiSpy()
         
         let sut = AppLogClient(
-            options: .none,
+            logLevel: .none,
             logger: spy
         )
         
@@ -27,7 +27,7 @@ struct AppLogsClientTests {
                 continue
             }
             let sut = AppLogClient(
-                options: level,
+                logLevel: level,
                 logger: spy
             )
             sut.recordLog(message: "message", severity: severity, attributes: [:])
@@ -41,7 +41,7 @@ struct AppLogsClientTests {
 
         
         var sut = AppLogClient(
-            options: .error4,
+            logLevel: .error4,
             logger: spy
         )
         
@@ -53,7 +53,7 @@ struct AppLogsClientTests {
             OpenTelemetryApi.Severity.error4,
                 .fatal,
                 .fatal2,
-                .debug3,
+                .fatal3,
                 .fatal4
         ]
         
@@ -62,7 +62,7 @@ struct AppLogsClientTests {
         
         spy = LogsApiSpy()
         sut = AppLogClient(
-            options: .debug,
+            logLevel: .debug,
             logger: spy
         )
         

@@ -2,11 +2,11 @@ import Foundation
 import OpenTelemetrySdk
 
 final class AppLogClient: LogsApi {
-    private let options: Options.LogsAPIOptions
+    private let logLevel: Options.LogsAPIOptions
     private let logsApiClient: LogsApi
     
-    init(options: Options.LogsAPIOptions, logger: LogsApi) {
-        self.options = options
+    init(logLevel: Options.LogsAPIOptions, logger: LogsApi) {
+        self.logLevel = logLevel
         self.logsApiClient = logger
     }
     
@@ -16,7 +16,7 @@ final class AppLogClient: LogsApi {
         attributes: [String : OpenTelemetryApi.AttributeValue]
     ) {
         /// Options.LogsAPIOptions is bijective with OpenTelemetryApi.Severity
-        guard severity.rawValue >= options.rawValue else {
+        guard severity.rawValue >= logLevel.rawValue else {
             return
         }
         

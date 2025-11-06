@@ -43,7 +43,7 @@ public struct ObservabilityClientFactory {
         
         let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
         let logClient = LogClient(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
-        let appLogClient = AppLogClient(options: options.logsApiLevel, logger: logClient)
+        let appLogClient = AppLogClient(logLevel: options.logsApiLevel, logger: logClient)
         let logExporter = OtlpLogExporter(endpoint: url)
         Task {
             await batchWorker.addExporter(logExporter)
