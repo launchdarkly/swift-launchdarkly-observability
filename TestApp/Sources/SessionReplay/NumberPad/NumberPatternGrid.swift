@@ -18,7 +18,7 @@ struct NumberPatternGrid: View {
                         isSelected: dragSequence.contains(number),
                         isPressed: pressedNumber == number
                     )
-                        .overlay(
+                    .overlay(
                             GeometryReader { geo in
                                 Color.clear
                                     .preference(

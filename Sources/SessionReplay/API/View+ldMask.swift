@@ -3,11 +3,15 @@ import UIKit
 
 public extension View {
     func ldPrivate(isEnabled: Bool = true) -> some View {
-        modifier(SessionReplayModifier(isEnabled: isEnabled))
+        modifier(SessionReplayModifier(isEnabled: isEnabled, isIgnored: nil))
+    }
+    
+    func ldIgnore() -> some View {
+        modifier(SessionReplayModifier(isEnabled: nil, isIgnored: true))
     }
     
     func ldUnmask() -> some View {
-        modifier(SessionReplayModifier(isEnabled: false))
+        modifier(SessionReplayModifier(isEnabled: false, isIgnored: nil))
     }
 }
 
@@ -18,5 +22,9 @@ public extension UIView {
     
     func ldUnmask() {
         SessionReplayAssociatedObjects.maskUIView(self, isEnabled: false)
+    }
+    
+    func ldIgnore() {
+        SessionReplayAssociatedObjects.ignoreUIView(self)
     }
 }

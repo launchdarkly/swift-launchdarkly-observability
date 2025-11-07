@@ -13,15 +13,20 @@ final class MaskCollector {
     enum Constants {
         static let maskiOS26ViewTypes = Set(["CameraUI.ChromeSwiftUIView"])
     }
-
+    
     struct Settings {
         var maskiOS26ViewTypes: Set<String>
         var maskTextInputs: Bool
         var maskWebViews: Bool
         var maskImages: Bool
         var minimumAlpha: CGFloat
-        var maskClasses: Set<ObjectIdentifier>
+        
+        var maskUIViews: Set<ObjectIdentifier>
+        var unmaskUIViews: Set<ObjectIdentifier>
+        var ignoreUIViews: Set<ObjectIdentifier>
+        
         var maskAccessibilityIdentifiers: Set<String>
+        var unmaskAccessibilityIdentifiers: Set<String>
         var ignoreAccessibilityIdentifiers: Set<String>
         
         init(privacySettings: PrivacySettings) {
@@ -30,19 +35,42 @@ final class MaskCollector {
             self.maskWebViews = privacySettings.maskWebViews
             self.maskImages = privacySettings.maskImages
             self.minimumAlpha = privacySettings.minimumAlpha
-            self.maskClasses = privacySettings.buildMaskClasses()
+            
+            self.maskUIViews = Set(privacySettings.maskUIViews.map(ObjectIdentifier.init))
+            self.unmaskUIViews = Set(privacySettings.unmaskUIViews.map(ObjectIdentifier.init))
+            self.ignoreUIViews = Set(privacySettings.ignoreUIViews.map(ObjectIdentifier.init))
+            
             self.maskAccessibilityIdentifiers = Set(privacySettings.maskAccessibilityIdentifiers)
+            self.unmaskAccessibilityIdentifiers = Set(privacySettings.unmaskAccessibilityIdentifiers)
             self.ignoreAccessibilityIdentifiers = Set(privacySettings.ignoreAccessibilityIdentifiers)
         }
-              
+        
+        func shouldIgnore(_ view: UIView) -> Bool {
+            let viewType = type(of: view)
+            if SessionReplayAssociatedObjects.shouldIgnoreUIView(view) ?? false {
+                return true
+            }
+            
+            if ignoreUIViews.contains(ObjectIdentifier(viewType)) {
+                return true
+            }
+            
+            if let accessibilityIdentifier = view.accessibilityIdentifier,
+               ignoreAccessibilityIdentifiers.contains(accessibilityIdentifier) {
+                return true
+            }
+            
+            return false
+        }
+        
         func shouldMask(_ view: UIView) -> Bool {
             if let shouldUnmask = SessionReplayAssociatedObjects.shouldMaskUIView(view),
-                !shouldUnmask {
+               !shouldUnmask {
                 return false
             }
             
             if let accessibilityIdentifier = view.accessibilityIdentifier,
-              ignoreAccessibilityIdentifiers.contains(accessibilityIdentifier) {
+               unmaskAccessibilityIdentifiers.contains(accessibilityIdentifier) {
                 return false
             }
             
@@ -83,10 +111,6 @@ final class MaskCollector {
                 return true
             }
             
-            if SessionReplayAssociatedObjects.shouldMaskSwiftUI(view) ?? false {
-                return true
-            }
-            
             if SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? false {
                 return true
             }
@@ -99,7 +123,7 @@ final class MaskCollector {
             return false
         }
     }
-
+    
     var settings: Settings
     
     public init(privacySettings: PrivacySettings) {
@@ -118,26 +142,27 @@ final class MaskCollector {
                   view.alpha >= settings.minimumAlpha
             else { return }
             
-            //let layer = currentView.layer.presentation() ?? currentView.layer
             let effectiveFrame = rPresenation.convert(layer.frame, from: layer.superlayer)
+            
+            let shouldIgnore = settings.shouldIgnore(view)
+            guard !shouldIgnore else { return }
+            
             let shouldMask = settings.shouldMask(view)
             if shouldMask, let mask = createMask(rPresenation, root: root, layer: layer, scale: scale) {
                 var operation = MaskOperation(mask: mask, kind: .fill, effectiveFrame: effectiveFrame)
-                #if DEBUG
+#if DEBUG
                 operation.accessibilityIdentifier = view.accessibilityIdentifier
-                #endif
+#endif
                 result.append(operation)
                 return
             }
             
             if !isSystem(view: view, pLayer: layer) && !isTransparent(view: view, pLayer: layer), result.isNotEmpty {
-              //  if view.accessibilityIdentifier != nil {
-                    result.removeAll {
-                        effectiveFrame.contains($0.effectiveFrame)
-                    }
-              //  }
+                result.removeAll {
+                    effectiveFrame.contains($0.effectiveFrame)
+                }
             }
-        
+            
             if let sublayers = layer.sublayers?.sorted(by: { $0.zPosition < $1.zPosition }) {
                 sublayers.forEach(visit)
             }
@@ -153,16 +178,15 @@ final class MaskCollector {
     }
     
     func isSystem(view: UIView, pLayer: CALayer) -> Bool {
-       return false
+        return false
     }
     
     func createMask(_ rPresenation: CALayer, root: CALayer, layer: CALayer, scale: CGFloat) -> Mask? {
-        let scale = 1.0 // scale is already in layers
-       // let rBounds = rPresenation.bounds
+        let scale = 1.0
+        // let rBounds = rPresenation.bounds
         let lBounds = layer.bounds
         guard lBounds.width > 0, lBounds.height > 0 else { return nil }
-
-        //let lPresenation = layer.presentation() ?? layer
+        
         if CATransform3DIsAffine(layer.transform) {
             let corner0 = layer.convert(CGPoint.zero, to: root)
             let corner1 = layer.convert(CGPoint(x: lBounds.width, y: 0), to: root)
@@ -177,9 +201,8 @@ final class MaskCollector {
                                                     ty: ty).scaledBy(x: scale, y: scale)
             return Mask.affine(rect: lBounds, transform: affineTransform)
         } else { // 3D animations
-//            let corner0 = CGPoint.zero
-//            let corner1 = CGPoint(x: lBounds.width, y: 0)
-            
+            //            let corner0 = CGPoint.zero
+            //            let corner1 = CGPoint(x: lBounds.width, y: 0)
         }
         
         return nil
@@ -193,21 +216,5 @@ final class MaskCollector {
                       y: min(corner1.y, corner2.y),
                       width: abs(corner2.x - corner1.x),
                       height: abs(corner2.y - corner1.y))
-      
-    }
-}
-
-extension PrivacySettings {
-    func buildMaskClasses() -> Set<ObjectIdentifier> {
-        let ids = Set(maskUIViews.map(ObjectIdentifier.init))
-        
-        
-//            if privacySettings.maskTextInputs {
-//                [UITextField.self, UITextView.self, UIWebView.self, UISearchTextField.self,
-//                 SwiftUI.UITextView.self, SwiftUI.UITextView.self].forEach {
-//                    ids.insert(ObjectIdentifier($0))
-//                }
-//            }
-        return ids
     }
 }

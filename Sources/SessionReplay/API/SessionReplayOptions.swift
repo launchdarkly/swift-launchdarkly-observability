@@ -10,9 +10,11 @@ public struct SessionReplayOptions {
         public var maskImages: Bool
         
         public var maskUIViews: [AnyClass]
+        public var unmaskUIViews: [AnyClass]
         public var ignoreUIViews: [AnyClass]
         
         public var maskAccessibilityIdentifiers: [String]
+        public var unmaskAccessibilityIdentifiers: [String]
         public var ignoreAccessibilityIdentifiers: [String]
         
         public var minimumAlpha: CGFloat
@@ -22,8 +24,10 @@ public struct SessionReplayOptions {
                     maskLabels: Bool = false,
                     maskImages: Bool = false,
                     maskUIViews: [AnyClass] = [],
+                    unmaskUIViews: [AnyClass] = [],
                     ignoreUIViews: [AnyClass] = [],
                     maskAccessibilityIdentifiers: [String] = [],
+                    unmaskAccessibilityIdentifiers: [String] = [],
                     ignoreAccessibilityIdentifiers: [String] = [],
                     minimumAlpha: CGFloat = 0.02) {
             self.maskTextInputs = maskTextInputs
@@ -31,8 +35,10 @@ public struct SessionReplayOptions {
             self.maskLabels = maskLabels
             self.maskImages = maskImages
             self.maskUIViews = maskUIViews
+            self.unmaskUIViews = unmaskUIViews
             self.ignoreUIViews = ignoreUIViews
             self.maskAccessibilityIdentifiers = maskAccessibilityIdentifiers
+            self.unmaskAccessibilityIdentifiers = unmaskAccessibilityIdentifiers
             self.ignoreAccessibilityIdentifiers = ignoreAccessibilityIdentifiers
             self.minimumAlpha = minimumAlpha
         }
