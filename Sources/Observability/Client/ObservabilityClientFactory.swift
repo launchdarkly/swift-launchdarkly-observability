@@ -48,7 +48,7 @@ public struct ObservabilityClientFactory {
         Task {
             await batchWorker.addExporter(logExporter)
         }
-        if options.autoInstrumentation.contains(.memoryWarnings) {
+        if options.instrumentation.memoryWarnings.isEnabled {
             let memoryWarningMonitor = MemoryPressureMonitor(options: options, appLogBuilder: appLogBuilder) { log in
                 await eventQueue.send(LogItem(log: log))
             }
@@ -88,7 +88,7 @@ public struct ObservabilityClientFactory {
             options: options.tracesApi,
             tracingApiClient: traceClient
         )
-        if options.autoInstrumentation.contains(.urlSession) {
+        if options.instrumentation.urlSession.isEnabled {
             autoInstrumentation.append(
                 NetworkInstrumentationManager(
                     options: options,
@@ -97,7 +97,7 @@ public struct ObservabilityClientFactory {
                 )
             )
         }
-        if options.autoInstrumentation.contains(.launchTimes) {
+        if options.instrumentation.launchTimes.isEnabled {
             options.launchMeter.subscribe { statistics in
                 for element in statistics {
                     let span = traceClient.startSpan(
@@ -141,7 +141,7 @@ public struct ObservabilityClientFactory {
             metricsApiClient: metricsClient
         )
         
-        if options.autoInstrumentation.contains(.memory) {
+        if options.instrumentation.memory.isEnabled {
             autoInstrumentation.append(
                 MeasurementTask(metricsApi: metricsClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
                     guard let report = MemoryUseManager.memoryReport(log: options.log) else { return }
@@ -155,7 +155,7 @@ public struct ObservabilityClientFactory {
             )
         }
         
-        if options.autoInstrumentation.contains(.cpu) {
+        if options.instrumentation.cpu.isEnabled {
             autoInstrumentation.append(
                 MeasurementTask(metricsApi: metricsClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
                     guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
