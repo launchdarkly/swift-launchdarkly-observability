@@ -130,6 +130,13 @@ public struct Options {
     public enum FeatureFlag {
         case enabled
         case disabled
+        
+        var isEnabled: Bool {
+            switch self {
+            case .enabled: return true
+            case .disabled: return false
+            }
+        }
     }
     public enum TracingOriginsOption {
         case enabled([String])
@@ -143,6 +150,30 @@ public struct Options {
         case memoryWarnings
         case cpu
         case launchTimes
+    }
+    public struct Instrumentation {
+        let urlSession: FeatureFlag
+        let userTaps: FeatureFlag
+        let memory: FeatureFlag
+        let memoryWarnings: FeatureFlag
+        let cpu: FeatureFlag
+        let launchTimes: FeatureFlag
+        
+        public init(
+            urlSession: FeatureFlag = .disabled,
+            userTaps: FeatureFlag = .disabled,
+            memory: FeatureFlag = .disabled,
+            memoryWarnings: FeatureFlag = .disabled,
+            cpu: FeatureFlag = .disabled,
+            launchTimes: FeatureFlag = .disabled
+        ) {
+            self.urlSession = urlSession
+            self.userTaps = userTaps
+            self.memory = memory
+            self.memoryWarnings = memoryWarnings
+            self.cpu = cpu
+            self.launchTimes = launchTimes
+        }
     }
     public var serviceName: String
     public var serviceVersion: String
@@ -161,6 +192,7 @@ public struct Options {
     public var log: OSLog
     public var crashReporting: FeatureFlag
     public var autoInstrumentation: Set<AutoInstrumented>
+    public var instrumentation: Instrumentation
     let launchMeter = LaunchMeter()
     
     public init(
@@ -180,7 +212,8 @@ public struct Options {
         metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: FeatureFlag = .enabled,
-        autoInstrumentation: Set<AutoInstrumented> = [.urlSession]
+        autoInstrumentation: Set<AutoInstrumented> = [.urlSession],
+        instrumentation: Instrumentation = .init()
     ) {
         self.serviceName = serviceName
         self.serviceVersion = serviceVersion
@@ -199,5 +232,6 @@ public struct Options {
         self.log = log
         self.crashReporting = crashReporting
         self.autoInstrumentation = autoInstrumentation
+        self.instrumentation = instrumentation
     }
 }
