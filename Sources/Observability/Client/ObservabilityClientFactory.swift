@@ -1,4 +1,5 @@
 import Foundation
+import Common
 import OpenTelemetrySdk
 
 public struct ObservabilityClientFactory {
@@ -35,6 +36,20 @@ public struct ObservabilityClientFactory {
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
 
         let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionManager: sessionManager)
+        
+        Task {
+            do {
+                guard let url = URL(string: options.backendUrl) else {
+                    throw InstrumentationError.invalidGraphQLUrl
+                }
+                let graphQLClient = GraphQLClient(endpoint: url)
+                let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
+                let config = try await samplingConfigClient.getSamplingConfig(mobileKey: mobileKey)
+                sampler.setConfig(config)
+            } catch {
+                throw error
+            }
+        }
         
         // MARK: - Logging
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.logsPath) else {
