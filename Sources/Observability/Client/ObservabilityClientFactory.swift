@@ -1,5 +1,6 @@
 import Foundation
 import Common
+import OSLog
 import OpenTelemetrySdk
 
 public struct ObservabilityClientFactory {
@@ -47,7 +48,7 @@ public struct ObservabilityClientFactory {
                 let config = try await samplingConfigClient.getSamplingConfig(mobileKey: mobileKey)
                 sampler.setConfig(config)
             } catch {
-                throw error
+                os_log("%{public}@", log: options.log, type: .error, "getSamplingConfig failed with error: \(error)")
             }
         }
         
