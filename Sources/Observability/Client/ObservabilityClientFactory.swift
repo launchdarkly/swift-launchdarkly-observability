@@ -38,11 +38,12 @@ public struct ObservabilityClientFactory {
 
         let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionManager: sessionManager)
         
+        guard let url = URL(string: options.backendUrl) else {
+            throw InstrumentationError.invalidGraphQLUrl
+        }
+        
         Task {
             do {
-                guard let url = URL(string: options.backendUrl) else {
-                    throw InstrumentationError.invalidGraphQLUrl
-                }
                 let graphQLClient = GraphQLClient(endpoint: url)
                 let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
                 let config = try await samplingConfigClient.getSamplingConfig(mobileKey: mobileKey)
