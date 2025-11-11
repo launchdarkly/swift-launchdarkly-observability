@@ -13,9 +13,8 @@ final class DefaultSamplingConfigClient: SamplingConfigClient {
     }
     
     func getSamplingConfig(mobileKey: String) async throws -> SamplingConfig? {
-        let data: SamplingData = try await client.executeFromFile(
-            resource: "GetSamplingConfigQuery",
-            bundle: .module,
+        let data: SamplingData = try await client.execute(
+            query: GetSamplingConfigQuery.rawValue,
             variables: OrganizationVerboseIdVar(organization_verbose_id: mobileKey)
         )
         

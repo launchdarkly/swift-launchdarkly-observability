@@ -45,9 +45,6 @@ let package = Package(
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS])),
-            ],
-            resources: [
-                .process("Sampling/Queries"),
             ]
         ),
         .target(
