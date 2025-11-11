@@ -41,10 +41,10 @@ public struct ObservabilityClientFactory {
         guard let url = URL(string: options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
+        let graphQLClient = GraphQLClient(endpoint: url)
         
         Task {
             do {
-                let graphQLClient = GraphQLClient(endpoint: url)
                 let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
                 let config = try await samplingConfigClient.getSamplingConfig(mobileKey: mobileKey)
                 sampler.setConfig(config)
