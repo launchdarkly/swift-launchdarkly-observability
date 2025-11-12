@@ -3,7 +3,7 @@ import OpenTelemetrySdk
 
 struct MetricItem: EventQueueItemPayload {
     var exporterClass: AnyClass {
-        Observability.OtlpMetricEventExporter.self
+        OtlpMetricEventExporter.self
     }
     
     let metricData: OpenTelemetrySdk.MetricData

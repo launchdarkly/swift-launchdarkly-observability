@@ -58,7 +58,7 @@ public final actor BatchWorker {
             guard remainingExporterSlots > 0 else { break }
             
             let budget = Constants.maxConcurrentCost - costInFlight
-            guard budget > 0 else { break }
+            guard costInFlight == 0 || budget > 0 else { break }
 
             let now = DispatchTime.now()
             var except = exportersInFlight

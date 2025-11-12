@@ -3,7 +3,7 @@ import OpenTelemetrySdk
 
 struct SpanItem: EventQueueItemPayload {
     var exporterClass: AnyClass {
-        Observability.OtlpTraceEventExporter.self
+        OtlpTraceEventExporter.self
     }
     
     let spanData: SpanData
