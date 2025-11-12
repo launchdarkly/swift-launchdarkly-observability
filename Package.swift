@@ -34,7 +34,7 @@ let package = Package(
                     .product(name: "DataCompression", package: "DataCompression"),
                 ]),
         .target(
-            name: "Observability",
+            name: "LaunchDarklyObservability",
             dependencies: [
                 "Common",
                 "ObjCBridge",
@@ -47,33 +47,18 @@ let package = Package(
                 .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS])),
             ]
         ),
-        .target(
-            name: "LaunchDarklyObservability",
-            dependencies: [
-                "Observability",
-                .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))
-            ]
-        ),
         .testTarget(
             name: "ObservabilityTests",
             dependencies: [
-                "Observability"
+                "LaunchDarklyObservability"
             ]
-        ),
-        .target(
-            name: "SessionReplay",
-            dependencies: [
-                "Common",
-                "Observability",
-            ],
-            resources: [.process("Queries")]
         ),
         .target(
             name: "LaunchDarklySessionReplay",
             dependencies: [
+                "Common",
                 "LaunchDarklyObservability",
-                "SessionReplay",
-            ]
+            ],
         ),
         .target(
           name: "OpenTelemetryProtocolExporterCommon",

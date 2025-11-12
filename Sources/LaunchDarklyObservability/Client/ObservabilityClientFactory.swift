@@ -106,7 +106,6 @@ public struct ObservabilityClientFactory {
             tracingApiClient: traceClient
         )
         if options.instrumentation.urlSession.isEnabled {
-        #if APP_BUILD
             autoInstrumentation.append(
                 NetworkInstrumentationManager(
                     options: options,
@@ -116,7 +115,6 @@ public struct ObservabilityClientFactory {
             )
         }
         if options.instrumentation.launchTimes.isEnabled {
-        #endif
             options.launchMeter.subscribe { statistics in
                 for element in statistics {
                     let span = traceClient.startSpan(
