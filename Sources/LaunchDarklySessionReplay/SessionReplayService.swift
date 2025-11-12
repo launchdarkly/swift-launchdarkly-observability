@@ -1,6 +1,6 @@
 import Foundation
 import Common
-import Observability
+import LaunchDarklyObservability
 import OSLog
 
 struct ScreenImageItem: EventQueueItemPayload {

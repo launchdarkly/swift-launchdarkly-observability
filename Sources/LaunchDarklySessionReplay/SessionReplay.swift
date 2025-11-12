@@ -1,12 +1,11 @@
 import LaunchDarkly
 import Foundation
-import Observability
+import LaunchDarklyObservability
 import OSLog
-import SessionReplay
 
 public final class SessionReplay: Plugin {
-    private let options: SessionReplayOptions
-    private var sessionReplayService: SessionReplayService?
+    public let options: SessionReplayOptions
+    public var sessionReplayService: SessionReplayService?
     
     public init(options: SessionReplayOptions) {
         self.options = options

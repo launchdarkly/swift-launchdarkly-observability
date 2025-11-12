@@ -94,9 +94,98 @@ extension SessionReplayAPIService {
         let clientConfigData = try JSONEncoder().encode(clientConfig)
         let clientConfigString = String(data: clientConfigData, encoding: .utf8) ?? "{}"
         
-        let session: InitializeSessionSessionData = try await gqlClient.executeFromFile(
-            resource: "initializeSession",
-            bundle: Bundle.module,
+        let session: InitializeSessionSessionData = try await gqlClient.execute(
+            query: """
+                    fragment MatchParts on MatchConfig {
+                        regexValue
+                        matchValue
+                    }
+
+                    mutation initializeSession(
+                        $session_secure_id: String!
+                        $organization_verbose_id: String!
+                        $enable_strict_privacy: Boolean!
+                        $privacy_setting: String!
+                        $enable_recording_network_contents: Boolean!
+                        $clientVersion: String!
+                        $firstloadVersion: String!
+                        $clientConfig: String!
+                        $environment: String!
+                        $id: String!
+                        $appVersion: String
+                        $serviceName: String!
+                        $client_id: String!
+                        $network_recording_domains: [String!]
+                        $disable_session_recording: Boolean
+                    ) {
+                        initializeSession(
+                            session_secure_id: $session_secure_id
+                            organization_verbose_id: $organization_verbose_id
+                            enable_strict_privacy: $enable_strict_privacy
+                            enable_recording_network_contents: $enable_recording_network_contents
+                            clientVersion: $clientVersion
+                            firstloadVersion: $firstloadVersion
+                            clientConfig: $clientConfig
+                            environment: $environment
+                            appVersion: $appVersion
+                            serviceName: $serviceName
+                            fingerprint: $id
+                            client_id: $client_id
+                            network_recording_domains: $network_recording_domains
+                            disable_session_recording: $disable_session_recording
+                            privacy_setting: $privacy_setting
+                        ) {
+                            secure_id
+                            project_id
+                            sampling {
+                                spans {
+                                    name {
+                                        ...MatchParts
+                                    }
+                                    attributes {
+                                        key {
+                                            ...MatchParts
+                                        }
+                                        attribute {
+                                            ...MatchParts
+                                        }
+                                    }
+                                    events {
+                                        name {
+                                            ...MatchParts
+                                        }
+                                        attributes {
+                                            key {
+                                                ...MatchParts
+                                            }
+                                            attribute {
+                                                ...MatchParts
+                                            }
+                                        }
+                                    }
+                                    samplingRatio
+                                }
+                                logs {
+                                    message {
+                                        ...MatchParts
+                                    }
+                                    severityText {
+                                        ...MatchParts
+                                    }
+                                    attributes {
+                                        key {
+                                            ...MatchParts
+                                        }
+                                        attribute {
+                                            ...MatchParts
+                                        }
+                                    }
+                                    samplingRatio
+                                }
+                            }
+                        }
+                    }
+            """,
             variables: InitializeSessionVariables(
                    sessionSecureId: sessionSecureId,
                    organizationVerboseId:  context.sdkKey,
