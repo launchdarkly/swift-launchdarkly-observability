@@ -1,6 +1,6 @@
 import Foundation
 import Common
-import Observability
+import LaunchDarklyObservability
 
 extension TouchInteraction: EventQueueItemPayload {
     public var exporterClass: AnyClass {

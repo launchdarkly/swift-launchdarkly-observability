@@ -1,5 +1,5 @@
 import Foundation
-import Observability
+import LaunchDarklyObservability
 
 final class SnapshotTaker: EventSource {
     private let captureService: ScreenCaptureService

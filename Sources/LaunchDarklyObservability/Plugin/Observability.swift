@@ -1,6 +1,5 @@
 import OSLog
 @_exported import LaunchDarkly
-@_exported import Observability
 
 public final class Observability: Plugin {
     private let options: Options

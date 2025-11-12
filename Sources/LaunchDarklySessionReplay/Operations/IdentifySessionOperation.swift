@@ -27,9 +27,21 @@ extension SessionReplayAPIService {
     public func identifySession(sessionSecureId: String,
                                 userIdentifier: String = "unknown",
                                 userObject: [String: String]? = nil) async throws {
-        try await gqlClient.executeFromFileIgnoringData(
-            resource: "identifySession",
-            bundle: Bundle.module,
+        try await gqlClient.executeIgnoringData(
+            query:
+                """
+                mutation identifySession(
+                    $session_secure_id: String!
+                    $user_identifier: String!
+                    $user_object: Any
+                ) {
+                    identifySession(
+                        session_secure_id: $session_secure_id
+                        user_identifier: $user_identifier
+                        user_object: $user_object
+                    )
+                }
+                """,
             variables: IdentifySessionVariables(
                 sessionSecureId: sessionSecureId,
                 userIdentifier: userIdentifier,

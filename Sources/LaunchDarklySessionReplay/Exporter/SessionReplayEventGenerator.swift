@@ -3,7 +3,7 @@ import Foundation
 import UIKit
 #endif
 import Common
-import Observability
+import LaunchDarklyObservability
 import OSLog
 
 actor SessionReplayEventGenerator {

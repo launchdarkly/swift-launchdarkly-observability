@@ -58,7 +58,7 @@ public actor EventQueue: EventQueuing {
     }
     
     func send(_ item: EventQueueItem) {
-        guard currentSize + item.cost <= limitSize else {
+        guard currentSize == 0 || currentSize + item.cost <= limitSize else {
             return
         }
         
