@@ -2,6 +2,10 @@ import SwiftUI
 import UIKit
 
 public extension View {
+    func ldMask() -> some View {
+        modifier(SessionReplayModifier(isEnabled: true, isIgnored: nil))
+    }
+    
     func ldPrivate(isEnabled: Bool = true) -> some View {
         modifier(SessionReplayModifier(isEnabled: isEnabled, isIgnored: nil))
     }
