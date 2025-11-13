@@ -61,6 +61,7 @@ final class TouchIntepreter {
                                                        target: touchSample.target)
                 track.points.removeAll()
                 track.start = lastPoint.timestamp - uptimeDifference
+                track.startPoint = touchSample.location
                 tracks[touchSample.id] = track
                 yield(moveInteraction)
                 return
@@ -72,9 +73,11 @@ final class TouchIntepreter {
                 return
             }
             
-            let distance = squaredDistance(from: track.startPoint, to: touchSample.location)
-            guard distance >= TouchConstants.tapMaxDistanceSquared else {
-                return
+            if let lastPoint = tracks[touchSample.id]?.points.last {
+                let distance = squaredDistance(from: lastPoint.position, to: touchSample.location)
+                guard distance >= TouchConstants.tapMaxDistanceSquared else {
+                    return
+                }
             }
             
             track.points.append(TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference))
