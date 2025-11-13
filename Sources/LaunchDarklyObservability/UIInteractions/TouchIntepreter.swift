@@ -45,14 +45,13 @@ final class TouchIntepreter {
             
         case .moved:
             guard var track = tracks[touchSample.id] else { return }
-            track.end = touchSample.timestamp
-            track.target = touchSample.target
-            
-            let trackDuration = track.end - track.start
+        
+            let trackDuration = touchSample.timestamp - track.start
             guard trackDuration <= TouchConstants.touchPathDuration else {
                 // flush movements of long touch path do not have dead time in the replay player
                 let lastPoint = TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference)
                 track.points.append(lastPoint)
+                track.target = touchSample.target
                 
                 let moveInteraction = TouchInteraction(id: incrementingId,
                                                        kind: .touchPath(points: track.points),
@@ -79,6 +78,8 @@ final class TouchIntepreter {
                 return
             }
             
+            track.end = touchSample.timestamp
+            track.target = touchSample.target
             track.points.append(TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference))
             tracks[touchSample.id] = track
             
