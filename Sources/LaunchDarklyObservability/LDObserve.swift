@@ -1,5 +1,4 @@
 import Foundation
-@_exported import Observability
 
 public final class LDObserve  {
     private let clientQueue = DispatchQueue(label: "com.launchdarkly.LDObserve.client")

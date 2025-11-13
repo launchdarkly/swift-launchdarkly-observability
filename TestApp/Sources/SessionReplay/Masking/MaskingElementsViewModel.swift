@@ -1,7 +1,6 @@
 import SwiftUI
 import LaunchDarklyObservability
 import LaunchDarklySessionReplay
-import SessionReplay
 
 final class MaskingElementsViewModel: ObservableObject {
     var screenCaptureService = ScreenCaptureService(options: SessionReplayOptions())
