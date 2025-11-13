@@ -4,7 +4,7 @@ private enum TouchConstants {
     static let tapMaxDistance = 4.0
     static let tapMaxDistanceSquared: CGFloat = tapMaxDistance * tapMaxDistance
     static let touchMoveThrottle: TimeInterval = 0.05 // From RRWeb code
-    static let touchPathDuration: TimeInterval = 0.2 // found through testing
+    static let touchPathDuration: TimeInterval = 0.18 // found through testing
 }
 
 final class TouchIntepreter {
@@ -48,6 +48,24 @@ final class TouchIntepreter {
             track.end = touchSample.timestamp
             track.target = touchSample.target
             
+            let trackDuration = track.end - track.start
+            guard trackDuration <= TouchConstants.touchPathDuration else {
+                // flush movements of long touch path do not have dead time in the replay player
+                let lastPoint = TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference)
+                track.points.append(lastPoint)
+                
+                let moveInteraction = TouchInteraction(id: incrementingId,
+                                                       kind: .touchPath(points: track.points),
+                                                       startTimestamp: track.start + uptimeDifference,
+                                                       timestamp: touchSample.timestamp + uptimeDifference,
+                                                       target: touchSample.target)
+                track.points.removeAll()
+                track.start = lastPoint.timestamp - uptimeDifference
+                tracks[touchSample.id] = track
+                yield(moveInteraction)
+                return
+            }
+            
             let previousTimestamp = (track.points.last?.timestamp ?? track.start)
             let duration = touchSample.timestamp + uptimeDifference - previousTimestamp
             guard duration >= TouchConstants.touchMoveThrottle else {
@@ -61,12 +79,6 @@ final class TouchIntepreter {
             
             track.points.append(TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference))
             tracks[touchSample.id] = track
-
-            let trackDuration = track.end - track.start
-            if trackDuration > TouchConstants.touchPathDuration {
-                // flush movements of long touch path do not have dead time in the replay player
-                flushMovements(touchSample: touchSample, uptimeDifference: uptimeDifference, startTimestamp: track.start, yield: yield)
-            }
             
         case .ended, .cancelled:
             // touchUp
