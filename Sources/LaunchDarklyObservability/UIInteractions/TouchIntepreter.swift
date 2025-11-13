@@ -113,7 +113,6 @@ final class TouchIntepreter {
                                                timestamp: touchSample.timestamp + uptimeDifference,
                                                target: touchSample.target)
         if let lastPoint = track.points.last {
-            print("touchPath.points: \(track.points.count)", touchSample.id)
             track.points.removeAll()
             track.start = lastPoint.timestamp - uptimeDifference
             tracks[touchSample.id] = track
