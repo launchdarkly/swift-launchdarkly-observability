@@ -3,7 +3,8 @@ import UIKit
 private enum TouchConstants {
     static let tapMaxDistance = 4.0
     static let tapMaxDistanceSquared: CGFloat = tapMaxDistance * tapMaxDistance
-    static let touchMoveMaxDuration: TimeInterval = 0.05
+    static let touchMoveThrottle: TimeInterval = 0.05 // From RRWeb code
+    static let touchPathDuration: TimeInterval = 0.2 // found through testing
 }
 
 final class TouchIntepreter {
@@ -49,7 +50,7 @@ final class TouchIntepreter {
             
             let previousTimestamp = (track.points.last?.timestamp ?? track.start)
             let duration = touchSample.timestamp + uptimeDifference - previousTimestamp
-            guard duration >= TouchConstants.touchMoveMaxDuration else {
+            guard duration >= TouchConstants.touchMoveThrottle else {
                 return
             }
             
@@ -62,7 +63,7 @@ final class TouchIntepreter {
             tracks[touchSample.id] = track
 
             let trackDuration = track.end - track.start
-            if trackDuration > 0.15 {
+            if trackDuration > TouchConstants.touchPathDuration {
                 // flush movements of long touch path do not have dead time in the replay player
                 flushMovements(touchSample: touchSample, uptimeDifference: uptimeDifference, startTimestamp: track.start, yield: yield)
             }
