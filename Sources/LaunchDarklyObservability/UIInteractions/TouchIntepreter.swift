@@ -1,9 +1,9 @@
 import UIKit
 
 private enum TouchConstants {
-    static let tapMaxDistance = 4.0
+    static let tapMaxDistance = 20.0
     static let tapMaxDistanceSquared: CGFloat = tapMaxDistance * tapMaxDistance
-    static let touchMoveThrottle: TimeInterval = 0.05 // From RRWeb code
+    static let touchMoveThrottle: TimeInterval = 0.04 // From RRWeb code
     static let touchPathDuration: TimeInterval = 0.18 // found through testing
 }
 
@@ -67,17 +67,16 @@ final class TouchIntepreter {
                 return
             }
             
-            let previousTimestamp = (track.points.last?.timestamp ?? track.start)
-            let duration = touchSample.timestamp + uptimeDifference - previousTimestamp
-            guard duration >= TouchConstants.touchMoveThrottle else {
-                return
-            }
-            
-            if let lastPoint = tracks[touchSample.id]?.points.last {
-                let distance = squaredDistance(from: lastPoint.position, to: touchSample.location)
-                guard distance >= TouchConstants.tapMaxDistanceSquared else {
+            if let prevPoint = tracks[touchSample.id]?.points.last {
+                let duration = touchSample.timestamp + uptimeDifference - prevPoint.timestamp
+                guard duration >= TouchConstants.touchMoveThrottle else {
                     return
                 }
+            }
+            
+            let distance = squaredDistance(from: track.startPoint, to: touchSample.location)
+            guard distance >= TouchConstants.tapMaxDistanceSquared else {
+                return
             }
             
             track.points.append(TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference))
