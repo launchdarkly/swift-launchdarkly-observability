@@ -1,9 +1,9 @@
 import UIKit
 
 private enum TouchConstants {
-    static let tapMaxDistance = 12.0
+    static let tapMaxDistance = 4.0
     static let tapMaxDistanceSquared: CGFloat = tapMaxDistance * tapMaxDistance
-    static let touchMoveMaxDuration: TimeInterval = 0.11
+    static let touchMoveMaxDuration: TimeInterval = 0.05
 }
 
 final class TouchIntepreter {
@@ -60,9 +60,9 @@ final class TouchIntepreter {
             
             track.points.append(TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference))
             tracks[touchSample.id] = track
-            
+
             let trackDuration = track.end - track.start
-            if trackDuration > 0.9 {
+            if trackDuration > 0.15 {
                 // flush movements of long touch path do not have dead time in the replay player
                 flushMovements(touchSample: touchSample, uptimeDifference: uptimeDifference, startTimestamp: track.start, yield: yield)
             }
@@ -97,13 +97,13 @@ final class TouchIntepreter {
                                                startTimestamp: startTimestamp + uptimeDifference,
                                                timestamp: touchSample.timestamp + uptimeDifference,
                                                target: touchSample.target)
-        track.points.removeAll()
-        tracks[touchSample.id] = track
-        yield(moveInteraction)
-    }
-    
-    func flushTrack(touchSample: TouchSample, uptimeDifference: TimeInterval, yield: TouchInteractionYield) {
-  
+        if let lastPoint = track.points.last {
+            print("touchPath.points: \(track.points.count)", touchSample.id)
+            track.points.removeAll()
+            track.start = lastPoint.timestamp - uptimeDifference
+            tracks[touchSample.id] = track
+            yield(moveInteraction)
+        }
     }
     
     func squaredDistance(from: CGPoint, to: CGPoint) -> CGFloat {
