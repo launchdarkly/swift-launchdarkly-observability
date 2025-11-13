@@ -1,7 +1,7 @@
 import UIKit
 
 private enum TouchConstants {
-    static let tapMaxDistance = 20.0
+    static let tapMaxDistance = 12.0
     static let tapMaxDistanceSquared: CGFloat = tapMaxDistance * tapMaxDistance
     static let touchMoveThrottle: TimeInterval = 0.04 // From RRWeb code
     static let touchPathDuration: TimeInterval = 0.18 // found through testing
