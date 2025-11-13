@@ -32,7 +32,7 @@ public final class ScreenCaptureService {
         let enclosingBounds = minimalBoundsEnclosingWindows(windows)
         let renderer = UIGraphicsImageRenderer(size: enclosingBounds.size, format: format)
         let image = renderer.image { ctx in
-            drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: true, scale: scale)
+            drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
         }
         
         return CapturedImage(image: image,

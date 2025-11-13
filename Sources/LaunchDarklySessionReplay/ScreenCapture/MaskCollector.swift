@@ -73,8 +73,13 @@ final class MaskCollector {
                unmaskAccessibilityIdentifiers.contains(accessibilityIdentifier) {
                 return false
             }
-            
+                        
             let viewType = type(of: view)
+            let viewIdentifier = ObjectIdentifier(viewType)
+            if unmaskUIViews.contains(viewIdentifier) {
+                return false
+            }
+            
             let stringViewType = String(describing: viewType)
             
             if maskiOS26ViewTypes.contains(stringViewType) {
@@ -111,7 +116,7 @@ final class MaskCollector {
                 return true
             }
             
-            if SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? false {
+            if maskUIViews.contains(viewIdentifier) {
                 return true
             }
             
@@ -120,6 +125,10 @@ final class MaskCollector {
                 return true
             }
             
+            if SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? false {
+                return true
+            }
+        
             return false
         }
     }
