@@ -47,7 +47,7 @@ final class MaskCollector {
         
         func shouldIgnore(_ view: UIView) -> Bool {
             let viewType = type(of: view)
-            if SessionReplayAssociatedObjects.shouldIgnoreUIView(view) ?? false {
+            if SessionReplayAssociatedObjects.shouldIgnoreUIView(view) == true {
                 return true
             }
             
@@ -125,7 +125,7 @@ final class MaskCollector {
                 return true
             }
             
-            if SessionReplayAssociatedObjects.shouldMaskUIView(view) ?? false {
+            if SessionReplayAssociatedObjects.shouldMaskUIView(view) == true {
                 return true
             }
         
@@ -151,11 +151,10 @@ final class MaskCollector {
                   view.alpha >= settings.minimumAlpha
             else { return }
             
+            guard !settings.shouldIgnore(view) else { return }
+            
             let effectiveFrame = rPresenation.convert(layer.frame, from: layer.superlayer)
-            
-            let shouldIgnore = settings.shouldIgnore(view)
-            guard !shouldIgnore else { return }
-            
+
             let shouldMask = settings.shouldMask(view)
             if shouldMask, let mask = createMask(rPresenation, root: root, layer: layer, scale: scale) {
                 var operation = MaskOperation(mask: mask, kind: .fill, effectiveFrame: effectiveFrame)
@@ -209,9 +208,8 @@ final class MaskCollector {
                                                     tx: tx,
                                                     ty: ty).scaledBy(x: scale, y: scale)
             return Mask.affine(rect: lBounds, transform: affineTransform)
-        } else { // 3D animations
-            //            let corner0 = CGPoint.zero
-            //            let corner1 = CGPoint(x: lBounds.width, y: 0)
+        } else {
+           // TODO: finish 3D animations
         }
         
         return nil
