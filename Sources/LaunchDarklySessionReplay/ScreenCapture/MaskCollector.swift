@@ -124,12 +124,8 @@ final class MaskCollector {
                maskAccessibilityIdentifiers.contains(accessibilityIdentifier) {
                 return true
             }
-            
-            if SessionReplayAssociatedObjects.shouldMaskUIView(view) == true {
-                return true
-            }
-        
-            return false
+
+            return SessionReplayAssociatedObjects.shouldMaskUIView(view) == true
         }
     }
     
@@ -191,7 +187,6 @@ final class MaskCollector {
     
     func createMask(_ rPresenation: CALayer, root: CALayer, layer: CALayer, scale: CGFloat) -> Mask? {
         let scale = 1.0
-        // let rBounds = rPresenation.bounds
         let lBounds = layer.bounds
         guard lBounds.width > 0, lBounds.height > 0 else { return nil }
         

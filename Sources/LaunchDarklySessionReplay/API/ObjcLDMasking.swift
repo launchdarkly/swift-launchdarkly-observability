@@ -1,6 +1,6 @@
 import UIKit
 
-@objcMembers
+@objc(LDMasking)
 public class ObjcLDMasking: NSObject {
     // Use explicit selectors so we control the Obj-C names.
     @objc(maskView:)
