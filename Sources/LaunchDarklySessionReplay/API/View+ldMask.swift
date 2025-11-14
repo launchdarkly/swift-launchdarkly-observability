@@ -24,6 +24,10 @@ public extension UIView {
         SessionReplayAssociatedObjects.maskUIView(self, isEnabled: isEnabled)
     }
     
+    func ldMask() {
+        SessionReplayAssociatedObjects.maskUIView(self, isEnabled: true)
+    }
+    
     func ldUnmask() {
         SessionReplayAssociatedObjects.maskUIView(self, isEnabled: false)
     }
