@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.10.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.9.2...0.10.0) (2025-11-15)
+
+
+### Features
+
+* ignore masking ([#80](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/80)) ([1372064](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/1372064e6b5454750df2e56a7d9c9c23bc7b6687))
+* options refactor ([#75](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/75)) ([b442cbc](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/b442cbc315ac4b45345a770987bd0c122adfa289))
+* refactor instrumentation options ([#77](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/77)) ([ebc2e24](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/ebc2e2489ecbdcbc83f6e04f82c430c457e5d008))
+
+
+### Bug Fixes
+
+* touch throttle ([#81](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/81)) ([6d1cd15](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/6d1cd151514618bcc6778f76b006d973442569ee))
+
 ## [0.9.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.9.1...0.9.2) (2025-11-05)
 
 
