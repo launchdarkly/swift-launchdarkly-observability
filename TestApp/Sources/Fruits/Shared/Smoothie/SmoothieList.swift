@@ -26,7 +26,7 @@ struct SmoothieList: View {
                     NavigationLink(tag: smoothie.id, selection: $model.selectedSmoothieID) {
                         SmoothieView(smoothie: smoothie).environmentObject(model)
                     } label: {
-                        SmoothieRow(smoothie: smoothie)
+                        SmoothieRow(smoothie: smoothie).ldIgnore()
                     }
                     .onChange(of: model.selectedSmoothieID) { newValue in
                         // Need to make sure the Smoothie exists.

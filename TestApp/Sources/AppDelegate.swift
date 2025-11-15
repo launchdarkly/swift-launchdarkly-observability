@@ -36,7 +36,7 @@ let config = { () -> LDConfig in
                 maskTextInputs: true,
                 maskWebViews: false,
                 maskImages: false,
-                maskAccessibilityIdentifiers: ["email-field", "password-field", "card-brand-chip"],
+                maskAccessibilityIdentifiers: ["email-field", "password-field", "card-brand-chip", "10"],
             )
         ))
     ]
