@@ -15,6 +15,7 @@ struct MaskingCreditCardSwiftUIView: View {
     
     // Derived state
     @State private var currentBrand: CardBrand = .unknown
+    @State private var isRotating: Bool = false
     
     private var isFormValid: Bool {
         let numberDigits = Self.digitsOnly(cardNumber)
@@ -42,7 +43,7 @@ struct MaskingCreditCardSwiftUIView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
+            VStack {
                 VStack(spacing: 12) {
                     labeledField(title: "Name on Card") {
                         TextField("Full name", text: $nameOnCard)
@@ -131,7 +132,12 @@ struct MaskingCreditCardSwiftUIView: View {
                     .disabled(!isFormValid)
                 }
                 .padding(16)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
+            .clipped()
+            .rotationEffect(.degrees(isRotating ? 360 : 0))
+            .animation(.linear(duration: 4).repeatForever(autoreverses: false), value: isRotating)
+            .onAppear { isRotating = true }
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Masking Elements (SwiftUI)")
             .toolbar {
