@@ -65,12 +65,8 @@ public final class ScreenCaptureService {
         context.saveGState()
         context.setFillColor(UIColor.clear.cgColor)
         context.fill(bounds)
-        context.restoreGState()
-        
+
         for window in windows {
-            context.saveGState()
-            let maskOperations = maskCollector.collectViewMasks(in: window, window: window, scale: scale)
-            
             context.translateBy(x: window.frame.origin.x, y: window.frame.origin.y)
             context.concatenate(window.transform)
             
@@ -78,13 +74,12 @@ public final class ScreenCaptureService {
             context.translateBy(x: anchor.x, y: anchor.y)
             context.translateBy(x: -anchor.x, y: -anchor.y)
             
-            let windowFrame = window.layer.frame
-            window.drawHierarchy(in: windowFrame, afterScreenUpdates: afterScreenUpdates)
-            
+            let maskOperations = maskCollector.collectViewMasks(in: window, window: window, scale: scale)
+            window.drawHierarchy(in: window.layer.frame, afterScreenUpdates: afterScreenUpdates)
             maskingService.applyViewMasks(context: context, operations: maskOperations)
-            //window.layer.render(in: context)
-            context.restoreGState()
         }
+        
+        context.restoreGState()
     }
 }
 

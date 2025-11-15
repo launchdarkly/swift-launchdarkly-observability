@@ -19,6 +19,7 @@ enum Failure: LocalizedError {
 struct ContentView: View {
     @State private var isMaskingUIKitOneFieldEnabled: Bool = false
     @State private var isMaskingUIKitCreditCardEnabled: Bool = false
+    @State private var isMaskingSwiftUICreditCardEnabled: Bool = false
     @State private var isNumberPadEnabled: Bool = false
     @State private var isNotebookEnabled: Bool = false
     @State private var isStoryboardEnabled: Bool = false
@@ -51,6 +52,7 @@ struct ContentView: View {
                 FauxLinkToggleRow(title: "Masking One TextField (UIKit)", isOn: $isMaskingUIKitOneFieldEnabled)
 #if os(iOS)
                 FauxLinkToggleRow(title: "Masking Credit Card (UIKit)", isOn: $isMaskingUIKitCreditCardEnabled)
+                FauxLinkToggleRow(title: "Masking Credit Card (SwiftUI)", isOn: $isMaskingSwiftUICreditCardEnabled)
                 FauxLinkToggleRow(title: "Number Pad (SwiftUI)", isOn: $isNumberPadEnabled)
 #endif
 
@@ -183,6 +185,8 @@ struct ContentView: View {
 #if os(iOS)
         .sheet(isPresented: $isMaskingUIKitCreditCardEnabled) {
             MaskingCreditCardUIKitView()
+        }.sheet(isPresented: $isMaskingSwiftUICreditCardEnabled) {
+            MaskingCreditCardSwiftUIView()
         }.sheet(isPresented: $isNotebookEnabled) {
             NotebookView()
         }
