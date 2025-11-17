@@ -173,12 +173,12 @@ public actor EventQueue: EventQueuing {
     }
     
     private func notifyAvailableIfNeeded(typeId: ObjectIdentifier, _ exporterState: EventExporterState) {
-        var exporterState = exporterState
-        exporterState.status = .available
-        currentSizes[typeId] = exporterState
+        var newExporterState = exporterState
+        newExporterState.status = .available
+        currentSizes[typeId] = newExporterState
         
         if exporterState.status == .oveflowed {
-            notify(typeId: typeId, exporterState.status)
+            notify(typeId: typeId, newExporterState.status)
         }
     }
 }
