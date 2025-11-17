@@ -23,8 +23,18 @@ public struct EventQueueItem {
 }
 
 public enum EventStatus {
-    case oveflowed(id: ObjectIdentifier)
-    case available(id: ObjectIdentifier)
+    case oveflowed
+    case available
+}
+
+public struct EventNotifyStatus {
+    public var id: ObjectIdentifier
+    public var status: EventStatus
+}
+
+struct EventExporterState {
+    var size = 0
+    var status = EventStatus.available
 }
 
 public protocol EventQueuing: Actor {
@@ -43,9 +53,10 @@ public actor EventQueue: EventQueuing {
     private let limitSize: Int
     private var exporterLimitSize: Int
     private var currentSize = 0    
-    private var currentSizes = [ObjectIdentifier: Int]()
-
-    public init(limitSize: Int = 5_000_000 /* 5 mb */, exporterLimitSize: Int = 3_000_000) {
+    private var currentSizes = [ObjectIdentifier: EventExporterState]()
+    private let broadcaster = Broadcaster<EventNotifyStatus>()
+    
+    public init(limitSize: Int = 5_000_000 /* 5 mb */, exporterLimitSize: Int = 2_500_000) {
         self.limitSize = limitSize
         self.exporterLimitSize = exporterLimitSize
     }
@@ -66,19 +77,31 @@ public actor EventQueue: EventQueuing {
     
     func send(_ item: EventQueueItem) {
         guard currentSize == 0 || currentSize + item.cost <= limitSize else {
+            var exporterState = currentSizes[item.exporterTypeId, default: EventExporterState()]
+            notifyOverflowIfNeeded(typeId: item.exporterTypeId, exporterState)
             return
         }
         
-        guard currentSizes[item.exporterTypeId, default: 0] + item.cost <= exporterLimitSize else {
+        var exporterState = currentSizes[item.exporterTypeId, default: EventExporterState()]
+        guard exporterState.size + item.cost <= exporterLimitSize else {
+            notifyOverflowIfNeeded(typeId: item.exporterTypeId, exporterState)
             return
         }
         
         storage[item.exporterTypeId, default: []].append(item)
         lastEventTime = item.timestamp
         currentSize += item.cost
-        currentSizes[item.exporterTypeId, default: 0] += item.cost
+        exporterState.size += item.cost
+        currentSizes[item.exporterTypeId] = exporterState
     }
 
+    private func notify(typeId: ObjectIdentifier, _ status: EventStatus) {
+        Task {
+            let notifyStatus = EventNotifyStatus(id: typeId, status: status)
+            await broadcaster.send(notifyStatus)
+        }
+    }
+    
     func earliest(cost: Int, limit: Int, except: Set<ObjectIdentifier>) -> EarliestItemsResult? {
         var earlistEvent: (id: ObjectIdentifier, items: [EventQueueItem], firstTimestamp: TimeInterval)?
         for (id, items) in storage where except.contains(id) == false {
@@ -127,9 +150,35 @@ public actor EventQueue: EventQueuing {
             removedCost += items[i].cost
         }
         currentSize -= removedCost
-        currentSizes[id, default: 0] -= removedCost
+        var exporterState = currentSizes[id, default: EventExporterState()]
+        exporterState.size -= removedCost
         
         items.removeFirst(removeCount)
         storage[id] = items.isEmpty ? nil : items
+        
+        notifyAvailableIfNeeded(typeId: id, exporterState)
+    }
+    
+    public func events() async -> AsyncStream<EventNotifyStatus> {
+        await broadcaster.stream()
+    }
+
+    private func notifyOverflowIfNeeded(typeId: ObjectIdentifier, _ exporterState: EventExporterState) {
+        guard exporterState.status == .available else { return }
+        
+        var exporterState = exporterState
+        exporterState.status = .oveflowed
+        currentSizes[typeId] = exporterState
+        notify(typeId: typeId, exporterState.status)
+    }
+    
+    private func notifyAvailableIfNeeded(typeId: ObjectIdentifier, _ exporterState: EventExporterState) {
+        var exporterState = exporterState
+        exporterState.status = .available
+        currentSizes[typeId] = exporterState
+        
+        if exporterState.status == .oveflowed {
+            notify(typeId: typeId, exporterState.status)
+        }
     }
 }

@@ -21,7 +21,6 @@ public final class ScreenCaptureService {
     // MARK: - Capture
     
     /// Capture as UIImage (must be on main thread).
-    @MainActor
     public func captureUIImage() -> CapturedImage? {
         let scale = 1.0
         let format = UIGraphicsImageRendererFormat()
@@ -31,20 +30,23 @@ public final class ScreenCaptureService {
         let windows = allWindowsInZOrder()
         let enclosingBounds = minimalBoundsEnclosingWindows(windows)
         let renderer = UIGraphicsImageRenderer(size: enclosingBounds.size, format: format)
-        var dropFrame = false
-        CATransaction.flush()
-        var maskOperations = [[MaskOperation]]()
-        for window in windows {
-            maskOperations.append(maskCollector.collectViewMasks(in: window, window: window, scale: scale))
-        }
         
+        CATransaction.flush()
+        let maskOperationsBefore = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
+        var dropFrame = false
         let image = renderer.image { ctx in
+            
             drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
                 
             CATransaction.flush()
+            let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
+            guard maskOperationsBefore.count == maskOperationsAfter.count else {
+                dropFrame = true
+                return
+            }
             var applyOperations = [[MaskOperation]]()
-            for (idx, operations) in maskOperations.enumerated() {
-                if let newOperations = maskCollector.duplicateUnsimilar(in: windows[idx], operations: operations, scale: scale) {
+            for (before, after) in zip(maskOperationsBefore, maskOperationsAfter) {
+                if let newOperations = maskCollector.duplicateUnsimilar(before: before, after: after) {
                     applyOperations.append(newOperations)
                 } else {
                     // drop the frame, movement was bigger than mask itself

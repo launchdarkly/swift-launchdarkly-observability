@@ -10,6 +10,7 @@ final class SnapshotTaker: EventSource {
     private var lastFrameDispatchTime: DispatchTime?
     private let frameInterval = 1.0
     private var eventQueueAvailable: Bool = true
+    private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
     
     init(captureService: ScreenCaptureService,
          appLifecycleManager: AppLifecycleManaging,
@@ -19,7 +20,19 @@ final class SnapshotTaker: EventSource {
         self.appLifecycleManager = appLifecycleManager
         
         Task(priority: .background) { [weak self, weak eventQueue] in
+            guard let self, let eventQueue else { return }
             
+            let eventsStream = await eventQueue.events()
+            for await event in eventsStream where event.id == sessionExporterId {
+                await MainActor.run { [weak self] in
+                    switch event.status {
+                    case .available:
+                        eventQueueAvailable = true
+                    case .oveflowed:
+                        eventQueueAvailable = false
+                    }
+                }
+            }
         }
         
         Task(priority: .background) { [weak self, weak appLifecycleManager] in
@@ -62,7 +75,7 @@ final class SnapshotTaker: EventSource {
     }
     
     func queueSnapshot() {
-        guard let displayLink else {
+        guard let displayLink, eventQueueAvailable else {
             return
         }
         
@@ -73,20 +86,18 @@ final class SnapshotTaker: EventSource {
                 return
             }
         }
+        
         lastFrameDispatchTime = DispatchTime.now()
         guard let lastFrameDispatchTime else {
             return
         }
         
+        guard let capturedImage = captureService.captureUIImage() else {
+            self.lastFrameDispatchTime = DispatchTime(uptimeNanoseconds: lastFrameDispatchTime.uptimeNanoseconds - UInt64(Double(NSEC_PER_SEC) / self.frameInterval))
+            return
+        }
+        
         Task {
-            // check if buffer is full before doing hard work
-            guard await !eventQueue.isFull() else { return }
-            
-            guard let capturedImage = await captureService.captureUIImage() else {
-                self.lastFrameDispatchTime = DispatchTime(uptimeNanoseconds: lastFrameDispatchTime.uptimeNanoseconds - UInt64(Double(NSEC_PER_SEC) / self.frameInterval))
-                return
-            }
-            
             guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
                                                                     originalSize: capturedImage.renderSize,
                                                                     scale: capturedImage.scale,

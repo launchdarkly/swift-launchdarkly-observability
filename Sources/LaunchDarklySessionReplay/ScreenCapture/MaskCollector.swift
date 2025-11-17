@@ -210,6 +210,33 @@ final class MaskCollector {
         return result
     }
     
+    func duplicateUnsimilar(before operationsBefore: [MaskOperation], after operationsAfter: [MaskOperation]) -> [MaskOperation]? {
+        guard operationsBefore.count == operationsAfter.count else {
+            return nil
+        }
+        
+        var result = operationsBefore
+        let moveTollerance = 1.0
+        for (before, after) in zip(operationsBefore, operationsAfter) {
+            let diffX = abs(before.effectiveFrame.minX - after.effectiveFrame.minX)
+            let diffY = abs(before.effectiveFrame.minY - after.effectiveFrame.minY)
+            
+            guard diffX > moveTollerance || diffX > moveTollerance else {
+                // If movement is present we duplicate the frame
+                continue
+            }
+            
+            guard diffX < before.effectiveFrame.width, diffY < before.effectiveFrame.height else {
+                // If movement is bigger the size we drop the frame
+                return nil
+            }
+            
+            result.append(after)
+        }
+        
+        return result
+    }
+    
     private func isTransparent(view: UIView, pLayer: CALayer) -> Bool {
         pLayer.opacity < 1 || view.alpha < 1.0 || view.backgroundColor == nil || (view.backgroundColor?.cgColor.alpha ?? 0) < 1.0
     }
