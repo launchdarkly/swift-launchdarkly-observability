@@ -11,7 +11,7 @@ public struct CapturedImage {
 }
 
 public final class ScreenCaptureService {
-    let maskingService = MaskService()
+    let maskingService = MaskApplier()
     let maskCollector: MaskCollector
     
     public init(options: SessionReplayOptions) {
@@ -23,7 +23,7 @@ public final class ScreenCaptureService {
     /// Capture as UIImage (must be on main thread).
     @MainActor
     public func captureUIImage() -> CapturedImage? {
-        let scale = 1.0      
+        let scale = 1.0
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = false
@@ -31,10 +31,32 @@ public final class ScreenCaptureService {
         let windows = allWindowsInZOrder()
         let enclosingBounds = minimalBoundsEnclosingWindows(windows)
         let renderer = UIGraphicsImageRenderer(size: enclosingBounds.size, format: format)
-        let image = renderer.image { ctx in
-            drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
+        var dropFrame = false
+        CATransaction.flush()
+        var maskOperations = [[MaskOperation]]()
+        for window in windows {
+            maskOperations.append(maskCollector.collectViewMasks(in: window, window: window, scale: scale))
         }
         
+        let image = renderer.image { ctx in
+            drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
+                
+            CATransaction.flush()
+            var applyOperations = [[MaskOperation]]()
+            for (idx, operations) in maskOperations.enumerated() {
+                if let newOperations = maskCollector.duplicateUnsimilar(in: windows[idx], operations: operations, scale: scale) {
+                    applyOperations.append(newOperations)
+                } else {
+                    // drop the frame, movement was bigger than mask itself
+                    dropFrame = true
+                    return
+                }
+            }
+            
+            maskingService.applyViewMasks(context: ctx.cgContext, operations: applyOperations.flatMap { $0 })
+        }
+        guard !dropFrame else { return nil }
+      
         return CapturedImage(image: image,
                              scale: scale,
                              renderSize: enclosingBounds.size,
@@ -67,16 +89,18 @@ public final class ScreenCaptureService {
         context.fill(bounds)
 
         for window in windows {
+            context.saveGState()
+            defer {
+                context.restoreGState()
+            }
+            
             context.translateBy(x: window.frame.origin.x, y: window.frame.origin.y)
             context.concatenate(window.transform)
-            
             let anchor = CGPoint(x: window.bounds.midX, y: window.bounds.midY)
             context.translateBy(x: anchor.x, y: anchor.y)
             context.translateBy(x: -anchor.x, y: -anchor.y)
-            
-            let maskOperations = maskCollector.collectViewMasks(in: window, window: window, scale: scale)
+
             window.drawHierarchy(in: window.layer.frame, afterScreenUpdates: afterScreenUpdates)
-            maskingService.applyViewMasks(context: context, operations: maskOperations)
         }
         
         context.restoreGState()
