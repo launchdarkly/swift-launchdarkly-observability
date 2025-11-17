@@ -26,7 +26,6 @@ public protocol EventQueuing: Actor {
     func send(_ payload: EventQueueItemPayload) async
 }
 
-// TODO: make it optimal
 public actor EventQueue: EventQueuing {
     public struct EarliestItemsResult {
         let id: ObjectIdentifier
@@ -37,10 +36,13 @@ public actor EventQueue: EventQueuing {
     private var storage = [ObjectIdentifier: [EventQueueItem]]()
     private var lastEventTime: TimeInterval = 0
     private let limitSize: Int
+    private var exporterLimitSize: Int
     private var currentSize = 0
+    private var currentSizes = [ObjectIdentifier: Int]()
 
-    public init(limitSize: Int = 5_000_000 /* 5 mb */) {
+    public init(limitSize: Int = 5_000_000 /* 5 mb */, exporterLimitSize: Int = 3_000_000) {
         self.limitSize = limitSize
+        self.exporterLimitSize = exporterLimitSize
     }
     
     public func isFull() -> Bool {
@@ -62,9 +64,14 @@ public actor EventQueue: EventQueuing {
             return
         }
         
+        guard currentSizes[item.exporterTypeId, default: 0] + item.cost <= exporterLimitSize else {
+            return
+        }
+        
         storage[item.exporterTypeId, default: []].append(item)
         lastEventTime = item.timestamp
         currentSize += item.cost
+        currentSizes[item.exporterTypeId, default: 0] += item.cost
     }
 
     func earliest(cost: Int, limit: Int, except: Set<ObjectIdentifier>) -> EarliestItemsResult? {
@@ -115,6 +122,7 @@ public actor EventQueue: EventQueuing {
             removedCost += items[i].cost
         }
         currentSize -= removedCost
+        currentSizes[id, default: 0] -= removedCost
         
         items.removeFirst(removeCount)
         storage[id] = items.isEmpty ? nil : items
