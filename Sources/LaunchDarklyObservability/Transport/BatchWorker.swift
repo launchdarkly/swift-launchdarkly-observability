@@ -83,11 +83,12 @@ public final actor BatchWorker {
             
             if tryReserve(exporterId: exporterId, cost: cost) {
                 Task.detached(priority: .background) { [weak self] in
+                    guard let self else { return }
                     do {
                         try await exporter.export(items: items)
-                        await self?.finishExport(exporterId: exporterId, itemsCount: items.count, cost: cost, error: nil)
+                        await finishExport(exporterId: exporterId, itemsCount: items.count, cost: cost, error: nil)
                     } catch {
-                        await self?.finishExport(exporterId: exporterId, itemsCount: items.count, cost: cost, error: error)
+                        await finishExport(exporterId: exporterId, itemsCount: items.count, cost: cost, error: error)
                     }
                 }
                 scheduledCost += cost
