@@ -2,6 +2,9 @@ import Foundation
 import UIKit
 
 final class MaskApplier {
+    private static let standardMaskColor = UIColor(white: 0.5, alpha: 1)
+    private static let duplicateMaskColor = UIColor(white: 0.52, alpha: 1)
+    
     init() {}
     
     func applyViewMasks(context: CGContext, operations: [MaskOperation]) {
@@ -12,8 +15,8 @@ final class MaskApplier {
                 case .fill:
                     context.saveGState()
                     context.concatenate(transform)
-                    let path = UIBezierPath(roundedRect: rect, cornerRadius: 10)
-                    UIColor.gray.setFill()
+                    let path = UIBezierPath(roundedRect: rect, cornerRadius: 2)
+                    Self.standardMaskColor.setFill()
                     path.fill()
                     
                     context.restoreGState()
@@ -21,7 +24,7 @@ final class MaskApplier {
                     context.saveGState()
                     context.concatenate(transform)
                     let path = UIBezierPath(roundedRect: rect, cornerRadius: 2)
-                    UIColor.red.setFill()
+                    Self.duplicateMaskColor.setFill()
                     path.fill()
                     
                     context.restoreGState()
