@@ -22,6 +22,11 @@ public struct EventQueueItem {
     }
 }
 
+public enum EventStatus {
+    case oveflowed(id: ObjectIdentifier)
+    case available(id: ObjectIdentifier)
+}
+
 public protocol EventQueuing: Actor {
     func send(_ payload: EventQueueItemPayload) async
 }
@@ -38,7 +43,7 @@ public actor EventQueue: EventQueuing {
     private var lastEventTime: TimeInterval = 0
     private let limitSize: Int
     private var currentSize = 0
-
+    
     public init(limitSize: Int = 5_000_000 /* 5 mb */) {
         self.limitSize = limitSize
     }
