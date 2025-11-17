@@ -176,39 +176,6 @@ final class MaskCollector {
         
         return result
     }
-  
-    func duplicateUnsimilar(in rootView: UIView, operations: [MaskOperation], scale: CGFloat) -> [MaskOperation]? {
-        let rPresenation = rootView.layer.presentation() ?? rootView.layer
-        let moveTollerance = 1.0
-        var result = operations
-        for operation in operations {
-            let layer = operation.view.layer
-            let prensationLayer = layer.presentation() ?? layer
-            let effectiveFrame = rPresenation.convert(prensationLayer.frame, from: prensationLayer.superlayer)
-            let diffX = abs(effectiveFrame.minX - operation.effectiveFrame.minX)
-            let diffY = abs(effectiveFrame.minY - operation.effectiveFrame.minY)
-            guard diffX > moveTollerance || diffX > moveTollerance else {
-                // If movement is present we duplicate the frame
-                continue
-            }
-            guard diffX < effectiveFrame.width, diffY < effectiveFrame.height else {
-                // If movement is bigger the size we drop the frame
-                return nil
-            }
-            
-            guard let mask = createMask(rPresenation, layer: prensationLayer, scale: scale) else {
-                continue
-            }
-            
-            var newoperation = operation
-            newoperation.kind = .fillDuplicate
-            newoperation.mask = mask
-            newoperation.effectiveFrame = effectiveFrame
-            result.append(newoperation)
-        }
-        
-        return result
-    }
     
     func duplicateUnsimilar(before operationsBefore: [MaskOperation], after operationsAfter: [MaskOperation]) -> [MaskOperation]? {
         guard operationsBefore.count == operationsAfter.count else {
@@ -221,16 +188,18 @@ final class MaskCollector {
             let diffX = abs(before.effectiveFrame.minX - after.effectiveFrame.minX)
             let diffY = abs(before.effectiveFrame.minY - after.effectiveFrame.minY)
             
-            guard diffX > moveTollerance || diffX > moveTollerance else {
+            guard max(diffX, diffY) > moveTollerance else {
                 // If movement is present we duplicate the frame
                 continue
             }
             
-            guard diffX < before.effectiveFrame.width, diffY < before.effectiveFrame.height else {
+            guard diffX < before.effectiveFrame.width - moveTollerance, diffY < before.effectiveFrame.height - moveTollerance else {
                 // If movement is bigger the size we drop the frame
                 return nil
             }
             
+            var after = after
+            after.kind = .fillDuplicate
             result.append(after)
         }
         
