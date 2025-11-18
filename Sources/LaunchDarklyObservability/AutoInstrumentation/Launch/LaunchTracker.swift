@@ -52,7 +52,7 @@ final class LaunchTracker {
             guard let id = sceneData.sceneID else {
                 return
             }
-            state.sceneStartTimes[id] = state.hasRecordedColdLaunch ? ProcessInfo.processInfo.systemUptime : AppStartTime.stats.startTime
+            state.sceneStartTimes[id] = sceneData.systemUptime
         case .launchInfoItemsWereTraced(let items):
             state.buffer.removeAll(where: { items.contains($0) })
         }
@@ -74,12 +74,6 @@ final class LaunchTracker {
         
         self.cancellables.insert(self.subscribeToSceneNotifications(usingStore: store))
     }
-}
-
-extension LaunchTracker: AutoInstrumentation {
-    func start() {}
-    
-    func stop() {}
 }
 
 extension LaunchTracker {
@@ -136,9 +130,11 @@ extension LaunchTracker {
                 store.dispatch(.sceneDidBecomeActive(sceneData))
             case UIScene.willEnterForegroundNotification:
                 guard let scene = notification.object as? UIScene else { return }
+                
+                let systemUptime = store.state.hasRecordedColdLaunch ? ProcessInfo.processInfo.systemUptime : AppStartTime.stats.startTime
                 let sceneData = SceneData(
                     sceneID: scene.session.persistentIdentifier,
-                    systemUptime: ProcessInfo.processInfo.systemUptime
+                    systemUptime: systemUptime
                 )
                 store.dispatch(.sceneWillEnterForeground(sceneData))
             default:
