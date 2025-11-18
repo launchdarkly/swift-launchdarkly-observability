@@ -9,11 +9,9 @@ final class MaskingElementsViewModel: ObservableObject {
     
     @MainActor
     func captureShapShot() {
-        guard let image = screenCaptureService.captureUIImage() else {
-            return
+        screenCaptureService.captureUIImage { image in
+            self.capturedImage = image
+            self.isImagePresented = true
         }
-        
-        self.capturedImage = image
-        self.isImagePresented = true
     }
 }
