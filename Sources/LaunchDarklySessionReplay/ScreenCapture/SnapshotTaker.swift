@@ -87,17 +87,15 @@ final class SnapshotTaker: EventSource {
             }
         }
         
-        lastFrameDispatchTime = DispatchTime.now()
-        guard let lastFrameDispatchTime else {
-            return
-        }
-        
-        guard let capturedImage = captureService.captureUIImage() else {
-            self.lastFrameDispatchTime = DispatchTime(uptimeNanoseconds: lastFrameDispatchTime.uptimeNanoseconds - UInt64(Double(NSEC_PER_SEC) / self.frameInterval))
-            return
-        }
-        
-        Task {
+        let lastFrameDispatchTime = DispatchTime.now()
+        self.lastFrameDispatchTime = lastFrameDispatchTime
+    
+        captureService.captureUIImage { capturedImage in
+            guard let capturedImage else {
+                // dropped frame
+                return
+            }
+            
             guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
                                                                     originalSize: capturedImage.renderSize,
                                                                     scale: capturedImage.scale,
@@ -105,7 +103,7 @@ final class SnapshotTaker: EventSource {
                 return
             }
             
-            await eventQueue.send(ScreenImageItem(exportImage: exportImage))
+            await self.eventQueue.send(ScreenImageItem(exportImage: exportImage))
         }
     }
 }

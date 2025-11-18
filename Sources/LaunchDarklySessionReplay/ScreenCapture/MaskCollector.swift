@@ -184,6 +184,7 @@ final class MaskCollector {
         
         var result = operationsBefore
         let moveTollerance = 1.0
+        let overlapTollerance = 1.1
         for (before, after) in zip(operationsBefore, operationsAfter) {
             let diffX = abs(before.effectiveFrame.minX - after.effectiveFrame.minX)
             let diffY = abs(before.effectiveFrame.minY - after.effectiveFrame.minY)
@@ -193,7 +194,8 @@ final class MaskCollector {
                 continue
             }
             
-            guard diffX < before.effectiveFrame.width - moveTollerance, diffY < before.effectiveFrame.height - moveTollerance else {
+            guard diffX * overlapTollerance < before.effectiveFrame.width - moveTollerance,
+                    diffY * overlapTollerance < before.effectiveFrame.height - moveTollerance else {
                 // If movement is bigger the size we drop the frame
                 return nil
             }
