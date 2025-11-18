@@ -130,7 +130,7 @@ struct ContentView: View {
          .onChange(of: path) { newValue in
              if !newValue.contains("fruta") {
                  if AppTabNavigation.pullPushLoop > 0 {
-                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                     DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 0.9...1.1)) {
                          path.append("fruta")
                      }
                  }

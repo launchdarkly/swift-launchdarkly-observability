@@ -33,7 +33,6 @@ public final class ScreenCaptureService {
         
         CATransaction.flush()
         let maskOperationsBefore = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
-        var dropFrame = false
         let image = renderer.image { ctx in
             drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
         }
@@ -47,7 +46,6 @@ public final class ScreenCaptureService {
             
             Task {
                 guard maskOperationsBefore.count == maskOperationsAfter.count else {
-                    dropFrame = true
                     await yield(nil)
                     return
                 }
@@ -58,7 +56,6 @@ public final class ScreenCaptureService {
                         applyOperations.append(newOperations)
                     } else {
                         // drop the frame, movement was bigger than mask itself
-                        dropFrame = true
                         await yield(nil)
                         return
                     }

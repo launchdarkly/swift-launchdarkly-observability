@@ -153,7 +153,7 @@ final class MaskCollector {
 
             let shouldMask = settings.shouldMask(view)
             if shouldMask, let mask = createMask(rPresenation, layer: layer, scale: scale) {
-                var operation = MaskOperation(mask: mask, kind: .fill, view: view, effectiveFrame: effectiveFrame)
+                var operation = MaskOperation(mask: mask, kind: .fill, effectiveFrame: effectiveFrame)
 #if DEBUG
                 operation.accessibilityIdentifier = view.accessibilityIdentifier
 #endif

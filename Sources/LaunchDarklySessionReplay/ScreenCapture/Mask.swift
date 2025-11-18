@@ -22,7 +22,6 @@ struct MaskOperation {
     
     var mask: Mask
     var kind: Kind
-    var view: UIView
     var effectiveFrame: CGRect
     
     #if DEBUG

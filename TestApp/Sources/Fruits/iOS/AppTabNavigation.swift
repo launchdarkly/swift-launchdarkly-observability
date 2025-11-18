@@ -98,7 +98,7 @@ struct AppTabNavigation: View {
         }.onAppear {
             if Self.pullPushLoop > 0 {
                 Self.pullPushLoop -= 1
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 1.1...1.5)) {
                     self.dismiss()
                 }
             }
