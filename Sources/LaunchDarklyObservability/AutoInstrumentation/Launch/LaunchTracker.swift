@@ -58,7 +58,7 @@ final class LaunchTracker {
         
     }
     
-    private var cancellables: Set<AnyCancellable>
+    private var cancellables = Set<AnyCancellable>()
     private let store: Store<State, Action>
     
     var state: State {
@@ -69,9 +69,8 @@ final class LaunchTracker {
         let store = Store<State, Action>(state: initialState, reducer: LaunchTracker.reduce(state:action:))
         
         self.store = store
-        self.cancellables = []
         
-        self.cancellables.insert(self.subscribeToSceneNotifications(usingStore: store))
+        self.subscribeToSceneNotifications(usingStore: store)
     }
 }
 
@@ -114,7 +113,7 @@ import Combine
 import Common
 
 extension LaunchTracker {
-    func subscribeToSceneNotifications(usingStore store: Store<State, Action>) -> AnyCancellable {
+    func subscribeToSceneNotifications(usingStore store: Store<State, Action>) {
         Publishers.MergeMany(
             NotificationCenter.default.publisher(for: UIScene.didActivateNotification),
             NotificationCenter.default.publisher(for: UIScene.willEnterForegroundNotification),
@@ -143,6 +142,7 @@ extension LaunchTracker {
                 break
             }
         }
+        .store(in: &cancellables)
     }
 }
 
