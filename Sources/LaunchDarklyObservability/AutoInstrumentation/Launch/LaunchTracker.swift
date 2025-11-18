@@ -79,31 +79,34 @@ final class LaunchTracker {
 extension LaunchTracker {
     func trace(
         using tracingApi: TraceClient
-    ) {
-        let bufferedItems = store.state.buffer
-        bufferedItems.forEach { item in
-            tracingApi
-                .startSpan(
-                    name: "AppStart",
-                    attributes: [
-                        "start.type": .string(
-                            item.type.description
-                        ),
-                        "duration": .double(
-                            item.end - item.start
+    ) async {
+        await MainActor.run { [weak self] in
+            guard let self else { return }
+            let bufferedItems = store.state.buffer
+            bufferedItems.forEach { item in
+                tracingApi
+                    .startSpan(
+                        name: "AppStart",
+                        attributes: [
+                            "start.type": .string(
+                                item.type.description
+                            ),
+                            "duration": .double(
+                                item.end - item.start
+                            )
+                        ],
+                        startTime: Date(
+                            timeIntervalSinceNow: -item.start
                         )
-                    ],
-                    startTime: Date(
-                        timeIntervalSinceNow: -item.start
                     )
-                )
-                .end(
-                    time: Date(
-                        timeIntervalSinceNow: -item.end
+                    .end(
+                        time: Date(
+                            timeIntervalSinceNow: -item.end
+                        )
                     )
-                )
+            }
+            store.dispatch(.launchInfoItemsWereTraced(bufferedItems))
         }
-        store.dispatch(.launchInfoItemsWereTraced(bufferedItems))
     }
 }
 

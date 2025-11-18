@@ -122,7 +122,7 @@ public struct ObservabilityClientFactory {
                         instrument: traceClient,
                         samplingInterval: autoInstrumentationSamplingInterval
                     ) {
-                        launchTracker.trace(using: $0)
+                        await launchTracker.trace(using: $0)
                     }
                 )
         }
