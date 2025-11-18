@@ -19,7 +19,6 @@ public struct ObservabilityClientFactory {
         withOptions options: Options,
         mobileKey: String
     ) throws -> Observe {
-        let launchTracker = LaunchTracker()
         let appLifecycleManager = AppLifecycleManager()
         let sessionManager = SessionManager(
             options: .init(
@@ -116,17 +115,6 @@ public struct ObservabilityClientFactory {
             )
         }
         if options.instrumentation.launchTimes.isEnabled {
-//            options.launchMeter.subscribe { statistics in
-//                for element in statistics {
-//                    let span = traceClient.startSpan(
-//                        name: "AppStart",
-//                        attributes: ["start.type": .string(element.launchType.description)],
-//                        startTime: element.startTime
-//                    )
-//                    span.end(time: element.endTime)
-//                }
-//            }
-            
             let launchTracker = LaunchTracker()
             autoInstrumentation
                 .append(
