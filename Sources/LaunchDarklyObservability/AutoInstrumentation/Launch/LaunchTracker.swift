@@ -114,22 +114,23 @@ import Common
 
 extension LaunchTracker {
     func subscribeToSceneNotifications(usingStore store: Store<State, Action>) {
-        Publishers.MergeMany(
-            NotificationCenter.default.publisher(for: UIScene.didActivateNotification),
-            NotificationCenter.default.publisher(for: UIScene.willEnterForegroundNotification),
-        )
-        .subscribe(on: RunLoop.main)
-        .receive(on: RunLoop.main)
-        .sink { notification in
-            switch notification.name {
-            case UIScene.didActivateNotification:
+        NotificationCenter.default.publisher(for: UIScene.didActivateNotification)
+            .subscribe(on: RunLoop.main)
+            .receive(on: RunLoop.main)
+            .sink { notification in
                 guard let scene = notification.object as? UIScene else { return }
                 let sceneData = SceneData(
                     sceneID: scene.session.persistentIdentifier,
                     systemUptime: ProcessInfo.processInfo.systemUptime
                 )
                 store.dispatch(.sceneDidBecomeActive(sceneData))
-            case UIScene.willEnterForegroundNotification:
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: UIScene.willEnterForegroundNotification)
+            .subscribe(on: RunLoop.main)
+            .receive(on: RunLoop.main)
+            .sink { notification in
                 guard let scene = notification.object as? UIScene else { return }
                 
                 let systemUptime = store.state.hasRecordedColdLaunch ? ProcessInfo.processInfo.systemUptime : AppStartTime.stats.startTime
@@ -138,11 +139,8 @@ extension LaunchTracker {
                     systemUptime: systemUptime
                 )
                 store.dispatch(.sceneWillEnterForeground(sceneData))
-            default:
-                break
             }
-        }
-        .store(in: &cancellables)
+            .store(in: &cancellables)
     }
 }
 
