@@ -11,7 +11,7 @@ public struct CapturedImage {
 }
 
 public final class ScreenCaptureService {
-    let maskingService = MaskService()
+    let maskingService = MaskApplier()
     let maskCollector: MaskCollector
     
     public init(options: SessionReplayOptions) {
@@ -21,9 +21,8 @@ public final class ScreenCaptureService {
     // MARK: - Capture
     
     /// Capture as UIImage (must be on main thread).
-    @MainActor
-    public func captureUIImage() -> CapturedImage? {
-        let scale = 1.0      
+    public func captureUIImage(yield: @escaping (CapturedImage?) async -> Void) {
+        let scale = 1.0
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = false
@@ -31,14 +30,50 @@ public final class ScreenCaptureService {
         let windows = allWindowsInZOrder()
         let enclosingBounds = minimalBoundsEnclosingWindows(windows)
         let renderer = UIGraphicsImageRenderer(size: enclosingBounds.size, format: format)
+        
+        CATransaction.flush()
+        let maskOperationsBefore = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
         let image = renderer.image { ctx in
             drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
         }
-        
-        return CapturedImage(image: image,
-                             scale: scale,
-                             renderSize: enclosingBounds.size,
-                             timestamp: Date().timeIntervalSince1970)
+      
+        // Move collecting masks after to the next tick
+        DispatchQueue.main.async { [weak self, weak maskCollector] in
+            guard let self, let maskCollector else { return }
+            
+            CATransaction.flush()
+            let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
+            
+            Task {
+                guard maskOperationsBefore.count == maskOperationsAfter.count else {
+                    await yield(nil)
+                    return
+                }
+                
+                var applyOperations = [[MaskOperation]]()
+                for (before, after) in zip(maskOperationsBefore, maskOperationsAfter) {
+                    if let newOperations = maskCollector.duplicateUnsimilar(before: before, after: after) {
+                        applyOperations.append(newOperations)
+                    } else {
+                        // drop the frame, movement was bigger than mask itself
+                        await yield(nil)
+                        return
+                    }
+                }
+                
+                let image = renderer.image { ctx in
+                    image.draw(at: .zero)
+                    self.maskingService.applyViewMasks(context: ctx.cgContext, operations: applyOperations.flatMap { $0 })
+                }
+                
+                let capturedImage = CapturedImage(image: image,
+                                                  scale: scale,
+                                                  renderSize: enclosingBounds.size,
+                                                  timestamp: Date().timeIntervalSince1970)
+                
+                await yield(capturedImage)
+            }
+        }
     }
     
     private func allWindowsInZOrder() -> [UIWindow] {
@@ -66,23 +101,18 @@ public final class ScreenCaptureService {
         context.setFillColor(UIColor.clear.cgColor)
         context.fill(bounds)
         context.restoreGState()
-        
-        for window in windows {
+
+        for (i, window) in windows.enumerated() {
             context.saveGState()
-            let maskOperations = maskCollector.collectViewMasks(in: window, window: window, scale: scale)
-            
+          
             context.translateBy(x: window.frame.origin.x, y: window.frame.origin.y)
             context.concatenate(window.transform)
-            
             let anchor = CGPoint(x: window.bounds.midX, y: window.bounds.midY)
             context.translateBy(x: anchor.x, y: anchor.y)
             context.translateBy(x: -anchor.x, y: -anchor.y)
             
-            let windowFrame = window.layer.frame
-            window.drawHierarchy(in: windowFrame, afterScreenUpdates: afterScreenUpdates)
+            window.drawHierarchy(in: window.layer.frame, afterScreenUpdates: afterScreenUpdates)
             
-            maskingService.applyViewMasks(context: context, operations: maskOperations)
-            //window.layer.render(in: context)
             context.restoreGState()
         }
     }
@@ -100,7 +130,7 @@ private extension ScreenCaptureService {
         let cpuEnd = currentThreadCPUTimeSeconds()
         return (result, cpuEnd - cpuStart, wallEnd - wallStart)
     }
-
+    
     func currentThreadCPUTimeSeconds() -> TimeInterval {
         let thread: thread_act_t = mach_thread_self()
         defer { mach_port_deallocate(mach_task_self_, thread) }

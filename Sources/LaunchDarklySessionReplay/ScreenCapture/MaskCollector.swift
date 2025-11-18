@@ -152,7 +152,7 @@ final class MaskCollector {
             let effectiveFrame = rPresenation.convert(layer.frame, from: layer.superlayer)
 
             let shouldMask = settings.shouldMask(view)
-            if shouldMask, let mask = createMask(rPresenation, root: root, layer: layer, scale: scale) {
+            if shouldMask, let mask = createMask(rPresenation, layer: layer, scale: scale) {
                 var operation = MaskOperation(mask: mask, kind: .fill, effectiveFrame: effectiveFrame)
 #if DEBUG
                 operation.accessibilityIdentifier = view.accessibilityIdentifier
@@ -177,23 +177,54 @@ final class MaskCollector {
         return result
     }
     
-    func isTransparent(view: UIView, pLayer: CALayer) -> Bool {
+    func duplicateUnsimilar(before operationsBefore: [MaskOperation], after operationsAfter: [MaskOperation]) -> [MaskOperation]? {
+        guard operationsBefore.count == operationsAfter.count else {
+            return nil
+        }
+        
+        var result = operationsBefore
+        let moveTollerance = 1.0
+        let overlapTollerance = 1.1
+        for (before, after) in zip(operationsBefore, operationsAfter) {
+            let diffX = abs(before.effectiveFrame.minX - after.effectiveFrame.minX)
+            let diffY = abs(before.effectiveFrame.minY - after.effectiveFrame.minY)
+            
+            guard max(diffX, diffY) > moveTollerance else {
+                // If movement is present we duplicate the frame
+                continue
+            }
+            
+            guard diffX * overlapTollerance < before.effectiveFrame.width - moveTollerance,
+                    diffY * overlapTollerance < before.effectiveFrame.height - moveTollerance else {
+                // If movement is bigger the size we drop the frame
+                return nil
+            }
+            
+            var after = after
+            after.kind = .fillDuplicate
+            result.append(after)
+        }
+        
+        return result
+    }
+    
+    private func isTransparent(view: UIView, pLayer: CALayer) -> Bool {
         pLayer.opacity < 1 || view.alpha < 1.0 || view.backgroundColor == nil || (view.backgroundColor?.cgColor.alpha ?? 0) < 1.0
     }
     
-    func isSystem(view: UIView, pLayer: CALayer) -> Bool {
+    private func isSystem(view: UIView, pLayer: CALayer) -> Bool {
         return false
     }
     
-    func createMask(_ rPresenation: CALayer, root: CALayer, layer: CALayer, scale: CGFloat) -> Mask? {
+    func createMask(_ rPresenation: CALayer, layer: CALayer, scale: CGFloat) -> Mask? {
         let scale = 1.0
         let lBounds = layer.bounds
         guard lBounds.width > 0, lBounds.height > 0 else { return nil }
         
         if CATransform3DIsAffine(layer.transform) {
-            let corner0 = layer.convert(CGPoint.zero, to: root)
-            let corner1 = layer.convert(CGPoint(x: lBounds.width, y: 0), to: root)
-            let corner3 = layer.convert(CGPoint(x: 0, y: lBounds.height), to: root)
+            let corner0 = layer.convert(CGPoint.zero, to: rPresenation)
+            let corner1 = layer.convert(CGPoint(x: lBounds.width, y: 0), to: rPresenation)
+            let corner3 = layer.convert(CGPoint(x: 0, y: lBounds.height), to: rPresenation)
             
             let tx = corner0.x, ty = corner0.y
             let affineTransform = CGAffineTransform(a: (corner1.x - tx) / max(lBounds.width, 0.0001),

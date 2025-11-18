@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 struct Quad {
     let p0: CGPoint
@@ -15,7 +16,7 @@ enum Mask {
 struct MaskOperation {
     enum Kind {
         case fill
-        case cut
+        case fillDuplicate
     }
     
     var mask: Mask

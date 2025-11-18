@@ -1,11 +1,16 @@
 import Foundation
 import LaunchDarklyObservability
+import UIKit
 
 final class SnapshotTaker: EventSource {
     private let captureService: ScreenCaptureService
     private let appLifecycleManager: AppLifecycleManaging
-    private var timer: Timer?
+    private var displayLink: CADisplayLink?
     private let eventQueue: EventQueue
+    private var lastFrameDispatchTime: DispatchTime?
+    private let frameInterval = 1.0
+    private var eventQueueAvailable: Bool = true
+    private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
     
     init(captureService: ScreenCaptureService,
          appLifecycleManager: AppLifecycleManaging,
@@ -13,6 +18,22 @@ final class SnapshotTaker: EventSource {
         self.captureService = captureService
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
+        
+        Task(priority: .background) { [weak self, weak eventQueue] in
+            guard let self, let eventQueue else { return }
+            
+            let eventsStream = await eventQueue.events()
+            for await event in eventsStream where event.id == sessionExporterId {
+                await MainActor.run { [weak self] in
+                    switch event.status {
+                    case .available:
+                        eventQueueAvailable = true
+                    case .oveflowed:
+                        eventQueueAvailable = false
+                    }
+                }
+            }
+        }
         
         Task(priority: .background) { [weak self, weak appLifecycleManager] in
             guard let self, let appLifecycleManager else { return }
@@ -36,31 +57,45 @@ final class SnapshotTaker: EventSource {
     }
     
     func start() {
-        guard timer == nil else { return }
+        guard displayLink == nil else { return }
         
-        let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            queueSnapshot()
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        self.timer = timer
+        let displayLink = CADisplayLink(target: self, selector: #selector(frameUpdate))
+        displayLink.add(to: .main, forMode: .common)
+        
+        self.displayLink = displayLink
+    }
+    
+    @objc private func frameUpdate() {
+        queueSnapshot()
     }
     
     func stop() {
-        timer?.invalidate()
-        timer = nil
+        displayLink?.invalidate()
+        displayLink = nil
     }
     
     func queueSnapshot() {
-        guard let timer else {
+        guard let displayLink, eventQueueAvailable else {
             return
         }
         
-        Task {
-            // check if buffer is full before doing hard work
-            guard await !eventQueue.isFull() else { return }
+        let now = DispatchTime.now()
+        if let lastFrameDispatchTime {
+            let timeInBackground = Double(DispatchTime.now().uptimeNanoseconds - lastFrameDispatchTime.uptimeNanoseconds) / Double(NSEC_PER_SEC)
+            guard timeInBackground >= frameInterval else {
+                return
+            }
+        }
+        
+        let lastFrameDispatchTime = DispatchTime.now()
+        self.lastFrameDispatchTime = lastFrameDispatchTime
+    
+        captureService.captureUIImage { capturedImage in
+            guard let capturedImage else {
+                // dropped frame
+                return
+            }
             
-            guard let capturedImage = await captureService.captureUIImage() else { return }
             guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
                                                                     originalSize: capturedImage.renderSize,
                                                                     scale: capturedImage.scale,
@@ -68,7 +103,7 @@ final class SnapshotTaker: EventSource {
                 return
             }
             
-            await eventQueue.send(ScreenImageItem(exportImage: exportImage))
+            await self.eventQueue.send(ScreenImageItem(exportImage: exportImage))
         }
     }
 }

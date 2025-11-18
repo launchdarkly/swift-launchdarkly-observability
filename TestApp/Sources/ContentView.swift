@@ -17,8 +17,10 @@ enum Failure: LocalizedError {
 }
 
 struct ContentView: View {
+    @State private var path: [String] = []
     @State private var isMaskingUIKitOneFieldEnabled: Bool = false
     @State private var isMaskingUIKitCreditCardEnabled: Bool = false
+    @State private var isMaskingSwiftUICreditCardEnabled: Bool = false
     @State private var isNumberPadEnabled: Bool = false
     @State private var isNotebookEnabled: Bool = false
     @State private var isStoryboardEnabled: Bool = false
@@ -32,7 +34,7 @@ struct ContentView: View {
     @State private var networkPressed: Bool = false
     
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             HStack {
                 Image("Logo")
                 Text("LaunchDarkly Observability")
@@ -40,9 +42,7 @@ struct ContentView: View {
             
             List {
                 #if os(iOS)
-                NavigationLink(destination: FrutaAppView()) {
-                    Text("Fruta (SwiftUI)")
-                }
+                NavigationLink("Fruta (SwiftUI)", value: "fruta")
                 #endif
                 NavigationLink(destination: MaskingElementsView()) {
                     Text("Masking Elements (SwiftUI)")
@@ -51,6 +51,7 @@ struct ContentView: View {
                 FauxLinkToggleRow(title: "Masking One TextField (UIKit)", isOn: $isMaskingUIKitOneFieldEnabled)
 #if os(iOS)
                 FauxLinkToggleRow(title: "Masking Credit Card (UIKit)", isOn: $isMaskingUIKitCreditCardEnabled)
+                FauxLinkToggleRow(title: "Masking Credit Card (SwiftUI)", isOn: $isMaskingSwiftUICreditCardEnabled)
                 FauxLinkToggleRow(title: "Number Pad (SwiftUI)", isOn: $isNumberPadEnabled)
 #endif
 
@@ -119,11 +120,22 @@ struct ContentView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
                 }
-                
-
-
             }.background(Color.clear)
+            .navigationDestination(for: String.self) { value in
+                if value == "fruta" {
+                    FrutaAppView()
+                }
+             }
         }
+         .onChange(of: path) { newValue in
+             if !newValue.contains("fruta") {
+                 if AppTabNavigation.pullPushLoop > 0 {
+                     DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 0.9...1.1)) {
+                         path.append("fruta")
+                     }
+                 }
+             }
+         }
         .task(id: errorPressed) {
             guard errorPressed else { return }
             LDObserve.shared.recordError(
@@ -180,9 +192,12 @@ struct ContentView: View {
                 networkPressed.toggle()
             }
         }
+
 #if os(iOS)
         .sheet(isPresented: $isMaskingUIKitCreditCardEnabled) {
             MaskingCreditCardUIKitView()
+        }.sheet(isPresented: $isMaskingSwiftUICreditCardEnabled) {
+            MaskingCreditCardSwiftUIView()
         }.sheet(isPresented: $isNotebookEnabled) {
             NotebookView()
         }
