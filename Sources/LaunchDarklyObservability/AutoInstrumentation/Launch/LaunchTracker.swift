@@ -40,7 +40,6 @@ final class LaunchTracker {
                 return
             }
             let endUptime = sceneData.systemUptime
-//            let duration = endUptime - startUptime
             let launchType: LaunchType = state.hasRecordedColdLaunch ? .warm : .cold
             // Mark cold launch recorded once
             if !state.hasRecordedColdLaunch {
