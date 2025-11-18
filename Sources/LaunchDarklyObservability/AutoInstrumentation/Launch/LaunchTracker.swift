@@ -59,7 +59,6 @@ final class LaunchTracker {
         
     }
     
-    private var displayLink: CADisplayLink?
     private var cancellables: Set<AnyCancellable>
     private let store: Store<State, Action>
     
@@ -72,10 +71,8 @@ final class LaunchTracker {
         
         self.store = store
         self.cancellables = []
-//        self.displayLink = CADisplayLink(target: self, selector: #selector(frameUpdate))
         
         self.cancellables.insert(self.subscribeToSceneNotifications(usingStore: store))
-//        self.displayLink?.add(to: .main, forMode: .common)
     }
 }
 
@@ -103,15 +100,14 @@ extension LaunchTracker {
                         )
                     ],
                     startTime: Date(
-                        timeIntervalSinceNow: item.start
+                        timeIntervalSinceNow: -item.start
                     )
                 )
                 .end(
                     time: Date(
-                        timeIntervalSinceNow: item.end
+                        timeIntervalSinceNow: -item.end
                     )
                 )
-            print("launch: \(item.type.description) lasted: \(item.end - item.start)s")
         }
         store.dispatch(.launchInfoItemsWereTraced(bufferedItems))
     }
