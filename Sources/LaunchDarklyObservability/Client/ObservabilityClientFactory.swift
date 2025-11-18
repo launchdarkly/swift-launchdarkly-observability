@@ -115,16 +115,16 @@ public struct ObservabilityClientFactory {
             )
         }
         if options.instrumentation.launchTimes.isEnabled {
-            options.launchMeter.subscribe { statistics in
-                for element in statistics {
-                    let span = traceClient.startSpan(
-                        name: "AppStart",
-                        attributes: ["start.type": .string(element.launchType.description)],
-                        startTime: element.startTime
-                    )
-                    span.end(time: element.endTime)
-                }
-            }
+            let launchTracker = LaunchTracker()
+            autoInstrumentation
+                .append(
+                    InstrumentationTask<TraceClient>(
+                        instrument: traceClient,
+                        samplingInterval: autoInstrumentationSamplingInterval
+                    ) {
+                        await launchTracker.trace(using: $0)
+                    }
+                )
         }
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in

@@ -1,6 +1,6 @@
 import Foundation.NSURLError
 import Testing
-@testable import Observability
+@testable import LaunchDarklyObservability
 
 struct AppMetricsClientTests {
     @Test("Metrics API disabled")

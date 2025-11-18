@@ -1,5 +1,5 @@
 import OpenTelemetrySdk
-@testable import Observability
+@testable import LaunchDarklyObservability
 
 final class FakeExportSampler: ExportSampler {
     var isSamplingEnabled = false

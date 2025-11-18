@@ -1,5 +1,5 @@
 import Testing
-@testable import Observability
+@testable import LaunchDarklyObservability
 
 final class UIEventReceiverCheckerTests {
     // MARK: - Doubles
