@@ -28,12 +28,10 @@ final class MaskApplier {
                     path.fill()
                     
                     context.restoreGState()
-                case .cut:
-                    continue
                 }
       
             case .quad:
-                () //TODO:
+                continue //TODO: Support 3D
             }
         }
     }

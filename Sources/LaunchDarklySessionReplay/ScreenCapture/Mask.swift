@@ -17,7 +17,6 @@ struct MaskOperation {
     enum Kind {
         case fill
         case fillDuplicate
-        case cut
     }
     
     var mask: Mask
