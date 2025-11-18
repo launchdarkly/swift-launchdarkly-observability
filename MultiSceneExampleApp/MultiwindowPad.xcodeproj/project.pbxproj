@@ -18,6 +18,8 @@
 		E7B1A2C52EC7E01300B157F3 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = E7B1A2C42EC7E01300B157F3 /* LaunchDarklySessionReplay */; };
 		E7B1A2C92ECCB68500B157F3 /* Env.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B1A2C82ECCB68500B157F3 /* Env.swift */; };
 		E7B1A2CA2ECCB68500B157F3 /* Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B1A2C72ECCB68500B157F3 /* Client.swift */; };
+		E7B1A2CD2ECD2DD700B157F3 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7B1A2CC2ECD2DD700B157F3 /* LaunchDarklyObservability */; };
+		E7B1A2CF2ECD2DD700B157F3 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = E7B1A2CE2ECD2DD700B157F3 /* LaunchDarklySessionReplay */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,7 +41,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E7B1A2CF2ECD2DD700B157F3 /* LaunchDarklySessionReplay in Frameworks */,
 				E7B1A2C52EC7E01300B157F3 /* LaunchDarklySessionReplay in Frameworks */,
+				E7B1A2CD2ECD2DD700B157F3 /* LaunchDarklyObservability in Frameworks */,
 				E7B1A2C32EC7E01300B157F3 /* LaunchDarklyObservability in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -133,7 +137,7 @@
 			);
 			mainGroup = 65E1708B23632ABC00F5FDA1;
 			packageReferences = (
-				E7B1A2C12EC7E01300B157F3 /* XCLocalSwiftPackageReference "../../../Workspace/swift-launchdarkly-observability" */,
+				E7B1A2CB2ECD2DD700B157F3 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */,
 			);
 			productRefGroup = 65E1709523632ABC00F5FDA1 /* Products */;
 			projectDirPath = "";
@@ -359,9 +363,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		E7B1A2C12EC7E01300B157F3 /* XCLocalSwiftPackageReference "../../../Workspace/swift-launchdarkly-observability" */ = {
+		E7B1A2CB2ECD2DD700B157F3 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../../Workspace/swift-launchdarkly-observability";
+			relativePath = "../../swift-launchdarkly-observability";
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -371,6 +375,14 @@
 			productName = LaunchDarklyObservability;
 		};
 		E7B1A2C42EC7E01300B157F3 /* LaunchDarklySessionReplay */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LaunchDarklySessionReplay;
+		};
+		E7B1A2CC2ECD2DD700B157F3 /* LaunchDarklyObservability */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LaunchDarklyObservability;
+		};
+		E7B1A2CE2ECD2DD700B157F3 /* LaunchDarklySessionReplay */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LaunchDarklySessionReplay;
 		};
