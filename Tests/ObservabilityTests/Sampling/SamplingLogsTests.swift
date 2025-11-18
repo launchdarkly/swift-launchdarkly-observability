@@ -1,7 +1,7 @@
 import Testing
 import Common
 import OpenTelemetrySdk
-@testable import Observability
+@testable import LaunchDarklyObservability
 
 struct SamplingLogsTests {
     @Test func threadSafeSampler() {

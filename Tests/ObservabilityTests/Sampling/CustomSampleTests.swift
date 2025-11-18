@@ -1,5 +1,5 @@
 import Testing
-@testable import Observability
+@testable import LaunchDarklyObservability
 
 struct CustomSamplerTests {
     @Test("should return true for isSamplingEnabled when config has spans and logs")

@@ -1,6 +1,6 @@
 import Testing
 import OSLog
-@testable import Observability
+@testable import LaunchDarklyObservability
 
 private final class TestLifecycleManager: AppLifecycleManaging {
     private var continuation: AsyncStream<AppLifeCycleEvent>.Continuation?
