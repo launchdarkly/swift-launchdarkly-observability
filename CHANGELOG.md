@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.10.0...0.11.0) (2025-11-18)
+
+
+### Features
+
+* launch times multi-scene support ([#83](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/83)) ([f3c385d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/f3c385d41eab5d34eabe8e7ec69838cbb6baf798))
+
+
+### Bug Fixes
+
+* Delayed masks for SwiftUI ([#82](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/82)) ([157bfee](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/157bfee3deac92b15e40ce5680fdd5133003adea))
+
 ## [0.10.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.9.2...0.10.0) (2025-11-15)
 
 
