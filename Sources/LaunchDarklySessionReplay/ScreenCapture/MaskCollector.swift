@@ -91,9 +91,6 @@ final class MaskCollector {
                 if let wkWebView = view as? WKWebView {
                     return true
                 }
-                if let uiWebView = view as? UIWebView {
-                    return true
-                }
 #endif
             }
             
