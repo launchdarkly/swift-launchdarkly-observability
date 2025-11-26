@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.11.0...0.11.1) (2025-11-26)
+
+
+### Bug Fixes
+
+* remove uiwebview, it is not allowed in appstore ([#85](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/85)) ([b3908f1](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/b3908f154f4ceccc53099e2ca524ad4776438874))
+
 ## [0.11.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.10.0...0.11.0) (2025-11-18)
 
 
