@@ -1,5 +1,9 @@
 import Foundation
 import Combine
+import UIKit
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 final class LaunchTracker {
     struct SceneData: Equatable {
@@ -107,10 +111,6 @@ extension LaunchTracker {
         }
     }
 }
-
-import UIKit
-import Combine
-import Common
 
 extension LaunchTracker {
     func subscribeToSceneNotifications(usingStore store: Store<State, Action>) {

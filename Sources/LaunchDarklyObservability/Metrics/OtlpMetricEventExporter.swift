@@ -1,7 +1,9 @@
 import OpenTelemetrySdk
-import Common
 import Foundation
-import OpenTelemetryProtocolExporterCommon
+#if !LD_COCOAPODS
+    import OpenTelemetryProtocolExporterCommon
+    import Common
+#endif
 
 final class OtlpMetricEventExporter: EventExporting {
     private let otlpHttpClient: OtlpHttpClient

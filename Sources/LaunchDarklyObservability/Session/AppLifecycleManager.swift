@@ -1,5 +1,7 @@
 import UIKit
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public enum AppLifeCycleEvent {
     case didFinishLaunching

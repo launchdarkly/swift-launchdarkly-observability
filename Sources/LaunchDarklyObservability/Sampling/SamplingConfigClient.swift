@@ -1,4 +1,6 @@
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 protocol SamplingConfigClient {
     func getSamplingConfig(mobileKey: String) async throws -> SamplingConfig?

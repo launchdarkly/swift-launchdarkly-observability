@@ -1,8 +1,12 @@
 import Foundation
-import KSCrashInstallations
-import KSCrashRecording
-import KSCrashDemangleFilter
-import KSCrashFilters
+#if canImport(KSCrashRecording)
+    import KSCrashInstallations
+    import KSCrashRecording
+    import KSCrashDemangleFilter
+    import KSCrashFilters
+#elseif canImport(KSCrash)
+    import KSCrash
+#endif
 
 // Reference: https://github.com/kstenerud/KSCrash/issues/187
 final class LDCrashFilter: NSObject, CrashReportFilter {

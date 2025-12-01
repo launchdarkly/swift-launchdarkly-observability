@@ -1,6 +1,8 @@
 import Foundation
 import OpenTelemetrySdk
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 final class CustomSampler: ExportSampler {
     private let sampler: (Int) -> Bool

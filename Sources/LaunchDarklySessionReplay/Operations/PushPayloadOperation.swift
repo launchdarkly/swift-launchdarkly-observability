@@ -1,5 +1,7 @@
 import Foundation
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 struct PushPayloadVariables: Codable {
     public struct EventsInput: Codable {

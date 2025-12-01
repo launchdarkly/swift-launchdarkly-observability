@@ -1,6 +1,8 @@
 import Foundation
 import LaunchDarkly
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public final class EvalTracingHook: Hook {
     private let queue = DispatchQueue(label: "com.launchdarkly.eval.tracing.hook")

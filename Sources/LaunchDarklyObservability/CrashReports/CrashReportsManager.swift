@@ -1,9 +1,13 @@
 import Foundation
 import OSLog
-import KSCrashInstallations
-import KSCrashRecording
-import KSCrashDemangleFilter
-import KSCrashFilters
+#if canImport(KSCrashRecording)
+    import KSCrashInstallations
+    import KSCrashRecording
+    import KSCrashDemangleFilter
+    import KSCrashFilters
+#elseif canImport(KSCrash)
+    import KSCrash
+#endif
 
 public protocol CrashReporting {
     func logPendingCrashReports()

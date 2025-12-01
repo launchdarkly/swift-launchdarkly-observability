@@ -1,5 +1,7 @@
 import Foundation
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public struct IdentifySessionVariables: Encodable {
     public let sessionSecureId: String

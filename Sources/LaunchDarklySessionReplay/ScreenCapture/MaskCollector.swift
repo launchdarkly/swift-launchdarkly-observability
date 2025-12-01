@@ -4,7 +4,9 @@ import WebKit
 #endif
 import UIKit
 import SwiftUI
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 typealias PrivacySettings = SessionReplayOptions.PrivacyOptions
 

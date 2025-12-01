@@ -1,7 +1,9 @@
 import Foundation
-import Common
 import OSLog
 import OpenTelemetrySdk
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public struct ObservabilityClientFactory {
     public static func noOp() -> Observe {

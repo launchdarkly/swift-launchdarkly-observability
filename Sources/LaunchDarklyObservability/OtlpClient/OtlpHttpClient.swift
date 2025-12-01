@@ -1,20 +1,21 @@
 import Foundation
 import SwiftProtobuf
 import DataCompression
-import OpenTelemetryProtocolExporterCommon
-import Common
-
-public enum Constants {
-  public enum OTLP {
-    public static let version = "0.20.0"
-  }
-
-  public enum HTTP {
-    public static let userAgent = "User-Agent"
-  }
-}
+#if !LD_COCOAPODS
+    import OpenTelemetryProtocolExporterCommon
+    import Common
+#endif
 
 public final class OtlpHttpClient {
+    public enum Constants {
+      public enum OTLP {
+        public static let version = "0.20.0"
+      }
+
+      public enum HTTP {
+        public static let userAgent = "User-Agent"
+      }
+    }
     private enum Headers {
       // GetUserAgentHeader returns an OTLP header value of the form "OTel OTLP Exporter Swift/{{ .Version }}"
       // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#user-agent
