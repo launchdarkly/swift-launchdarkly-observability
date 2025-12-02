@@ -1,5 +1,7 @@
 import Foundation
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public struct SessionInfo: Sendable, Equatable {
     public let id: String

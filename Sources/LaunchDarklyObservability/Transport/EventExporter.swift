@@ -1,5 +1,7 @@
 import Foundation
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public protocol EventExporting: Sendable {
     func export(items: [EventQueueItem]) async throws

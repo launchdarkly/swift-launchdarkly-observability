@@ -1,4 +1,6 @@
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public final class UserInteractionManager: AutoInstrumentation {
     private var touchCaptureCoordinator: TouchCaptureCoordinator

@@ -1,7 +1,9 @@
 import Foundation
 import UIKit.UIApplication
 import OSLog
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public protocol SessionManaging {
     func sessionChanges() async -> AsyncStream<SessionInfo>

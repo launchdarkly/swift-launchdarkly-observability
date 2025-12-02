@@ -1,7 +1,9 @@
 #if canImport(UIKit)
 import Foundation
 import UIKit
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 enum LaunchType {
     case cold, warm

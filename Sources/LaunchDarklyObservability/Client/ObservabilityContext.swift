@@ -1,6 +1,8 @@
 import OpenTelemetryApi
 import OpenTelemetrySdk
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 /** Shared info between plugins */
 public class ObservabilityContext {

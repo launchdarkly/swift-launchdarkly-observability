@@ -1,5 +1,8 @@
 import Foundation
-import URLSessionInstrumentation
+#if !LD_COCOAPODS
+    import URLSessionInstrumentation
+#endif
+
 
 final class NetworkInstrumentationManager: AutoInstrumentation {
     private let uRLSessionInstrumentation: URLSessionInstrumentation

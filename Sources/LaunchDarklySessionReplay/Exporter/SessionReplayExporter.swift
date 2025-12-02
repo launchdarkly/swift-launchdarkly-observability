@@ -1,7 +1,9 @@
 import Foundation
-import Common
 import LaunchDarklyObservability
 import OSLog
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 actor SessionReplayExporter: EventExporting {
     private let replayApiService: SessionReplayAPIService

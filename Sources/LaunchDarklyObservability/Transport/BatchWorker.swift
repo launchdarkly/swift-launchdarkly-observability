@@ -1,6 +1,8 @@
 import Foundation
-import Common
 import OSLog
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public final actor BatchWorker {
     enum Constants {

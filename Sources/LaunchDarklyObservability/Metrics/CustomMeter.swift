@@ -1,5 +1,7 @@
 import OpenTelemetrySdk
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 /// Implementation using OpenTelemetrySdk
 /// Don't use, will be remove at some point in favor of MeterFacade

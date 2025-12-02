@@ -1,7 +1,9 @@
 import Foundation
-import Common
 import LaunchDarklyObservability
 import OSLog
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 struct ScreenImageItem: EventQueueItemPayload {
     var exporterClass: AnyClass {

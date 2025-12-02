@@ -1,11 +1,3 @@
-//
-//  AppStartTime.swift
-//  swift-launchdarkly-observability
-//
-//  Created by Mario Canto on 03/11/25.
-//
-
-
 import Foundation
 
 @objcMembers
@@ -25,7 +17,8 @@ public final class AppStartTime: NSObject {
 }
 
 // Expose a function Swift can call from C
-@_silgen_name("SwiftStartupMetricsInitialize")
+//@_silgen_name("SwiftStartupMetricsInitialize")
+@_cdecl("SwiftStartupMetricsInitialize")
 public func SwiftStartupMetricsInitialize() {
     _ = AppStartTime.stats
 }

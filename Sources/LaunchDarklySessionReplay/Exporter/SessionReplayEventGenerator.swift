@@ -2,9 +2,11 @@ import Foundation
 #if canImport(UIKit)
 import UIKit
 #endif
-import Common
 import LaunchDarklyObservability
 import OSLog
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 actor SessionReplayEventGenerator {
     let padding = CGSize(width: 11, height: 11)

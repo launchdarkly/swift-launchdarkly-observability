@@ -1,6 +1,8 @@
 import Foundation
-import Common
 import LaunchDarklyObservability
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 extension TouchInteraction: EventQueueItemPayload {
     public var exporterClass: AnyClass {

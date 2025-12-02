@@ -8,7 +8,9 @@ import OpenTelemetryApi
 import OpenTelemetrySdk
 import os.log
 #if os(iOS) && !targetEnvironment(macCatalyst)
+#if canImport(NetworkStatus)
   import NetworkStatus
+#endif
 #endif // os(iOS) && !targetEnvironment(macCatalyst)
 
 class URLSessionLogger {
@@ -87,7 +89,7 @@ class URLSessionLogger {
       returnRequest = instrumentedRequest(for: request, span: span, instrumentation: instrumentation)
     }
 
-    #if os(iOS) && !targetEnvironment(macCatalyst)
+    #if os(iOS) && !targetEnvironment(macCatalyst) && !LD_COCOAPODS
       if let injector = netstatInjector {
         injector.inject(span: span)
       }

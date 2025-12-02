@@ -1,5 +1,7 @@
 import OpenTelemetryApi
-import Common
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 final class MetricsClient {
     private let options: Options
