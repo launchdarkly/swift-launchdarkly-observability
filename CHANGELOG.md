@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.11.1...0.12.0) (2025-12-02)
+
+
+### Features
+
+* add cocoapods support ([#87](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/87)) ([cb0fa51](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/cb0fa513eeda69d248dd53b30c66bed9812831ed))
+
 ## [0.11.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.11.0...0.11.1) (2025-11-26)
 
 
