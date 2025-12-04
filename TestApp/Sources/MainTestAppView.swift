@@ -16,7 +16,7 @@ enum Failure: LocalizedError {
     }
 }
 
-struct ContentView: View {
+struct MainTestAppView: View {
     @State private var path: [String] = []
     @State private var isMaskingUIKitOneFieldEnabled: Bool = false
     @State private var isMaskingUIKitCreditCardEnabled: Bool = false
@@ -246,5 +246,5 @@ struct FauxLinkToggleRow: View {
 
 
 #Preview {
-    ContentView()
+    MainTestAppView()
 }
