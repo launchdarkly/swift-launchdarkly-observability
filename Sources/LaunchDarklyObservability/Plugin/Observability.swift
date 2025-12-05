@@ -3,6 +3,7 @@ import OSLog
 
 public final class Observability: Plugin {
     private let options: Options
+    var observabilityService: InternalObserve?
     
     public init(options: Options) {
         self.options = options
@@ -37,6 +38,7 @@ public final class Observability: Plugin {
                 mobileKey: mobileKey
             )
             client.observabilityService = service
+            observabilityService = service
             LDObserve.shared.client = service
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Observability client initialization failed with error: \(error)")
@@ -44,6 +46,10 @@ public final class Observability: Plugin {
     }
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        [EvalTracingHook(withSpans: true, withValue: true, version: options.serviceVersion, options: options)]
+        [EvalTracingHook(plugin: self,
+                         withSpans: true,
+                         withValue: true,
+                         version: options.serviceVersion,
+                         options: options)]
     }
 }

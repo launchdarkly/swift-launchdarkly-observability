@@ -29,4 +29,8 @@ public final class SessionReplay: Plugin {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service initialization failed with error: \(error)")
         }
     }
+    
+    public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
+        [SessionReplayHook(plugin: self)]
+    }
 }

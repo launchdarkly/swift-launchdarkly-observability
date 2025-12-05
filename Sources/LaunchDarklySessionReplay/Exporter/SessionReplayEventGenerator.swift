@@ -186,6 +186,18 @@ actor SessionReplayEventGenerator {
         return event
     }
     
+    func identifyEvent(identifyPayload: [String: String], timestamp: TimeInterval) -> Event {
+        let data = try? JSONEncoder().encode(identifyPayload)
+        let payload = data.map { String(data: $0, encoding: .utf8) } ?? "{}"
+        
+        let eventData = CustomEventData(tag: .identify, payload: payload)
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: timestamp,
+                          _sid: nextSid)
+        return event
+    }
+    
     func viewPortEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
         #if os(iOS)
         let currentOrientation = UIDevice.current.orientation.isLandscape ? 1 : 0

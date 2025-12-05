@@ -2,7 +2,7 @@ import Foundation
 import LaunchDarklyObservability
 import OSLog
 #if !LD_COCOAPODS
-    import Common
+import Common
 #endif
 
 struct ScreenImageItem: EventQueueItemPayload {
@@ -45,6 +45,7 @@ public struct SessionReplayContext {
 public final class SessionReplayService {
     let snapshotTaker: SnapshotTaker
     var transportService: TransportServicing
+    var sessionReplayExporter: SessionReplayExporter
     
     public init(context: ObservabilityContext,
                 sessonReplayOptions: SessionReplayOptions) throws {
@@ -75,11 +76,12 @@ public final class SessionReplayService {
             log: context.options.log)
         
         let replayApiService = SessionReplayAPIService(gqlClient: graphQLClient)
-        let replayPushService = SessionReplayExporter(context: sessionReplayContext,
-                                                      sessionManager: context.sessionManager,
-                                                      replayApiService: replayApiService)
+        let sessionReplayExporter = SessionReplayExporter(context: sessionReplayContext,
+                                                          sessionManager: context.sessionManager,
+                                                          replayApiService: replayApiService)
+        self.sessionReplayExporter = sessionReplayExporter
         Task {
-            await transportService.batchWorker.addExporter(replayPushService)
+            await transportService.batchWorker.addExporter(sessionReplayExporter)
             transportService.start()
         }
     }

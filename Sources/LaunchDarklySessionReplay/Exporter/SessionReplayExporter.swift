@@ -23,6 +23,9 @@ actor SessionReplayExporter: EventExporting {
         return payloadId
     }
     
+    private var shouldIdentify: Bool = true
+    private var userObject:  [String: String]?
+    
     init(context: SessionReplayContext,
          sessionManager: SessionManaging,
          replayApiService: SessionReplayAPIService) {
@@ -64,7 +67,6 @@ actor SessionReplayExporter: EventExporting {
             }
             
             let session = try await initializeSession(sessionSecureId: sessionInfo.id)
-            try await identifySession(session: session)
             initializedSession = session
         } catch {
             initializedSession = nil
@@ -76,7 +78,11 @@ actor SessionReplayExporter: EventExporting {
         try await initializeSessionIfNeeded()
         guard let initializedSession else { return }
 
-        let events = await eventGenerator.generateEvents(items: items)
+        var events = await eventGenerator.generateEvents(items: items)
+        if shouldIdentify, let userObject {
+            try await identifySession(sessionSecureId: initializedSession.secureId)
+            events.append(await eventGenerator.identifyEvent(identifyPayload: userObject, timestamp: Date().timeIntervalSince1970))
+        }
         try await pushPayload(initializedSession: initializedSession, events: events)
         
         if shouldWakeUpSession {
@@ -97,19 +103,21 @@ actor SessionReplayExporter: EventExporting {
     private func initializeSession(sessionSecureId: String) async throws -> InitializeSessionResponse {
         try await replayApiService.initializeSession(context: context,
                                                      sessionSecureId: sessionSecureId,
-                                                     userIdentifier: "abelonogov@launchdarkly.com")
+                                                     userIdentifier: "")
     }
     
-    private func identifySession(session: InitializeSessionResponse) async throws {
+    private func identifySession(sessionSecureId: String) async throws {
         try await replayApiService.identifySession(
-            sessionSecureId: session.secureId,
-            userObject:   ["telemetry.sdk.name":"SwiftClient",
-                           "telemetry.sdk.version":"3.8.1",
-                           "feature_flag.set.id":"548f6741c1efad40031b18ae",
-                           "feature_flag.provider.name":"LaunchDarkly",
-                           "key":"test"])
+            sessionSecureId: sessionSecureId,
+            userObject: userObject)
+        shouldIdentify = false
     }
 
+    func scheduleIdentifySession(userObject: [String: String]) async throws {
+        self.shouldIdentify = true
+        self.userObject = userObject
+    }
+    
     deinit {
         sessionChangesTask?.cancel()
     }

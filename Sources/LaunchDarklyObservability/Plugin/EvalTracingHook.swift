@@ -4,14 +4,20 @@ import LaunchDarkly
     import Common
 #endif
 
-public final class EvalTracingHook: Hook {
+final class EvalTracingHook: Hook {
     private let queue = DispatchQueue(label: "com.launchdarkly.eval.tracing.hook")
+    private let plugin: Observability
     private let withSpans: Bool
     private let withValue: Bool
     private let version: String
     private let options: Options
     
-    public init(withSpans: Bool, withValue: Bool, version: String, options: Options) {
+    init(plugin: Observability,
+         withSpans: Bool,
+         withValue: Bool,
+         version: String,
+         options: Options) {
+        self.plugin = plugin
         self.withSpans = withSpans
         self.withValue = withValue
         self.version = version
@@ -77,6 +83,28 @@ public final class EvalTracingHook: Hook {
             return seriesData
 //        }
     }
+    
+    public func afterIdentify(seriesContext: IdentifySeriesContext, seriesData: EvaluationSeriesData, result: IdentifyResult) -> EvaluationSeriesData {
+        // Log identify completion with context metadata
+        // Note: We conservatively include the canonical context key and status.
+        // Resource attributes are already attached by the log builder.
+        guard case .complete = result else {
+            return seriesData
+        }
+        
+        var attributes = [String: AttributeValue]()
+        attributes["key"] = .string(seriesContext.context.fullyQualifiedKey())
+        attributes["canonicalKey"] = .string(seriesContext.context.fullyQualifiedKey())
+        attributes[Self.IDENTIFY_RESULT_STATUS] = .string("completed")
+        
+        plugin.observabilityService?.logClient.recordLog(
+            message: "LD.identify",
+            severity: .info,
+            attributes: attributes
+        )
+        
+        return seriesData
+    }
 }
 
 extension EvalTracingHook {
@@ -93,4 +121,5 @@ extension EvalTracingHook {
     static let CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT: String = "feature_flag.result.reason.inExperiment"
     static let FEATURE_FLAG_SPAN_NAME = "evaluation" /// FEATURE_FLAG_SPAN_NAME
     static let FEATURE_FLAG_CONTEXT_ATTR = "feature_flag.contextKeys"
+    static let IDENTIFY_RESULT_STATUS = "identify.result.status"
 }

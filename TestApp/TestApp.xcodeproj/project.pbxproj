@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = 50C584C92EE23723006A0045 /* LaunchDarkly */; };
 		50E1D9872E9DFAB600241A6B /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = 50E1D9862E9DFAB600241A6B /* LaunchDarklySessionReplay */; };
 		E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */; };
 /* End PBXBuildFile section */
@@ -42,6 +43,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */,
+				50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */,
 				50E1D9872E9DFAB600241A6B /* LaunchDarklySessionReplay in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -95,6 +97,7 @@
 			packageProductDependencies = (
 				E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */,
 				50E1D9862E9DFAB600241A6B /* LaunchDarklySessionReplay */,
+				50C584C92EE23723006A0045 /* LaunchDarkly */,
 			);
 			productName = ExampleApp;
 			productReference = E7904AC42E6A523D00A15337 /* TestApp.app */;
@@ -127,6 +130,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				E7904AD52E6A52CE00A15337 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */,
+				50C584C82EE23723006A0045 /* XCLocalSwiftPackageReference "../../ios-client-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E7904AC52E6A523D00A15337 /* Products */;
@@ -367,6 +371,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		50C584C82EE23723006A0045 /* XCLocalSwiftPackageReference "../../ios-client-sdk" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../ios-client-sdk";
+		};
 		E7904AD52E6A52CE00A15337 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../../swift-launchdarkly-observability";
@@ -374,6 +382,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		50C584C92EE23723006A0045 /* LaunchDarkly */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LaunchDarkly;
+		};
 		50E1D9862E9DFAB600241A6B /* LaunchDarklySessionReplay */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = E7904AD52E6A52CE00A15337 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */;
