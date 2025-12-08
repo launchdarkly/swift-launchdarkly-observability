@@ -37,9 +37,9 @@ public final class Observability: Plugin {
                 withOptions: options,
                 mobileKey: mobileKey
             )
-            client.observabilityService = service
             observabilityService = service
             LDObserve.shared.client = service
+            LDObserve.shared.context = service.context
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Observability client initialization failed with error: \(error)")
         }
