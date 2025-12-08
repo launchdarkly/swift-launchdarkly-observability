@@ -4,7 +4,7 @@ import LaunchDarkly
     import Common
 #endif
 
-final class EvalTracingHook: Hook {
+final class ObservabilityHook: Hook {
     private let queue = DispatchQueue(label: "com.launchdarkly.eval.tracing.hook")
     private let plugin: Observability
     private let withSpans: Bool
@@ -107,7 +107,7 @@ final class EvalTracingHook: Hook {
     }
 }
 
-extension EvalTracingHook {
+extension ObservabilityHook {
     static let PROVIDER_NAME: String = "LaunchDarkly"
     static let HOOK_NAME: String = "LaunchDarkly Evaluation Tracing Hook"
     static let INSTRUMENTATION_NAME: String = "com.launchdarkly.observability"

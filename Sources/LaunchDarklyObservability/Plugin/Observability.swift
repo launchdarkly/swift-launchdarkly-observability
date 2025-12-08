@@ -46,7 +46,7 @@ public final class Observability: Plugin {
     }
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        [EvalTracingHook(plugin: self,
+        [ObservabilityHook(plugin: self,
                          withSpans: true,
                          withValue: true,
                          version: options.serviceVersion,
