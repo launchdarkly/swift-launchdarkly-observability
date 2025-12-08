@@ -17,7 +17,7 @@ public final class SessionReplay: Plugin {
     
     public func register(client: LaunchDarkly.LDClient, metadata: LaunchDarkly.EnvironmentMetadata) {
         guard options.isEnabled,
-              let context = client.observabilityService?.context else {
+              let context = LDObserve.shared.context else {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service could not find Observability Service")
             return
         }
