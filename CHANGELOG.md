@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.12.0...0.12.1) (2025-12-09)
+
+
+### Bug Fixes
+
+* hold broadcaster until deinit finishes ([#90](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/90)) ([8a00733](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/8a007335d2977a14b91dfdd2e1ece933bbb3626e))
+* Remove double image workaround for RRWeb ([#92](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/92)) ([4faede4](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/4faede43902b382cc5f6f76938af6b89cd1843a2))
+
 ## [0.12.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.11.1...0.12.0) (2025-12-08)
 
 
