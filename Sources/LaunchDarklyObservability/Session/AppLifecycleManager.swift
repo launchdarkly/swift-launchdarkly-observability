@@ -49,6 +49,7 @@ final class AppLifecycleManager: AppLifecycleManaging {
         observers.forEach {
             NotificationCenter.default.removeObserver($0)
         }
+        let broadcaster = self.broadcaster
         Task {
             await broadcaster.finish()
         }
@@ -58,7 +59,7 @@ final class AppLifecycleManager: AppLifecycleManaging {
         await broadcaster.stream()
     }
     
-    private func send(_ event: AppLifeCycleEvent) {
+    func send(_ event: AppLifeCycleEvent) {
         Task { await broadcaster.send(event) }
     }
     
