@@ -239,15 +239,15 @@ actor SessionReplayEventGenerator {
         return event
     }
     
-    func fullSnapshotEvent(exportImage: ExportImage, timestamp: TimeInterval, isEmpty: Bool) -> Event {
+    func fullSnapshotEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
         id = 0
-        let rootNode = fullSnapshotNode(exportImage: exportImage, emtpyCanvas: isEmpty)
+        let rootNode = fullSnapshotNode(exportImage: exportImage)
         let eventData = EventData(node: rootNode)
         let event = Event(type: .FullSnapshot, data: AnyEventData(eventData), timestamp: timestamp, _sid: nextSid)
         return event
     }
     
-    func fullSnapshotNode(exportImage: ExportImage, emtpyCanvas: Bool) -> EventNode {
+    func fullSnapshotNode(exportImage: ExportImage) -> EventNode {
         var rootNode = EventNode(id: nextId, type: .Document)
         let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: "html")
         rootNode.childNodes.append(htmlDocNode)
@@ -255,7 +255,7 @@ actor SessionReplayEventGenerator {
         let htmlNode = EventNode(id: nextId, type: .Element, tagName: "html", attributes: ["lang": "en"], childNodes: [
             EventNode(id: nextId, type: .Element, tagName: "head", attributes: [:]),
             EventNode(id: nextId, type: .Element, tagName: "body", attributes: [:], childNodes: [
-                exportImage.eventNode(id: nextId, use_rr_dataURL: !emtpyCanvas)
+                exportImage.eventNode(id: nextId)
             ]),
         ])
         imageId = id
@@ -266,14 +266,7 @@ actor SessionReplayEventGenerator {
     
     private func appendFullSnapshotEvents(_ exportImage: ExportImage, _ timestamp: TimeInterval, _ events: inout [Event]) {
         events.append(windowEvent(href: "", width: paddedWidth(exportImage.originalWidth), height: paddedHeight(exportImage.originalHeight), timestamp: timestamp))
-        events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp, isEmpty: false))
-        
-        // Workaround to solve session player flicker. TODO: optimize but not generating base64 twice in case it persists
-        events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp, isEmpty: true))
-        if let imageId {
-            events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
-        }
-        
+        events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
     }
 }
