@@ -59,7 +59,7 @@ final class AppLifecycleManager: AppLifecycleManaging {
         await broadcaster.stream()
     }
     
-    private func send(_ event: AppLifeCycleEvent) {
+    func send(_ event: AppLifeCycleEvent) {
         Task { await broadcaster.send(event) }
     }
     
