@@ -18,6 +18,7 @@ struct ObservabilityClientFactory {
             context: nil
         )
     }
+    
     static func instantiate(
         withOptions options: Options,
         mobileKey: String

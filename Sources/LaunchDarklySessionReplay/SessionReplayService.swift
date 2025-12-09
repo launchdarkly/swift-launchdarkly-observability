@@ -5,26 +5,6 @@ import OSLog
 import Common
 #endif
 
-struct ScreenImageItem: EventQueueItemPayload {
-    var exporterClass: AnyClass {
-        SessionReplayExporter.self
-    }
-    
-    var timestamp: TimeInterval {
-        exportImage.timestamp
-    }
-    
-    func cost() -> Int {
-        exportImage.data.count
-    }
-    
-    let exportImage: ExportImage
-}
-
-protocol SessionReplayItemPayload {
-    func sessionReplayEvent() -> Event?
-}
-
 public struct SessionReplayContext {
     public var sdkKey: String
     public var serviceName: String
@@ -46,9 +26,11 @@ public final class SessionReplayService {
     let snapshotTaker: SnapshotTaker
     var transportService: TransportServicing
     var sessionReplayExporter: SessionReplayExporter
+    let log: OSLog
     
     public init(context: ObservabilityContext,
                 sessonReplayOptions: SessionReplayOptions) throws {
+        self.log = context.options.log
         guard let url = URL(string: context.options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
@@ -86,7 +68,13 @@ public final class SessionReplayService {
         }
     }
     
-    func scheduleIdentifySession(userObject: [String: String]) async throws {
-        try await sessionReplayExporter.scheduleIdentifySession(userObject: userObject)
+    func scheduleIdentifySession(userObject: [String: String]) async {
+        let payload = IdentifyItemPayload(attributes: userObject, timestamp: Date().timeIntervalSince1970)
+        do {
+            try await sessionReplayExporter.identifySession(userObject: userObject)
+            await transportService.eventQueue.send(payload)
+        } catch {
+            os_log("%{public}@", log: log, type: .error, "Failed to identifySession:\n\(error)")
+        }
     }
 }

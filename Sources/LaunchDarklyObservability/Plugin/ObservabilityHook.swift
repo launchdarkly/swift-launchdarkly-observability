@@ -22,23 +22,6 @@ final class ObservabilityHook: Hook {
         self.withValue = withValue
         self.version = version
         self.options = options
-        
-        
-//        const metaAttrs = {
-//                [ATTR_TELEMETRY_SDK_NAME]: metadata.sdk.name,
-//                [ATTR_TELEMETRY_SDK_VERSION]: metadata.sdk.version,
-//                [FEATURE_FLAG_ENV_ATTR]: metadata.clientSideId,
-//                [FEATURE_FLAG_PROVIDER_ATTR]: 'LaunchDarkly',
-//                ...(metadata.application?.id
-//                    ? { [FEATURE_FLAG_APP_ID_ATTR]: metadata.application.id }
-//                    : {}),
-//                ...(metadata.application?.version
-//                    ? {
-//                            [FEATURE_FLAG_APP_VERSION_ATTR]:
-//                                metadata.application.version,
-//                        }
-//                    : {}),
-//            }
     }
     
     public func beforeEvaluation(
@@ -102,9 +85,6 @@ final class ObservabilityHook: Hook {
     }
     
     public func afterIdentify(seriesContext: IdentifySeriesContext, seriesData: EvaluationSeriesData, result: IdentifyResult) -> EvaluationSeriesData {
-        // Log identify completion with context metadata
-        // Note: We conservatively include the canonical context key and status.
-        // Resource attributes are already attached by the log builder.
         guard case .complete = result else {
             return seriesData
         }

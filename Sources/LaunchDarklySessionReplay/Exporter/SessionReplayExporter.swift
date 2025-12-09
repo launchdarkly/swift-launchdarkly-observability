@@ -23,8 +23,7 @@ actor SessionReplayExporter: EventExporting {
         return payloadId
     }
     
-    private var shouldIdentify: Bool = true
-    private var userObject:  [String: String]?
+    private var userObject: [String: String]?
     
     init(context: SessionReplayContext,
          sessionManager: SessionManaging,
@@ -79,10 +78,6 @@ actor SessionReplayExporter: EventExporting {
         guard let initializedSession else { return }
 
         var events = await eventGenerator.generateEvents(items: items)
-        if shouldIdentify, let userObject {
-            try await identifySession(sessionSecureId: initializedSession.secureId)
-            events.append(await eventGenerator.identifyEvent(identifyPayload: userObject, timestamp: Date().timeIntervalSince1970))
-        }
         try await pushPayload(initializedSession: initializedSession, events: events)
         
         if shouldWakeUpSession {
@@ -110,11 +105,12 @@ actor SessionReplayExporter: EventExporting {
         try await replayApiService.identifySession(
             sessionSecureId: sessionSecureId,
             userObject: userObject)
-        shouldIdentify = false
     }
 
-    func scheduleIdentifySession(userObject: [String: String]) async throws {
-        self.shouldIdentify = true
+    func identifySession(userObject: [String: String]) async throws {
+        guard let initializedSession else { return }
+
+        try await identifySession(userObject: userObject)
         self.userObject = userObject
     }
     

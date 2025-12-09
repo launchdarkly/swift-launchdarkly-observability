@@ -73,7 +73,7 @@ actor SessionReplayEventGenerator {
     
     func appendEvents(item: EventQueueItem, events: inout [Event]) {
         switch item.payload {
-        case let payload as ScreenImageItem:
+        case let payload as ImageItemPayload:
             let exportImage = payload.exportImage
             guard lastExportImage != exportImage else {
                 break
@@ -98,6 +98,10 @@ actor SessionReplayEventGenerator {
             
         case let interaction as TouchInteraction:
             appendTouchInteraction(interaction: interaction, events: &events)
+            
+        case let identifyItemPayload as IdentifyItemPayload:
+            events.append(identifyEvent(itemPayload: identifyItemPayload))
+            
         default:
             break // Item wasn't needed for SessionReplay
         }
@@ -186,14 +190,12 @@ actor SessionReplayEventGenerator {
         return event
     }
     
-    func identifyEvent(identifyPayload: [String: String], timestamp: TimeInterval) -> Event {
-        let data = try? JSONEncoder().encode(identifyPayload)
-        let payload = data.map { String(data: $0, encoding: .utf8) } ?? "{}"
-        
-        let eventData = CustomEventData(tag: .identify, payload: payload)
+    func identifyEvent(itemPayload: IdentifyItemPayload) -> Event {
+        let data = try? JSONEncoder().encode(itemPayload.attributes)
+        let eventData = CustomEventData(tag: .identify, payload: data.map { String(data: $0, encoding: .utf8) } ?? "{}")
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
-                          timestamp: timestamp,
+                          timestamp: itemPayload.timestamp,
                           _sid: nextSid)
         return event
     }
@@ -287,11 +289,5 @@ actor SessionReplayEventGenerator {
         }
         
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
-    }
-}
-
-extension ScreenImageItem: SessionReplayItemPayload {
-    func sessionReplayEvent() -> Event? {
-        return nil
     }
 }

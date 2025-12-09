@@ -32,11 +32,7 @@ final class SessionReplayHook: Hook {
         attributes["canonicalKey"] = canonicalKey
         
         Task {
-            do {
-                try await plugin.sessionReplayService?.scheduleIdentifySession(userObject: attributes)
-            } catch {
-                
-            }
+            await plugin.sessionReplayService?.scheduleIdentifySession(userObject: attributes)
         }
         
         return seriesData
