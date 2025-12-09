@@ -85,4 +85,8 @@ public final class SessionReplayService {
             transportService.start()
         }
     }
+    
+    func scheduleIdentifySession(userObject: [String: String]) async throws {
+        try await sessionReplayExporter.scheduleIdentifySession(userObject: userObject)
+    }
 }

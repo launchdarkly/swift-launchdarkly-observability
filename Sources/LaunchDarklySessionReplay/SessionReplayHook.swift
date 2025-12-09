@@ -17,29 +17,23 @@ final class SessionReplayHook: Hook {
             return seriesData
         }
         
-        var attributes = [String: String]()
-        attributes["key"] = seriesContext.context.fullyQualifiedKey()
-        attributes["canonicalKey"] = seriesContext.context.fullyQualifiedKey()
-        attributes["feature_flag.set.id"] = "548f6741c1efad40031b18ae"
-        attributes["feature_flag.provider.name"] = "LaunchDarkly"
-        attributes["telemetry.sdk.name"] = "iOSClient"
-        attributes["user"] = "test"
-        attributes["userIdentifier"] = "unknown"
-
+        guard let options = plugin.observabilityContext?.options else {
+            return seriesData
+        }
+        
+        let context = seriesContext.context
+        var attributes = options.resourceAttributes.mapValues(String.init(describing:))
+        for (k, v) in context.contextKeys() {
+            attributes[k] = v
+        }
+        
+        let canonicalKey = context.fullyQualifiedKey()
+        attributes["key"] = options.contextFriendlyName ?? canonicalKey
+        attributes["canonicalKey"] = canonicalKey
         
         Task {
             do {
-//                let identity = IdentityPayload(
-//                    userIdentifier: "unknown",
-//                    telemetrySdkName: "JSClient",
-//                    telemetrySdkVersion: "3.8.1",
-//                    featureFlagSetId: "548f6741c1efad40031b18ae",
-//                    featureFlagProviderName: "LaunchDarkly",
-//                    user: "test",
-//                    key: "test",
-//                    canonicalKey: "test"
-//                )
-                try await plugin.sessionReplayService?.sessionReplayExporter.scheduleIdentifySession(userObject: attributes)
+                try await plugin.sessionReplayService?.scheduleIdentifySession(userObject: attributes)
             } catch {
                 
             }

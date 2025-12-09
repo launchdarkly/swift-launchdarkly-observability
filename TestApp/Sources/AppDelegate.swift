@@ -27,7 +27,7 @@ let config = { () -> LDConfig in
     config.plugins = [
         Observability(options: .init(
             serviceName: "i-os-sessions",
-            
+            contextFriendlyName: "abelonogov@launchdarkly.com",
             sessionBackgroundTimeout: 3,
             autoInstrumentation: [.memory, .urlSession])),
         SessionReplay(options: .init(

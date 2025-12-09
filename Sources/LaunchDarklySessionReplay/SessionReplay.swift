@@ -6,6 +6,7 @@ import OSLog
 public final class SessionReplay: Plugin {
     public let options: SessionReplayOptions
     public var sessionReplayService: SessionReplayService?
+    public var observabilityContext: ObservabilityContext?
     
     public init(options: SessionReplayOptions) {
         self.options = options
@@ -22,6 +23,8 @@ public final class SessionReplay: Plugin {
             return
         }
         
+        observabilityContext = context
+
         do {
             sessionReplayService = try SessionReplayService(context: context,
                                                             sessonReplayOptions: options)

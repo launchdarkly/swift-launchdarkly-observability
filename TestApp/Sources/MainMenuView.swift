@@ -26,6 +26,7 @@ struct MainMenuView: View {
     @State private var isNotebookEnabled: Bool = false
     @State private var isStoryboardEnabled: Bool = false
     @State private var isWebviewEnabled: Bool = false
+    @State private var identityText: String = ""
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -115,16 +116,19 @@ struct MainMenuView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
+                }
+                
+                HStack {
+                    TextField("Identity key", text: $identityText)
+                        .textFieldStyle(.roundedBorder)
                     
                     Button {
-                        viewModel.identity()
+                        viewModel.identity(identityText)
                     } label: {
                         Text("Identify")
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.yellow)
-                    
-                    
                 }
             }.background(Color.clear)
             .navigationDestination(for: String.self) { value in

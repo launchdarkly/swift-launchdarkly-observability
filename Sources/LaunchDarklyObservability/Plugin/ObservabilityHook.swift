@@ -22,6 +22,23 @@ final class ObservabilityHook: Hook {
         self.withValue = withValue
         self.version = version
         self.options = options
+        
+        
+//        const metaAttrs = {
+//                [ATTR_TELEMETRY_SDK_NAME]: metadata.sdk.name,
+//                [ATTR_TELEMETRY_SDK_VERSION]: metadata.sdk.version,
+//                [FEATURE_FLAG_ENV_ATTR]: metadata.clientSideId,
+//                [FEATURE_FLAG_PROVIDER_ATTR]: 'LaunchDarkly',
+//                ...(metadata.application?.id
+//                    ? { [FEATURE_FLAG_APP_ID_ATTR]: metadata.application.id }
+//                    : {}),
+//                ...(metadata.application?.version
+//                    ? {
+//                            [FEATURE_FLAG_APP_VERSION_ATTR]:
+//                                metadata.application.version,
+//                        }
+//                    : {}),
+//            }
     }
     
     public func beforeEvaluation(
@@ -92,9 +109,15 @@ final class ObservabilityHook: Hook {
             return seriesData
         }
         
+        let context = seriesContext.context
         var attributes = [String: AttributeValue]()
-        attributes["key"] = .string(seriesContext.context.fullyQualifiedKey())
-        attributes["canonicalKey"] = .string(seriesContext.context.fullyQualifiedKey())
+        for (k, v) in context.contextKeys() {
+            attributes[k] = .string(v)
+        }
+        
+        let canonicalKey = context.fullyQualifiedKey()
+        attributes["key"] = .string(options.contextFriendlyName ?? canonicalKey)
+        attributes["canonicalKey"] = .string(canonicalKey)
         attributes[Self.IDENTIFY_RESULT_STATUS] = .string("completed")
         
         plugin.observabilityService?.logClient.recordLog(

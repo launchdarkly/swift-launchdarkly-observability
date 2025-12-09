@@ -60,15 +60,14 @@ final class MainMenuViewModel: ObservableObject {
 		}
 	}
     
-    func identity() {
+    func identity(_ key: String) {
         do {
             var contextBuilder = LDContextBuilder(
-                key: "test-app-key"
+                key: key
             )
             contextBuilder.kind("user")
             contextBuilder.trySetValue("firstName", "Bob")
             contextBuilder.trySetValue("lastName", "Bobberson")
-            contextBuilder.anonymous(true)
             let newContext = try contextBuilder.build().get()
             _ = LDClient.get()?.identify(context: newContext) { result in
                 print("result=", result)
