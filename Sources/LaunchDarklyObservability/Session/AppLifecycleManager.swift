@@ -49,6 +49,7 @@ final class AppLifecycleManager: AppLifecycleManaging {
         observers.forEach {
             NotificationCenter.default.removeObserver($0)
         }
+        let broadcaster = self.broadcaster
         Task {
             await broadcaster.finish()
         }
