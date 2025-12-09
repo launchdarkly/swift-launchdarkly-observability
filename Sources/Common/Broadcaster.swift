@@ -7,6 +7,15 @@ public actor Broadcaster<Value: Sendable> {
     
     public init() { }
     
+    deinit {
+        // Ensure any active streams are finished before the actor deallocates
+        finished = true
+        for continuation in continuations.values {
+            continuation.finish()
+        }
+        continuations.removeAll()
+    }
+    
     public func stream(
         bufferingPolicy: AsyncStream<Value>.Continuation.BufferingPolicy = .unbounded
     ) -> AsyncStream<Value> {
