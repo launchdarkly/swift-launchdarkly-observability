@@ -5,13 +5,13 @@ import OSLog
 import Common
 #endif
 
-public struct SessionReplayContext {
+struct SessionReplayContext {
     public var sdkKey: String
     public var serviceName: String
     public var backendUrl: URL
     public var log: OSLog
     
-    public init(sdkKey: String,
+    init(sdkKey: String,
                 serviceName: String,
                 backendUrl: URL,
                 log: OSLog) {
@@ -22,20 +22,21 @@ public struct SessionReplayContext {
     }
 }
 
-public final class SessionReplayService {
+final class SessionReplayService {
     let snapshotTaker: SnapshotTaker
     var transportService: TransportServicing
     var sessionReplayExporter: SessionReplayExporter
     let log: OSLog
     
-    public init(context: ObservabilityContext,
-                sessonReplayOptions: SessionReplayOptions) throws {
-        self.log = context.options.log
+    init(context: ObservabilityContext,
+         sessonReplayOptions: SessionReplayOptions,
+         metadata: LaunchDarkly.EnvironmentMetadata) throws {
         guard let url = URL(string: context.options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
-        let graphQLClient = GraphQLClient(endpoint: url)
         
+        self.log = context.options.log
+        let graphQLClient = GraphQLClient(endpoint: url)
         let captureService = ScreenCaptureService(options: sessonReplayOptions)
         self.transportService = context.transportService
         self.snapshotTaker = SnapshotTaker(captureService: captureService,

@@ -12,7 +12,11 @@ final class SessionReplayHook: Hook {
         self.plugin = plugin
     }
     
-    public func afterIdentify(seriesContext: IdentifySeriesContext, seriesData: EvaluationSeriesData, result: IdentifyResult) -> EvaluationSeriesData {
+    public func metadata() -> Metadata {
+        return Metadata(name: "SessionReplay")
+    }
+    
+    public func afterIdentify(seriesContext: IdentifySeriesContext, seriesData: IdentifySeriesData, result: IdentifyResult) -> IdentifySeriesData {
         guard case .complete = result else {
             return seriesData
         }

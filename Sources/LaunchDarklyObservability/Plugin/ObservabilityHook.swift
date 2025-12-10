@@ -24,6 +24,10 @@ final class ObservabilityHook: Hook {
         self.options = options
     }
     
+    public func metadata() -> Metadata {
+        return Metadata(name: "Observability")
+    }
+    
     public func beforeEvaluation(
         seriesContext: EvaluationSeriesContext,
         seriesData: EvaluationSeriesData
@@ -84,7 +88,7 @@ final class ObservabilityHook: Hook {
 //        }
     }
     
-    public func afterIdentify(seriesContext: IdentifySeriesContext, seriesData: EvaluationSeriesData, result: IdentifyResult) -> EvaluationSeriesData {
+    public func afterIdentify(seriesContext: IdentifySeriesContext, seriesData: IdentifySeriesData, result: IdentifyResult) -> IdentifySeriesData {
         guard case .complete = result else {
             return seriesData
         }
