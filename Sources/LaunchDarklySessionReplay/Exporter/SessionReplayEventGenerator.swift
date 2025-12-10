@@ -102,7 +102,9 @@ actor SessionReplayEventGenerator {
             appendTouchInteraction(interaction: interaction, events: &events)
             
         case let identifyItemPayload as IdentifyItemPayload:
-            events.append(identifyEvent(itemPayload: identifyItemPayload))
+            if let event = identifyEvent(itemPayload: identifyItemPayload) {
+                events.append(event)
+            }
             
         default:
             break // Item wasn't needed for SessionReplay
@@ -192,9 +194,16 @@ actor SessionReplayEventGenerator {
         return event
     }
     
-    func identifyEvent(itemPayload: IdentifyItemPayload) -> Event {
-        let data = try? JSONEncoder().encode(itemPayload.attributes)
-        let eventData = CustomEventData(tag: .identify, payload: data.map { String(data: $0, encoding: .utf8) } ?? "{}")
+    func identifyEvent(itemPayload: IdentifyItemPayload) -> Event? {
+        // Encode attributes as a JSON string for the `user` field.
+        guard let data = try? JSONEncoder().encode(itemPayload.attributes),
+              let userJSONString = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        
+        let key = itemPayload.attributes["key"] ?? "unknown"
+        let payload = IdentityPayload(user: userJSONString, key: key)
+        let eventData = CustomEventData(tag: .identify, payload: payload)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: itemPayload.timestamp,
