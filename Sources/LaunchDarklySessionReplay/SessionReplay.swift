@@ -26,7 +26,7 @@ public final class SessionReplay: Plugin {
         observabilityContext = context
 
         do {
-            sessionReplayService = try SessionReplayService(context: context,
+            sessionReplayService = try SessionReplayService(observabilityContext: context,
                                                             sessonReplayOptions: options,
                                                             metadata: metadata)
         } catch {

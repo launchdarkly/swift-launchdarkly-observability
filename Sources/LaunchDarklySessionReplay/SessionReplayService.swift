@@ -10,15 +10,18 @@ struct SessionReplayContext {
     public var serviceName: String
     public var backendUrl: URL
     public var log: OSLog
+    public var observabilityContext: ObservabilityContext
     
     init(sdkKey: String,
-                serviceName: String,
-                backendUrl: URL,
-                log: OSLog) {
+         serviceName: String,
+         backendUrl: URL,
+         log: OSLog,
+         observabilityContext: ObservabilityContext) {
         self.sdkKey = sdkKey
         self.serviceName = serviceName
         self.backendUrl = backendUrl
         self.log = log
+        self.observabilityContext = observabilityContext
     }
 }
 
@@ -28,24 +31,24 @@ final class SessionReplayService {
     var sessionReplayExporter: SessionReplayExporter
     let log: OSLog
     
-    init(context: ObservabilityContext,
+    init(observabilityContext: ObservabilityContext,
          sessonReplayOptions: SessionReplayOptions,
          metadata: LaunchDarkly.EnvironmentMetadata) throws {
-        guard let url = URL(string: context.options.backendUrl) else {
+        guard let url = URL(string: observabilityContext.options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
         
-        self.log = context.options.log
+        self.log = observabilityContext.options.log
         let graphQLClient = GraphQLClient(endpoint: url)
         let captureService = ScreenCaptureService(options: sessonReplayOptions)
-        self.transportService = context.transportService
+        self.transportService = observabilityContext.transportService
         self.snapshotTaker = SnapshotTaker(captureService: captureService,
-                                           appLifecycleManager: context.appLifecycleManager,
+                                           appLifecycleManager: observabilityContext.appLifecycleManager,
                                            eventQueue: transportService.eventQueue)
         snapshotTaker.start()
         
         let eventQueue = transportService.eventQueue
-        let userInteractionManager = context.userInteractionManager
+        let userInteractionManager = observabilityContext.userInteractionManager
         userInteractionManager.addYield { interaction in
             Task {
                 await eventQueue.send(interaction)
@@ -53,15 +56,19 @@ final class SessionReplayService {
         }
         
         let sessionReplayContext = SessionReplayContext(
-            sdkKey: context.sdkKey,
-            serviceName: context.options.serviceName,
+            sdkKey: observabilityContext.sdkKey,
+            serviceName: observabilityContext.options.serviceName,
             backendUrl: url,
-            log: context.options.log)
+            log: observabilityContext.options.log,
+            observabilityContext: observabilityContext)
+        
         
         let replayApiService = SessionReplayAPIService(gqlClient: graphQLClient)
+        
+        
         let sessionReplayExporter = SessionReplayExporter(context: sessionReplayContext,
-                                                          sessionManager: context.sessionManager,
-                                                          replayApiService: replayApiService)
+                                                          replayApiService: replayApiService,
+                                                          title: ApplicationProperties.name ?? "iOS app")
         self.sessionReplayExporter = sessionReplayExporter
         Task {
             await transportService.batchWorker.addExporter(sessionReplayExporter)
@@ -69,11 +76,10 @@ final class SessionReplayService {
         }
     }
     
-    func scheduleIdentifySession(userObject: [String: String]) async {
-        let payload = IdentifyItemPayload(attributes: userObject, timestamp: Date().timeIntervalSince1970)
+    func scheduleIdentifySession(identifyPayload: IdentifyItemPayload) async {
         do {
-            try await sessionReplayExporter.identifySession(userObject: userObject)
-            await transportService.eventQueue.send(payload)
+            try await sessionReplayExporter.identifySession(identifyPayload: identifyPayload)
+            await transportService.eventQueue.send(identifyPayload)
         } catch {
             os_log("%{public}@", log: log, type: .error, "Failed to identifySession:\n\(error)")
         }

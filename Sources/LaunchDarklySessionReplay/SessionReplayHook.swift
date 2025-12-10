@@ -25,18 +25,9 @@ final class SessionReplayHook: Hook {
             return seriesData
         }
         
-        let context = seriesContext.context
-        var attributes = options.resourceAttributes.mapValues(String.init(describing:))
-        for (k, v) in context.contextKeys() {
-            attributes[k] = v
-        }
-        
-        let canonicalKey = context.fullyQualifiedKey()
-        attributes["key"] = options.contextFriendlyName ?? canonicalKey
-        attributes["canonicalKey"] = canonicalKey
-        
         Task {
-            await plugin.sessionReplayService?.scheduleIdentifySession(userObject: attributes)
+            let identifyPayload = await IdentifyItemPayload(options: options, ldContext: seriesContext.context, timestamp: Date().timeIntervalSince1970)
+            await plugin.sessionReplayService?.scheduleIdentifySession(identifyPayload: identifyPayload)
         }
         
         return seriesData

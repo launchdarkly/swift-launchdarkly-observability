@@ -13,3 +13,45 @@ struct IdentifyItemPayload: EventQueueItemPayload {
         attributes.count * 100
     }
 }
+
+extension IdentifyItemPayload {
+    // Using main thread to access to ldContext
+    @MainActor
+    init(options: Options, ldContext: LDContext? = nil, timestamp: TimeInterval) {
+        var attributes: [String: String] = options.resourceAttributes.compactMapValues {
+            switch $0 {
+            case .array, .set, .boolArray, .intArray, .doubleArray, .stringArray:
+                return nil
+            case .string(let v):
+                return v
+            case .bool(let v):
+                return v.description
+            case .int(let v):
+                return String(v)
+            case .double(let v):
+                return String(v)
+            }
+        }
+        
+        var canonicalKey = ldContext?.fullyQualifiedKey() ?? "unknown"
+        var ldContextMap = ldContext?.contextKeys()
+        if let ldContextMap {
+            for (k, v) in ldContextMap {
+                attributes[k] = v
+            }
+        }
+        
+        var contextFriendlyName: String? = nil
+        if let contextFriendlyNameUnwrapped = options.contextFriendlyName, contextFriendlyNameUnwrapped.isNotEmpty {
+            contextFriendlyName = contextFriendlyNameUnwrapped
+        } else if let ldContext, ldContext.isMulti() == true, let email = ldContextMap?["email"], !email.isEmpty {
+            contextFriendlyName = email
+        }
+        attributes["key"] = contextFriendlyName ?? canonicalKey
+        attributes["canonicalKey"] = canonicalKey
+        
+        self.attributes = attributes
+        self.timestamp = timestamp
+    }
+}
+

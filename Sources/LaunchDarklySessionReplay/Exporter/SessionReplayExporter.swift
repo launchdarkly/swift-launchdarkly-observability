@@ -16,22 +16,23 @@ actor SessionReplayExporter: EventExporting {
     private var sessionInfo: SessionInfo?
     private var sessionChangesTask: Task<Void, Never>?
     private var shouldWakeUpSession = true
-    
     private var payloadId = 0
+    private var title: String
     private var nextPayloadId: Int {
         payloadId += 1
         return payloadId
     }
     
-    private var userObject: [String: String]?
+    private var identifyPayload: IdentifyItemPayload?
     
     init(context: SessionReplayContext,
-         sessionManager: SessionManaging,
-         replayApiService: SessionReplayAPIService) {
+         replayApiService: SessionReplayAPIService,
+         title: String) {
         self.context = context
         self.replayApiService = replayApiService
-        self.sessionManager = sessionManager
-        self.eventGenerator = SessionReplayEventGenerator(log: context.log)
+        self.sessionManager = context.observabilityContext.sessionManager
+        self.title = title
+        self.eventGenerator = SessionReplayEventGenerator(log: context.log, title: title)
         self.log = context.log
         self.sessionInfo = sessionManager.sessionInfo
         
@@ -47,7 +48,7 @@ actor SessionReplayExporter: EventExporting {
     
     private func updateSessionInfo(_ sessionInfo: SessionInfo) async {
         self.sessionInfo = sessionInfo
-        self.eventGenerator = SessionReplayEventGenerator(log: log)
+        self.eventGenerator = SessionReplayEventGenerator(log: log, title: title)
         self.initializedSession = nil
     }
     
@@ -66,8 +67,12 @@ actor SessionReplayExporter: EventExporting {
             }
             
             let session = try await initializeSession(sessionSecureId: sessionInfo.id)
-            if let userObject, !userObject.isEmpty {
-                try await identifySession(sessionSecureId: session.secureId, userObject: userObject)
+            var identifyPayload = self.identifyPayload
+            if identifyPayload == nil {
+                identifyPayload = await IdentifyItemPayload(options: context.observabilityContext.options, timestamp: Date().timeIntervalSince1970)
+            }
+            if let identifyPayload {
+                try await identifySession(sessionSecureId: session.secureId, userObject: identifyPayload.attributes)
             }
             initializedSession = session
         } catch {
@@ -107,14 +112,18 @@ actor SessionReplayExporter: EventExporting {
     private func identifySession(sessionSecureId: String, userObject: [String: String]) async throws {
         try await replayApiService.identifySession(
             sessionSecureId: sessionSecureId,
+            userIdentifier: userObject["key"] ?? "unknown",
             userObject: userObject)
     }
 
-    func identifySession(userObject: [String: String]) async throws {
+    func identifySession(identifyPayload: IdentifyItemPayload) async throws {
         guard let initializedSession else { return }
-
-        self.userObject = userObject
-        try await identifySession(sessionSecureId: initializedSession.secureId, userObject: userObject)
+        
+        try await identifySession(
+            sessionSecureId: initializedSession.secureId,
+            userObject: identifyPayload.attributes)
+        
+        self.identifyPayload = identifyPayload
     }
     
     deinit {

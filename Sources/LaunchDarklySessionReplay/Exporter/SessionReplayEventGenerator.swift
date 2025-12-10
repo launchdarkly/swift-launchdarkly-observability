@@ -9,6 +9,7 @@ import OSLog
 #endif
 
 actor SessionReplayEventGenerator {
+    private var title: String
     let padding = CGSize(width: 11, height: 11)
     var sid = 0
     var nextSid: Int {
@@ -27,10 +28,11 @@ actor SessionReplayEventGenerator {
     var stats: SessionReplayStats?
     let isDebug = false
     
-    init(log: OSLog) {
+    init(log: OSLog, title: String) {
         if isDebug {
-            stats = SessionReplayStats(log: log)
+            self.stats = SessionReplayStats(log: log)
         }
+        self.title = title
     }
     
     func generateEvents(items: [EventQueueItem]) -> [Event] {
@@ -182,7 +184,7 @@ actor SessionReplayEventGenerator {
     }
     
     func reloadEvent(timestamp: TimeInterval) -> Event {
-        let eventData = CustomEventData(tag: .reload, payload: "iOS Demo")
+        let eventData = CustomEventData(tag: .reload, payload: title)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: timestamp,
