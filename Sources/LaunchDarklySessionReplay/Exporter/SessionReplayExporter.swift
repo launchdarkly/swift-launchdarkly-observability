@@ -66,6 +66,9 @@ actor SessionReplayExporter: EventExporting {
             }
             
             let session = try await initializeSession(sessionSecureId: sessionInfo.id)
+            if let userObject, !userObject.isEmpty {
+                try await identifySession(sessionSecureId: session.secureId, userObject: userObject)
+            }
             initializedSession = session
         } catch {
             initializedSession = nil
@@ -101,7 +104,7 @@ actor SessionReplayExporter: EventExporting {
                                                      userIdentifier: "")
     }
     
-    private func identifySession(sessionSecureId: String) async throws {
+    private func identifySession(sessionSecureId: String, userObject: [String: String]) async throws {
         try await replayApiService.identifySession(
             sessionSecureId: sessionSecureId,
             userObject: userObject)
@@ -110,8 +113,8 @@ actor SessionReplayExporter: EventExporting {
     func identifySession(userObject: [String: String]) async throws {
         guard let initializedSession else { return }
 
-        try await identifySession(userObject: userObject)
         self.userObject = userObject
+        try await identifySession(sessionSecureId: initializedSession.secureId, userObject: userObject)
     }
     
     deinit {
