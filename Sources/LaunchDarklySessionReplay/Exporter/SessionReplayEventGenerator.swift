@@ -201,9 +201,7 @@ actor SessionReplayEventGenerator {
             return nil
         }
         
-        let key = itemPayload.attributes["key"] ?? "unknown"
-        let payload = IdentityPayload(user: userJSONString, key: key)
-        let eventData = CustomEventData(tag: .identify, payload: payload)
+        let eventData = CustomEventData(tag: .identify, payload: userJSONString)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: itemPayload.timestamp,

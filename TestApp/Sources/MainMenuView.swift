@@ -62,6 +62,34 @@ struct MainMenuView: View {
 #endif
                 
                 HStack {
+                    Text("Identity:")
+                    
+                    Button {
+                        viewModel.identityUser()
+                    } label: {
+                        Text("User").foregroundStyle(Colors.identifyTextColor)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Colors.identifyBgColor)
+                    
+                    Button {
+                        viewModel.identifyMulti()
+                    } label: {
+                        Text("Multi").foregroundStyle(Colors.identifyTextColor)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Colors.identifyBgColor)
+                    
+                    Button {
+                        viewModel.identityAnonymous()
+                    } label: {
+                        Text("Anon").foregroundStyle(Colors.identifyTextColor)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Colors.identifyBgColor)
+                }
+                
+                HStack {
                     Button {
                         viewModel.recordSpanAndVariation()
                     } label: {
@@ -118,18 +146,7 @@ struct MainMenuView: View {
                     .tint(.red)
                 }
                 
-                HStack {
-                    TextField("Identity key", text: $identityText)
-                        .textFieldStyle(.roundedBorder)
-                    
-                    Button {
-                        viewModel.identity(identityText)
-                    } label: {
-                        Text("Identify")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.yellow)
-                }
+   
             }.background(Color.clear)
             .navigationDestination(for: String.self) { value in
                 if value == "fruta" {
@@ -169,6 +186,20 @@ struct MainMenuView: View {
         }
 #endif
     }
+}
+
+enum Colors {
+    static let identifyTextColor = Color(
+        red: 138/255,
+        green: 158/255,
+        blue: 255/255
+    )
+    
+    static let identifyBgColor = Color(
+        red: 18/255,
+        green: 29/255,
+        blue: 97/255
+    )
 }
 
 

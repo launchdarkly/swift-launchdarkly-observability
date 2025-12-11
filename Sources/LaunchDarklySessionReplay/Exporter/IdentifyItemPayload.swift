@@ -44,10 +44,8 @@ extension IdentifyItemPayload {
         var contextFriendlyName: String? = nil
         if let contextFriendlyNameUnwrapped = options.contextFriendlyName, contextFriendlyNameUnwrapped.isNotEmpty {
             contextFriendlyName = contextFriendlyNameUnwrapped
-        } else if let ldContext, ldContext.isMulti() == true, let userKey = ldContextMap?["user"], !userKey.isEmpty {
-            // For multi-kind contexts, prefer the "user" kind key as a friendly name if present.
-            // Note: `contextKeys()` maps kinds → keys, not attributes like "email".
-            contextFriendlyName = userKey
+        } else if let ldContext, ldContext.isMulti() == true, let user = ldContextMap?["user"], !user.isEmpty {
+            contextFriendlyName = user
         }
         attributes["key"] = contextFriendlyName ?? canonicalKey
         attributes["canonicalKey"] = canonicalKey
