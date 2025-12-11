@@ -38,14 +38,12 @@ struct AnyEventData: Codable {
             self.value = switch tag {
             case .click:
                 try CustomEventData<ClickPayload>(from: decoder)
-            case .focus:
+            case .focus, .identify:
                 try CustomEventData<String>(from: decoder)
             case .viewport:
                 try CustomEventData<ViewportPayload>(from: decoder)
             case .reload:
                 try CustomEventData<String>(from: decoder)
-            case .identify:
-                try CustomEventData<IdentityPayload>(from: decoder)
             }
         } else {
             throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Unexpected EventData"))
