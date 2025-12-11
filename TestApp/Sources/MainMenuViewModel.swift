@@ -60,7 +60,7 @@ final class MainMenuViewModel: ObservableObject {
 		}
 	}
     
-    func identityUser() {
+    func identifyUser() {
         do {
             var contextBuilder = LDContextBuilder(
                 key: "single-userkey"
@@ -77,7 +77,7 @@ final class MainMenuViewModel: ObservableObject {
         }
     }
     
-    func identityAnonymous() {
+    func identifyAnonymous() {
         do {
             var contextBuilder = LDContextBuilder()
             contextBuilder.anonymous(false)

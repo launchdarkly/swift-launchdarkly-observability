@@ -26,7 +26,7 @@ struct MainMenuView: View {
     @State private var isNotebookEnabled: Bool = false
     @State private var isStoryboardEnabled: Bool = false
     @State private var isWebviewEnabled: Bool = false
-    @State private var identityText: String = ""
+    @State private var identifyText: String = ""
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -62,10 +62,10 @@ struct MainMenuView: View {
 #endif
                 
                 HStack {
-                    Text("Identity:")
+                    Text("Identify:")
                     
                     Button {
-                        viewModel.identityUser()
+                        viewModel.identifyUser()
                     } label: {
                         Text("User").foregroundStyle(Colors.identifyTextColor)
                     }
@@ -81,7 +81,7 @@ struct MainMenuView: View {
                     .tint(Colors.identifyBgColor)
                     
                     Button {
-                        viewModel.identityAnonymous()
+                        viewModel.identifyAnonymous()
                     } label: {
                         Text("Anon").foregroundStyle(Colors.identifyTextColor)
                     }
