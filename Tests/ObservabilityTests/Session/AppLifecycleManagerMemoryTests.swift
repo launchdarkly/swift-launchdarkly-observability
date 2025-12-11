@@ -31,8 +31,8 @@ struct AppLifecycleManagerMemoryTests {
                 consumerTask = Task {
                     for await event in stream {
                         #expect(event == .didBecomeActive)
+                        streamFinished = true
                     }
-                    streamFinished = true
                 }
             }
 
