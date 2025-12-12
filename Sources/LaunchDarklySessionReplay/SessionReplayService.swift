@@ -64,8 +64,6 @@ final class SessionReplayService {
         
         
         let replayApiService = SessionReplayAPIService(gqlClient: graphQLClient)
-        
-        
         let sessionReplayExporter = SessionReplayExporter(context: sessionReplayContext,
                                                           replayApiService: replayApiService,
                                                           title: ApplicationProperties.name ?? "iOS app")

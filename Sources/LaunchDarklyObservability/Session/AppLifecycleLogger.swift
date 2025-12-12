@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import OpenTelemetryApi
 import OpenTelemetrySdk
 
@@ -42,7 +43,7 @@ final class AppLifecycleLogger: AppLifecycleLogging {
     private let appLifecycleManager: AppLifecycleManaging
     private let appLogBuilder: AppLogBuilder
     private let yield: (ReadableLogRecord) -> Void
-    private var task: Task<Void, Never>?
+    private var cancellable: AnyCancellable?
     
     init(appLifecycleManager: AppLifecycleManaging, appLogBuilder: AppLogBuilder, yield: @escaping (ReadableLogRecord) -> Void) {
         self.appLifecycleManager = appLifecycleManager
@@ -51,26 +52,25 @@ final class AppLifecycleLogger: AppLifecycleLogging {
     }
     
     func start() {
-        guard task == nil else { return }
+        guard cancellable == nil else { return }
         
-        task = Task(priority: .background) { [weak self] in
-            guard let self else { return }
-            
-            for await event in await self.appLifecycleManager.events() {
-                guard let state = AppLifeCycleLogState(appLifecycleEvent: event) else { continue }
-                guard let log = self.appLogBuilder.buildLog(
+        cancellable = appLifecycleManager
+            .publisher()
+            .compactMap { AppLifeCycleLogState(appLifecycleEvent: $0) }
+            .compactMap { [weak self] state in
+                self?.appLogBuilder.buildLog(
                     message: AppLifeCycleLogState.eventName,
                     severity: .info,
                     attributes: state.attributes
-                ) else { continue }
-                
-                self.yield(log)
+                )
             }
-        }
+            .sink { [weak self] log in
+                self?.yield(log)
+            }
     }
     
     func stop() {
-        task?.cancel()
-        task = nil
+        cancellable?.cancel()
+        cancellable = nil
     }
 }

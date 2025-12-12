@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import UIKit.UIApplication
 import OSLog
 #if !LD_COCOAPODS
@@ -6,16 +7,18 @@ import OSLog
 #endif
 
 public protocol SessionManaging {
-    func sessionChanges() async -> AsyncStream<SessionInfo>
+    func publisher() -> AnyPublisher<SessionInfo, Never>
     var sessionInfo: SessionInfo { get }
 }
 
 final class SessionManager: SessionManaging {
     private let appLifecycleManager: AppLifecycleManaging
     private let options: SessionOptions
-    private let broadcaster: Broadcaster<SessionInfo>
+    private let subject = PassthroughSubject<SessionInfo, Never>()
     private var _sessionInfo = SessionInfo()
     private var backgroundTime: DispatchTime?
+    private var cancellables = Set<AnyCancellable>()
+    private let notificationQueue = DispatchQueue(label: "com.launchdarkly.observability.session-notifications")
         
     private let stateQueue = DispatchQueue(
         label: "com.launchdarkly.observability.state-queue",
@@ -25,16 +28,13 @@ final class SessionManager: SessionManaging {
         self.options = options
         self.appLifecycleManager = appLifecycleManager
         self._sessionInfo = SessionInfo()
-        self.broadcaster = Broadcaster()
         
-        Task(priority: .background) { [weak self, weak appLifecycleManager] in
-            guard let self, let appLifecycleManager else { return }
-
-            let eventsStream = await appLifecycleManager.events()
-            for await event in eventsStream {
-                self.transition(to: event)
+        appLifecycleManager
+            .publisher()
+            .sink { [weak self] event in
+                self?.transition(to: event)
             }
-        }
+            .store(in: &cancellables)
     }
     
     var sessionInfo: SessionInfo {
@@ -44,8 +44,8 @@ final class SessionManager: SessionManaging {
         }
     }
 
-    func sessionChanges() async -> AsyncStream<SessionInfo> {
-        await broadcaster.stream()
+    func publisher() -> AnyPublisher<SessionInfo, Never> {
+        subject.eraseToAnyPublisher()
     }
     
     private func transition(to newState: AppLifeCycleEvent) {
@@ -85,8 +85,11 @@ final class SessionManager: SessionManaging {
         let newSession = SessionInfo()
         self._sessionInfo = newSession
         
-        Task {
-            await broadcaster.send(newSession)
+        // Avoid delivering synchronously while on the stateQueue barrier.
+        // Dispatch onto a separate queue so subscribers that read `sessionInfo`
+        // (which uses `stateQueue.sync`) do not deadlock.
+        notificationQueue.async { [weak self] in
+            self?.subject.send(newSession)
         }
         
         if options.isDebug {

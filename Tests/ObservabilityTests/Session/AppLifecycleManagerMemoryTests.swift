@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import Testing
 @testable import LaunchDarklyObservability
 
@@ -7,54 +8,51 @@ struct AppLifecycleManagerMemoryTests {
     func appLifecycleManagerDeallocatesAndFinishesStream() {
         // Given
         weak var weakManager: AppLifecycleManager?
-        var consumerTask: Task<Void, Never>?
+        var cancellable: AnyCancellable?
         var streamFinished = false
-
+        
         autoreleasepool {
-            let manager = AppLifecycleManager()
+            let manager: AppLifecycleManager? = AppLifecycleManager()
             weakManager = manager
-
-            // Obtain the stream without permanently capturing the manager in a long-lived task
-            var stream: AsyncStream<AppLifeCycleEvent>?
-            let fetchStream = Task {
-                stream = await manager.events()
-            }
-
-            // Wait briefly for the stream to be produced
-            let streamDeadline = Date().addingTimeInterval(1.0)
-            while stream == nil && Date() < streamDeadline {
-                RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.01))
-            }
-
-            // Start consuming the stream so there is an active subscription
-            if let stream {
-                consumerTask = Task {
-                    for await event in stream {
-                        #expect(event == .didBecomeActive)
-                        streamFinished = true
+            
+            // Subscribe to the publisher without capturing the manager strongly
+            cancellable = manager?.publisher().sink(
+                receiveCompletion: { completion in
+                    if case .finished = completion {
                     }
+                },
+                receiveValue: { event in
+                    #expect(event == .didBecomeActive)
+                    streamFinished = true
                 }
-            }
-
+            )
+            
             // Ensure the stream begins flowing at least once
-            manager.send(.didBecomeActive)
+            manager?.send(.didBecomeActive)
 
-            // Ensure the short-lived fetch task has completed
-            _ = fetchStream
+            // Allow any scheduled work to run before the pool drains
+            let deadline = Date().addingTimeInterval(2.0)
+            while (streamFinished == false) && Date() < deadline {
+                RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.05))
+            }
+            
+            
+           // manager.send(.didEnterBackground)
+            #expect(manager != nil)
         }
-
+        
         // When: release strong references and give the runtime a moment to clean up
         let deadline = Date().addingTimeInterval(2.0)
-        while (weakManager != nil || streamFinished == false) && Date() < deadline {
-            RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.01))
+        while (weakManager != nil) && Date() < deadline {
+            RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.05))
         }
-
+        
         // Then: the manager should be deallocated and the stream should be finished
         #expect(weakManager == nil)
         #expect(streamFinished == true)
-
+        
         // Cleanup
-        consumerTask?.cancel()
+        cancellable?.cancel()
     }
 }
 

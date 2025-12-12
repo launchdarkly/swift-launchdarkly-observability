@@ -1,25 +1,21 @@
 import Testing
+import Combine
 import OSLog
 @testable import LaunchDarklyObservability
 
 private final class TestLifecycleManager: AppLifecycleManaging {
-    private var continuation: AsyncStream<AppLifeCycleEvent>.Continuation?
+    private let subject = PassthroughSubject<AppLifeCycleEvent, Never>()
 
-    func events() async -> AsyncStream<AppLifeCycleEvent> {
-        AsyncStream<AppLifeCycleEvent> { continuation in
-            self.continuation = continuation
-            continuation.onTermination = { [weak self] _ in
-                self?.continuation = nil
-            }
-        }
+    func publisher() -> AnyPublisher<AppLifeCycleEvent, Never> {
+        subject.eraseToAnyPublisher()
     }
 
     func send(_ event: AppLifeCycleEvent) {
-        continuation?.yield(event)
+        subject.send(event)
     }
 
     func finish() {
-        continuation?.finish()
+        subject.send(completion: .finished)
     }
 }
 
@@ -38,6 +34,9 @@ struct SessionManagerMemoryTests {
 
             // Drive at least one event through the loop to ensure the Task starts iterating
             lifecycle.send(.didBecomeActive)
+            
+            // Allow any scheduled work to run before the pool drains
+            RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.05))
         }
 
         // When: release strong references and give the runtime a moment to clean up

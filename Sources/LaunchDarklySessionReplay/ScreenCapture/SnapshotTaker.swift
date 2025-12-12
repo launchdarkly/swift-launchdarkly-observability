@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import LaunchDarklyObservability
 import UIKit
 
@@ -11,6 +12,7 @@ final class SnapshotTaker: EventSource {
     private let frameInterval = 1.0
     private var eventQueueAvailable: Bool = true
     private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
+    private var cancellables = Set<AnyCancellable>()
     
     init(captureService: ScreenCaptureService,
          appLifecycleManager: AppLifecycleManaging,
@@ -19,41 +21,38 @@ final class SnapshotTaker: EventSource {
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
         
-        Task(priority: .background) { [weak self, weak eventQueue] in
-            guard let self, let eventQueue else { return }
-            
-            let eventsStream = await eventQueue.events()
-            for await event in eventsStream where event.id == sessionExporterId {
-                await MainActor.run { [weak self] in
+        let sessionExporterId = self.sessionExporterId
+        Task { @MainActor in
+            let eventQueuePublisher = await eventQueue.publisher()
+            eventQueuePublisher
+                .filter { $0.id == sessionExporterId }
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] event in
+                    guard let self else { return }
                     switch event.status {
                     case .available:
-                        eventQueueAvailable = true
+                        self.eventQueueAvailable = true
                     case .oveflowed:
-                        eventQueueAvailable = false
+                        self.eventQueueAvailable = false
                     }
                 }
-            }
+                .store(in: &cancellables)
         }
         
-        Task(priority: .background) { [weak self, weak appLifecycleManager] in
-            guard let self, let appLifecycleManager else { return }
-
-            let eventsStream = await appLifecycleManager.events()
-            for await event in eventsStream {
+        appLifecycleManager
+            .publisher()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] event in
                 switch event {
                 case .didBecomeActive:
-                    await MainActor.run { [weak self] in
-                        self?.start()
-                    }
+                    self?.start()
                 case .willResignActive, .willTerminate:
-                    await MainActor.run { [weak self] in
-                        self?.stop()
-                    }
+                    self?.stop()
                 case .didFinishLaunching, .willEnterForeground, .didEnterBackground:
-                    continue
+                    break
                 }
             }
-        }
+            .store(in: &cancellables)
     }
     
     func start() {
