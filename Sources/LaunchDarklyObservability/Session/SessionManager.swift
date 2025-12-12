@@ -7,7 +7,6 @@ import OSLog
 #endif
 
 public protocol SessionManaging {
-    func sessionChanges() async -> AsyncStream<SessionInfo>
     func publisher() -> AnyPublisher<SessionInfo, Never>
     var sessionInfo: SessionInfo { get }
 }
@@ -19,7 +18,6 @@ final class SessionManager: SessionManaging {
     private var _sessionInfo = SessionInfo()
     private var backgroundTime: DispatchTime?
     private var cancellables = Set<AnyCancellable>()
-    private var streamCancellables = [UUID: AnyCancellable]()
         
     private let stateQueue = DispatchQueue(
         label: "com.launchdarkly.observability.state-queue",
@@ -45,21 +43,6 @@ final class SessionManager: SessionManaging {
         }
     }
 
-    func sessionChanges() async -> AsyncStream<SessionInfo> {
-        AsyncStream<SessionInfo> { [weak self] continuation in
-            guard let self else { return }
-            let id = UUID()
-            let cancellable = subject.sink { value in
-                _ = continuation.yield(value)
-            }
-            streamCancellables[id] = cancellable
-            continuation.onTermination = { [weak self] _ in
-                self?.streamCancellables[id]?.cancel()
-                self?.streamCancellables[id] = nil
-            }
-        }
-    }
-    
     func publisher() -> AnyPublisher<SessionInfo, Never> {
         subject.eraseToAnyPublisher()
     }
