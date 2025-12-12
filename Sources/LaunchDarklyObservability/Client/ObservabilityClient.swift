@@ -1,4 +1,9 @@
-final class ObservabilityClient {
+protocol InternalObserve: Observe {
+    var logClient: LogsApi { get }
+}
+
+final class ObservabilityClient: InternalObserve {
+    let logClient: LogsApi
     private let tracer: TracesApi
     private let logger: LogsApi
     private let meter: MetricsApi
@@ -10,6 +15,7 @@ final class ObservabilityClient {
     init(
         tracer: TracesApi,
         logger: LogsApi,
+        logClient: LogsApi,
         meter: MetricsApi,
         crashReportsApi: CrashReporting,
         autoInstrumentation: [AutoInstrumentation],
@@ -18,6 +24,7 @@ final class ObservabilityClient {
     ) {
         self.tracer = tracer
         self.logger = logger
+        self.logClient = logClient
         self.meter = meter
         self.crashReportsApi = crashReportsApi
         self.autoInstrumentation = autoInstrumentation

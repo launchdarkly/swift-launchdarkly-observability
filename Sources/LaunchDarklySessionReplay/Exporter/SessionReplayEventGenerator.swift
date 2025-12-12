@@ -9,6 +9,7 @@ import OSLog
 #endif
 
 actor SessionReplayEventGenerator {
+    private var title: String
     let padding = CGSize(width: 11, height: 11)
     var sid = 0
     var nextSid: Int {
@@ -27,10 +28,11 @@ actor SessionReplayEventGenerator {
     var stats: SessionReplayStats?
     let isDebug = false
     
-    init(log: OSLog) {
+    init(log: OSLog, title: String) {
         if isDebug {
-            stats = SessionReplayStats(log: log)
+            self.stats = SessionReplayStats(log: log)
         }
+        self.title = title
     }
     
     func generateEvents(items: [EventQueueItem]) -> [Event] {
@@ -73,7 +75,7 @@ actor SessionReplayEventGenerator {
     
     func appendEvents(item: EventQueueItem, events: inout [Event]) {
         switch item.payload {
-        case let payload as ScreenImageItem:
+        case let payload as ImageItemPayload:
             let exportImage = payload.exportImage
             guard lastExportImage != exportImage else {
                 break
@@ -98,6 +100,12 @@ actor SessionReplayEventGenerator {
             
         case let interaction as TouchInteraction:
             appendTouchInteraction(interaction: interaction, events: &events)
+            
+        case let identifyItemPayload as IdentifyItemPayload:
+            if let event = identifyEvent(itemPayload: identifyItemPayload) {
+                events.append(event)
+            }
+            
         default:
             break // Item wasn't needed for SessionReplay
         }
@@ -178,10 +186,25 @@ actor SessionReplayEventGenerator {
     }
     
     func reloadEvent(timestamp: TimeInterval) -> Event {
-        let eventData = CustomEventData(tag: .reload, payload: "iOS Demo")
+        let eventData = CustomEventData(tag: .reload, payload: title)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: timestamp,
+                          _sid: nextSid)
+        return event
+    }
+    
+    func identifyEvent(itemPayload: IdentifyItemPayload) -> Event? {
+        // Encode attributes as a JSON string for the `user` field.
+        guard let data = try? JSONEncoder().encode(itemPayload.attributes),
+              let userJSONString = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        
+        let eventData = CustomEventData(tag: .identify, payload: userJSONString)
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: itemPayload.timestamp,
                           _sid: nextSid)
         return event
     }
@@ -268,11 +291,5 @@ actor SessionReplayEventGenerator {
         events.append(windowEvent(href: "", width: paddedWidth(exportImage.originalWidth), height: paddedHeight(exportImage.originalHeight), timestamp: timestamp))
         events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
-    }
-}
-
-extension ScreenImageItem: SessionReplayItemPayload {
-    func sessionReplayEvent() -> Event? {
-        return nil
     }
 }

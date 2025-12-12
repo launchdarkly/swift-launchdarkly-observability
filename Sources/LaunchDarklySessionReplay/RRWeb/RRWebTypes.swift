@@ -58,4 +58,5 @@ public enum CustomDataTag: String, Codable {
     case focus = "Focus"
     case viewport = "Viewport"
     case reload = "Reload"
+    case identify = "Identify"
 }

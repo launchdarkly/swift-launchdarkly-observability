@@ -179,6 +179,7 @@ public struct Options {
     public var serviceVersion: String
     public var otlpEndpoint: String
     public var backendUrl: String
+    public var contextFriendlyName: String?
     public var resourceAttributes: [String: AttributeValue]
     public var customHeaders: [String: String]
     public var tracingOrigins: TracingOriginsOption
@@ -200,6 +201,7 @@ public struct Options {
         serviceVersion: String = "0.1.0",
         otlpEndpoint: String = "https://otel.observability.app.launchdarkly.com:4318",
         backendUrl: String = "https://pub.observability.app.launchdarkly.com",
+        contextFriendlyName: String? = nil,
         resourceAttributes: [String: AttributeValue] = [:],
         customHeaders: [String: String] = [:],
         tracingOrigins: TracingOriginsOption = .disabled,
@@ -219,6 +221,7 @@ public struct Options {
         self.serviceVersion = serviceVersion
         self.otlpEndpoint = otlpEndpoint
         self.backendUrl = backendUrl
+        self.contextFriendlyName = contextFriendlyName
         self.resourceAttributes = resourceAttributes
         self.customHeaders = customHeaders
         self.tracingOrigins = tracingOrigins

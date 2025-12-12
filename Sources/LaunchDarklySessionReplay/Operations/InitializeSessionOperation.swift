@@ -74,7 +74,7 @@ struct InitializeSessionResponseWrapper: Codable {
 
 
 extension SessionReplayAPIService {
-    public func initializeSession(context: SessionReplayContext,
+    func initializeSession(context: SessionReplayContext,
                                   sessionSecureId: String,
                                   userIdentifier: String,
                                   userObject: [String: String]? = nil) async throws -> InitializeSessionResponse {

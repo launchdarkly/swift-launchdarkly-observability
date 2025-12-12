@@ -17,20 +17,23 @@ actor SessionReplayExporter: EventExporting {
     private var sessionInfo: SessionInfo?
     private var sessionCancellable: AnyCancellable?
     private var shouldWakeUpSession = true
-    
     private var payloadId = 0
+    private var title: String
     private var nextPayloadId: Int {
         payloadId += 1
         return payloadId
     }
     
+    private var identifyPayload: IdentifyItemPayload?
+    
     init(context: SessionReplayContext,
-         sessionManager: SessionManaging,
-         replayApiService: SessionReplayAPIService) {
+         replayApiService: SessionReplayAPIService,
+         title: String) {
         self.context = context
         self.replayApiService = replayApiService
-        self.sessionManager = sessionManager
-        self.eventGenerator = SessionReplayEventGenerator(log: context.log)
+        self.sessionManager = context.observabilityContext.sessionManager
+        self.title = title
+        self.eventGenerator = SessionReplayEventGenerator(log: context.log, title: title)
         self.log = context.log
         self.sessionInfo = sessionManager.sessionInfo
         
@@ -45,7 +48,7 @@ actor SessionReplayExporter: EventExporting {
     
     private func updateSessionInfo(_ sessionInfo: SessionInfo) async {
         self.sessionInfo = sessionInfo
-        self.eventGenerator = SessionReplayEventGenerator(log: log)
+        self.eventGenerator = SessionReplayEventGenerator(log: log, title: title)
         self.initializedSession = nil
     }
     
@@ -64,7 +67,13 @@ actor SessionReplayExporter: EventExporting {
             }
             
             let session = try await initializeSession(sessionSecureId: sessionInfo.id)
-            try await identifySession(session: session)
+            var identifyPayload = self.identifyPayload
+            if identifyPayload == nil {
+                identifyPayload = await IdentifyItemPayload(options: context.observabilityContext.options, timestamp: Date().timeIntervalSince1970)
+            }
+            if let identifyPayload {
+                try await identifySession(sessionSecureId: session.secureId, userObject: identifyPayload.attributes)
+            }
             initializedSession = session
         } catch {
             initializedSession = nil
@@ -76,7 +85,7 @@ actor SessionReplayExporter: EventExporting {
         try await initializeSessionIfNeeded()
         guard let initializedSession else { return }
 
-        let events = await eventGenerator.generateEvents(items: items)
+        var events = await eventGenerator.generateEvents(items: items)
         try await pushPayload(initializedSession: initializedSession, events: events)
         
         if shouldWakeUpSession {
@@ -97,19 +106,26 @@ actor SessionReplayExporter: EventExporting {
     private func initializeSession(sessionSecureId: String) async throws -> InitializeSessionResponse {
         try await replayApiService.initializeSession(context: context,
                                                      sessionSecureId: sessionSecureId,
-                                                     userIdentifier: "abelonogov@launchdarkly.com")
+                                                     userIdentifier: "")
     }
     
-    private func identifySession(session: InitializeSessionResponse) async throws {
+    private func identifySession(sessionSecureId: String, userObject: [String: String]) async throws {
         try await replayApiService.identifySession(
-            sessionSecureId: session.secureId,
-            userObject:   ["telemetry.sdk.name":"SwiftClient",
-                           "telemetry.sdk.version":"3.8.1",
-                           "feature_flag.set.id":"548f6741c1efad40031b18ae",
-                           "feature_flag.provider.name":"LaunchDarkly",
-                           "key":"test"])
+            sessionSecureId: sessionSecureId,
+            userIdentifier: userObject["key"] ?? "unknown",
+            userObject: userObject)
     }
 
+    func identifySession(identifyPayload: IdentifyItemPayload) async throws {
+        self.identifyPayload = identifyPayload
+
+        guard let initializedSession else { return }
+        
+        try await identifySession(
+            sessionSecureId: initializedSession.secureId,
+            userObject: identifyPayload.attributes)
+    }
+    
     deinit {
         sessionCancellable?.cancel()
     }

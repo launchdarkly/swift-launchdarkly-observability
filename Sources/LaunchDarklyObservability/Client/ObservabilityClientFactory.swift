@@ -5,11 +5,12 @@ import OpenTelemetrySdk
     import Common
 #endif
 
-public struct ObservabilityClientFactory {
-    public static func noOp() -> Observe {
+struct ObservabilityClientFactory {
+    static func noOp() -> Observe {
         return ObservabilityClient(
             tracer: NoOpTracer(),
             logger: NoOpLogger(),
+            logClient: NoOpLogger(),
             meter: NoOpMeter(),
             crashReportsApi: NoOpCrashReport(),
             autoInstrumentation: [],
@@ -17,10 +18,11 @@ public struct ObservabilityClientFactory {
             context: nil
         )
     }
-    public static func instantiate(
+    
+    static func instantiate(
         withOptions options: Options,
         mobileKey: String
-    ) throws -> Observe {
+    ) throws -> (InternalObserve) {
         let appLifecycleManager = AppLifecycleManager()
         let sessionManager = SessionManager(
             options: .init(
@@ -207,6 +209,7 @@ public struct ObservabilityClientFactory {
         return ObservabilityClient(
             tracer: appTraceClient,
             logger: appLogClient,
+            logClient: logClient,
             meter: appMetricsClient,
             crashReportsApi: crashReporting,
             autoInstrumentation: autoInstrumentation,

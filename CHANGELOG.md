@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.12.1...0.13.0) (2025-12-12)
+
+
+### Features
+
+* Identify support (OBS + SR) ([#93](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/93)) ([432f75c](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/432f75c4d47bf4e7c51cc5c68aacb13d366871d2))
+
 ## [0.12.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.12.0...0.12.1) (2025-12-09)
 
 

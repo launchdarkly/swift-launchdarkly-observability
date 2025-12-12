@@ -2,66 +2,53 @@ import Foundation
 import LaunchDarklyObservability
 import OSLog
 #if !LD_COCOAPODS
-    import Common
+import Common
 #endif
 
-struct ScreenImageItem: EventQueueItemPayload {
-    var exporterClass: AnyClass {
-        SessionReplayExporter.self
-    }
-    
-    var timestamp: TimeInterval {
-        exportImage.timestamp
-    }
-    
-    func cost() -> Int {
-        exportImage.data.count
-    }
-    
-    let exportImage: ExportImage
-}
-
-protocol SessionReplayItemPayload {
-    func sessionReplayEvent() -> Event?
-}
-
-public struct SessionReplayContext {
+struct SessionReplayContext {
     public var sdkKey: String
     public var serviceName: String
     public var backendUrl: URL
     public var log: OSLog
+    public var observabilityContext: ObservabilityContext
     
-    public init(sdkKey: String,
-                serviceName: String,
-                backendUrl: URL,
-                log: OSLog) {
+    init(sdkKey: String,
+         serviceName: String,
+         backendUrl: URL,
+         log: OSLog,
+         observabilityContext: ObservabilityContext) {
         self.sdkKey = sdkKey
         self.serviceName = serviceName
         self.backendUrl = backendUrl
         self.log = log
+        self.observabilityContext = observabilityContext
     }
 }
 
-public final class SessionReplayService {
+final class SessionReplayService {
     let snapshotTaker: SnapshotTaker
     var transportService: TransportServicing
+    var sessionReplayExporter: SessionReplayExporter
+    let log: OSLog
     
-    public init(context: ObservabilityContext,
-                sessonReplayOptions: SessionReplayOptions) throws {
-        guard let url = URL(string: context.options.backendUrl) else {
+    init(observabilityContext: ObservabilityContext,
+         sessonReplayOptions: SessionReplayOptions,
+         metadata: LaunchDarkly.EnvironmentMetadata) throws {
+        guard let url = URL(string: observabilityContext.options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
-        let graphQLClient = GraphQLClient(endpoint: url)
         
+        self.log = observabilityContext.options.log
+        let graphQLClient = GraphQLClient(endpoint: url)
         let captureService = ScreenCaptureService(options: sessonReplayOptions)
-        self.transportService = context.transportService
+        self.transportService = observabilityContext.transportService
         self.snapshotTaker = SnapshotTaker(captureService: captureService,
-                                           appLifecycleManager: context.appLifecycleManager,
+                                           appLifecycleManager: observabilityContext.appLifecycleManager,
                                            eventQueue: transportService.eventQueue)
         snapshotTaker.start()
         
         let eventQueue = transportService.eventQueue
-        let userInteractionManager = context.userInteractionManager
+        let userInteractionManager = observabilityContext.userInteractionManager
         userInteractionManager.addYield { interaction in
             Task {
                 await eventQueue.send(interaction)
@@ -69,18 +56,32 @@ public final class SessionReplayService {
         }
         
         let sessionReplayContext = SessionReplayContext(
-            sdkKey: context.sdkKey,
-            serviceName: context.options.serviceName,
+            sdkKey: observabilityContext.sdkKey,
+            serviceName: observabilityContext.options.serviceName,
             backendUrl: url,
-            log: context.options.log)
+            log: observabilityContext.options.log,
+            observabilityContext: observabilityContext)
+        
         
         let replayApiService = SessionReplayAPIService(gqlClient: graphQLClient)
-        let replayPushService = SessionReplayExporter(context: sessionReplayContext,
-                                                      sessionManager: context.sessionManager,
-                                                      replayApiService: replayApiService)
+        
+        
+        let sessionReplayExporter = SessionReplayExporter(context: sessionReplayContext,
+                                                          replayApiService: replayApiService,
+                                                          title: ApplicationProperties.name ?? "iOS app")
+        self.sessionReplayExporter = sessionReplayExporter
         Task {
-            await transportService.batchWorker.addExporter(replayPushService)
+            await transportService.batchWorker.addExporter(sessionReplayExporter)
             transportService.start()
+        }
+    }
+    
+    func scheduleIdentifySession(identifyPayload: IdentifyItemPayload) async {
+        do {
+            try await sessionReplayExporter.identifySession(identifyPayload: identifyPayload)
+            await transportService.eventQueue.send(identifyPayload)
+        } catch {
+            os_log("%{public}@", log: log, type: .error, "Failed to identifySession:\n\(error)")
         }
     }
 }
