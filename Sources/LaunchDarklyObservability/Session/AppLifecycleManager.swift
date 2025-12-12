@@ -1,4 +1,5 @@
 import UIKit
+import Combine
 #if !LD_COCOAPODS
     import Common
 #endif
@@ -13,15 +14,22 @@ public enum AppLifeCycleEvent {
 }
 
 public protocol AppLifecycleManaging: AnyObject {
-    func events() async -> AsyncStream<AppLifeCycleEvent>
+    func publisher() -> AnyPublisher<AppLifeCycleEvent, Never>
 }
 
 final class AppLifecycleManager: AppLifecycleManaging {
-    private let broadcaster = Broadcaster<AppLifeCycleEvent>()
+    private let subject = PassthroughSubject<AppLifeCycleEvent, Never>()
     private var observers = [NSObjectProtocol]()
+    private var isFinished = false
     
     init() {
         observeLifecycleNotifications()
+    }
+    
+    // Exposes a Combine publisher that supports multiple subscribers.
+    // Subscribers will receive lifecycle events as they occur.
+    func publisher() -> AnyPublisher<AppLifeCycleEvent, Never> {
+        subject.eraseToAnyPublisher()
     }
     
     private func observeLifecycleNotifications() {
@@ -46,21 +54,17 @@ final class AppLifecycleManager: AppLifecycleManaging {
     }
     
     deinit {
+        isFinished = true
         observers.forEach {
             NotificationCenter.default.removeObserver($0)
         }
-        let broadcaster = self.broadcaster
-        Task {
-            await broadcaster.finish()
-        }
     }
-    
-    func events() async -> AsyncStream<AppLifeCycleEvent> {
-        await broadcaster.stream()
-    }
-    
+
     func send(_ event: AppLifeCycleEvent) {
-        Task { await broadcaster.send(event) }
+        Task(priority: .background) { [weak self] in
+            guard let self, !isFinished else { return }
+            self.subject.send(event)
+        }
     }
     
     private func didFinishLaunching() {

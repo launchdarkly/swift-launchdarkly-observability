@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 #if !LD_COCOAPODS
     import Common
 #endif
@@ -56,7 +57,7 @@ public actor EventQueue: EventQueuing {
     private var exporterLimitSize: Int
     private var currentSize = 0    
     private var currentSizes = [ObjectIdentifier: EventExporterState]()
-    private let broadcaster = Broadcaster<EventNotifyStatus>()
+    private let subject = PassthroughSubject<EventNotifyStatus, Never>()
     
     public init(limitSize: Int = 5_000_000 /* 5 mb */, exporterLimitSize: Int = 2_500_000) {
         self.limitSize = limitSize
@@ -100,7 +101,7 @@ public actor EventQueue: EventQueuing {
     private func notify(typeId: ObjectIdentifier, _ status: EventStatus) {
         Task {
             let notifyStatus = EventNotifyStatus(id: typeId, status: status)
-            await broadcaster.send(notifyStatus)
+            subject.send(notifyStatus)
         }
     }
     
@@ -161,8 +162,8 @@ public actor EventQueue: EventQueuing {
         notifyAvailableIfNeeded(typeId: id, exporterState)
     }
     
-    public func events() async -> AsyncStream<EventNotifyStatus> {
-        await broadcaster.stream()
+    public func publisher() -> AnyPublisher<EventNotifyStatus, Never> {
+        subject.eraseToAnyPublisher()
     }
 
     private func notifyOverflowIfNeeded(typeId: ObjectIdentifier, _ exporterState: EventExporterState) {

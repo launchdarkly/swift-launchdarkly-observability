@@ -8,10 +8,12 @@ public actor Broadcaster<Value: Sendable> {
     public init() { }
     
     deinit {
-        // Ensure any active streams are finished before the actor deallocates
         finished = true
-        for continuation in continuations.values {
-            continuation.finish()
+        
+        // Disable termination handlers so finish() is "silent"
+        for c in continuations.values {
+            c.onTermination = nil
+            c.finish()
         }
         continuations.removeAll()
     }
@@ -21,21 +23,20 @@ public actor Broadcaster<Value: Sendable> {
     ) -> AsyncStream<Value> {
         let id = streamIdentifier
         streamIdentifier &+= 1
-        var continuationRef: AsyncStream<Value>.Continuation?
         
         let stream = AsyncStream<Value>(bufferingPolicy: bufferingPolicy) { continuation in
-            continuationRef = continuation
-            continuation.onTermination = { [weak self] _ in
-                guard let self else { return }
-                Task { await self.removeContinuation(id: id) }
-            }
-        }
-        
-        if let continuation = continuationRef {
             if finished {
                 continuation.finish()
-            } else {
-                continuations[id] = continuation
+                return
+            }
+            
+            self.continuations[id] = continuation
+            continuation.onTermination = { [weak self] _ in
+                guard let self else { return }
+                Task { [weak self] in
+                    guard let self else { return }
+                    await self.removeContinuation(id: id)
+                }
             }
         }
         
@@ -44,6 +45,7 @@ public actor Broadcaster<Value: Sendable> {
     
     public func send(_ event: Value) {
         guard !finished else { return }
+        
         for continuation in continuations.values {
             _ = continuation.yield(event)
         }
@@ -52,6 +54,7 @@ public actor Broadcaster<Value: Sendable> {
     public func finish() {
         guard !finished else { return }
         finished = true
+        
         for continuation in continuations.values {
             continuation.finish()
         }

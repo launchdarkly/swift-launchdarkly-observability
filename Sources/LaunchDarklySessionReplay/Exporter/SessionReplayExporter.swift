@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import LaunchDarklyObservability
 import OSLog
 #if !LD_COCOAPODS
@@ -14,7 +15,7 @@ actor SessionReplayExporter: EventExporting {
     private var log: OSLog
     private var initializedSession: InitializeSessionResponse?
     private var sessionInfo: SessionInfo?
-    private var sessionChangesTask: Task<Void, Never>?
+    private var sessionCancellable: AnyCancellable?
     private var shouldWakeUpSession = true
     
     private var payloadId = 0
@@ -33,14 +34,13 @@ actor SessionReplayExporter: EventExporting {
         self.log = context.log
         self.sessionInfo = sessionManager.sessionInfo
         
-        self.sessionChangesTask = Task(priority: .background) { [weak self, sessionManager] in
-            let stream = await sessionManager.sessionChanges()
-            for await newSessionInfo in stream {
-                guard let self else { break }
-                await self.updateSessionInfo(newSessionInfo)
-                if Task.isCancelled { break }
+        self.sessionCancellable = sessionManager
+            .publisher()
+            .sink { [weak self] newSessionInfo in
+                Task { [weak self] in
+                    await self?.updateSessionInfo(newSessionInfo)
+                }
             }
-        }
     }
     
     private func updateSessionInfo(_ sessionInfo: SessionInfo) async {
@@ -111,6 +111,6 @@ actor SessionReplayExporter: EventExporting {
     }
 
     deinit {
-        sessionChangesTask?.cancel()
+        sessionCancellable?.cancel()
     }
 }
