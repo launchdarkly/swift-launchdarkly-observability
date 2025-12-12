@@ -20,7 +20,6 @@ public protocol AppLifecycleManaging: AnyObject {
 final class AppLifecycleManager: AppLifecycleManaging {
     private let subject = PassthroughSubject<AppLifeCycleEvent, Never>()
     private var observers = [NSObjectProtocol]()
-    private var isFinished = false
     
     init() {
         observeLifecycleNotifications()
@@ -54,7 +53,6 @@ final class AppLifecycleManager: AppLifecycleManaging {
     }
     
     deinit {
-        isFinished = true
         observers.forEach {
             NotificationCenter.default.removeObserver($0)
         }
@@ -62,7 +60,7 @@ final class AppLifecycleManager: AppLifecycleManaging {
 
     func send(_ event: AppLifeCycleEvent) {
         Task(priority: .background) { [weak self] in
-            guard let self, !isFinished else { return }
+            guard let self else { return }
             self.subject.send(event)
         }
     }

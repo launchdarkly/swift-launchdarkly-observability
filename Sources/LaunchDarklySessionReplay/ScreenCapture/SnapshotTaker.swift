@@ -22,7 +22,7 @@ final class SnapshotTaker: EventSource {
         self.appLifecycleManager = appLifecycleManager
         
         let sessionExporterId = self.sessionExporterId
-        Task {
+        Task { @MainActor in
             let eventQueuePublisher = await eventQueue.publisher()
             eventQueuePublisher
                 .filter { $0.id == sessionExporterId }
