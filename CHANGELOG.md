@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.13.0...0.13.1) (2025-12-12)
+
+
+### Bug Fixes
+
+* Rewrite AppLifeCycleManager onto Combine ([#95](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/95)) ([cb4c21d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/cb4c21dd780b906a6fb250489b8c412258eac05e))
+
 ## [0.13.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.12.1...0.13.0) (2025-12-12)
 
 
