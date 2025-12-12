@@ -117,13 +117,13 @@ actor SessionReplayExporter: EventExporting {
     }
 
     func identifySession(identifyPayload: IdentifyItemPayload) async throws {
+        self.identifyPayload = identifyPayload
+
         guard let initializedSession else { return }
         
         try await identifySession(
             sessionSecureId: initializedSession.secureId,
             userObject: identifyPayload.attributes)
-        
-        self.identifyPayload = identifyPayload
     }
     
     deinit {
