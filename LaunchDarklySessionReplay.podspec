@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklySessionReplay"
-  s.version          = "0.13.0" # x-release-please-version
+  s.version          = "0.13.1" # x-release-please-version
   s.summary          = "Session replay library for LaunchDarkly"
   s.description      = <<-DESC
                         Session Replay captures user interactions and screen recordings to help you understand how users interact with your application.
