@@ -18,6 +18,7 @@ final class SessionManager: SessionManaging {
     private var _sessionInfo = SessionInfo()
     private var backgroundTime: DispatchTime?
     private var cancellables = Set<AnyCancellable>()
+    private let notificationQueue = DispatchQueue(label: "com.launchdarkly.observability.session-notifications")
         
     private let stateQueue = DispatchQueue(
         label: "com.launchdarkly.observability.state-queue",
@@ -84,7 +85,12 @@ final class SessionManager: SessionManaging {
         let newSession = SessionInfo()
         self._sessionInfo = newSession
         
-        subject.send(newSession)
+        // Avoid delivering synchronously while on the stateQueue barrier.
+        // Dispatch onto a separate queue so subscribers that read `sessionInfo`
+        // (which uses `stateQueue.sync`) do not deadlock.
+        notificationQueue.async { [weak self] in
+            self?.subject.send(newSession)
+        }
         
         if options.isDebug {
             os_log("%{public}@", log: options.log, type: .info, "🔄 Session reset: \(oldSession.id) -> \(_sessionInfo.id)")
