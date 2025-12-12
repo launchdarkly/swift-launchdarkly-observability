@@ -4,18 +4,28 @@ import LaunchDarkly
     import Common
 #endif
 
-public final class EvalTracingHook: Hook {
+final class ObservabilityHook: Hook {
     private let queue = DispatchQueue(label: "com.launchdarkly.eval.tracing.hook")
+    private let plugin: Observability
     private let withSpans: Bool
     private let withValue: Bool
     private let version: String
     private let options: Options
     
-    public init(withSpans: Bool, withValue: Bool, version: String, options: Options) {
+    init(plugin: Observability,
+         withSpans: Bool,
+         withValue: Bool,
+         version: String,
+         options: Options) {
+        self.plugin = plugin
         self.withSpans = withSpans
         self.withValue = withValue
         self.version = version
         self.options = options
+    }
+    
+    public func metadata() -> Metadata {
+        return Metadata(name: "Observability")
     }
     
     public func beforeEvaluation(
@@ -77,9 +87,34 @@ public final class EvalTracingHook: Hook {
             return seriesData
 //        }
     }
+    
+    public func afterIdentify(seriesContext: IdentifySeriesContext, seriesData: IdentifySeriesData, result: IdentifyResult) -> IdentifySeriesData {
+        guard case .complete = result else {
+            return seriesData
+        }
+        
+        let context = seriesContext.context
+        var attributes = [String: AttributeValue]()
+        for (k, v) in context.contextKeys() {
+            attributes[k] = .string(v)
+        }
+        
+        let canonicalKey = context.fullyQualifiedKey()
+        attributes["key"] = .string(options.contextFriendlyName ?? canonicalKey)
+        attributes["canonicalKey"] = .string(canonicalKey)
+        attributes[Self.IDENTIFY_RESULT_STATUS] = .string("completed")
+        
+        plugin.observabilityService?.logClient.recordLog(
+            message: "LD.identify",
+            severity: .info,
+            attributes: attributes
+        )
+        
+        return seriesData
+    }
 }
 
-extension EvalTracingHook {
+extension ObservabilityHook {
     static let PROVIDER_NAME: String = "LaunchDarkly"
     static let HOOK_NAME: String = "LaunchDarkly Evaluation Tracing Hook"
     static let INSTRUMENTATION_NAME: String = "com.launchdarkly.observability"
@@ -93,4 +128,5 @@ extension EvalTracingHook {
     static let CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT: String = "feature_flag.result.reason.inExperiment"
     static let FEATURE_FLAG_SPAN_NAME = "evaluation" /// FEATURE_FLAG_SPAN_NAME
     static let FEATURE_FLAG_CONTEXT_ATTR = "feature_flag.contextKeys"
+    static let IDENTIFY_RESULT_STATUS = "identify.result.status"
 }

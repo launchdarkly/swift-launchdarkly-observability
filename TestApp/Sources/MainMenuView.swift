@@ -16,7 +16,8 @@ enum Failure: LocalizedError {
     }
 }
 
-struct ContentView: View {
+struct MainMenuView: View {
+    @StateObject private var viewModel = MainMenuViewModel()
     @State private var path: [String] = []
     @State private var isMaskingUIKitOneFieldEnabled: Bool = false
     @State private var isMaskingUIKitCreditCardEnabled: Bool = false
@@ -25,13 +26,7 @@ struct ContentView: View {
     @State private var isNotebookEnabled: Bool = false
     @State private var isStoryboardEnabled: Bool = false
     @State private var isWebviewEnabled: Bool = false
-
-    @State private var buttonPressed: Bool = false
-    @State private var errorPressed: Bool = false
-    @State private var counterMetricPressed: Bool = false
-    @State private var logsPressed: Bool = false
-    @State private var crashPressed: Bool = false
-    @State private var networkPressed: Bool = false
+    @State private var identifyText: String = ""
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -67,22 +62,50 @@ struct ContentView: View {
 #endif
                 
                 HStack {
+                    Text("Identify:")
+                    
                     Button {
-                        buttonPressed.toggle()
+                        viewModel.identifyUser()
+                    } label: {
+                        Text("User").foregroundStyle(Colors.identifyTextColor)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Colors.identifyBgColor)
+                    
+                    Button {
+                        viewModel.identifyMulti()
+                    } label: {
+                        Text("Multi").foregroundStyle(Colors.identifyTextColor)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Colors.identifyBgColor)
+                    
+                    Button {
+                        viewModel.identifyAnonymous()
+                    } label: {
+                        Text("Anon").foregroundStyle(Colors.identifyTextColor)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Colors.identifyBgColor)
+                }
+                
+                HStack {
+                    Button {
+                        viewModel.recordSpanAndVariation()
                     } label: {
                         Text("span")
                     }
                     .buttonStyle(.borderedProminent)
                     
                     Button {
-                        logsPressed.toggle()
+                        viewModel.recordLogs()
                     } label: {
                         Text("logs")
                     }
                     .buttonStyle(.borderedProminent)
                     
                     Button {
-                        counterMetricPressed.toggle()
+                        viewModel.recordCounterMetric()
                     } label: {
                         Text("metric: counter")
                     }
@@ -90,9 +113,11 @@ struct ContentView: View {
                 }
                 
                 Button {
-                    networkPressed.toggle()
+                    Task {
+                        await viewModel.performNetworkRequest()
+                    }
                 } label: {
-                    if networkPressed {
+                    if viewModel.isNetworkInProgress {
                         ProgressView {
                             Text("get request to launchdarkly.com...")
                         }
@@ -101,11 +126,11 @@ struct ContentView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(networkPressed)
+                .disabled(viewModel.isNetworkInProgress)
                
                 HStack {
                     Button {
-                        errorPressed.toggle()
+                        viewModel.recordError()
                     } label: {
                         Text("error")
                     }
@@ -113,13 +138,15 @@ struct ContentView: View {
                     .tint(.red)
                     
                     Button {
-                        crashPressed.toggle()
+                        viewModel.crash()
                     } label: {
                         Text("Crash")
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
                 }
+                
+   
             }.background(Color.clear)
             .navigationDestination(for: String.self) { value in
                 if value == "fruta" {
@@ -136,62 +163,6 @@ struct ContentView: View {
                  }
              }
          }
-        .task(id: errorPressed) {
-            guard errorPressed else { return }
-            LDObserve.shared.recordError(
-                error: Failure.crash,
-                attributes: [:])
-            errorPressed.toggle()
-        }
-        .task(id: buttonPressed) {
-            guard buttonPressed else { return }
-            let aSpan = LDObserve.shared.startSpan(
-                name: "button-pressed",
-                attributes: [:]
-            )
-            LDClient.get()?.boolVariation(
-                forKey: "my-feature",
-                defaultValue: false
-            )
-            
-            aSpan.end()
-            buttonPressed.toggle()
-        }
-        .task(id: counterMetricPressed) {
-            guard counterMetricPressed else { return }
-            LDObserve.shared.recordCount(
-                metric: .init(
-                    name: "press-count",
-                    value: 1,
-                    timestamp: .now
-                )
-            )
-            counterMetricPressed.toggle()
-        }
-        .task(id: logsPressed) {
-            guard logsPressed else { return }
-            LDObserve.shared.recordLog(
-                message: "logs-button-pressed",
-                severity: .info
-                , attributes: ["testuser": .string("andrey")])
-            logsPressed.toggle()
-        }
-        .task(id: crashPressed) {
-            guard crashPressed else { return }
-        
-            fatalError()
-        }
-        .task(id: networkPressed) {
-            guard networkPressed else { return }
-            
-            let url = URL(string: "https://launchdarkly.com/")!
-            do {
-                let (data, urlResponse) = try await URLSession.shared.data(from: url)
-                networkPressed.toggle()
-            } catch {
-                networkPressed.toggle()
-            }
-        }
 
 #if os(iOS)
         .sheet(isPresented: $isMaskingUIKitCreditCardEnabled) {
@@ -215,6 +186,20 @@ struct ContentView: View {
         }
 #endif
     }
+}
+
+enum Colors {
+    static let identifyTextColor = Color(
+        red: 138/255,
+        green: 158/255,
+        blue: 255/255
+    )
+    
+    static let identifyBgColor = Color(
+        red: 18/255,
+        green: 29/255,
+        blue: 97/255
+    )
 }
 
 
@@ -246,5 +231,5 @@ struct FauxLinkToggleRow: View {
 
 
 #Preview {
-    ContentView()
+    MainMenuView()
 }

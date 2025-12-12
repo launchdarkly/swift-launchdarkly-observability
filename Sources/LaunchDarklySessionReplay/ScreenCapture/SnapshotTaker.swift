@@ -103,7 +103,7 @@ final class SnapshotTaker: EventSource {
                 return
             }
             
-            await self.eventQueue.send(ScreenImageItem(exportImage: exportImage))
+            await self.eventQueue.send(ImageItemPayload(exportImage: exportImage))
         }
     }
 }

@@ -38,7 +38,7 @@ struct AnyEventData: Codable {
             self.value = switch tag {
             case .click:
                 try CustomEventData<ClickPayload>(from: decoder)
-            case .focus:
+            case .focus, .identify:
                 try CustomEventData<String>(from: decoder)
             case .viewport:
                 try CustomEventData<ViewportPayload>(from: decoder)

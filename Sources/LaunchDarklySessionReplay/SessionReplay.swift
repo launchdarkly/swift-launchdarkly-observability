@@ -4,8 +4,9 @@ import LaunchDarklyObservability
 import OSLog
 
 public final class SessionReplay: Plugin {
-    public let options: SessionReplayOptions
-    public var sessionReplayService: SessionReplayService?
+    let options: SessionReplayOptions
+    var sessionReplayService: SessionReplayService?
+    var observabilityContext: ObservabilityContext?
     
     public init(options: SessionReplayOptions) {
         self.options = options
@@ -22,11 +23,18 @@ public final class SessionReplay: Plugin {
             return
         }
         
+        observabilityContext = context
+
         do {
-            sessionReplayService = try SessionReplayService(context: context,
-                                                            sessonReplayOptions: options)
+            sessionReplayService = try SessionReplayService(observabilityContext: context,
+                                                            sessonReplayOptions: options,
+                                                            metadata: metadata)
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service initialization failed with error: \(error)")
         }
+    }
+    
+    public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
+        [SessionReplayHook(plugin: self)]
     }
 }
