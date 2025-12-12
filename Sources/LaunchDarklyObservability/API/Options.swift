@@ -192,7 +192,6 @@ public struct Options {
     public var tracesApi: AppTracing
     public var log: OSLog
     public var crashReporting: FeatureFlag
-    public var autoInstrumentation: Set<AutoInstrumented>
     public var instrumentation: Instrumentation
     let launchMeter = LaunchMeter()
     
@@ -214,7 +213,6 @@ public struct Options {
         metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: FeatureFlag = .enabled,
-        autoInstrumentation: Set<AutoInstrumented> = [.urlSession],
         instrumentation: Instrumentation = .init()
     ) {
         self.serviceName = serviceName
@@ -234,7 +232,6 @@ public struct Options {
         self.metricsApi = metricsApi
         self.log = log
         self.crashReporting = crashReporting
-        self.autoInstrumentation = autoInstrumentation
         self.instrumentation = instrumentation
     }
 }
