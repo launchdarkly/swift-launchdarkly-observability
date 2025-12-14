@@ -8,9 +8,14 @@ import OSLog
     import Common
 #endif
 
+enum RRWebPlayerConstants {
+    static let padding = CGSize(width: 11, height: 11)
+    static let canvasBufferLimit: Int = 10_000_000 // ~10mb, limits the size of accumulated operations in the RRWeb player need to create in the browser
+}
+
 actor SessionReplayEventGenerator {
     private var title: String
-    let padding = CGSize(width: 11, height: 11)
+    let padding = RRWebPlayerConstants.padding
     var sid = 0
     var nextSid: Int {
         sid += 1
@@ -22,7 +27,8 @@ actor SessionReplayEventGenerator {
         id += 1
         return id
     }
-    
+    private var pushedSizeBeforeFullSnapshot: Int = 0
+
     var imageId: Int?
     var lastExportImage: ExportImage?
     var stats: SessionReplayStats?
@@ -91,7 +97,8 @@ actor SessionReplayEventGenerator {
             if let imageId,
                let lastExportImage,
                lastExportImage.originalWidth == exportImage.originalWidth,
-               lastExportImage.originalHeight == exportImage.originalHeight {
+               lastExportImage.originalHeight == exportImage.originalHeight,
+               pushedSizeBeforeFullSnapshot < RRWebPlayerConstants.canvasBufferLimit {
                 events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
@@ -264,6 +271,7 @@ actor SessionReplayEventGenerator {
     
     func fullSnapshotEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
         id = 0
+        pushedSizeBeforeFullSnapshot = 0
         let rootNode = fullSnapshotNode(exportImage: exportImage)
         let eventData = EventData(node: rootNode)
         let event = Event(type: .FullSnapshot, data: AnyEventData(eventData), timestamp: timestamp, _sid: nextSid)
@@ -291,5 +299,9 @@ actor SessionReplayEventGenerator {
         events.append(windowEvent(href: "", width: paddedWidth(exportImage.originalWidth), height: paddedHeight(exportImage.originalHeight), timestamp: timestamp))
         events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
+    }
+    
+    func addPushedPayloadSize(_ size: Int) {
+        pushedSizeBeforeFullSnapshot += size
     }
 }

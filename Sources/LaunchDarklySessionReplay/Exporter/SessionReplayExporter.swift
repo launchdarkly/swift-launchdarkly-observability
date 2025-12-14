@@ -23,7 +23,6 @@ actor SessionReplayExporter: EventExporting {
         payloadId += 1
         return payloadId
     }
-    
     private var identifyPayload: IdentifyItemPayload?
     
     init(context: SessionReplayContext,
@@ -100,7 +99,9 @@ actor SessionReplayExporter: EventExporting {
         guard events.isNotEmpty else { return }
         
         let input = PushPayloadVariables(sessionSecureId: initializedSession.secureId, payloadId: "\(nextPayloadId)", events: events)
-        try await replayApiService.pushPayload(input)
+        var payloadSize = 0
+        try await replayApiService.pushPayload(input, payloadSize: &payloadSize)
+        await eventGenerator.addPushedPayloadSize(payloadSize)
     }
     
     private func initializeSession(sessionSecureId: String) async throws -> InitializeSessionResponse {
