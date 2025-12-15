@@ -12,7 +12,6 @@ import OSLog
 ///   - customHeaders Custom headers to include with OTLP exports.
 ///   - sessionBackgroundTimeout Session timeout if app is backgrounded. Defaults to 15 minutes. 15 * 60
 ///   - isDebug Enables verbose telemetry logging if true as well as other debug functionality. Defaults to false.
-///   - disableErrorTracking Disables error tracking if true. Defaults to false.
 ///   - disableLogs Disables logs if true. Defaults to false.
 ///   - disableTraces Disables traces if true. Defaults to false.
 ///   - disableMetrics Disables metrics if true. Defaults to false.
@@ -143,14 +142,6 @@ public struct Options {
         case enabledRegex([String])
         case disabled
     }
-    public enum AutoInstrumented {
-        case urlSession
-        case userTaps
-        case memory
-        case memoryWarnings
-        case cpu
-        case launchTimes
-    }
     public struct Instrumentation {
         let urlSession: FeatureFlag
         let userTaps: FeatureFlag
@@ -186,14 +177,12 @@ public struct Options {
     public var urlBlocklist: [String]
     public var sessionBackgroundTimeout: TimeInterval
     public var isDebug: Bool
-    public var disableErrorTracking: Bool
     public var logsApiLevel: LogLevel
     public var metricsApi: AppMetrics
     public var tracesApi: AppTracing
     public var log: OSLog
     public var crashReporting: FeatureFlag
     public var instrumentation: Instrumentation
-    let launchMeter = LaunchMeter()
     
     public init(
         serviceName: String = "observability-swift",
@@ -207,7 +196,6 @@ public struct Options {
         urlBlocklist: [String] = [],
         sessionBackgroundTimeout: TimeInterval = 15 * 60,
         isDebug: Bool = false,
-        disableErrorTracking: Bool = false,
         logsApiLevel: LogLevel = .info,
         tracesApi: AppTracing = .enabled,
         metricsApi: AppMetrics = .enabled,
@@ -226,7 +214,6 @@ public struct Options {
         self.urlBlocklist = urlBlocklist
         self.sessionBackgroundTimeout = sessionBackgroundTimeout
         self.isDebug = isDebug
-        self.disableErrorTracking = disableErrorTracking
         self.logsApiLevel = logsApiLevel
         self.tracesApi = tracesApi
         self.metricsApi = metricsApi
