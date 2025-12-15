@@ -100,7 +100,7 @@ actor SessionReplayEventGenerator {
             
             if let imageId,
                let lastExportImage,
-               lastExportImage.originalWidth == exportImage.originalWidth,
+               lastExportImage.originalWidth == exportImage.originalWidth + 1,
                lastExportImage.originalHeight == exportImage.originalHeight,
                generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit {
                 events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
