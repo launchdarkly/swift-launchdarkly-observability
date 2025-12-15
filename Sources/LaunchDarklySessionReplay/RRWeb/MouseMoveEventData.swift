@@ -1,7 +1,7 @@
 import Foundation
 
-public struct MouseMoveEventData: EventDataProtocol {
-    public struct Position: Codable {
+struct MouseMoveEventData: EventDataProtocol {
+    struct Position: Codable {
         var x: Int
         var y: Int
         var id: Int?

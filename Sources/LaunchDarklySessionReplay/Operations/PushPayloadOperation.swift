@@ -52,7 +52,7 @@ struct PushPayloadVariables: Codable {
 }
 
 extension SessionReplayAPIService {
-    func pushPayload(_ variables: PushPayloadVariables, payloadSize: inout Int) async throws {
+    func pushPayload(_ variables: PushPayloadVariables) async throws {
         let gqlRequest = GraphQLRequest(query: """
                     mutation PushPayload(
                         $session_secure_id: String!
@@ -82,8 +82,5 @@ extension SessionReplayAPIService {
             """,
             variables: variables,
             operationName: "PushPayload")
-        
-        let data = try gqlRequest.httpBody()
-        let _: GraphQLEmptyData = try await gqlClient.execute(data: data)
     }
 }

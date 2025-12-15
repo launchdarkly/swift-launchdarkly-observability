@@ -20,7 +20,7 @@ struct ExportImage: Equatable {
         self.timestamp = timestamp
     }
     
-    func eventNode(id: Int, use_rr_dataURL: Bool = true) -> EventNode {
+    func eventNode(id: Int, rr_dataURL: String) -> EventNode {
         EventNode(
             id: id,
             type: .Element,

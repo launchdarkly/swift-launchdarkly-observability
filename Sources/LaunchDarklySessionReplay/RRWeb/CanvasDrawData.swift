@@ -10,6 +10,10 @@ struct CanvasDrawData: EventDataProtocol {
     var id: Int
     var type: MouseInteractions
     var commands: [AnyCommand]
+    
+    var canvasSize: Int {
+        commands.reduce(0) { $0 + $1.canvasSize }
+    }
 }
 
 enum CommandName: String, Codable {
@@ -24,6 +28,7 @@ protocol CommandPayload: Codable {
 
 struct AnyCommand: Codable {
     let value: any CommandPayload
+    let canvasSize: Int
 
     private enum K: String, CodingKey { case property }
 
@@ -32,8 +37,11 @@ struct AnyCommand: Codable {
         .drawImage: { try DrawImage(from: $0) }
     ]
 
-    init(_ value: any CommandPayload) { self.value = value }
-
+    init(_ value: any CommandPayload, canvasSize: Int) {
+        self.value = value
+        self.canvasSize = canvasSize
+    }
+    
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: K.self)
         let name = try c.decode(CommandName.self, forKey: .property)
@@ -42,6 +50,7 @@ struct AnyCommand: Codable {
                                                     debugDescription: "Unknown command \(name)"))
         }
         self.value = try factory(decoder)
+        self.canvasSize = 0
     }
 
     func encode(to encoder: Encoder) throws {

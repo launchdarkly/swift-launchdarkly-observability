@@ -31,32 +31,19 @@ public final class GraphQLClient {
         query: String,
         variables: Variables? = nil,
         operationName: String? = nil,
-        headers: [String: String] = [:],
+        headers: [String: String] = [:]
     ) async throws -> Output {
         let gqlRequest = GraphQLRequest(query: query, variables: variables, operationName: operationName)
-        let rawData = try gqlRequest.httpBody()
-        
-        return try await execute(data: rawData, headers: headers) as Output
-    }
-    
-    /// Execute a GraphQL operation from stirng query
-    /// - Parameters:
-    ///   - query: Query in graphql format
-    ///   - variables: Codable variables (optional)
-    ///   - operationName: Operation name (optional)
-    ///   - headers: Extra headers (merged over defaultHeaders)
-    public func execute<Output: Decodable>(
-        data: Data,
-        headers: [String: String] = [:],
-    ) async throws -> Output {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         
-        if isCompressed, let compressedData = data.gzip() {
+        let rawData = try gqlRequest.httpBody()
+         
+        if isCompressed, let compressedData = rawData.gzip() {
           request.httpBody = compressedData
           request.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
         } else {
-          request.httpBody = data
+          request.httpBody = rawData
         }
         
         let combinedHeaders = defaultHeaders.merging(headers) { _, new in new }

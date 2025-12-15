@@ -99,9 +99,11 @@ actor SessionReplayExporter: EventExporting {
         guard events.isNotEmpty else { return }
         
         let input = PushPayloadVariables(sessionSecureId: initializedSession.secureId, payloadId: "\(nextPayloadId)", events: events)
-        var payloadSize = 0
-        try await replayApiService.pushPayload(input, payloadSize: &payloadSize)
-        await eventGenerator.addPushedPayloadSize(payloadSize)
+                
+        try await replayApiService.pushPayload(input)
+        
+        // flushes generating canvas size into pushedCanvasSize
+        await eventGenerator.updatePushedCanvasSize()
     }
     
     private func initializeSession(sessionSecureId: String) async throws -> InitializeSessionResponse {
