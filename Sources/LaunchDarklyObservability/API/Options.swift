@@ -142,14 +142,6 @@ public struct Options {
         case enabledRegex([String])
         case disabled
     }
-    public enum AutoInstrumented {
-        case urlSession
-        case userTaps
-        case memory
-        case memoryWarnings
-        case cpu
-        case launchTimes
-    }
     public struct Instrumentation {
         let urlSession: FeatureFlag
         let userTaps: FeatureFlag
@@ -191,7 +183,6 @@ public struct Options {
     public var log: OSLog
     public var crashReporting: FeatureFlag
     public var instrumentation: Instrumentation
-    let launchMeter = LaunchMeter()
     
     public init(
         serviceName: String = "observability-swift",
