@@ -26,7 +26,7 @@ struct ExportImage: Equatable {
             type: .Element,
             tagName: "canvas",
             attributes: [
-                "rr_dataURL": asBase64PNGDataURL(),
+                "rr_dataURL": rr_dataURL,
                 "width": "\(originalWidth)",
                 "height": "\(originalHeight)"]
         )
