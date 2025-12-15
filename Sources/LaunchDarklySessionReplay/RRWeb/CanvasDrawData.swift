@@ -28,6 +28,7 @@ protocol CommandPayload: Codable {
 
 struct AnyCommand: Codable {
     let value: any CommandPayload
+    // Transitional
     let canvasSize: Int
 
     private enum K: String, CodingKey { case property }
