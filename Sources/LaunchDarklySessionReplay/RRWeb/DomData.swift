@@ -3,6 +3,7 @@ import Foundation
 struct DomData: EventDataProtocol {
     var node: EventNode
     var texts = [String]()
+    // Transitional
     var canvasSize: Int
     
     init(node: EventNode, canvasSize: Int) {
