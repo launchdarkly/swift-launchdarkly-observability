@@ -280,11 +280,11 @@ actor SessionReplayEventGenerator {
         let eventData = fullSnapshotData(exportImage: exportImage)
         let event = Event(type: .FullSnapshot, data: AnyEventData(eventData), timestamp: timestamp, _sid: nextSid)
         // start again counting canvasSize
-        generatingCanvasSize = eventData.canvasSize
+        //generatingCanvasSize = eventData.canvasSize
         return event
     }
     
-    func fullSnapshotData(exportImage: ExportImage) -> DomData {
+    func fullSnapshotData(exportImage: ExportImage) -> EventData {
         var rootNode = EventNode(id: nextId, type: .Document)
         let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: "html")
         rootNode.childNodes.append(htmlDocNode)
@@ -299,7 +299,7 @@ actor SessionReplayEventGenerator {
         imageId = id
         rootNode.childNodes.append(htmlNode)
         
-        return DomData(node: rootNode, canvasSize: base64String.count)
+        return EventData(node: rootNode)
     }
     
     private func appendFullSnapshotEvents(_ exportImage: ExportImage, _ timestamp: TimeInterval, _ events: inout [Event]) {
