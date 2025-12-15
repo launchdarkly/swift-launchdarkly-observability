@@ -41,7 +41,7 @@ struct ExportImage: Equatable {
         }
     }
     
-    func asBase64PNGDataURL() -> String {
+    func base64DataURL() -> String {
         "data:\(mimeType);base64,\(data.base64EncodedString())"
     }
     

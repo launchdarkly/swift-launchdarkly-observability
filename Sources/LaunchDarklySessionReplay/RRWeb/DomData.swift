@@ -8,6 +8,21 @@ struct DomData: EventDataProtocol {
         self.node = node
         self.canvasSize = canvasSize
     }
+    
+    private enum CodingKeys: String, CodingKey {
+        case node
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.node = try container.decode(EventNode.self, forKey: .node)
+        self.canvasSize = 0
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(node, forKey: .node)
+    }
 }
 
 struct EventNode: Codable {
@@ -20,12 +35,12 @@ struct EventNode: Codable {
     var id: Int?
     
     init(id: Int? = nil,
-                rootId: Int? = nil,
-                type: NodeType,
-                name: String? = nil,
-                tagName: String? = nil,
-                attributes: [String : String]? = nil,
-                childNodes: [EventNode] = []) {
+         rootId: Int? = nil,
+         type: NodeType,
+         name: String? = nil,
+         tagName: String? = nil,
+         attributes: [String : String]? = nil,
+         childNodes: [EventNode] = []) {
         self.id = id
         self.rootId = rootId
         self.type = type

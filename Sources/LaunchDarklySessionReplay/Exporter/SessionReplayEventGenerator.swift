@@ -288,7 +288,7 @@ actor SessionReplayEventGenerator {
         var rootNode = EventNode(id: nextId, type: .Document)
         let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: "html")
         rootNode.childNodes.append(htmlDocNode)
-        let base64String = exportImage.data.base64EncodedString()
+        let base64String = exportImage.base64DataURL()
 
         let htmlNode = EventNode(id: nextId, type: .Element, tagName: "html", attributes: ["lang": "en"], childNodes: [
             EventNode(id: nextId, type: .Element, tagName: "head", attributes: [:]),
