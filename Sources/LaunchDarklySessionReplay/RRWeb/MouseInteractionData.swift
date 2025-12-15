@@ -3,7 +3,6 @@ import Foundation
 struct MouseInteractionData: EventDataProtocol {
     var source: IncrementalSource?
     var type: MouseInteractions?
-    var texts = [String]()
     var id: Int?
     var x: CGFloat?
     var y: CGFloat?
