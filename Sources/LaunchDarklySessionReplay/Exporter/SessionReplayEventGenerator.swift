@@ -309,6 +309,6 @@ actor SessionReplayEventGenerator {
     }
     
     func updatePushedCanvasSize() {
-        pushedCanvasSize += generatingCanvasSize
+        pushedCanvasSize = generatingCanvasSize
     }
 }
