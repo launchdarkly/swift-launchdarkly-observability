@@ -4,11 +4,11 @@ import Foundation
 #endif
 
 struct PushPayloadVariables: Codable {
-    public struct EventsInput: Codable {
+    struct EventsInput: Codable {
         var events: [Event]
     }
 
-    public struct ErrorInput: Codable {
+    struct ErrorInput: Codable {
         
     }
     
@@ -53,7 +53,8 @@ struct PushPayloadVariables: Codable {
 
 extension SessionReplayAPIService {
     func pushPayload(_ variables: PushPayloadVariables) async throws {
-        let gqlRequest = GraphQLRequest(query: """
+        let _: GraphQLEmptyData = try await gqlClient.execute(
+            query: """
                     mutation PushPayload(
                         $session_secure_id: String!
                         $payload_id: ID!
