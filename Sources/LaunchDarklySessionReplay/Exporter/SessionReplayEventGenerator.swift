@@ -12,7 +12,9 @@ enum RRWebPlayerConstants {
     // padding requiered by used html dom structure
     static let padding = CGSize(width: 11, height: 11)
     // size limit of accumulated continues canvas operations on the RRWeb player
-    static let canvasBufferLimit: Int = 10_000_000 // ~10mb
+    static let canvasBufferLimit = 10_000_000 // ~10mb
+    
+    static let canvasDrawEntourage = 300 // bytes
 }
 
 actor SessionReplayEventGenerator {
@@ -173,7 +175,6 @@ actor SessionReplayEventGenerator {
     func clickEvent(interaction: TouchInteraction) -> Event? {
         guard case .touchDown = interaction.kind else { return nil }
         
-        let viewName = interaction.target?.className
         let eventData = CustomEventData(tag: .click, payload: ClickPayload(
             clickTarget: interaction.target?.className ?? "",
             clickTextContent: interaction.target?.accessibilityIdentifier ?? "",
@@ -260,7 +261,7 @@ actor SessionReplayEventGenerator {
         let event = Event(type: .IncrementalSnapshot,
                           data: AnyEventData(eventData),
                           timestamp: timestamp, _sid: nextSid)
-        generatingCanvasSize += eventData.canvasSize
+        generatingCanvasSize += eventData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
         return event
     }
     
@@ -280,7 +281,7 @@ actor SessionReplayEventGenerator {
         let eventData = fullSnapshotData(exportImage: exportImage)
         let event = Event(type: .FullSnapshot, data: AnyEventData(eventData), timestamp: timestamp, _sid: nextSid)
         // start again counting canvasSize
-        generatingCanvasSize = eventData.canvasSize
+        generatingCanvasSize = eventData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
         return event
     }
     
