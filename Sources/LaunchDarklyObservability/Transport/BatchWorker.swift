@@ -83,6 +83,7 @@ public final actor BatchWorker {
                 Task.detached(priority: .background) { [weak self] in
                     guard let self else { return }
                     do {
+                        print("exporter=\(exporter), isFlushing=\(isFlushing), itemsCount=\(items.count), cost=\(cost)")
                         try await exporter.export(items: items)
                         await finishExport(exporterId: exporterId, itemsCount: items.count, cost: cost, error: nil)
                     } catch {

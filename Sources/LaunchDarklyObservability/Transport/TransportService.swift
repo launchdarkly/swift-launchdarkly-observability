@@ -35,7 +35,7 @@ final class TransportService: TransportServicing {
             .publisher()
             .receive(on: DispatchQueue.global())
             .sink { [weak self] event in
-                if event == .willResignActive {
+                if event == .willResignActive || event == .willTerminate {
                     Task { [weak self] in
                         await self?.batchWorker.flush()
                     }

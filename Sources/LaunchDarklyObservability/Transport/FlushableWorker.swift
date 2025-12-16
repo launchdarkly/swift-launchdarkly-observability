@@ -12,7 +12,7 @@ actor FlushableWorker {
     
     private var task: Task<Void, Never>? = nil
     private let interval: TimeInterval
-    private var work: Work
+    private let work: Work
     private var continuation: AsyncStream<Trigger>.Continuation? = nil
     private var pending: Trigger? = nil
     
@@ -30,7 +30,7 @@ actor FlushableWorker {
             }
         }
         
-        let task = Task { [weak self] in
+        self.task = Task { [weak self] in
             guard let self else { return }
             
             let tickTask = Task {
@@ -83,6 +83,10 @@ actor FlushableWorker {
     
     private func setContinuation(_ continuation: AsyncStream<Trigger>.Continuation) {
         self.continuation = continuation
+    }
+
+    deinit { 
+        stop() 
     }
 }
 
