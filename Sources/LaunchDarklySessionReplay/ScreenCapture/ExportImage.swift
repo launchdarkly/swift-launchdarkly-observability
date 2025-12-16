@@ -20,13 +20,13 @@ struct ExportImage: Equatable {
         self.timestamp = timestamp
     }
     
-    func eventNode(id: Int, use_rr_dataURL: Bool = true) -> EventNode {
+    func eventNode(id: Int, rr_dataURL: String) -> EventNode {
         EventNode(
             id: id,
             type: .Element,
             tagName: "canvas",
             attributes: [
-                "rr_dataURL": asBase64PNGDataURL(),
+                "rr_dataURL": rr_dataURL,
                 "width": "\(originalWidth)",
                 "height": "\(originalHeight)"]
         )
@@ -41,7 +41,7 @@ struct ExportImage: Equatable {
         }
     }
     
-    func asBase64PNGDataURL() -> String {
+    func base64DataURL() -> String {
         "data:\(mimeType);base64,\(data.base64EncodedString())"
     }
     

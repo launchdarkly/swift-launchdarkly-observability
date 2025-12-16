@@ -23,7 +23,6 @@ actor SessionReplayExporter: EventExporting {
         payloadId += 1
         return payloadId
     }
-    
     private var identifyPayload: IdentifyItemPayload?
     
     init(context: SessionReplayContext,
@@ -100,7 +99,11 @@ actor SessionReplayExporter: EventExporting {
         guard events.isNotEmpty else { return }
         
         let input = PushPayloadVariables(sessionSecureId: initializedSession.secureId, payloadId: "\(nextPayloadId)", events: events)
+                
         try await replayApiService.pushPayload(input)
+        
+        // flushes generating canvas size into pushedCanvasSize
+        await eventGenerator.updatePushedCanvasSize()
     }
     
     private func initializeSession(sessionSecureId: String) async throws -> InitializeSessionResponse {
