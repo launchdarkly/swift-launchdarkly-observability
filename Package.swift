@@ -22,7 +22,6 @@ let package = Package(
         .package(url: "https://github.com/mw99/DataCompression", from: "3.8.0"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.32.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.4"),
-        .package(url: "https://github.com/apple/swift-testing.git", from: "0.10.0"),
     ],
     targets: [
         // C target (no Swift files here)
@@ -51,8 +50,7 @@ let package = Package(
         .testTarget(
             name: "ObservabilityTests",
             dependencies: [
-                "LaunchDarklyObservability",
-                .product(name: "Testing", package: "swift-testing")
+                "LaunchDarklyObservability"
             ]
         ),
         .target(

@@ -21,7 +21,7 @@ actor FlushableWorker {
         self.work = work
     }
     
-    func start() {
+    func start() async {
         guard task == nil else { return }
         
         let stream = AsyncStream<Trigger>(bufferingPolicy: .bufferingNewest(1)) { [weak self] cont in
@@ -33,10 +33,12 @@ actor FlushableWorker {
         self.task = Task { [weak self] in
             guard let self else { return }
             
-            let tickTask = Task {
+            let tickTask = Task { [weak self] in
+                guard let self else { return }
+                
                 while !Task.isCancelled {
-                    try? await Task.sleep(seconds: interval)
-                    doTrigger(.tick)
+                    try? await Task.sleep(seconds: self.interval)
+                    await self.doTrigger(.tick)
                 }
             }
             defer {
@@ -60,7 +62,7 @@ actor FlushableWorker {
         continuation = nil
         pending = nil
     }
-
+    
     func flush() async {
         doTrigger(.flush)
     }
@@ -85,8 +87,13 @@ actor FlushableWorker {
         self.continuation = continuation
     }
 
-    deinit { 
-        stop() 
+    deinit {
+        // had to repeat stop code because of Actor
+        task?.cancel()
+        task = nil
+        continuation?.finish()
+        continuation = nil
+        pending = nil
     }
 }
 

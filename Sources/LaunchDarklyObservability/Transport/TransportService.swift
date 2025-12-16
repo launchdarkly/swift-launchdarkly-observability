@@ -15,16 +15,16 @@ public protocol TransportServicing {
 
 final class TransportService: TransportServicing {
     public let eventQueue: EventQueue
-    public let sessionManager: SessionManaging
-    public private(set) var isRunnung: Bool = false
+    private let sessionManager: SessionManaging
+    private var isRunning: Bool = false
     public var batchWorker: BatchWorker
     private let appLifecycleManager: AppLifecycleManaging
     private var cancellables = Set<AnyCancellable>()
-
-    public init(eventQueue: EventQueue,
-                batchWorker: BatchWorker,
-                sessionManager: SessionManaging,
-                appLifecycleManager: AppLifecycleManaging) {
+    
+    init(eventQueue: EventQueue,
+         batchWorker: BatchWorker,
+         sessionManager: SessionManaging,
+         appLifecycleManager: AppLifecycleManaging) {
         self.eventQueue = eventQueue
         self.batchWorker = batchWorker
         self.sessionManager = sessionManager
@@ -33,7 +33,7 @@ final class TransportService: TransportServicing {
         
         appLifecycleManager
             .publisher()
-            .receive(on: DispatchQueue.global())
+            .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] event in
                 if event == .willResignActive || event == .willTerminate {
                     Task { [weak self] in
@@ -45,14 +45,14 @@ final class TransportService: TransportServicing {
     }
     
     public func start() {
-        guard !isRunnung else { return }
+        guard !isRunning else { return }
         Task {
             await batchWorker.start()
         }
     }
     
     public func stop() {
-        guard isRunnung else { return }
+        guard isRunning else { return }
         Task {
             await batchWorker.stop()
         }
