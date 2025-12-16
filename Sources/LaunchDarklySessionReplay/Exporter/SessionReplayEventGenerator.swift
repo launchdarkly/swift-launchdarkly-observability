@@ -210,18 +210,13 @@ actor SessionReplayEventGenerator {
     }
     
     func viewPortEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
-        #if os(iOS)
-        let currentOrientation = UIDevice.current.orientation.isLandscape ? 1 : 0
-        #else
-        let currentOrientation = 0
-        #endif
         let payload = ViewportPayload(width: exportImage.originalWidth,
                                       height: exportImage.originalHeight,
                                       availWidth: exportImage.originalWidth,
                                       availHeight: exportImage.originalHeight,
                                       colorDepth: 30,
                                       pixelDepth: 30,
-                                      orientation: currentOrientation)
+                                      orientation: exportImage.orientation)
         let eventData = CustomEventData(tag: .viewport, payload: payload)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),

@@ -88,7 +88,7 @@ final class SnapshotTaker: EventSource {
         
         let lastFrameDispatchTime = DispatchTime.now()
         self.lastFrameDispatchTime = lastFrameDispatchTime
-    
+        
         captureService.captureUIImage { capturedImage in
             guard let capturedImage else {
                 // dropped frame
@@ -98,7 +98,8 @@ final class SnapshotTaker: EventSource {
             guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
                                                                     originalSize: capturedImage.renderSize,
                                                                     scale: capturedImage.scale,
-                                                                    timestamp: capturedImage.timestamp) else {
+                                                                    timestamp: capturedImage.timestamp,
+                                                                    orientation: capturedImage.orientation) else {
                 return
             }
             

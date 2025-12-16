@@ -9,8 +9,9 @@ struct ExportImage: Equatable {
     let scale: CGFloat
     let format: ExportFormat
     let timestamp: TimeInterval
-    
-    init(data: Data, originalWidth: Int, originalHeight: Int, scale: CGFloat, format: ExportFormat, timestamp: TimeInterval) {
+    let orientation: Int
+
+    init(data: Data, originalWidth: Int, originalHeight: Int, scale: CGFloat, format: ExportFormat, timestamp: TimeInterval, orientation: Int) {
         self.data = data
         self.dataHashValue = data.hashValue
         self.originalWidth = originalWidth
@@ -18,6 +19,7 @@ struct ExportImage: Equatable {
         self.scale = scale
         self.format = format
         self.timestamp = timestamp
+        self.orientation = orientation
     }
     
     func eventNode(id: Int, use_rr_dataURL: Bool = true) -> EventNode {
@@ -51,14 +53,15 @@ struct ExportImage: Equatable {
 }
 
 extension UIImage {
-    func exportImage(format: ExportFormat, originalSize: CGSize, scale: CGFloat, timestamp: TimeInterval) -> ExportImage? {
+    func exportImage(format: ExportFormat, originalSize: CGSize, scale: CGFloat, timestamp: TimeInterval, orientation: Int) -> ExportImage? {
         guard let data = asData(format: format) else { return nil }
         return ExportImage(data: data,
                            originalWidth: Int(originalSize.width),
                            originalHeight: Int(originalSize.height),
                            scale: scale,
                            format: format,
-                           timestamp: timestamp)
+                           timestamp: timestamp,
+                           orientation: orientation)
     }
 }
 
