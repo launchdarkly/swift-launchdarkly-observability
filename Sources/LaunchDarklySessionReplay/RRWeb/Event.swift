@@ -6,12 +6,12 @@ struct Event: Codable {
     var timestamp: Int64
     var _sid: Int
     
-    public init(type: EventType, data: AnyEventData, timestamp: TimeInterval, _sid: Int) {
+    init(type: EventType, data: AnyEventData, timestamp: TimeInterval, _sid: Int) {
         self.type = type
         self.data = data
         self.timestamp = timestamp.milliseconds
         self._sid = _sid
-    }
+    }	
 }
 
 protocol EventDataProtocol: Codable {
@@ -19,10 +19,12 @@ protocol EventDataProtocol: Codable {
 
 struct AnyEventData: Codable {
     let value: any EventDataProtocol
-
+    
     private enum ProbeKey: String, CodingKey { case source, tag }
 
-    init(_ value: any EventDataProtocol) { self.value = value }
+    init(_ value: any EventDataProtocol) {
+        self.value = value
+    }
 
     init(from decoder: Decoder) throws {
         let probe = try decoder.container(keyedBy: ProbeKey.self)
@@ -32,7 +34,7 @@ struct AnyEventData: Codable {
             } else if src == .mouseMove {
                 self.value = try MouseMoveEventData(from: decoder)
             } else {
-                self.value = try EventData(from: decoder)
+                self.value = try MouseInteractionData(from: decoder)
             }
         } else if let tag = try probe.decodeIfPresent(CustomDataTag.self, forKey: .tag) {
             self.value = switch tag {
