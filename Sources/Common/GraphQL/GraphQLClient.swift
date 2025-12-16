@@ -6,7 +6,7 @@ public final class GraphQLClient {
     private let network: HttpServicing
     private let decoder: JSONDecoder
     private let defaultHeaders: [String: String]
-    private let isCompressed: Bool = false
+    private let isCompressed: Bool = true
     
     public init(endpoint: URL,
                 network: HttpServicing = HttpService(),
