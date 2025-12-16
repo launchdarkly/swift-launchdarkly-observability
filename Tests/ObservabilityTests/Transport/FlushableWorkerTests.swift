@@ -12,10 +12,6 @@ struct FlushableWorkerTests {
             events.append((isFlush, Date()))
         }
         
-        var allFlags: [Bool] {
-            events.map { $0.isFlush }
-        }
-        
         var flushCount: Int {
             events.filter { $0.isFlush }.count
         }
