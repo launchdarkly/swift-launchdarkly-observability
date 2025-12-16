@@ -40,7 +40,10 @@ struct ObservabilityClientFactory {
         let eventQueue = EventQueue()
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
 
-        let transportService = TransportService(eventQueue: eventQueue, batchWorker: batchWorker, sessionManager: sessionManager)
+        let transportService = TransportService(eventQueue: eventQueue,
+                                                batchWorker: batchWorker,
+                                                sessionManager: sessionManager,
+                                                appLifecycleManager: appLifecycleManager)
         
         guard let url = URL(string: options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
