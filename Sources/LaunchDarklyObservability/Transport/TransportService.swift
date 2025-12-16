@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 public protocol EventSource: AnyObject {
     func start()
@@ -14,26 +15,44 @@ public protocol TransportServicing {
 
 final class TransportService: TransportServicing {
     public let eventQueue: EventQueue
-    public let sessionManager: SessionManaging
-    public private(set) var isRunnung: Bool = false
-    
+    private let sessionManager: SessionManaging
+    private var isRunning: Bool = false
     public var batchWorker: BatchWorker
+    private let appLifecycleManager: AppLifecycleManaging
+    private var cancellables = Set<AnyCancellable>()
     
-    public init(eventQueue: EventQueue, batchWorker: BatchWorker, sessionManager: SessionManaging) {
+    init(eventQueue: EventQueue,
+         batchWorker: BatchWorker,
+         sessionManager: SessionManaging,
+         appLifecycleManager: AppLifecycleManaging) {
         self.eventQueue = eventQueue
         self.batchWorker = batchWorker
         self.sessionManager = sessionManager
+        self.appLifecycleManager = appLifecycleManager
+        
+        
+        appLifecycleManager
+            .publisher()
+            .receive(on: DispatchQueue.global(qos: .background))
+            .sink { [weak self] event in
+                if event == .willResignActive || event == .willTerminate {
+                    Task { [weak self] in
+                        await self?.batchWorker.flush()
+                    }
+                }
+            }
+            .store(in: &cancellables)
     }
     
     public func start() {
-        guard !isRunnung else { return }
+        guard !isRunning else { return }
         Task {
             await batchWorker.start()
         }
     }
     
     public func stop() {
-        guard isRunnung else { return }
+        guard isRunning else { return }
         Task {
             await batchWorker.stop()
         }

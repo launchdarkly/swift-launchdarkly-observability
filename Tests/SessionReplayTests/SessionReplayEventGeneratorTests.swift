@@ -14,7 +14,8 @@ struct SessionReplayEventGeneratorTests {
             originalHeight: height,
             scale: 1.0,
             format: .png,
-            timestamp: timestamp
+            timestamp: timestamp,
+            orientation: 0
         )
     }
     

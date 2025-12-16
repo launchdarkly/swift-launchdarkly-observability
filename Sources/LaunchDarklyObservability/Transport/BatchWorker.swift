@@ -8,7 +8,7 @@ public final actor BatchWorker {
     enum Constants {
         static let maxConcurrentCost: Int = 30000
         static let maxConcurrentItems: Int = 100
-        static let maxConcurrentExporters: Int = 2
+        static let maxConcurrentExporters: Int = 3
         static let baseBackoffSeconds: TimeInterval = 2
         static let maxBackoffSeconds: TimeInterval = 60
         static let backoffJitter: Double = 0.2
@@ -28,7 +28,8 @@ public final actor BatchWorker {
     private var costInFlight = 0
     private var exportersInFlight = Set<ObjectIdentifier>()
     private var exporterBackoff = [ObjectIdentifier: BackOffExporterInfo]()
-
+    private var flushableWorker: FlushableWorker?
+    
     public init(eventQueue: EventQueue,
                 log: OSLog) {
         self.eventQueue = eventQueue
@@ -40,27 +41,22 @@ public final actor BatchWorker {
         exporters[exporterId] = exporter
     }
     
-    public func start() {
-        guard task == nil else { return }
-        
-        task = Task.detached(priority: .background) { [weak self] in
-            while !Task.isCancelled {
-                guard let self else { return }
-                let scheduledCost = await sendQueueItems()
-                try? await Task.sleep(seconds: scheduledCost > 0 ? minInterval : interval)
-            }
+    public func start() async {
+        if flushableWorker == nil {
+            flushableWorker = FlushableWorker(interval: 1.5, work: sendQueueItems)
         }
+        await flushableWorker?.start()
     }
-    
-    func sendQueueItems() async -> Int {
+
+    func sendQueueItems(isFlushing: Bool) async {
         var scheduledCost = 0
         
         while true {
             let remainingExporterSlots = Constants.maxConcurrentExporters - exportersInFlight.count
-            guard remainingExporterSlots > 0 else { break }
+            guard remainingExporterSlots > 0 || isFlushing else { break }
             
             let budget = Constants.maxConcurrentCost - costInFlight
-            guard costInFlight == 0 || budget > 0 else { break }
+            guard costInFlight == 0 || (budget > 0 || isFlushing) else { break }
 
             let now = DispatchTime.now()
             var except = exportersInFlight
@@ -96,8 +92,6 @@ public final actor BatchWorker {
                 scheduledCost += cost
             }
         }
-        
-        return scheduledCost
     }
     
     private func tryReserve(exporterId: ObjectIdentifier, cost: Int) -> Bool {
@@ -128,8 +122,11 @@ public final actor BatchWorker {
         costInFlight -= cost
     }
     
-    public func stop() {
-        task?.cancel()
-        task = nil
+    public func stop() async {
+        await flushableWorker?.stop()
+    }
+    
+    public func flush() async {
+        await flushableWorker?.flush()
     }
 }
