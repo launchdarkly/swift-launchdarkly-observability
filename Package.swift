@@ -92,5 +92,12 @@ let package = Package(
             ],
             resources: [.process("GraphQL/Queries")]
         ),
+        .testTarget(
+            name: "SessionReplayTests",
+            dependencies: [
+                "LaunchDarklySessionReplay",
+                "LaunchDarklyObservability"
+            ]
+        ),
     ]
 )

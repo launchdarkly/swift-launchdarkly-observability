@@ -4,11 +4,11 @@ import Foundation
 #endif
 
 struct PushPayloadVariables: Codable {
-    public struct EventsInput: Codable {
+    struct EventsInput: Codable {
         var events: [Event]
     }
 
-    public struct ErrorInput: Codable {
+    struct ErrorInput: Codable {
         
     }
     

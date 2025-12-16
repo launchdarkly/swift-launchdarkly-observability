@@ -8,6 +8,7 @@ public struct CapturedImage {
     public let scale: CGFloat
     public let renderSize: CGSize
     public let timestamp: TimeInterval
+    public let orientation: Int
 }
 
 public final class ScreenCaptureService {
@@ -22,6 +23,12 @@ public final class ScreenCaptureService {
     
     /// Capture as UIImage (must be on main thread).
     public func captureUIImage(yield: @escaping (CapturedImage?) async -> Void) {
+#if os(iOS)
+        let orientation = UIDevice.current.orientation.isLandscape ? 1 : 0
+#else
+        let orientation = 0
+#endif
+        let timestamp = Date().timeIntervalSince1970
         let scale = 1.0
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
@@ -69,7 +76,8 @@ public final class ScreenCaptureService {
                 let capturedImage = CapturedImage(image: image,
                                                   scale: scale,
                                                   renderSize: enclosingBounds.size,
-                                                  timestamp: Date().timeIntervalSince1970)
+                                                  timestamp: timestamp,
+                                                  orientation: orientation)
                 
                 await yield(capturedImage)
             }

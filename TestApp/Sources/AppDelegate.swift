@@ -36,7 +36,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         //            serviceName: "i-os-sessions",
                     
                     sessionBackgroundTimeout: 3,
-                    autoInstrumentation: [.memory, .urlSession])),
+                   )),
                 SessionReplay(options: .init(
                     isEnabled: true,
                     privacy: .init(
@@ -50,7 +50,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             
             return config
         }()
-
         let context = { () -> LDContext in
             var contextBuilder = LDContextBuilder(
                 key: "12345"
