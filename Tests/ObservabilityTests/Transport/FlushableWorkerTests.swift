@@ -111,4 +111,22 @@ struct FlushableWorkerTests {
         let ticksAfter = await recorder.tickCount
         #expect(ticksAfter == ticksAtStop, "No additional events after stop()")
     }
+    
+    @Test
+    func flushImmediatelyAfterStartIsNotDropped() async throws {
+        let recorder = Recorder()
+        let worker = FlushableWorker(interval: 10.0) { isFlushing in
+            await recorder.add(isFlushing)
+        }
+        
+        await worker.start()
+        await worker.flush() // immediate flush should not be dropped
+        try await Task.sleep(nanoseconds: 200_000_000) // allow processing
+        await worker.stop()
+        
+        let flushes = await recorder.flushCount
+        #expect(flushes == 1, "Immediate flush after start should be delivered exactly once")
+        let ticks = await recorder.tickCount
+        #expect(ticks == 0, "No ticks expected with very large interval")
+    }
 }

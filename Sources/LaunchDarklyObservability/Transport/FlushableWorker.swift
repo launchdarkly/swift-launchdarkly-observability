@@ -24,10 +24,12 @@ actor FlushableWorker {
     func start() async {
         guard task == nil else { return }
         
-        let stream = AsyncStream<Trigger>(bufferingPolicy: .bufferingNewest(1)) { [weak self] cont in
-            Task {
-                await self?.setContinuation(cont)
-            }
+        var localContinuation: AsyncStream<Trigger>.Continuation?
+        let stream = AsyncStream<Trigger>(bufferingPolicy: .bufferingNewest(1)) { cont in
+            localContinuation = cont
+        }
+        if let cont = localContinuation {
+            self.setContinuation(cont)
         }
         
         self.task = Task { [weak self] in
