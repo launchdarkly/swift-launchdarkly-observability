@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.13.1...0.14.0) (2025-12-16)
+
+
+### Features
+
+* Flush buffers on going to app switcher ([#104](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/104)) ([1cd74be](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/1cd74bea3d1ef5f54e9b8d95d4660c42d9284db4))
+* Limit accumulating canvas buffer ([#101](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/101)) ([0a531f5](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/0a531f546fd1e0995497963551d1235461d93bed))
+
+
+### Bug Fixes
+
+* UIDevice.current.orientation.isLandscape not main thread access ([#102](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/102)) ([d8ffa0a](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/d8ffa0a34e6f8f717a01ecd5dea9f7dc925a2ccc))
+
 ## [0.13.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.13.0...0.13.1) (2025-12-12)
 
 
