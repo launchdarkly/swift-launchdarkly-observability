@@ -6,7 +6,7 @@ public final class GraphQLClient {
     private let network: HttpServicing
     private let decoder: JSONDecoder
     private let defaultHeaders: [String: String]
-    private let isCompressed: Bool = false
+    private let isCompressed: Bool = true
     
     public init(endpoint: URL,
                 network: HttpServicing = HttpService(),
@@ -39,9 +39,12 @@ public final class GraphQLClient {
         
         let rawData = try gqlRequest.httpBody()
          
-        if isCompressed, let compressedData = rawData.gzip() {
-          request.httpBody = compressedData
-          request.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
+        if isCompressed, let compressedData = rawData.gzip(), let brCompressed = brotliCompress(rawData) {
+          request.httpBody = brCompressed
+          request.setValue("br", forHTTPHeaderField: "Content-Encoding")
+          let zcompression = Double(compressedData.count) / Double(rawData.count)
+          let brcompression = Double(brCompressed.count) / Double(rawData.count)
+          print(rawData.count, ", gzip,", compressedData.count, "," ,zcompression, ", br,", brCompressed.count, ",", brcompression)
         } else {
           request.httpBody = rawData
         }
@@ -172,5 +175,29 @@ extension GraphQLClient {
             operationName: operationName,
             headers: headers
         ) as GraphQLEmptyData
+    }
+}
+
+import Compression
+
+func brotliCompress(_ data: Data) -> Data? {
+    data.withUnsafeBytes { srcPtr in
+        guard let srcBase = srcPtr.baseAddress else { return nil }
+
+        let dstSize = data.count
+        let dstBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: dstSize)
+        defer { dstBuffer.deallocate() }
+
+        let compressedSize = compression_encode_buffer(
+            dstBuffer,
+            dstSize,
+            srcBase.assumingMemoryBound(to: UInt8.self),
+            data.count,
+            nil,
+            COMPRESSION_BROTLI
+        )
+
+        guard compressedSize > 0 else { return nil }
+        return Data(bytes: dstBuffer, count: compressedSize)
     }
 }
