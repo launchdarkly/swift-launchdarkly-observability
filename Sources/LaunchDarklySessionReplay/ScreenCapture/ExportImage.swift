@@ -4,18 +4,21 @@ import UIKit
 struct ExportImage: Equatable {
     let data: Data
     let dataHashValue: Int
-    let originalWidth: Int
-    let originalHeight: Int
+    let rect: CGRect
+    let originalSize: CGSize
     let scale: CGFloat
     let format: ExportFormat
     let timestamp: TimeInterval
     let orientation: Int
 
-    init(data: Data, originalWidth: Int, originalHeight: Int, scale: CGFloat, format: ExportFormat, timestamp: TimeInterval, orientation: Int) {
+    init(data: Data, dataHashValue: Int,
+         rect: CGRect,
+         originalSize: CGSize,
+         scale: CGFloat, format: ExportFormat, timestamp: TimeInterval, orientation: Int) {
         self.data = data
-        self.dataHashValue = data.hashValue
-        self.originalWidth = originalWidth
-        self.originalHeight = originalHeight
+        self.dataHashValue = dataHashValue
+        self.rect = rect
+        self.originalSize = originalSize
         self.scale = scale
         self.format = format
         self.timestamp = timestamp
@@ -29,8 +32,8 @@ struct ExportImage: Equatable {
             tagName: "canvas",
             attributes: [
                 "rr_dataURL": rr_dataURL,
-                "width": "\(originalWidth)",
-                "height": "\(originalHeight)"]
+                "width": "\(Int(originalSize.width))",
+                "height": "\(Int(originalSize.height))"]
         )
     }
     
@@ -53,11 +56,12 @@ struct ExportImage: Equatable {
 }
 
 extension UIImage {
-    func exportImage(format: ExportFormat, originalSize: CGSize, scale: CGFloat, timestamp: TimeInterval, orientation: Int) -> ExportImage? {
+    func exportImage(format: ExportFormat, rect: CGRect, originalSize: CGSize, scale: CGFloat, timestamp: TimeInterval, orientation: Int) -> ExportImage? {
         guard let data = asData(format: format) else { return nil }
         return ExportImage(data: data,
-                           originalWidth: Int(originalSize.width),
-                           originalHeight: Int(originalSize.height),
+                           dataHashValue: data.hashValue,
+                           rect: rect,
+                           originalSize: originalSize,
                            scale: scale,
                            format: format,
                            timestamp: timestamp,

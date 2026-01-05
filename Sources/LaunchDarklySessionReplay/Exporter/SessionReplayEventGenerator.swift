@@ -122,12 +122,8 @@ actor SessionReplayEventGenerator {
         }
     }
     
-    func paddedWidth(_ width: Int) -> Int {
-        width + Int(padding.width) * 2
-    }
-    
-    func paddedHeight(_ height: Int) -> Int {
-        height + Int(padding.height) * 2
+    func paddedSize(_ size: CGSize) -> CGSize {
+        CGSize(width: size.width + padding.width * 2, height: size.height + padding.height * 2)
     }
     
     fileprivate func appendTouchInteraction(interaction: TouchInteraction, events: inout [Event]) {
@@ -184,8 +180,8 @@ actor SessionReplayEventGenerator {
         return event
     }
     
-    func windowEvent(href: String, width: Int, height: Int, timestamp: TimeInterval) -> Event {
-        let eventData = WindowData(href: href, width: width, height: height)
+    func windowEvent(href: String, originalSize: CGSize, timestamp: TimeInterval) -> Event {
+        let eventData = WindowData(href: href, size: paddedSize(originalSize))
         let event = Event(type: .Meta,
                           data: AnyEventData(eventData),
                           timestamp: timestamp,
@@ -218,10 +214,10 @@ actor SessionReplayEventGenerator {
     }
     
     func viewPortEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
-        let payload = ViewportPayload(width: exportImage.originalWidth,
-                                      height: exportImage.originalHeight,
-                                      availWidth: exportImage.originalWidth,
-                                      availHeight: exportImage.originalHeight,
+        let payload = ViewportPayload(width: Int(exportImage.originalSize.width),
+                                      height: Int(exportImage.originalSize.height),
+                                      availWidth: Int(exportImage.originalSize.width),
+                                      availHeight: Int(exportImage.originalSize.height),
                                       colorDepth: 30,
                                       pixelDepth: 30,
                                       orientation: exportImage.orientation)
@@ -234,15 +230,12 @@ actor SessionReplayEventGenerator {
     }
     
     func drawImageEvent(exportImage: ExportImage, timestamp: TimeInterval, imageId: Int) -> Event {
-        let clearRectCommand = ClearRect(x: 0, y: 0, width: exportImage.originalWidth, height: exportImage.originalHeight)
+        let clearRectCommand = ClearRect(rect: exportImage.rect)
         let base64String = exportImage.data.base64EncodedString()
         let arrayBuffer = RRArrayBuffer(base64: base64String)
         let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportImage.mimeType))
         let drawImageCommand = DrawImage(image: AnyRRNode(RRImageBitmap(args: [blob])),
-                                         dx: 0,
-                                         dy: 0,
-                                         dw: exportImage.originalWidth,
-                                         dh: exportImage.originalHeight)
+                                         rect: exportImage.rect)
         
         let eventData = CanvasDrawData(source: .canvasMutation,
                                        id: imageId,
@@ -297,7 +290,7 @@ actor SessionReplayEventGenerator {
     }
     
     private func appendFullSnapshotEvents(_ exportImage: ExportImage, _ timestamp: TimeInterval, _ events: inout [Event]) {
-        events.append(windowEvent(href: "", width: paddedWidth(exportImage.originalWidth), height: paddedHeight(exportImage.originalHeight), timestamp: timestamp))
+        events.append(windowEvent(href: "", originalSize: exportImage.originalSize, timestamp: timestamp))
         events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
     }

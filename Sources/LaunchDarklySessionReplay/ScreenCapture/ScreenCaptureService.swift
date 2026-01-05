@@ -7,7 +7,8 @@ import Foundation
 public struct CapturedImage {
     public let image: UIImage
     public let scale: CGFloat
-    public let renderSize: CGSize
+    public let rect: CGRect
+    public let originalSize: CGSize
     public let timestamp: TimeInterval
     public let orientation: Int
 }
@@ -18,6 +19,7 @@ public final class ScreenCaptureService {
     private let tiledSignatureManager = TiledSignatureManager()
     private var previousSignature: ImageSignature?
     private let signatureLock = NSLock()
+    private let scale = 1.0
 
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
@@ -33,7 +35,6 @@ public final class ScreenCaptureService {
         let orientation = 0
 #endif
         let timestamp = Date().timeIntervalSince1970
-        let scale = 1.0
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = false
@@ -53,7 +54,7 @@ public final class ScreenCaptureService {
             guard let self, let maskCollector else { return }
             
             CATransaction.flush()
-            let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
+            let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: self.scale)  }
             
             Task {
                 guard maskOperationsBefore.count == maskOperationsAfter.count else {
@@ -77,28 +78,52 @@ public final class ScreenCaptureService {
                     self.maskingService.applyViewMasks(context: ctx.cgContext, operations: applyOperations.flatMap { $0 })
                 }
                 
-                let signatures = self.tiledSignatureManager.compute(image: image)
-                
-                self.signatureLock.lock()
-                defer {
-                    self.signatureLock.unlock()
-                }
-                if self.previousSignature == signatures {
+                guard let capturedImage = self.computeDiffCapture(image: image, timestamp: timestamp, orientation: orientation) else {
                     await yield(nil)
                     return
                 }
-                self.previousSignature = signatures
-                
-                let capturedImage = CapturedImage(image: image,
-                                                  scale: scale,
-                                                  renderSize: enclosingBounds.size,
-                                                  timestamp: timestamp,
-                                                  orientation: orientation)
+              
                 await yield(capturedImage)
             }
         }
     }
     
+    private func computeDiffCapture(image: UIImage, timestamp: TimeInterval, orientation: Int) -> CapturedImage? {
+        guard let imageSignature = self.tiledSignatureManager.compute(image: image) else {
+            return nil
+        }
+        self.signatureLock.lock()
+        defer {
+                    self.signatureLock.unlock()
+        }
+        guard let diffRect = imageSignature.diffRectangle(other: self.previousSignature) else {
+            return nil
+        }
+        
+        let finalRect = CGRect(x: diffRect.minX,
+                               y: diffRect.minY,
+                               width: min(image.size.width, diffRect.width),
+                               height: min(image.size.height, diffRect.height))
+        var finalImage: UIImage
+        if finalRect.size != image.size {
+            guard let cropped = image.cgImage?.cropping(to: finalRect) else {
+                return nil
+            }
+            finalImage = UIImage(cgImage: cropped)
+        } else {
+            finalImage = image
+        }
+        
+        let capturedImage = CapturedImage(image: finalImage,
+                                          scale: scale,
+                                          rect: finalRect,
+                                          originalSize: image.size,
+                                          timestamp: timestamp,
+                                          orientation: orientation)
+        self.previousSignature = imageSignature
+        return capturedImage
+    }
+                                    
     private func allWindowsInZOrder() -> [UIWindow] {
         let scenes = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }

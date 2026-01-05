@@ -69,8 +69,11 @@ struct ClearRect: CommandPayload {
 
     private enum K: String, CodingKey { case property, args }
 
-    init(x: Int, y: Int, width: Int, height: Int) {
-        self.x = x; self.y = y; self.width = width; self.height = height
+    init(rect: CGRect) {
+        self.x = Int(rect.minX)
+        self.y = Int(rect.minY)
+        self.width = Int(rect.size.width)
+        self.height = Int(rect.size.height)
     }
 
     init(from decoder: Decoder) throws {
@@ -104,8 +107,12 @@ struct DrawImage: CommandPayload {
 
     private enum K: String, CodingKey { case property, args }
 
-    init(image: AnyRRNode, dx: Int, dy: Int, dw: Int, dh: Int) {
-        self.image = image; self.dx = dx; self.dy = dy; self.dw = dw; self.dh = dh
+    init(image: AnyRRNode, rect: CGRect) {
+        self.image = image
+        self.dx = Int(rect.minX)
+        self.dy = Int(rect.minY)
+        self.dw = Int(rect.size.width)
+        self.dh = Int(rect.size.height)
     }
 
     init(from decoder: Decoder) throws {

@@ -96,7 +96,8 @@ final class SnapshotTaker: EventSource {
             }
             
             guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
-                                                                    originalSize: capturedImage.renderSize,
+                                                                    rect: capturedImage.rect,
+                                                                    originalSize: capturedImage.originalSize,
                                                                     scale: capturedImage.scale,
                                                                     timestamp: capturedImage.timestamp,
                                                                     orientation: capturedImage.orientation) else {
