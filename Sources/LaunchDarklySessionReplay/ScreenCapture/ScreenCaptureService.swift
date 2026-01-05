@@ -2,6 +2,7 @@
 
 import UIKit
 import Darwin
+import Foundation
 
 public struct CapturedImage {
     public let image: UIImage
@@ -9,7 +10,6 @@ public struct CapturedImage {
     public let renderSize: CGSize
     public let timestamp: TimeInterval
     public let orientation: Int
-    public let signature: Int
 }
 
 public final class ScreenCaptureService {
@@ -17,6 +17,7 @@ public final class ScreenCaptureService {
     private let maskCollector: MaskCollector
     private let tiledSignatureManager = TiledSignatureManager()
     private var previousSignature: ImageSignature?
+    private let signatureLock = NSLock()
 
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
@@ -77,19 +78,22 @@ public final class ScreenCaptureService {
                 }
                 
                 let signatures = self.tiledSignatureManager.compute(image: image)
+                
+                self.signatureLock.lock()
+                defer {
+                    self.signatureLock.unlock()
+                }
                 if self.previousSignature == signatures {
                     await yield(nil)
                     return
                 }
+                self.previousSignature = signatures
                 
                 let capturedImage = CapturedImage(image: image,
                                                   scale: scale,
                                                   renderSize: enclosingBounds.size,
                                                   timestamp: timestamp,
-                                                  orientation: orientation,
-                                                  signature: image.hashValue)
-                
-                self.previousSignature = signatures
+                                                  orientation: orientation)
                 await yield(capturedImage)
             }
         }

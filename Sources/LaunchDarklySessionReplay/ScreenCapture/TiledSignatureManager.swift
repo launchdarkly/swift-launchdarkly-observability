@@ -37,8 +37,7 @@ final class TiledSignatureManager {
             for column in 0..<columns {
                 let startX = column * tileSize
                 let endX = min(startX + tileSize, width)
-                var hash: UInt64 = 0
-                let signature = tileHash(ptr: ptr, startX: startX, startY: startY, endY: endY, bytesPerRow: bytesPerRow)
+                let signature = tileHash(ptr: ptr, startX: startX, startY: startY, endX: endX, endY: endY, bytesPerRow: bytesPerRow)
                 tiledSignatures.append(signature)
             }
         }
@@ -47,11 +46,13 @@ final class TiledSignatureManager {
     }
     
     @inline(__always)
-    func tileHash(ptr: UnsafePointer<UInt8>, startX: Int, startY: Int, endY: Int, bytesPerRow: Int) -> TiledSignature {
+    func tileHash(ptr: UnsafePointer<UInt8>, startX: Int, startY: Int, endX: Int, endY: Int, bytesPerRow: Int) -> TiledSignature {
         var hasher = CC_SHA256_CTX()
+        CC_SHA256_Init(&hasher)
+        
         for row in startY..<endY {
             let offset = startX * 4 + row * bytesPerRow
-            CC_SHA256_Update(&hasher, ptr + offset, CC_LONG(endY - startY) * 4)
+            CC_SHA256_Update(&hasher, ptr + offset, CC_LONG(endX - startX) * 4)
         }
         
         var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
