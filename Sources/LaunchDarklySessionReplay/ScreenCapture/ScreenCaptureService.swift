@@ -9,12 +9,15 @@ public struct CapturedImage {
     public let renderSize: CGSize
     public let timestamp: TimeInterval
     public let orientation: Int
+    public let signature: Int
 }
 
 public final class ScreenCaptureService {
-    let maskingService = MaskApplier()
-    let maskCollector: MaskCollector
-    
+    private let maskingService = MaskApplier()
+    private let maskCollector: MaskCollector
+    private let tiledSignatureManager = TiledSignatureManager()
+    private var previousSignature: ImageSignature?
+
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
     }
@@ -73,12 +76,20 @@ public final class ScreenCaptureService {
                     self.maskingService.applyViewMasks(context: ctx.cgContext, operations: applyOperations.flatMap { $0 })
                 }
                 
+                let signatures = self.tiledSignatureManager.compute(image: image)
+                if self.previousSignature == signatures {
+                    await yield(nil)
+                    return
+                }
+                
                 let capturedImage = CapturedImage(image: image,
                                                   scale: scale,
                                                   renderSize: enclosingBounds.size,
                                                   timestamp: timestamp,
-                                                  orientation: orientation)
+                                                  orientation: orientation,
+                                                  signature: image.hashValue)
                 
+                self.previousSignature = signatures
                 await yield(capturedImage)
             }
         }

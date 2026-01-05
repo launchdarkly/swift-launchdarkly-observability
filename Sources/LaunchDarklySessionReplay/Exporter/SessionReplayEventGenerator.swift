@@ -35,7 +35,8 @@ actor SessionReplayEventGenerator {
     private var generatingCanvasSize: Int = 0
     
     private var imageId: Int?
-    private var lastExportImage: ExportImage?
+    private var lastImageWidth: Int = -1
+    private var lastImageHeight: Int = -1
     private var stats: SessionReplayStats?
     private let isDebug = false
     
@@ -89,11 +90,9 @@ actor SessionReplayEventGenerator {
         switch item.payload {
         case let payload as ImageItemPayload:
             let exportImage = payload.exportImage
-            guard lastExportImage != exportImage else {
-                break
-            }
             defer {
-                lastExportImage = exportImage
+                lastImageWidth = exportImage.originalWidth
+                lastImageHeight = exportImage.originalHeight
             }
             
             stats?.addExportImage(exportImage)
@@ -101,9 +100,8 @@ actor SessionReplayEventGenerator {
             let timestamp = item.timestamp
             
             if let imageId,
-               let lastExportImage,
-               lastExportImage.originalWidth == exportImage.originalWidth,
-               lastExportImage.originalHeight == exportImage.originalHeight,
+               lastImageWidth == exportImage.originalWidth,
+               lastImageHeight == exportImage.originalHeight,
                generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit {
                 events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
             } else {
