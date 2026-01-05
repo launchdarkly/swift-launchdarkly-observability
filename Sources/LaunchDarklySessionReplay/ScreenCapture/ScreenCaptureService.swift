@@ -57,7 +57,8 @@ public final class ScreenCaptureService {
                     return
                 }
                 
-                var applyOperations = [[MaskOperation]]()
+                var applyOperations = [[(MaskOperation, MaskOperation?)]]()
+                
                 for (before, after) in zip(maskOperationsBefore, maskOperationsAfter) {
                     if let newOperations = maskCollector.duplicateUnsimilar(before: before, after: after) {
                         applyOperations.append(newOperations)

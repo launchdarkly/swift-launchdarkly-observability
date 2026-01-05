@@ -135,8 +135,9 @@ struct MaskingCreditCardSwiftUIView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
             .clipped()
-            .rotationEffect(.degrees(isRotating ? 360 : 0))
-            .animation(.linear(duration: 4).repeatForever(autoreverses: false), value: isRotating)
+            //.rotationEffect(.degrees(isRotating ? 360 : 0))
+            .rotation3DEffect(.degrees(isRotating ? 360 : 0), axis: (x: 1, y: 2, z: 0))
+            .animation(.linear(duration: 1).repeatForever(autoreverses: false), value: isRotating)
             .onAppear { isRotating = true }
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Masking Elements (SwiftUI)")

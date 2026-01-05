@@ -70,7 +70,7 @@ public final class CreditCardViewController: UIViewController {
                cover.backgroundColor = .clear
                startRotating(view: stack)
                if let cvvContainer = cvvContainer {
-                   startRotating(view: cvvContainer)
+                   startRotating(view: cvvContainer, duration: 1.0)
                }
             case .none:
                 cover.backgroundColor = .clear

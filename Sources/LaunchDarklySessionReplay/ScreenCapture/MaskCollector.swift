@@ -176,20 +176,24 @@ final class MaskCollector {
         return result
     }
     
-    func duplicateUnsimilar(before operationsBefore: [MaskOperation], after operationsAfter: [MaskOperation]) -> [MaskOperation]? {
+    func duplicateUnsimilar(before operationsBefore: [MaskOperation], after operationsAfter: [MaskOperation]) -> [(MaskOperation, MaskOperation?)]? {
         guard operationsBefore.count == operationsAfter.count else {
             return nil
         }
         
-        var result = operationsBefore
+        var result = [(MaskOperation, MaskOperation?)]()
+        result.reserveCapacity(operationsBefore.count)
         let moveTollerance = 1.0
         let overlapTollerance = 1.1
-        for (before, after) in zip(operationsBefore, operationsAfter) {
+        for i in 0..<operationsBefore.count {
+            let before = operationsBefore[i]
+            let after = operationsAfter[i]
             let diffX = abs(before.effectiveFrame.minX - after.effectiveFrame.minX)
             let diffY = abs(before.effectiveFrame.minY - after.effectiveFrame.minY)
             
             guard max(diffX, diffY) > moveTollerance else {
                 // If movement is present we duplicate the frame
+                result.append((before, nil))
                 continue
             }
             
@@ -199,9 +203,7 @@ final class MaskCollector {
                 return nil
             }
             
-            var after = after
-            after.kind = .fillDuplicate
-            result.append(after)
+            result.append((before, after))
         }
         
         return result
@@ -220,11 +222,11 @@ final class MaskCollector {
         let lBounds = layer.bounds
         guard lBounds.width > 0, lBounds.height > 0 else { return nil }
         
-        if CATransform3DIsAffine(layer.transform) {
-            let corner0 = layer.convert(CGPoint.zero, to: rPresenation)
-            let corner1 = layer.convert(CGPoint(x: lBounds.width, y: 0), to: rPresenation)
-            let corner3 = layer.convert(CGPoint(x: 0, y: lBounds.height), to: rPresenation)
-            
+        let corner0 = layer.convert(CGPoint.zero, to: rPresenation)
+        let corner1 = layer.convert(CGPoint(x: lBounds.width, y: 0), to: rPresenation)
+        let corner3 = layer.convert(CGPoint(x: 0, y: lBounds.height), to: rPresenation)
+        
+        /*if CATransform3DIsAffine(layer.transform) {
             let tx = corner0.x, ty = corner0.y
             let affineTransform = CGAffineTransform(a: (corner1.x - tx) / max(lBounds.width, 0.0001),
                                                     b: (corner1.y - ty) / max(lBounds.width, 0.0001),
@@ -233,9 +235,13 @@ final class MaskCollector {
                                                     tx: tx,
                                                     ty: ty).scaledBy(x: scale, y: scale)
             return Mask.affine(rect: lBounds, transform: affineTransform)
-        } else {
-           // TODO: finish 3D animations
-        }
+        } else {*/
+            let corner2 = layer.convert(CGPoint(x: lBounds.width, y: lBounds.height), to: rPresenation)
+            return Mask.quad(Quad(p0: corner0,
+                                  p1: corner1,
+                                  p2: corner2,
+                                  p3: corner3))
+        //}
         
         return nil
     }

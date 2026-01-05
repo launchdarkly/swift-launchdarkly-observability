@@ -10,8 +10,8 @@ struct SnapshotButton: View {
             Image(systemName: "camera")
         }.sheet(isPresented: $viewModel.isImagePresented) {
             print(viewModel.isImagePresented)
-            let image = viewModel.capturedImage!.image
-            return CapturedImageView(image: image)
+            let image = viewModel.capturedImage?.image
+            return CapturedImageView(image: image ?? UIImage())
         }
     }
 }
