@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.15.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.14.0...0.15.0) (2026-01-05)
+
+
+### Features
+
+* Deduplicate images before buffering ([#107](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/107)) ([eea5821](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/eea5821e412cc2f70709797fa9668bc238b747ec))
+* Gzip compression of graphql request ([#105](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/105)) ([07415de](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/07415deb559e491978cd952af95450b2b9bc7a96))
+
 ## [0.14.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.13.1...0.14.0) (2025-12-16)
 
 
