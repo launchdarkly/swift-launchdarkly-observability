@@ -2,6 +2,7 @@
 
 import UIKit
 import Darwin
+import Foundation
 
 public struct CapturedImage {
     public let image: UIImage
@@ -12,9 +13,12 @@ public struct CapturedImage {
 }
 
 public final class ScreenCaptureService {
-    let maskingService = MaskApplier()
-    let maskCollector: MaskCollector
-    
+    private let maskingService = MaskApplier()
+    private let maskCollector: MaskCollector
+    private let tiledSignatureManager = TiledSignatureManager()
+    private var previousSignature: ImageSignature?
+    private let signatureLock = NSLock()
+
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
     }
@@ -73,12 +77,23 @@ public final class ScreenCaptureService {
                     self.maskingService.applyViewMasks(context: ctx.cgContext, operations: applyOperations.flatMap { $0 })
                 }
                 
+                let signatures = self.tiledSignatureManager.compute(image: image)
+                
+                self.signatureLock.lock()
+                defer {
+                    self.signatureLock.unlock()
+                }
+                if self.previousSignature == signatures {
+                    await yield(nil)
+                    return
+                }
+                self.previousSignature = signatures
+                
                 let capturedImage = CapturedImage(image: image,
                                                   scale: scale,
                                                   renderSize: enclosingBounds.size,
                                                   timestamp: timestamp,
                                                   orientation: orientation)
-                
                 await yield(capturedImage)
             }
         }
