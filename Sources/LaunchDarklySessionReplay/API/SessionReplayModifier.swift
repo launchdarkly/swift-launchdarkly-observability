@@ -8,7 +8,7 @@ struct SessionReplayModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.overlay(
             SessionReplayViewRepresentable(isEnabled: isEnabled, isIgnored: isIgnored)
-            .disabled(true)
+            .allowsHitTesting(false)
         )
     }
 }
@@ -27,7 +27,9 @@ struct SessionReplayViewRepresentable: UIViewRepresentable {
     class MaskView: UIView { }
     
     public func makeUIView(context: Context) -> MaskView {
-        MaskView()
+        let view = MaskView()
+        view.isUserInteractionEnabled = false
+        return view
     }
     
     public func updateUIView(_ uiView: MaskView, context: Context) {
