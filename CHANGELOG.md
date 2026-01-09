@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.15.0...0.15.1) (2026-01-09)
+
+
+### Bug Fixes
+
+* ldMask interfere with hit view testing ([#108](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/108)) ([c5349b0](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/c5349b0f08fcd59ac91d4db4d8e45f56a05a4e3e))
+
 ## [0.15.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.14.0...0.15.0) (2026-01-05)
 
 
