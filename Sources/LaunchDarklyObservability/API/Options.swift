@@ -132,10 +132,10 @@ public struct Options {
         case none
     }
     public struct CrashReporting {
-        public let vendor: CrashReportingSource
+        public let source: CrashReportingSource
         
-        public init(vendor: CrashReportingSource = .KSCrash) {
-            self.vendor = vendor
+        public init(source: CrashReportingSource = .KSCrash) {
+            self.source = source
         }
     }
     public enum FeatureFlag {
@@ -212,7 +212,7 @@ public struct Options {
         tracesApi: AppTracing = .enabled,
         metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
-        crashReporting: CrashReporting = .init(vendor: .KSCrash),
+        crashReporting: CrashReporting = .init(source: .KSCrash),
         instrumentation: Instrumentation = .init()
     ) {
         self.serviceName = serviceName
