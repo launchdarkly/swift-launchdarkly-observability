@@ -78,6 +78,7 @@ struct RecipeView: View {
             .frame(maxWidth: .infinity)
         }
         .background { backgroundColor.ignoresSafeArea() }
+        .ldMask()
         .navigationTitle(smoothie.title)
         .toolbar {
             SmoothieFavoriteButton().environmentObject(model)

@@ -147,7 +147,7 @@ struct MainMenuView: View {
                 }
                 
    
-            }.background(Color.clear)
+            }.background(Color.clear).ldUnmask()
             .navigationDestination(for: String.self) { value in
                 if value == "fruta" {
                     FrutaAppView()

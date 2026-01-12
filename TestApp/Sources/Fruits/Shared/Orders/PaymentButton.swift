@@ -23,6 +23,7 @@ struct PaymentButton: View {
     
     var body: some View {
         Representable(action: action)
+            .padding()
             .frame(minWidth: 100, maxWidth: 400)
             .frame(height: height)
             .frame(maxWidth: .infinity)
@@ -89,9 +90,11 @@ struct PaymentButton_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             PaymentButton(action: {})
+                .ldMask()
                 .padding()
                 .preferredColorScheme(.light)
             PaymentButton(action: {})
+                .ldMask()
                 .padding()
                 .preferredColorScheme(.dark)
         }

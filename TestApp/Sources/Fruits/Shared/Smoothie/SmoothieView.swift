@@ -154,9 +154,9 @@ struct SmoothieView: View {
                 if let account = model.account, account.canRedeemFreeSmoothie {
                     RedeemSmoothieButton(action: redeemSmoothie)
                 } else {
-                    PaymentButton(action: orderSmoothie)
+                    PaymentButton(action: orderSmoothie).ldMask().padding()
                 }
-            }
+            }.ldMask()
             .padding(.horizontal, 40)
             .padding(.vertical, 16)
         }

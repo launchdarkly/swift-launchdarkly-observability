@@ -50,14 +50,15 @@ struct SmoothieList: View {
                     }
                 }
             }
+            .ldMask()
             .accessibilityRotor("Smoothies", entries: smoothies, entryLabel: \.title)
             .accessibilityRotor("Favorite Smoothies", entries: smoothies.filter { model.isFavorite(smoothie: $0) }, entryLabel: \.title)
             .searchable(text: $model.searchString) {
                 ForEach(model.searchSuggestions) { suggestion in
                     Text(suggestion.name).searchCompletion(suggestion.name)
                 }
-            }
-        }
+            }.ldMask()
+        }.ldMask()
     }
 }
 

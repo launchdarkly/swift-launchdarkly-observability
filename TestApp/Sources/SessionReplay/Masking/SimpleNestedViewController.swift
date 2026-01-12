@@ -113,7 +113,7 @@ struct MaskingElementsSimpleUIKitView: View {
                         dismiss()
                     } label: {
                         Image(systemName: "checkmark")
-                    }
+                    }.ldMask()
                     SnapshotButton()
                 }
         }
