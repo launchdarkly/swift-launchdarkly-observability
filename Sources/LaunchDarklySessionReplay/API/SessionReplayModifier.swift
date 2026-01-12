@@ -28,13 +28,15 @@ struct SessionReplayViewRepresentable: UIViewRepresentable {
     class MaskView: UIView {
         override func didMoveToSuperview() {
             super.didMoveToSuperview()
+            
             if let wrapper = superview {
                 wrapper.isUserInteractionEnabled = false
             }
         }
         
         override func didMoveToWindow() {
-            super.didMoveToSuperview()
+            super.didMoveToWindow()
+            
             if let wrapper = superview {
                 wrapper.isUserInteractionEnabled = false
             }
