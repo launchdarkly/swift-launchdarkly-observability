@@ -6,8 +6,9 @@ struct SessionReplayModifier: ViewModifier {
     let isIgnored: Bool?
     
     public func body(content: Content) -> some View {
-        content.overlay(
+        content.background(
             SessionReplayViewRepresentable(isEnabled: isEnabled, isIgnored: isIgnored)
+            .disabled(true)
             .allowsHitTesting(false)
         )
     }
@@ -24,11 +25,30 @@ struct SessionReplayViewRepresentable: UIViewRepresentable {
         self.isIgnored = isIgnored
     }
     
-    class MaskView: UIView { }
+    class MaskView: UIView {
+        override func didMoveToSuperview() {
+            super.didMoveToSuperview()
+            if let wrapper = superview {
+                wrapper.isUserInteractionEnabled = false
+            }
+        }
+        
+        override func didMoveToWindow() {
+            super.didMoveToSuperview()
+            if let wrapper = superview {
+                wrapper.isUserInteractionEnabled = false
+            }
+        }
+        
+        override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+            return false
+        }
+    }
     
     public func makeUIView(context: Context) -> MaskView {
         let view = MaskView()
         view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
         return view
     }
     
