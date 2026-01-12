@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.15.1...0.15.2) (2026-01-12)
+
+
+### Bug Fixes
+
+* make unlock await aware ([#111](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/111)) ([480ecd4](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/480ecd41e5d9e749022ed5f323de969c35c33f74))
+
 ## [0.15.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.15.0...0.15.1) (2026-01-09)
 
 
