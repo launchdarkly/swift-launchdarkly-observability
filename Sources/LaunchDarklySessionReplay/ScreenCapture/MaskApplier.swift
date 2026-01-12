@@ -11,12 +11,17 @@ final class MaskApplier {
         for (before, after) in operations {
             switch before.mask {
             case .affine(let rect, let transform):
-                if let after {
-                    
+                if let after, case .affine(let rect2, let transform2) = after.mask {
+                    // Merge two transformed rects via convex hull
+                    context.saveGState()
+                    let quad1 = quadFrom(rect: rect, transform: transform)
+                    let quad2 = quadFrom(rect: rect2, transform: transform2)
+                    drawHull(context, quad1: quad1, quad2: quad2, fillColor: Self.standardMaskColor)
+                    context.restoreGState()
                 }
-                
+            
                 context.saveGState()
-                drawRect(context, transform, rect, fillColor: Self.standardMaskColor)
+                drawRect(context, transform, rect, fillColor: Self.duplicateMaskColor)
                 context.restoreGState()
                 
             case .quad(let beforeQuad):
@@ -43,48 +48,34 @@ final class MaskApplier {
         path.fill()
     }
     
+    private func quadFrom(rect: CGRect, transform: CGAffineTransform) -> Quad {
+        let p0 = CGPoint(x: rect.minX, y: rect.minY).applying(transform)
+        let p1 = CGPoint(x: rect.maxX, y: rect.minY).applying(transform)
+        let p2 = CGPoint(x: rect.maxX, y: rect.maxY).applying(transform)
+        let p3 = CGPoint(x: rect.minX, y: rect.maxY).applying(transform)
+        return Quad(p0: p0, p1: p1, p2: p2, p3: p3)
+    }
+    
     private func drawQuad(_ context: CGContext, /*_ transform: CGAffineTransform,*/ quad: Quad, fillColor: UIColor) {
-        //context.concatenate(transform)
         context.beginPath()
         context.move(to: quad.p0)
         context.addLine(to: quad.p1)
         context.addLine(to: quad.p2)
         context.addLine(to: quad.p3)
         context.addLine(to: quad.p0)
-        //let path = UIBezierPath(cornerRadius: 2)
         fillColor.setFill()
         context.fillPath()
     }
     
-    private func drawQuads(_ context: CGContext, quad1: Quad, quad2: Quad, fillColor: UIColor) {
-        let path = CGMutablePath()
-        
-        path.move(to: quad1.p0)
-        path.addLine(to: quad1.p1)
-        path.addLine(to: quad1.p2)
-        path.addLine(to: quad1.p3)
-        path.closeSubpath()
-        
-        path.move(to: quad2.p0)
-        path.addLine(to: quad2.p1)
-        path.addLine(to: quad2.p2)
-        path.addLine(to: quad2.p3)
-        path.closeSubpath()
-        
-        context.addPath(path)
-        context.setFillColor(fillColor.cgColor)
-        context.fillPath(using: .winding)
-    }
-    
     private func drawHull(_ context: CGContext, quad1: Quad, quad2: Quad, fillColor: UIColor) {
-        let hull = convexHull([quad1.p0,
-                               quad1.p1,
-                               quad1.p2,
-                               quad1.p3,
-                               quad2.p0,
-                               quad2.p1,
-                               quad2.p2,
-                               quad2.p3])
+        let hull = convexHull8([quad1.p0,
+                                quad1.p1,
+                                quad1.p2,
+                                quad1.p3,
+                                quad2.p0,
+                                quad2.p1,
+                                quad2.p2,
+                                quad2.p3])
         guard hull.count >= 3 else { return }
         
         let path = CGMutablePath()
@@ -92,6 +83,7 @@ final class MaskApplier {
         for i in 1..<hull.count {
             path.addLine(to: hull[i])
         }
+        path.closeSubpath()
         
         context.addPath(path)
         context.setFillColor(fillColor.cgColor)
@@ -135,45 +127,3 @@ func convexHull8(_ points: [CGPoint]) -> [CGPoint] {
     return hull
 }
 
-// General for a lot of points
-func convexHull(_ points: [CGPoint]) -> [CGPoint] {
-    guard points.count >= 4 else { return points }
-    
-    let sortedPoints = points.sorted {
-        if $0.x != $1.x { return $0.x < $1.x }
-        return $0.y < $1.y
-    }
-    
-    var lower: [CGPoint] = []
-    lower.reserveCapacity(points.count)
-    
-    for p in sortedPoints {
-        while lower.count >= 2 {
-            let a = lower[lower.count - 2]
-            let b = lower[lower.count - 1]
-            
-            guard cross(a, b, p) <= 0 else { break }
-            lower.removeLast()
-        }
-        lower.append(p)
-    }
-    
-    var upper: [CGPoint] = []
-    upper.reserveCapacity(points.count)
-    
-    for p in sortedPoints.reversed() {
-        while upper.count >= 2 {
-            let a = upper[upper.count - 2]
-            let b = upper[upper.count - 1]
-            
-            guard cross(a, b, p) <= 0 else { break }
-            upper.removeLast()
-        }
-        upper.append(p)
-    }
-    
-    lower.removeLast()
-    upper.removeLast()
-    
-    return lower + upper
-}
