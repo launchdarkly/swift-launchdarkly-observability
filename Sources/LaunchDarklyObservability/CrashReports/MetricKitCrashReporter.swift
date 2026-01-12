@@ -4,6 +4,13 @@ import MetricKit
 import CryptoKit
 
 /**
+ The MXMetricManager shared object manages your subscription for receiving on-device daily metrics.
+
+ MetricKit starts accumulating reports for your app after calling shared for the first time. To receive the reports, call add(_:) with an object that adopts the MXMetricManagerSubscriber protocol. The system then delivers metric reports at most once per day, and diagnostic reports immediately in iOS 15 and later and macOS 12 and
+ later. The reports contain the metrics from the past 24 hours and any previously undelivered daily reports. To pause receiving reports, call remove(_:).
+
+ The calls to add a subscriber and for receiving reports are safe to use in performance-sensitive code, such as app launch.
+ 
  MetricKit crash reports:
  - Are delivered after app relaunch
  - Are not immediate
@@ -114,7 +121,7 @@ fileprivate let formatter: ISO8601DateFormatter = {
 }()
 
 @available(iOS 15.0, tvOS 15.0, *)
-final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashReporting {
+final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashReporting, AutoInstrumentation {
     private let logsApi: LogsApi
     private let log: OSLog
     
@@ -122,11 +129,6 @@ final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashRe
         self.logsApi = logsApi
         self.log = log
         super.init()
-        self.start()
-    }
-    
-    deinit {
-        self.stop()
     }
 
     // MARK: - Public API

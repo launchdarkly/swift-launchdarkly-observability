@@ -195,8 +195,9 @@ struct ObservabilityClientFactory {
             crashReporting = try KSCrashReportService(logsApi: logClient, log: options.log)
         } else if options.crashReporting.vendor == .metricKit {
             if #available(iOS 15.0, *) {
-                crashReporting = MetricKitCrashReporter(logsApi: logClient, logger: options.log)
-                crashReporting.logPendingCrashReports()
+                let reporter = MetricKitCrashReporter(logsApi: logClient, logger: options.log)
+                crashReporting = reporter
+                autoInstrumentation.append(reporter)
             } else {
                 /// since MetricKit is only fully available for iOS 15+
                 /// we cannot do assumptions on user wants KSCrash as fallback, so
@@ -219,7 +220,8 @@ struct ObservabilityClientFactory {
         
         transportService.start()
         autoInstrumentation.forEach { $0.start() }
-
+        crashReporting.logPendingCrashReports()
+        
         return ObservabilityClient(
             tracer: appTraceClient,
             logger: appLogClient,
