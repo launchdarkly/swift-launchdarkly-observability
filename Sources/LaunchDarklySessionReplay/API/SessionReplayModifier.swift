@@ -6,10 +6,9 @@ struct SessionReplayModifier: ViewModifier {
     let isIgnored: Bool?
     
     public func body(content: Content) -> some View {
-        content.background(
+        content.overlay(
             SessionReplayViewRepresentable(isEnabled: isEnabled, isIgnored: isIgnored)
-            .disabled(true)
-            .allowsHitTesting(false)
+                .allowsHitTesting(false)
         )
     }
 }
@@ -24,36 +23,31 @@ struct SessionReplayViewRepresentable: UIViewRepresentable {
         self.isEnabled = isEnabled
         self.isIgnored = isIgnored
     }
-    
+
     class MaskView: UIView {
         override func didMoveToSuperview() {
             super.didMoveToSuperview()
-            
-            if let wrapper = superview {
-                wrapper.isUserInteractionEnabled = false
-            }
+            // We want to make sure the wrapper view created by SwiftUI also doesn't intercept touches
+            superview?.isUserInteractionEnabled = false
         }
-        
+
         override func didMoveToWindow() {
             super.didMoveToWindow()
-            
-            if let wrapper = superview {
-                wrapper.isUserInteractionEnabled = false
-            }
+            superview?.isUserInteractionEnabled = false
         }
-        
+
         override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
             return false
         }
     }
-    
+
     public func makeUIView(context: Context) -> MaskView {
         let view = MaskView()
         view.isUserInteractionEnabled = false
         view.backgroundColor = .clear
         return view
     }
-    
+
     public func updateUIView(_ uiView: MaskView, context: Context) {
         if let isEnabled {
             SessionReplayAssociatedObjects.maskUIView(uiView, isEnabled: isEnabled)
