@@ -191,7 +191,7 @@ struct ObservabilityClientFactory {
         }
         
         let crashReporting: CrashReporting
-        if options.crashReporting == .enabled {
+        if options.crashReporting.vendor == .KSCrash {
             crashReporting = try KSCrashReportService(logsApi: logClient, log: options.log)
         } else {
             crashReporting = NoOpCrashReport()

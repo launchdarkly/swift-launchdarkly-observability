@@ -126,6 +126,18 @@ public struct Options {
     public enum AppMetrics {
         case enabled, disabled
     }
+    public enum CrashReportingSource {
+        case KSCrash
+        case metricKit
+        case none
+    }
+    public struct CrashReporting {
+        public let vendor: CrashReportingSource
+        
+        public init(vendor: CrashReportingSource = .KSCrash) {
+            self.vendor = vendor
+        }
+    }
     public enum FeatureFlag {
         case enabled
         case disabled
@@ -181,7 +193,7 @@ public struct Options {
     public var metricsApi: AppMetrics
     public var tracesApi: AppTracing
     public var log: OSLog
-    public var crashReporting: FeatureFlag
+    public var crashReporting: CrashReporting
     public var instrumentation: Instrumentation
     
     public init(
@@ -200,7 +212,7 @@ public struct Options {
         tracesApi: AppTracing = .enabled,
         metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
-        crashReporting: FeatureFlag = .enabled,
+        crashReporting: CrashReporting = .init(vendor: .KSCrash),
         instrumentation: Instrumentation = .init()
     ) {
         self.serviceName = serviceName
