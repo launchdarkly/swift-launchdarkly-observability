@@ -16,7 +16,7 @@ struct Client {
                     logsApiLevel: .info,
                     tracesApi: .enabled,
                     metricsApi: .enabled,
-                    crashReporting: .disabled,
+                    crashReporting: .init(vendor: .metricKit),
                     instrumentation: .init(
                         urlSession: .enabled,
                         userTaps: .enabled,

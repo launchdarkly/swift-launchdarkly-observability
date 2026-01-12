@@ -41,11 +41,11 @@ import CryptoKit
  - Serialized stacks  -->  De-identification
  */
 
-struct CrashReport: Codable {
+struct MetricKitCrashReport: Codable, Error {
     let identifier: String
     let terminationReason: String?
     let signal: Int?
-    let exceptionType: Int?
+    let exceptionType: Int32?
     let callStack: Data
 
     // From MXDiagnosticPayload
@@ -53,10 +53,80 @@ struct CrashReport: Codable {
     let payloadTimeRangeEnd: Date
 }
 
-@available(iOS 14.0, tvOS 14.0, *)
-final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber {
-    private override init() {
+enum MachExceptionType: String, Codable {
+    case badAccess        = "EXC_BAD_ACCESS"
+    case badInstruction   = "EXC_BAD_INSTRUCTION"
+    case arithmetic       = "EXC_ARITHMETIC"
+    case emulation        = "EXC_EMULATION"
+    case software         = "EXC_SOFTWARE"
+    case breakpoint       = "EXC_BREAKPOINT"
+    case syscall          = "EXC_SYSCALL"
+    case machSyscall      = "EXC_MACH_SYSCALL"
+    case rpcAlert         = "EXC_RPC_ALERT"
+    case crash            = "EXC_CRASH"
+    case resource         = "EXC_RESOURCE"
+    case guardException   = "EXC_GUARD"
+    case unknown          = "UNKNOWN"
+}
+
+extension MachExceptionType {
+    init(exceptionTypeNumber: Int32?) {
+        guard let rawValue = exceptionTypeNumber else {
+            self = .unknown
+            return
+        }
+
+        switch rawValue {
+        case EXC_BAD_ACCESS:
+            self = .badAccess
+        case EXC_BAD_INSTRUCTION:
+            self = .badInstruction
+        case EXC_ARITHMETIC:
+            self = .arithmetic
+        case EXC_EMULATION:
+            self = .emulation
+        case EXC_SOFTWARE:
+            self = .software
+        case EXC_BREAKPOINT:
+            self = .breakpoint
+        case EXC_SYSCALL:
+            self = .syscall
+        case EXC_MACH_SYSCALL:
+            self = .machSyscall
+        case EXC_RPC_ALERT:
+            self = .rpcAlert
+        case EXC_CRASH:
+            self = .crash
+        case EXC_RESOURCE:
+            self = .resource
+        case EXC_GUARD:
+            self = .guardException
+        default:
+            self = .unknown
+        }
+    }
+}
+
+fileprivate let formatter: ISO8601DateFormatter = {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime]
+    return formatter
+}()
+
+@available(iOS 15.0, tvOS 15.0, *)
+final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashReporting {
+    private let logsApi: LogsApi
+    private let log: OSLog
+    
+    init(logsApi: LogsApi, logger log: OSLog) {
+        self.logsApi = logsApi
+        self.log = log
         super.init()
+        self.start()
+    }
+    
+    deinit {
+        self.stop()
     }
 
     // MARK: - Public API
@@ -97,21 +167,37 @@ final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber {
             .map { String(format: "%02x", $0) }
             .joined()
         
-        let report = CrashReport(
+        let report = MetricKitCrashReport(
             identifier: identifier,
             terminationReason: crash.terminationReason,
             signal: crash.signal?.intValue,
-            exceptionType: crash.exceptionType?.intValue,
+            exceptionType: crash.exceptionType?.int32Value,
             callStack: callStackJSON,
             payloadTimeRangeStart: timeRangeStart,
             payloadTimeRangeEnd: timeRangeEnd
         )
         
-        sendToServer(report)
+        log(report)
     }
     
-    private func sendToServer(_ report: CrashReport) {
+    private func log(_ report: MetricKitCrashReport) {
+        var attributes = [String: AttributeValue]()
+        attributes["exception.type"] = .string(MachExceptionType(exceptionTypeNumber: report.exceptionType).rawValue)
+        attributes["exception.stacktrace"] = String(data: report.callStack, encoding: .utf8).map(AttributeValue.string)
+        attributes["exception.message"] = report.terminationReason.map(AttributeValue.string)
+        attributes["exception.identifier"] = .string(report.identifier)
+        attributes["exception.start_time"] = .string(formatter.string(from: report.payloadTimeRangeStart))
+        attributes["exception.end_time"] = .string(formatter.string(from: report.payloadTimeRangeEnd))
         
+        logsApi.recordLog(
+            message: report.identifier,
+            severity: .fatal,
+            attributes: attributes
+        )
+    }
+    
+    func logPendingCrashReports() {
+        didReceive(MXMetricManager.shared.pastDiagnosticPayloads)
     }
 }
 #endif
