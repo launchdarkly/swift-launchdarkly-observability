@@ -197,7 +197,8 @@ final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashRe
     }
     
     func logPendingCrashReports() {
-        didReceive(MXMetricManager.shared.pastDiagnosticPayloads)
+        let pastDiagnosticPayloads: [MXDiagnosticPayload] = MXMetricManager.shared.pastDiagnosticPayloads
+        didReceive(pastDiagnosticPayloads)
     }
 }
 #endif
