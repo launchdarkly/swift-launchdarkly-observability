@@ -1,5 +1,107 @@
 # Changelog
 
+## [0.15.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.15.1...0.15.2) (2026-01-12)
+
+
+### Bug Fixes
+
+* make unlock await aware ([#111](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/111)) ([480ecd4](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/480ecd41e5d9e749022ed5f323de969c35c33f74))
+
+## [0.15.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.15.0...0.15.1) (2026-01-09)
+
+
+### Bug Fixes
+
+* ldMask interfere with hit view testing ([#108](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/108)) ([c5349b0](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/c5349b0f08fcd59ac91d4db4d8e45f56a05a4e3e))
+
+## [0.15.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.14.0...0.15.0) (2026-01-05)
+
+
+### Features
+
+* Deduplicate images before buffering ([#107](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/107)) ([eea5821](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/eea5821e412cc2f70709797fa9668bc238b747ec))
+* Gzip compression of graphql request ([#105](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/105)) ([07415de](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/07415deb559e491978cd952af95450b2b9bc7a96))
+
+## [0.14.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.13.1...0.14.0) (2025-12-16)
+
+
+### Features
+
+* Flush buffers on going to app switcher ([#104](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/104)) ([1cd74be](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/1cd74bea3d1ef5f54e9b8d95d4660c42d9284db4))
+* Limit accumulating canvas buffer ([#101](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/101)) ([0a531f5](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/0a531f546fd1e0995497963551d1235461d93bed))
+
+
+### Bug Fixes
+
+* UIDevice.current.orientation.isLandscape not main thread access ([#102](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/102)) ([d8ffa0a](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/d8ffa0a34e6f8f717a01ecd5dea9f7dc925a2ccc))
+
+## [0.13.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.13.0...0.13.1) (2025-12-12)
+
+
+### Bug Fixes
+
+* Rewrite AppLifeCycleManager onto Combine ([#95](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/95)) ([cb4c21d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/cb4c21dd780b906a6fb250489b8c412258eac05e))
+
+## [0.13.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.12.1...0.13.0) (2025-12-12)
+
+
+### Features
+
+* Identify support (OBS + SR) ([#93](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/93)) ([432f75c](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/432f75c4d47bf4e7c51cc5c68aacb13d366871d2))
+
+## [0.12.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.12.0...0.12.1) (2025-12-09)
+
+
+### Bug Fixes
+
+* hold broadcaster until deinit finishes ([#90](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/90)) ([8a00733](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/8a007335d2977a14b91dfdd2e1ece933bbb3626e))
+* Remove double image workaround for RRWeb ([#92](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/92)) ([4faede4](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/4faede43902b382cc5f6f76938af6b89cd1843a2))
+
+## [0.12.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.11.1...0.12.0) (2025-12-08)
+
+
+### Features
+
+* add cocoapods support ([#87](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/87)) ([cb0fa51](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/cb0fa513eeda69d248dd53b30c66bed9812831ed))
+
+
+### Bug Fixes
+
+* Resolve sigabrt crash due that LDClient is not Obj-c class ([#89](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/89)) ([1c704e4](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/1c704e4a1ace00b572fb87e733180c21f6fa1d2d))
+
+## [0.11.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.11.0...0.11.1) (2025-11-26)
+
+
+### Bug Fixes
+
+* remove uiwebview, it is not allowed in appstore ([#85](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/85)) ([b3908f1](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/b3908f154f4ceccc53099e2ca524ad4776438874))
+
+## [0.11.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.10.0...0.11.0) (2025-11-18)
+
+
+### Features
+
+* launch times multi-scene support ([#83](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/83)) ([f3c385d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/f3c385d41eab5d34eabe8e7ec69838cbb6baf798))
+
+
+### Bug Fixes
+
+* Delayed masks for SwiftUI ([#82](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/82)) ([157bfee](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/157bfee3deac92b15e40ce5680fdd5133003adea))
+
+## [0.10.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.9.2...0.10.0) (2025-11-15)
+
+
+### Features
+
+* ignore masking ([#80](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/80)) ([1372064](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/1372064e6b5454750df2e56a7d9c9c23bc7b6687))
+* options refactor ([#75](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/75)) ([b442cbc](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/b442cbc315ac4b45345a770987bd0c122adfa289))
+* refactor instrumentation options ([#77](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/77)) ([ebc2e24](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/ebc2e2489ecbdcbc83f6e04f82c430c457e5d008))
+
+
+### Bug Fixes
+
+* touch throttle ([#81](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/81)) ([6d1cd15](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/6d1cd151514618bcc6778f76b006d973442569ee))
+
 ## [0.9.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.9.1...0.9.2) (2025-11-05)
 
 

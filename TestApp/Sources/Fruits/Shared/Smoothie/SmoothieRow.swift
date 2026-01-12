@@ -45,6 +45,7 @@ struct SmoothieRow: View {
         }
         .font(.subheadline)
         .accessibilityElement(children: .combine)
+        .ldIgnore()
     }
     
     var listedIngredients: String {

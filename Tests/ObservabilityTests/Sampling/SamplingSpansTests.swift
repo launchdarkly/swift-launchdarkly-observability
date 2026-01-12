@@ -1,7 +1,7 @@
 import Testing
 import Common
 import OpenTelemetrySdk
-@testable import Observability
+@testable import LaunchDarklyObservability
 
 struct SamplingSpansTests {
     @Test("Given a set of spans and a sampler, when sampling is disabled, then should return all spans")

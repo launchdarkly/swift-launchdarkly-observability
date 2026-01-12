@@ -10,4 +10,8 @@ extension TimeInterval {
     public var milliseconds: Int64 {
         Int64(self * 1000.0)
     }
+    
+    public var nanoseconds: UInt64 {
+        UInt64(self * Double(NSEC_PER_SEC))
+    }
 }

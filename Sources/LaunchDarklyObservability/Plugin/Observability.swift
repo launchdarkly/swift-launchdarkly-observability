@@ -1,9 +1,9 @@
 import OSLog
 @_exported import LaunchDarkly
-@_exported import Observability
 
 public final class Observability: Plugin {
     private let options: Options
+    var observabilityService: InternalObserve?
     
     public init(options: Options) {
         self.options = options
@@ -37,14 +37,19 @@ public final class Observability: Plugin {
                 withOptions: options,
                 mobileKey: mobileKey
             )
-            client.observabilityService = service
+            observabilityService = service
             LDObserve.shared.client = service
+            LDObserve.shared.context = service.context
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Observability client initialization failed with error: \(error)")
         }
     }
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        [EvalTracingHook(withSpans: true, withValue: true, version: options.serviceVersion, options: options)]
+        [ObservabilityHook(plugin: self,
+                         withSpans: true,
+                         withValue: true,
+                         version: options.serviceVersion,
+                         options: options)]
     }
 }

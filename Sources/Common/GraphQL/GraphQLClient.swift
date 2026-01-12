@@ -2,11 +2,11 @@ import Foundation
 import DataCompression
 
 public final class GraphQLClient {
-    public let endpoint: URL
+    private let endpoint: URL
     private let network: HttpServicing
     private let decoder: JSONDecoder
     private let defaultHeaders: [String: String]
-    private let isCompressed: Bool = false
+    private let isCompressed: Bool = true
     
     public init(endpoint: URL,
                 network: HttpServicing = HttpService(),

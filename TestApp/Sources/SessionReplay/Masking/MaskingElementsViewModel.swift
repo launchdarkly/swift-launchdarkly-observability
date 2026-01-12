@@ -1,7 +1,6 @@
 import SwiftUI
 import LaunchDarklyObservability
 import LaunchDarklySessionReplay
-import SessionReplay
 
 final class MaskingElementsViewModel: ObservableObject {
     var screenCaptureService = ScreenCaptureService(options: SessionReplayOptions())
@@ -10,11 +9,9 @@ final class MaskingElementsViewModel: ObservableObject {
     
     @MainActor
     func captureShapShot() {
-        guard let image = screenCaptureService.captureUIImage() else {
-            return
+        screenCaptureService.captureUIImage { image in
+            self.capturedImage = image
+            self.isImagePresented = true
         }
-        
-        self.capturedImage = image
-        self.isImagePresented = true
     }
 }

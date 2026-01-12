@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", exact: "2.3.0"),
-        .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "10.0.0"),
+        .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "10.1.0"),
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
         .package(url: "https://github.com/mw99/DataCompression", from: "3.8.0"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.32.0"),
@@ -34,7 +34,7 @@ let package = Package(
                     .product(name: "DataCompression", package: "DataCompression"),
                 ]),
         .target(
-            name: "Observability",
+            name: "LaunchDarklyObservability",
             dependencies: [
                 "Common",
                 "ObjCBridge",
@@ -45,38 +45,20 @@ let package = Package(
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS])),
-            ],
-            resources: [
-                .process("Sampling/Queries"),
-            ]
-        ),
-        .target(
-            name: "LaunchDarklyObservability",
-            dependencies: [
-                "Observability",
-                .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))
             ]
         ),
         .testTarget(
             name: "ObservabilityTests",
             dependencies: [
-                "Observability"
+                "LaunchDarklyObservability"
             ]
-        ),
-        .target(
-            name: "SessionReplay",
-            dependencies: [
-                "Common",
-                "Observability",
-            ],
-            resources: [.process("Queries")]
         ),
         .target(
             name: "LaunchDarklySessionReplay",
             dependencies: [
+                "Common",
                 "LaunchDarklyObservability",
-                "SessionReplay",
-            ]
+            ],
         ),
         .target(
           name: "OpenTelemetryProtocolExporterCommon",
@@ -109,6 +91,13 @@ let package = Package(
                 "Common"
             ],
             resources: [.process("GraphQL/Queries")]
+        ),
+        .testTarget(
+            name: "SessionReplayTests",
+            dependencies: [
+                "LaunchDarklySessionReplay",
+                "LaunchDarklyObservability"
+            ]
         ),
     ]
 )

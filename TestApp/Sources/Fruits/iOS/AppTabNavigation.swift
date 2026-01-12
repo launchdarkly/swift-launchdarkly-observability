@@ -1,25 +1,27 @@
 /*
-See LICENSE folder for this sample’s licensing information.
-
-Abstract:
-Tab based app structure.
-*/
+ See LICENSE folder for this sample’s licensing information.
+ 
+ Abstract:
+ Tab based app structure.
+ */
 
 #if os(iOS)
 
 import SwiftUI
 
 struct AppTabNavigation: View {
-
+    static var pullPushLoop = 0
+    @Environment(\.dismiss) var dismiss
+    
     enum Tab {
         case menu
         case favorites
         case rewards
         case recipes
     }
-
+    
     @State private var selection: Tab = .menu
-
+    
     init(selection: Tab = .menu) {
         self.selection = selection
     }
@@ -51,9 +53,9 @@ struct AppTabNavigation: View {
                 }
             }
             .tag(Tab.favorites)
-
             
-            #if EXTENDED_ALL
+            
+#if EXTENDED_ALL
             NavigationView {
                 RewardsView()
             }
@@ -79,7 +81,27 @@ struct AppTabNavigation: View {
                 }
             }
             .tag(Tab.recipes)
-            #endif
+#endif
+        }            .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    Self.pullPushLoop = 1000
+                    dismiss()
+                }) {
+                    if Self.pullPushLoop == 0 {
+                        Image(systemName: "arrow.left.arrow.right")
+                    } else {
+                        Text("\(Self.pullPushLoop)")
+                    }
+                }
+            }
+        }.onAppear {
+            if Self.pullPushLoop > 0 {
+                Self.pullPushLoop -= 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 1.1...1.5)) {
+                    self.dismiss()
+                }
+            }
         }
     }
 }
