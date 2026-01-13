@@ -11,13 +11,16 @@ final class ObservabilityHook: Hook {
     private let withValue: Bool
     private let version: String
     private let options: Options
+    private let environmentMetadata: EnvironmentMetadata
     
     init(plugin: Observability,
-         withSpans: Bool,
-         withValue: Bool,
+         environmentMetadata: EnvironmentMetadata,
+         withSpans: Bool = true,
+         withValue: Bool = true,
          version: String,
          options: Options) {
         self.plugin = plugin
+        self.environmentMetadata = environmentMetadata
         self.withSpans = withSpans
         self.withValue = withValue
         self.version = version
@@ -32,26 +35,34 @@ final class ObservabilityHook: Hook {
         seriesContext: EvaluationSeriesContext,
         seriesData: EvaluationSeriesData
     ) -> EvaluationSeriesData {
-        //        queue.sync {
-        guard withSpans else { return seriesData }
-        
-        /// Requirement 1.2.3.6
+                
+    
+//        guard withSpans else { return seriesData }
+//        //queue.sync {
+//      
+//        let keys = seriesContext.context.contextKeys()
+//        guard let clientId = keys["ld_application"] else { return seriesData }
+//       // print(keys)
+//        /// Requirement 1.2.3.6
         /// https://github.com/launchdarkly/sdk-specs/tree/main/specs/OTEL-openteletry-integration#requirement-1236
         var resourceAttributes = options.resourceAttributes
         resourceAttributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(seriesContext.flagKey)
         resourceAttributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
         resourceAttributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(seriesContext.context.fullyQualifiedKey())
-        
+        resourceAttributes[Self.FEATURE_FLAG_SET_ID] = .string("68bb750a25eb2b0a98b2315b")
+
+        //  resourceAttributes[Self.FEATURE_FLAG_SET_ID] = .string(clientId)
+//
         let span = LDObserve.shared.startSpan(
-            name: seriesContext.methodName,
+            name: Self.FEATURE_FLAG_SPAN_NAME,
             attributes: resourceAttributes
         )
-        
+//        
         var mutableSeriesData = seriesData
         mutableSeriesData[Self.DATA_KEY_SPAN] = span
-        
-        return mutableSeriesData
-        //        }
+//        
+       return mutableSeriesData
+    //}
     }
     
     public func afterEvaluation(
@@ -65,30 +76,39 @@ final class ObservabilityHook: Hook {
         guard let span = seriesData[Self.DATA_KEY_SPAN] as? Span else {
             return seriesData
         }
-
-        var resourceAttributes = [String: AttributeValue]()
-        resourceAttributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(seriesContext.flagKey)
-        resourceAttributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
-        resourceAttributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(seriesContext.context.fullyQualifiedKey())
         
+//        let keys = seriesContext.context.contextKeys()
+//        guard let clientId = keys["ld_application"] else { return seriesData }
+  
+        
+       // print(keys)
+        /// Requirement 1.2.3.6
+        /// https://github.com/launchdarkly/sdk-specs/tree/main/specs/OTEL-openteletry-integration#requirement-1236
+        var eventAttributes = options.resourceAttributes
+        eventAttributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(seriesContext.flagKey)
+        eventAttributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
+        eventAttributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(seriesContext.context.fullyQualifiedKey())
+        eventAttributes[Self.FEATURE_FLAG_SET_ID] = .string("68bb750a25eb2b0a98b2315b")
+       // resourceAttributes[Self.FEATURE_FLAG_SET_ID] = .string("production")
+
         if let lDValue = evaluationDetail.reason?[Self.CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT] {
             if case let .bool(inExperiment) = lDValue {
-                resourceAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT] = .bool(inExperiment)
+                eventAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT] = .bool(inExperiment)
             }
         }
         
         if withValue {
             if let stringified = JSON.stringify(evaluationDetail.value) {
-                resourceAttributes[Self.SEMCONV_FEATURE_FLAG_RESULT_VALUE] = .string(stringified) // .string is from Otel AttributeValue
+                eventAttributes[Self.SEMCONV_FEATURE_FLAG_RESULT_VALUE] = .string(stringified) // .string is from Otel AttributeValue
             }
         }
         
         if let index = evaluationDetail.variationIndex {
-            resourceAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_VARIATION_INDEX] = .double(Double(index))
+            eventAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_VARIATION_INDEX] = .double(Double(index))
         }
         
         let value = seriesData[Self.DATA_KEY_SPAN]
-        span.addEvent(name: Self.EVENT_NAME, attributes: resourceAttributes, timestamp: Date())
+        span.addEvent(name: Self.EVENT_NAME, attributes: eventAttributes, timestamp: Date())
         
         span.end()
         return seriesData
@@ -134,7 +154,7 @@ extension ObservabilityHook {
     static let CUSTOM_FEATURE_FLAG_RESULT_VARIATION_INDEX: String = "feature_flag.result.variationIndex"
     static let CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT: String = "feature_flag.result.reason.inExperiment"
     static let FEATURE_FLAG_SET_ID = "feature_flag.set.id"
-    static let FEATURE_FLAG_SPAN_NAME = "evaluation" /// FEATURE_FLAG_SPAN_NAME
+    static let FEATURE_FLAG_SPAN_NAME = "evaluation"
     static let FEATURE_FLAG_CONTEXT_ATTR = "feature_flag.contextKeys"
     static let IDENTIFY_RESULT_STATUS = "identify.result.status"
 }
