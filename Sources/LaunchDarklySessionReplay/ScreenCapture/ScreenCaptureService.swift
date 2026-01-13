@@ -80,15 +80,14 @@ public final class ScreenCaptureService {
                 let signatures = self.tiledSignatureManager.compute(image: image)
                 
                 self.signatureLock.lock()
-                defer {
-                    self.signatureLock.unlock()
-                }
                 if self.previousSignature == signatures {
+                    self.signatureLock.unlock()
                     await yield(nil)
                     return
                 }
                 self.previousSignature = signatures
-                
+                self.signatureLock.unlock()
+
                 let capturedImage = CapturedImage(image: image,
                                                   scale: scale,
                                                   renderSize: enclosingBounds.size,
