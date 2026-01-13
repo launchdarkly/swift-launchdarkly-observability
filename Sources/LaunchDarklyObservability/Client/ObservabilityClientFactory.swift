@@ -191,9 +191,9 @@ struct ObservabilityClientFactory {
         }
         
         let crashReporting: CrashReporting
-        if options.crashReporting.vendor == .KSCrash {
+        if options.crashReporting.source == .KSCrash {
             crashReporting = try KSCrashReportService(logsApi: logClient, log: options.log)
-        } else if options.crashReporting.vendor == .metricKit {
+        } else if options.crashReporting.source == .metricKit {
             if #available(iOS 15.0, tvOS 15.0, *) {
                 let reporter = MetricKitCrashReporter(logsApi: logClient, logger: options.log)
                 crashReporting = reporter

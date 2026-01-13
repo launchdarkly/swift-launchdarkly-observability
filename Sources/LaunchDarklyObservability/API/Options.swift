@@ -133,6 +133,9 @@ public struct Options {
     }
     public struct CrashReporting {
         public let source: CrashReportingSource
+        public static var enabled: Self {
+            .init()
+        }
         
         public init(source: CrashReportingSource = .KSCrash) {
             self.source = source
@@ -212,7 +215,7 @@ public struct Options {
         tracesApi: AppTracing = .enabled,
         metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
-        crashReporting: CrashReporting = .init(source: .KSCrash),
+        crashReporting: CrashReporting = .enabled,
         instrumentation: Instrumentation = .init()
     ) {
         self.serviceName = serviceName
