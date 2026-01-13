@@ -197,6 +197,7 @@ struct ObservabilityClientFactory {
             if #available(iOS 15.0, tvOS 15.0, *) {
                 let reporter = MetricKitCrashReporter(logsApi: logClient, logger: options.log)
                 crashReporting = reporter
+                crashReporting.logPendingCrashReports()
                 autoInstrumentation.append(reporter)
             } else {
                 /// since MetricKit is only fully available for iOS 15+
@@ -220,7 +221,6 @@ struct ObservabilityClientFactory {
         
         transportService.start()
         autoInstrumentation.forEach { $0.start() }
-        crashReporting.logPendingCrashReports()
         
         return ObservabilityClient(
             tracer: appTraceClient,
