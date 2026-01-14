@@ -1,7 +1,7 @@
 import Foundation
 import LaunchDarkly
 #if !LD_COCOAPODS
-    import Common
+import Common
 #endif
 
 final class ObservabilityHook: Hook {
@@ -11,16 +11,13 @@ final class ObservabilityHook: Hook {
     private let withValue: Bool
     private let version: String
     private let options: Options
-    private let environmentMetadata: EnvironmentMetadata
     
     init(plugin: Observability,
-         environmentMetadata: EnvironmentMetadata,
          withSpans: Bool = true,
          withValue: Bool = true,
          version: String,
          options: Options) {
         self.plugin = plugin
-        self.environmentMetadata = environmentMetadata
         self.withSpans = withSpans
         self.withValue = withValue
         self.version = version
@@ -35,34 +32,23 @@ final class ObservabilityHook: Hook {
         seriesContext: EvaluationSeriesContext,
         seriesData: EvaluationSeriesData
     ) -> EvaluationSeriesData {
-                
-    
-//        guard withSpans else { return seriesData }
-//        //queue.sync {
-//      
-//        let keys = seriesContext.context.contextKeys()
-//        guard let clientId = keys["ld_application"] else { return seriesData }
-//       // print(keys)
-//        /// Requirement 1.2.3.6
+        guard withSpans else { return seriesData }
+        
+        /// Requirement 1.2.3.6
         /// https://github.com/launchdarkly/sdk-specs/tree/main/specs/OTEL-openteletry-integration#requirement-1236
         var resourceAttributes = options.resourceAttributes
         resourceAttributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(seriesContext.flagKey)
         resourceAttributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
         resourceAttributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(seriesContext.context.fullyQualifiedKey())
-        resourceAttributes[Self.FEATURE_FLAG_SET_ID] = .string("68bb750a25eb2b0a98b2315b")
-
-        //  resourceAttributes[Self.FEATURE_FLAG_SET_ID] = .string(clientId)
-//
+        
         let span = LDObserve.shared.startSpan(
             name: Self.FEATURE_FLAG_SPAN_NAME,
             attributes: resourceAttributes
         )
-//        
+        
         var mutableSeriesData = seriesData
         mutableSeriesData[Self.DATA_KEY_SPAN] = span
-//        
-       return mutableSeriesData
-    //}
+        return mutableSeriesData
     }
     
     public func afterEvaluation(
@@ -70,27 +56,17 @@ final class ObservabilityHook: Hook {
         seriesData: EvaluationSeriesData,
         evaluationDetail: LDEvaluationDetail<LDValue>
     ) -> EvaluationSeriesData {
-        //        queue.sync {
         /// Requirement 1.2.2.2
         /// The feature_flag event MUST have the following attributes: feature_flag.key, feature_flag.provider.name, and feature_flag.context.id.
         guard let span = seriesData[Self.DATA_KEY_SPAN] as? Span else {
             return seriesData
         }
         
-//        let keys = seriesContext.context.contextKeys()
-//        guard let clientId = keys["ld_application"] else { return seriesData }
-  
-        
-       // print(keys)
         /// Requirement 1.2.3.6
         /// https://github.com/launchdarkly/sdk-specs/tree/main/specs/OTEL-openteletry-integration#requirement-1236
         var eventAttributes = options.resourceAttributes
         eventAttributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(seriesContext.flagKey)
-        eventAttributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
-        eventAttributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(seriesContext.context.fullyQualifiedKey())
-        eventAttributes[Self.FEATURE_FLAG_SET_ID] = .string("68bb750a25eb2b0a98b2315b")
-       // resourceAttributes[Self.FEATURE_FLAG_SET_ID] = .string("production")
-
+        
         if let lDValue = evaluationDetail.reason?[Self.CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT] {
             if case let .bool(inExperiment) = lDValue {
                 eventAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_REASON_IN_EXPERIMENT] = .bool(inExperiment)
@@ -107,12 +83,10 @@ final class ObservabilityHook: Hook {
             eventAttributes[Self.CUSTOM_FEATURE_FLAG_RESULT_VARIATION_INDEX] = .double(Double(index))
         }
         
-        let value = seriesData[Self.DATA_KEY_SPAN]
         span.addEvent(name: Self.EVENT_NAME, attributes: eventAttributes, timestamp: Date())
         
         span.end()
         return seriesData
-        //        }
     }
     
     public func afterIdentify(seriesContext: IdentifySeriesContext, seriesData: IdentifySeriesData, result: IdentifyResult) -> IdentifySeriesData {
