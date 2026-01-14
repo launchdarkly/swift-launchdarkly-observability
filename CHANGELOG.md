@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.15.2...0.16.0) (2026-01-14)
+
+
+### Features
+
+* metric kit & kscrash crash reporting option ([#114](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/114)) ([f77fc79](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/f77fc790f3c2a4598b820b8d60301017e4dc4dea))
+
+
+### Bug Fixes
+
+* flag evaluation span name ([#117](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/117)) ([9a8b12d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/9a8b12d2fc887c6c621fa05f95d96d3913a01f33))
+
 ## [0.15.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.15.1...0.15.2) (2026-01-12)
 
 
