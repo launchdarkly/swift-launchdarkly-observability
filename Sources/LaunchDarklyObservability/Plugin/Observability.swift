@@ -33,6 +33,9 @@ public final class Observability: Plugin {
         options.customHeaders = customHeaders
         
         do {
+            guard LDObserve.shared.client === ObservabilityClientFactory.noOp else {
+                throw PluginError.observabilityInstanceAlreadyExist
+            }
             let service = try ObservabilityClientFactory.instantiate(
                 withOptions: options,
                 mobileKey: mobileKey
