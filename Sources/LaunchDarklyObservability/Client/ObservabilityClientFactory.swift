@@ -6,18 +6,16 @@ import OpenTelemetrySdk
 #endif
 
 struct ObservabilityClientFactory {
-    static func noOp() -> Observe {
-        return ObservabilityClient(
-            tracer: NoOpTracer(),
-            logger: NoOpLogger(),
-            logClient: NoOpLogger(),
-            meter: NoOpMeter(),
-            crashReportsApi: NoOpCrashReport(),
-            autoInstrumentation: [],
-            options: .init(),
-            context: nil
-        )
-    }
+    static let noOp: Observe = ObservabilityClient(
+        tracer: NoOpTracer(),
+        logger: NoOpLogger(),
+        logClient: NoOpLogger(),
+        meter: NoOpMeter(),
+        crashReportsApi: NoOpCrashReport(),
+        autoInstrumentation: [],
+        options: .init(),
+        context: nil
+    )
     
     static func instantiate(
         withOptions options: Options,
