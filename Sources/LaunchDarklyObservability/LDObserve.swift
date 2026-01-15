@@ -18,7 +18,7 @@ public final class LDObserve  {
     public static let shared = LDObserve()
     public var context: ObservabilityContext?
     
-    init(client: Observe = ObservabilityClientFactory.noOp()) {
+    init(client: Observe = ObservabilityClientFactory.noOp) {
         self._client = client
     }
 }

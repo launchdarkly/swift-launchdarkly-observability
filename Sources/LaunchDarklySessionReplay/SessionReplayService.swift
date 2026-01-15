@@ -72,6 +72,7 @@ final class SessionReplayService {
             await transportService.batchWorker.addExporter(sessionReplayExporter)
             transportService.start()
         }
+        os_log("LaunchDarkly Session Replay started, version: %{public}@", log: log, type: .info, sdkVersion)
     }
     
     func scheduleIdentifySession(identifyPayload: IdentifyItemPayload) async {
