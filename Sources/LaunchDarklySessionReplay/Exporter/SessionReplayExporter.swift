@@ -77,6 +77,7 @@ actor SessionReplayExporter: EventExporting {
         } catch {
             initializedSession = nil
             os_log("%{public}@", log: log, type: .error, "Failed to initialize Session Replay:\n\(error)")
+            throw error
         }
     }
     
