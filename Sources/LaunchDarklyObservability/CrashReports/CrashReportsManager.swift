@@ -18,20 +18,7 @@ final class KSCrashReportService {
     private let log: OSLog
     private let reportStore: CrashReportStore
     
-    init(logsApi: LogsApi, log: OSLog) throws {
-        let installation = CrashInstallationStandard.shared
-        let config = KSCrashConfiguration()
-        
-        config.deadlockWatchdogInterval = 0
-        config.enableMemoryIntrospection = true
-        config.monitors = .all
-        config.enableSigTermMonitoring = true
-        let storeConfig = CrashReportStoreConfiguration()
-        storeConfig.maxReportCount = 10
-        config.reportStoreConfiguration = storeConfig
-        
-        try installation.install(with: config)
-        
+    init(logsApi: LogsApi, log: OSLog) throws {        
         let reporter = KSCrash.shared
         
         guard let reportStore = reporter.reportStore else {
