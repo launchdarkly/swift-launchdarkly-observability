@@ -86,7 +86,7 @@ public actor EventQueue: EventQueuing {
                 continue
             }
             
-            let result = send(EventQueueItem(payload: payload))
+            let result = send(item)
             switch result {
             case .success:
                 continue
