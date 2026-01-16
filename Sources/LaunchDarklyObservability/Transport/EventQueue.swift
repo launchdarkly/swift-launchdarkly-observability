@@ -51,6 +51,12 @@ public actor EventQueue: EventQueuing {
         let cost: Int
     }
 
+    private enum SendResult {
+        case success
+        case overflowedPartial(ObjectIdentifier)
+        case overflowedTotal
+    }
+    
     private var storage = [ObjectIdentifier: [EventQueueItem]]()
     private var lastEventTime: TimeInterval = 0
     private let limitSize: Int
@@ -73,22 +79,36 @@ public actor EventQueue: EventQueuing {
     }
     
     public func send(_ payloads: [EventQueueItemPayload]) async {
-        payloads.forEach {
-            send(EventQueueItem(payload: $0))
+        var overflowedExporters: Set<ObjectIdentifier> = []
+        for payload in payloads {
+            let item = EventQueueItem(payload: payload)
+            guard overflowedExporters.contains(item.exporterTypeId) == false else {
+                continue
+            }
+            
+            let result = send(item)
+            switch result {
+            case .success:
+                continue
+            case .overflowedPartial(let exporterId):
+                overflowedExporters.insert(exporterId)
+            case .overflowedTotal:
+                return
+            }
         }
     }
     
-    func send(_ item: EventQueueItem) {
+    private func send(_ item: EventQueueItem) -> SendResult {
         guard currentSize == 0 || currentSize + item.cost <= limitSize else {
             var exporterState = currentSizes[item.exporterTypeId, default: EventExporterState()]
             notifyOverflowIfNeeded(typeId: item.exporterTypeId, exporterState)
-            return
+            return .overflowedTotal
         }
         
         var exporterState = currentSizes[item.exporterTypeId, default: EventExporterState()]
         guard exporterState.size + item.cost <= exporterLimitSize else {
             notifyOverflowIfNeeded(typeId: item.exporterTypeId, exporterState)
-            return
+            return .overflowedPartial(item.exporterTypeId)
         }
         
         storage[item.exporterTypeId, default: []].append(item)
@@ -96,6 +116,7 @@ public actor EventQueue: EventQueuing {
         currentSize += item.cost
         exporterState.size += item.cost
         currentSizes[item.exporterTypeId] = exporterState
+        return .success
     }
 
     private func notify(typeId: ObjectIdentifier, _ status: EventStatus) {
