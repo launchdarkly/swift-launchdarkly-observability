@@ -2,7 +2,7 @@
     import Common
 #endif
 
-public final class UserInteractionManager: AutoInstrumentation {
+public final actor UserInteractionManager {
     private var touchCaptureCoordinator: TouchCaptureCoordinator
     private var yields: [TouchInteractionYield]
     
@@ -10,13 +10,18 @@ public final class UserInteractionManager: AutoInstrumentation {
         let targetResolver = TargetResolver()
         self.yields = [yield]
         self.touchCaptureCoordinator = TouchCaptureCoordinator(targetResolver: targetResolver)
-        self.touchCaptureCoordinator.yield = { [weak self] interaction in
-            self?.yields.forEach { $0(interaction) }
-        }
+        self.setYields(yields)
     }
     
     public func addYield(_ yield: @escaping TouchInteractionYield) {
-        yields.append(yield)
+        setYields(self.yields + [yield])
+    }
+    
+    private func setYields(_ yields: [TouchInteractionYield]) {
+        self.touchCaptureCoordinator.yield = { [weak self] interaction in
+            yields.forEach { $0(interaction) }
+        }
+        self.yields = yields
     }
     
     func start() {

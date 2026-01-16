@@ -30,6 +30,7 @@ final class SessionReplayService {
     var transportService: TransportServicing
     var sessionReplayExporter: SessionReplayExporter
     let log: OSLog
+    var isRunning: Bool = false
     
     init(observabilityContext: ObservabilityContext,
          sessonReplayOptions: SessionReplayOptions,
@@ -45,16 +46,8 @@ final class SessionReplayService {
         self.snapshotTaker = SnapshotTaker(captureService: captureService,
                                            appLifecycleManager: observabilityContext.appLifecycleManager,
                                            eventQueue: transportService.eventQueue)
-        snapshotTaker.start()
         
         let eventQueue = transportService.eventQueue
-        let userInteractionManager = observabilityContext.userInteractionManager
-        userInteractionManager.addYield { interaction in
-            Task {
-                await eventQueue.send(interaction)
-            }
-        }
-        
         let sessionReplayContext = SessionReplayContext(
             sdkKey: observabilityContext.sdkKey,
             serviceName: observabilityContext.options.serviceName,
@@ -68,7 +61,13 @@ final class SessionReplayService {
                                                           replayApiService: replayApiService,
                                                           title: ApplicationProperties.name ?? "iOS app")
         self.sessionReplayExporter = sessionReplayExporter
+        let userInteractionManager = observabilityContext.userInteractionManager
         Task {
+            await userInteractionManager.addYield { interaction in
+                Task {
+                    await eventQueue.send(interaction)
+                }
+            }
             await transportService.batchWorker.addExporter(sessionReplayExporter)
             transportService.start()
         }
@@ -82,5 +81,19 @@ final class SessionReplayService {
         } catch {
             os_log("%{public}@", log: log, type: .error, "Failed to identifySession:\n\(error)")
         }
+    }
+    
+    func start() {
+        guard !isRunning else { return }
+        isRunning = true
+        
+        snapshotTaker.start()
+    }
+    
+    func stop() {
+        guard isRunning else { return }
+        isRunning = false
+        
+        snapshotTaker.stop()
     }
 }

@@ -135,7 +135,9 @@ struct ObservabilityClientFactory {
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
             interaction.startEndSpan(tracer: tracerDecorator)
         }
-        userInteractionManager.start()
+        Task {
+            await userInteractionManager.start()
+        }
         
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.metricsPath) else {
             throw InstrumentationError.invalidTraceExporterUrl
