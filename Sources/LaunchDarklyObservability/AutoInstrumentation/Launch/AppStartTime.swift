@@ -40,7 +40,7 @@ public final class AppStartTime: NSObject {
         do {
             try installation.install(with: config)
         } catch {
-            os_log("LaunchDarkly Observability started version: %{public}@", log: .default, type: .error, error.localizedDescription)
+            os_log("KSCrash installation failed with error: %{public}@", log: .default, type: .error, error.localizedDescription)
         }
 
         return .init(startTime: t, startDate: d)
