@@ -13,6 +13,7 @@ final class SnapshotTaker: EventSource {
     private var eventQueueAvailable: Bool = true
     private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
     private var cancellables = Set<AnyCancellable>()
+    private var isRunning = false
     
     init(captureService: ScreenCaptureService,
          appLifecycleManager: AppLifecycleManaging,
@@ -45,9 +46,9 @@ final class SnapshotTaker: EventSource {
             .sink { [weak self] event in
                 switch event {
                 case .didBecomeActive:
-                    self?.start()
+                    self?.internalStart()
                 case .willResignActive, .willTerminate:
-                    self?.stop()
+                    self?.internalStop()
                 case .didFinishLaunching, .willEnterForeground, .didEnterBackground:
                     break
                 }
@@ -55,8 +56,23 @@ final class SnapshotTaker: EventSource {
             .store(in: &cancellables)
     }
     
+    @MainActor
     func start() {
-        guard displayLink == nil else { return }
+        isRunning = true
+        internalStart()
+    }
+    
+    @MainActor
+    func stop() {
+        internalStop()
+
+        guard isRunning else { return }
+        isRunning = false
+    }
+    
+    func internalStart() {
+        // isRunning belongs to public start()
+        guard isRunning, displayLink == nil else { return }
         
         let displayLink = CADisplayLink(target: self, selector: #selector(frameUpdate))
         displayLink.add(to: .main, forMode: .common)
@@ -64,17 +80,17 @@ final class SnapshotTaker: EventSource {
         self.displayLink = displayLink
     }
     
-    @objc private func frameUpdate() {
-        queueSnapshot()
-    }
-    
-    func stop() {
+    func internalStop() {
         displayLink?.invalidate()
         displayLink = nil
     }
     
+    @objc private func frameUpdate() {
+        queueSnapshot()
+    }
+        
     func queueSnapshot() {
-        guard let displayLink, eventQueueAvailable else {
+        guard isRunning, let displayLink, eventQueueAvailable else {
             return
         }
         

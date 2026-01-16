@@ -25,11 +25,14 @@ public final class SessionReplay: Plugin {
         observabilityContext = context
 
         do {
-            sessionReplayService = try SessionReplayService(observabilityContext: context,
+            let sessionReplayService = try SessionReplayService(observabilityContext: context,
                                                             sessonReplayOptions: options,
                                                             metadata: metadata)
+            LDReplay.shared.client = sessionReplayService
+            self.sessionReplayService = sessionReplayService
+
             if options.isEnabled {
-                sessionReplayService?.start()
+                start()
             }
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service initialization failed with error: \(error)")
@@ -41,10 +44,15 @@ public final class SessionReplay: Plugin {
     }
     
     public func start() {
-        sessionReplayService?.start()
+        Task { @MainActor in
+            sessionReplayService?.start()
+        }
     }
     
     public func stop() {
-        sessionReplayService?.stop()
+        Task { @MainActor in
+            sessionReplayService?.stop()
+        }
     }
 }
+

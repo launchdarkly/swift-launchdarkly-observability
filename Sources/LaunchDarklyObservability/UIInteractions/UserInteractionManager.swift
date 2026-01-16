@@ -1,32 +1,30 @@
+import Combine
+
 #if !LD_COCOAPODS
     import Common
 #endif
 
-public final actor UserInteractionManager {
+public final class UserInteractionManager {
     private var touchCaptureCoordinator: TouchCaptureCoordinator
-    private var yields: [TouchInteractionYield]
+    private let subject = PassthroughSubject<TouchInteraction, Never>()
+    
+    public var publisher: AnyPublisher<TouchInteraction, Never> {
+        subject.eraseToAnyPublisher()
+    }
     
     init(options: Options, yield: @escaping TouchInteractionYield) {
         let targetResolver = TargetResolver()
-        self.yields = [yield]
         self.touchCaptureCoordinator = TouchCaptureCoordinator(targetResolver: targetResolver)
-        self.setYields(yields)
-    }
-    
-    public func addYield(_ yield: @escaping TouchInteractionYield) {
-        setYields(self.yields + [yield])
-    }
-    
-    private func setYields(_ yields: [TouchInteractionYield]) {
-        self.touchCaptureCoordinator.yield = { [weak self] interaction in
-            yields.forEach { $0(interaction) }
+        self.touchCaptureCoordinator.yield = { [subject] interaction in
+            yield(interaction)
+            subject.send(interaction)
         }
-        self.yields = yields
     }
-    
+        
     func start() {
         touchCaptureCoordinator.start()
     }
     
-    func stop() {}
+    func stop() {
+    }
 }

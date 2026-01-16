@@ -1,9 +1,19 @@
 import Foundation
 import LaunchDarklyObservability
 import OSLog
+import Combine
 #if !LD_COCOAPODS
 import Common
 #endif
+
+protocol SessionReplayServicing {
+    @MainActor
+    func start(
+        
+    )
+    @MainActor
+    func stop()
+}
 
 struct SessionReplayContext {
     public var sdkKey: String
@@ -25,12 +35,14 @@ struct SessionReplayContext {
     }
 }
 
-final class SessionReplayService {
+final class SessionReplayService: SessionReplayServicing {
     let snapshotTaker: SnapshotTaker
     var transportService: TransportServicing
     var sessionReplayExporter: SessionReplayExporter
+    let userInteractionManager: UserInteractionManager
     let log: OSLog
     var isRunning: Bool = false
+    private var cancellables = Set<AnyCancellable>()
     
     init(observabilityContext: ObservabilityContext,
          sessonReplayOptions: SessionReplayOptions,
@@ -46,8 +58,8 @@ final class SessionReplayService {
         self.snapshotTaker = SnapshotTaker(captureService: captureService,
                                            appLifecycleManager: observabilityContext.appLifecycleManager,
                                            eventQueue: transportService.eventQueue)
+        self.userInteractionManager = observabilityContext.userInteractionManager
         
-        let eventQueue = transportService.eventQueue
         let sessionReplayContext = SessionReplayContext(
             sdkKey: observabilityContext.sdkKey,
             serviceName: observabilityContext.options.serviceName,
@@ -61,13 +73,8 @@ final class SessionReplayService {
                                                           replayApiService: replayApiService,
                                                           title: ApplicationProperties.name ?? "iOS app")
         self.sessionReplayExporter = sessionReplayExporter
-        let userInteractionManager = observabilityContext.userInteractionManager
+        
         Task {
-            await userInteractionManager.addYield { interaction in
-                Task {
-                    await eventQueue.send(interaction)
-                }
-            }
             await transportService.batchWorker.addExporter(sessionReplayExporter)
             transportService.start()
         }
@@ -83,17 +90,28 @@ final class SessionReplayService {
         }
     }
     
+    @MainActor
     func start() {
         guard !isRunning else { return }
         isRunning = true
         
+        userInteractionManager.publisher
+            .sink { [transportService] interaction in
+                Task {
+                    await transportService.eventQueue.send(interaction)
+                }
+            }
+            .store(in: &cancellables)
+            
         snapshotTaker.start()
     }
     
+    @MainActor
     func stop() {
         guard isRunning else { return }
         isRunning = false
         
+        cancellables.removeAll()
         snapshotTaker.stop()
     }
 }
