@@ -8,9 +8,8 @@ import Common
 
 protocol SessionReplayServicing {
     @MainActor
-    func start(
-        
-    )
+    func start()
+    
     @MainActor
     func stop()
 }

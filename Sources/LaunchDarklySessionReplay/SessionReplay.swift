@@ -21,16 +21,20 @@ public final class SessionReplay: Plugin {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service could not find Observability Service")
             return
         }
-                
+        
         observabilityContext = context
-
+        
         do {
+            guard LDReplay.shared.client == nil else {
+                throw PluginError.sessionReplayInstanceAlreadyExist
+            }
+           
             let sessionReplayService = try SessionReplayService(observabilityContext: context,
-                                                            sessonReplayOptions: options,
-                                                            metadata: metadata)
+                                                                sessonReplayOptions: options,
+                                                                metadata: metadata)
             LDReplay.shared.client = sessionReplayService
             self.sessionReplayService = sessionReplayService
-
+            
             if options.isEnabled {
                 start()
             }
