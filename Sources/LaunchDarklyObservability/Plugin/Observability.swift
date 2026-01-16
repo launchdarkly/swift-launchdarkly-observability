@@ -7,6 +7,15 @@ public final class Observability: Plugin {
     
     public init(options: Options) {
         self.options = options
+        if options.crashReporting.source == .KSCrash {
+            /// Very first thing to do, if crash reporting is enabled and it is KSCrash
+            /// Then, try to install before doing anything else
+            do {
+                try KSCrashReportService.install()
+            } catch {
+                os_log("%{public}@", log: options.log, type: .error, "Observability crash reporting service initialization failed with error: \(error)")
+            }
+        }
     }
     
     public func getMetadata() -> PluginMetadata {
