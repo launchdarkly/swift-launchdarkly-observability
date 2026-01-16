@@ -1,5 +1,6 @@
 import SwiftUI
 import LaunchDarklyObservability
+import LaunchDarklySessionReplay
 import LaunchDarkly
 
 enum Failure: LocalizedError {
@@ -146,8 +147,22 @@ struct MainMenuView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
                 }
-                
-   
+
+                HStack {
+                    Button {
+                        LDReplay.shared.start()
+                    } label: {
+                        Text("Start Replay")
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button {
+                        LDReplay.shared.stop()
+                    } label: {
+                        Text("Stop Replay")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             }.background(Color.clear)
             .navigationDestination(for: String.self) { value in
                 if value == "fruta" {
