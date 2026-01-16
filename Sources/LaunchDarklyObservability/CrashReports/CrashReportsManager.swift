@@ -57,7 +57,18 @@ extension KSCrashReportService {
         config.deadlockWatchdogInterval = 0
         config.enableMemoryIntrospection = false
         config.enableSigTermMonitoring = true
-        config.monitors = .all
+        config.monitors = [
+            .machException,
+            .signal,
+            .cppException,
+            .nsException,
+            /// .mainThreadDeadlock, conflicts with config.deadlockWatchdogInterval = 0
+            .userReported,
+            .system,
+            .applicationState,
+            .zombie,
+            .memoryTermination
+        ]
         
         let storeConfig = CrashReportStoreConfiguration()
         storeConfig.maxReportCount = 10
