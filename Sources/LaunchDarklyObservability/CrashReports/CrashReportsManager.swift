@@ -48,3 +48,25 @@ extension KSCrashReportService: CrashReporting {
         }
     }
 }
+
+extension KSCrashReportService {
+    static func install() throws {
+        let installation = CrashInstallationStandard.shared
+        let config = KSCrashConfiguration()
+        
+        config.deadlockWatchdogInterval = 0
+        config.enableMemoryIntrospection = false
+        config.enableSigTermMonitoring = true
+        config.monitors = [
+            .signal,
+            .nsException,
+            .applicationState
+        ]
+        
+        let storeConfig = CrashReportStoreConfiguration()
+        storeConfig.maxReportCount = 10
+        config.reportStoreConfiguration = storeConfig
+        
+        try installation.install(with: config)
+    }
+}
