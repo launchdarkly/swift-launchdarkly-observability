@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", exact: "2.3.0"),
-        .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "10.1.0"),
+        .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "11.1.0"),
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.32.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.4"),
