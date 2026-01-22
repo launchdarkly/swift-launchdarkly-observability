@@ -19,7 +19,6 @@ let package = Package(
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", exact: "2.3.0"),
         .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "10.1.0"),
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
-        .package(url: "https://github.com/mw99/DataCompression", from: "3.8.0"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.32.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.4"),
     ],
@@ -30,9 +29,7 @@ let package = Package(
             publicHeadersPath: "."
         ),
         .target(name: "Common",
-                dependencies: [
-                    .product(name: "DataCompression", package: "DataCompression"),
-                ]),
+                dependencies: [.product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))]),
         .target(
             name: "LaunchDarklyObservability",
             dependencies: [
@@ -40,11 +37,9 @@ let package = Package(
                 "ObjCBridge",
                 "URLSessionInstrumentation",
                 "OpenTelemetryProtocolExporterCommon",
-                .product(name: "DataCompression", package: "DataCompression"),
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),
-                .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS])),
             ]
         ),
         .testTarget(
