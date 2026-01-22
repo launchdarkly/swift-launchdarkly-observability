@@ -51,7 +51,7 @@ Pod::Spec.new do |s|
 
   s.subspec "Common" do |ss|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
-    #ss.dependency "LaunchDarklyObservability/Misc"
+    ss.dependency "LaunchDarklyObservability/Misc"
   end
 
   # OpenTelemetryProtocolExporterCommon subspec
