@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5006D6B32EEB4D460081FEA5 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B22EEB4D460081FEA5 /* LaunchDarklyObservability */; };
 		5006D6B52EEB4D460081FEA5 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B42EEB4D460081FEA5 /* LaunchDarklySessionReplay */; };
 		50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = 50C584C92EE23723006A0045 /* LaunchDarkly */; };
 		E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */; };
@@ -45,7 +44,6 @@
 			files = (
 				5006D6B52EEB4D460081FEA5 /* LaunchDarklySessionReplay in Frameworks */,
 				E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */,
-				5006D6B32EEB4D460081FEA5 /* LaunchDarklyObservability in Frameworks */,
 				50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
