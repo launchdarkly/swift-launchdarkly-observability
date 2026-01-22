@@ -7,9 +7,11 @@ import LaunchDarklyObservability
 
 final class SessionReplayHook: Hook {
     private let plugin: SessionReplay
+    private let options: Options?
     
     init(plugin: SessionReplay) {
         self.plugin = plugin
+        self.options = plugin.observabilityContext?.options
     }
     
     public func metadata() -> Metadata {
@@ -21,7 +23,7 @@ final class SessionReplayHook: Hook {
             return seriesData
         }
         
-        guard let options = plugin.observabilityContext?.options else {
+        guard let options else {
             return seriesData
         }
         

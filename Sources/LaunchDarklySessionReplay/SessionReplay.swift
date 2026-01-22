@@ -17,6 +17,13 @@ public final class SessionReplay: Plugin {
     }
     
     public func register(client: LaunchDarkly.LDClient, metadata: LaunchDarkly.EnvironmentMetadata) {
+        DispatchQueue.main.async {
+            self._register(client: client, metadata: metadata)
+        }
+    }
+    
+    @MainActor
+    func _register(client: LaunchDarkly.LDClient, metadata: LaunchDarkly.EnvironmentMetadata) {
         guard let context = LDObserve.shared.context else {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service could not find Observability Service")
             return
@@ -36,7 +43,7 @@ public final class SessionReplay: Plugin {
             self.sessionReplayService = sessionReplayService
             
             if options.isEnabled {
-                start()
+                sessionReplayService.start()
             }
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service initialization failed with error: \(error)")

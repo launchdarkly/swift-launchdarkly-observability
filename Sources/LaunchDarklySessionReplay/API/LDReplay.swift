@@ -3,7 +3,8 @@ import LaunchDarkly
 
 public final class LDReplay {
     public static var shared = LDReplay()
-
+    
+    @MainActor
     var client: SessionReplayServicing?
     
     private init() {

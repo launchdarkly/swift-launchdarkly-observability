@@ -11,32 +11,35 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         //let mobileKey = "mob-48fd3788-eab7-4b72-b607-e41712049dbd"
         let mobileKey = "mob-a211d8b4-9f80-4170-ba05-0120566a7bd7" // Andrey Sessions stg production
-
-
+        
+        
         //let mobileKey = "mob-d6e200b8-4a13-4c47-8ceb-7eb1f1705070" // Spree demo app Alexis Perflet config = { () -> LDConfig in
         let config = { () -> LDConfig in
             var config = LDConfig(
-                    mobileKey: mobileKey,
-                    autoEnvAttributes: .enabled
-                )
+                mobileKey: mobileKey,
+                autoEnvAttributes: .enabled,
+            )
+           // config.startOnline = false
             config.plugins = [
                 Observability(options: .init(
                     serviceName: "alexis-perf",
                     otlpEndpoint: "https://otel.observability.ld-stg.launchdarkly.com:4318",
                     backendUrl: "https://pub.observability.ld-stg.launchdarkly.com/",
-
-        //let mobileKey = "mob-f2aca03d-4a84-4b9d-bc35-db20cbb4ca0a" // iOS Session Production
-        //let config = { () -> LDConfig in
-        //    var config = LDConfig(
-        //        mobileKey: mobileKey,
-        //        autoEnvAttributes: .enabled
-        //    )
-        //    config.plugins = [
-        //        Observability(options: .init(
-        //            serviceName: "i-os-sessions",
+                    
+                    
+                    //let mobileKey = "mob-f2aca03d-4a84-4b9d-bc35-db20cbb4ca0a" // iOS Session Production
+                    //let config = { () -> LDConfig in
+                    //    var config = LDConfig(
+                    //        mobileKey: mobileKey,
+                    //        autoEnvAttributes: .enabled
+                    //    )
+                    //    config.plugins = [
+                    //        Observability(options: .init(
+                    //            serviceName: "i-os-sessions",
                     
                     sessionBackgroundTimeout: 3,
-                   )),
+                    crashReporting: .enabled,
+                )),
                 SessionReplay(options: .init(
                     isEnabled: true,
                     privacy: .init(
@@ -62,7 +65,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             }
         }()
         
-
+        
         let completion = { (timedOut: Bool) -> Void in
             if timedOut {
                 // Client may not have the most recent flags for the configured context
@@ -76,6 +79,32 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             startWaitSeconds: 5.0,
             completion: completion
         )
+        
+        //DispatchQueue.main.asyncAfter(deadline: .now() + 10){
+           
+       // }
+     
+       // LDReplay.shared.stop()
+        
+        
+//        LDObserve.shared.recordLog(message: <#T##String#>, severity: <#T##Severity#>, attributes: <#T##[String : AttributeValue]#>)
+//            
+//        }
+//        
+//        LDSessionReplay.shared.stop() {
+//            
+//        }
+//    
+//        LDSessionReplay.shared.start(sessionId: String? = nil) {
+//            
+//        }
+        
+// In perfect world it woudld be
+        
+        
+//        ldClient.sessionReplay.start(sessionId: nil) {
+//            
+//        }
         return true
     }
 }

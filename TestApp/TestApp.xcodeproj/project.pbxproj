@@ -10,6 +10,7 @@
 		5006D6B32EEB4D460081FEA5 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B22EEB4D460081FEA5 /* LaunchDarklyObservability */; };
 		5006D6B52EEB4D460081FEA5 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B42EEB4D460081FEA5 /* LaunchDarklySessionReplay */; };
 		50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = 50C584C92EE23723006A0045 /* LaunchDarkly */; };
+		50F0E7712F1B04C000332B7C /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = 50F0E7702F1B04C000332B7C /* LaunchDarkly */; };
 		E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */; };
 /* End PBXBuildFile section */
 
@@ -46,6 +47,7 @@
 				5006D6B52EEB4D460081FEA5 /* LaunchDarklySessionReplay in Frameworks */,
 				E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */,
 				5006D6B32EEB4D460081FEA5 /* LaunchDarklyObservability in Frameworks */,
+				50F0E7712F1B04C000332B7C /* LaunchDarkly in Frameworks */,
 				50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -101,6 +103,7 @@
 				50C584C92EE23723006A0045 /* LaunchDarkly */,
 				5006D6B22EEB4D460081FEA5 /* LaunchDarklyObservability */,
 				5006D6B42EEB4D460081FEA5 /* LaunchDarklySessionReplay */,
+				50F0E7702F1B04C000332B7C /* LaunchDarkly */,
 			);
 			productName = ExampleApp;
 			productReference = E7904AC42E6A523D00A15337 /* TestApp.app */;
@@ -133,6 +136,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				5006D6B12EEB4D460081FEA5 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */,
+				50F0E76F2F1B04C000332B7C /* XCLocalSwiftPackageReference "../../ios-client-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E7904AC52E6A523D00A15337 /* Products */;
@@ -377,6 +381,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../../swift-launchdarkly-observability";
 		};
+		50F0E76F2F1B04C000332B7C /* XCLocalSwiftPackageReference "../../ios-client-sdk" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../ios-client-sdk";
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -389,6 +397,10 @@
 			productName = LaunchDarklySessionReplay;
 		};
 		50C584C92EE23723006A0045 /* LaunchDarkly */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LaunchDarkly;
+		};
+		50F0E7702F1B04C000332B7C /* LaunchDarkly */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LaunchDarkly;
 		};
