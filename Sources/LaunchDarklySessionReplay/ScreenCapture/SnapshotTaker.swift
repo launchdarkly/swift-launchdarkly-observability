@@ -10,12 +10,17 @@ final class SnapshotTaker: EventSource {
     private let eventQueue: EventQueue
     private var lastFrameDispatchTime: DispatchTime?
     private let frameInterval = 1.0
-    private var eventQueueAvailable: Bool = true
+    private var isEventQueueAvailable: Bool = true
     private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
     private var cancellables = Set<AnyCancellable>()
-    private var isRunning = false
     
-    init(captureService: ScreenCaptureService,
+    @MainActor
+    private var isEnabled: Bool {
+        
+    }
+    
+    init(isEnabled: Bool,
+         captureService: ScreenCaptureService,
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue) {
         self.captureService = captureService
@@ -32,9 +37,9 @@ final class SnapshotTaker: EventSource {
                     guard let self else { return }
                     switch event.status {
                     case .available:
-                        self.eventQueueAvailable = true
+                        self.isEventQueueAvailable = true
                     case .oveflowed:
-                        self.eventQueueAvailable = false
+                        self.isEventQueueAvailable = false
                     }
                 }
                 .store(in: &cancellables)
@@ -58,7 +63,7 @@ final class SnapshotTaker: EventSource {
     
     @MainActor
     func start() {
-        isRunning = true
+        isEnabled = true
         internalStart()
     }
     
@@ -66,31 +71,37 @@ final class SnapshotTaker: EventSource {
     func stop() {
         internalStop()
 
-        guard isRunning else { return }
-        isRunning = false
+        guard isEnabled else { return }
+        isEnabled = false
+    }
+    
+    func shouldRun() -> Bool {
+        isEnabled
     }
     
     func internalStart() {
         // isRunning belongs to public start()
-        guard isRunning, displayLink == nil else { return }
+        guard isEnabled, displayLink == nil else { return }
         
         let displayLink = CADisplayLink(target: self, selector: #selector(frameUpdate))
         displayLink.add(to: .main, forMode: .common)
-        
         self.displayLink = displayLink
     }
     
     func internalStop() {
+        captureService.shouldCapture = false
         displayLink?.invalidate()
         displayLink = nil
     }
     
+    @MainActor
     @objc private func frameUpdate() {
         queueSnapshot()
     }
-        
+     
+    @MainActor
     func queueSnapshot() {
-        guard isRunning, let displayLink, eventQueueAvailable else {
+        guard isEnabled, let displayLink, isEventQueueAvailable else {
             return
         }
         

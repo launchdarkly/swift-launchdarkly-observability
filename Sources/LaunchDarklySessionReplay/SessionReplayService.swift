@@ -20,17 +20,20 @@ struct SessionReplayContext {
     public var backendUrl: URL
     public var log: OSLog
     public var observabilityContext: ObservabilityContext
+    public var isEnabled: Bool
     
     init(sdkKey: String,
          serviceName: String,
          backendUrl: URL,
          log: OSLog,
-         observabilityContext: ObservabilityContext) {
+         observabilityContext: ObservabilityContext,
+         isEnabled: Bool = true) {
         self.sdkKey = sdkKey
         self.serviceName = serviceName
         self.backendUrl = backendUrl
         self.log = log
         self.observabilityContext = observabilityContext
+        self.isEnabled = isEnabled
     }
 }
 
@@ -54,7 +57,8 @@ final class SessionReplayService: SessionReplayServicing {
         let graphQLClient = GraphQLClient(endpoint: url)
         let captureService = ScreenCaptureService(options: sessonReplayOptions)
         self.transportService = observabilityContext.transportService
-        self.snapshotTaker = SnapshotTaker(captureService: captureService,
+        self.snapshotTaker = SnapshotTaker(isEnabled: sessonReplayOptions.isEnabled,
+                                           captureService: captureService,
                                            appLifecycleManager: observabilityContext.appLifecycleManager,
                                            eventQueue: transportService.eventQueue)
         self.userInteractionManager = observabilityContext.userInteractionManager
