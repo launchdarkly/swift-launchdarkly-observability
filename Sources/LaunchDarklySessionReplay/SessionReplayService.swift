@@ -23,20 +23,17 @@ struct SessionReplayContext {
     public var backendUrl: URL
     public var log: OSLog
     public var observabilityContext: ObservabilityContext
-    public var isEnabled: Bool
     
     init(sdkKey: String,
          serviceName: String,
          backendUrl: URL,
          log: OSLog,
-         observabilityContext: ObservabilityContext,
-         isEnabled: Bool = true) {
+         observabilityContext: ObservabilityContext) {
         self.sdkKey = sdkKey
         self.serviceName = serviceName
         self.backendUrl = backendUrl
         self.log = log
         self.observabilityContext = observabilityContext
-        self.isEnabled = isEnabled
     }
 }
 
