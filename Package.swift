@@ -20,7 +20,6 @@ let package = Package(
         .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "11.1.0"),
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.32.0"),
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.6.4"),
     ],
     targets: [
         // C target (no Swift files here)
@@ -59,7 +58,6 @@ let package = Package(
           name: "OpenTelemetryProtocolExporterCommon",
           dependencies: [
             .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core"),
-            .product(name: "Logging", package: "swift-log"),
             .product(name: "SwiftProtobuf", package: "swift-protobuf")
           ],
           path: "Sources/OpenTelemetry/OpenTelemetryProtocolExporterCommon"
