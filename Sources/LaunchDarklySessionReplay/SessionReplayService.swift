@@ -12,6 +12,9 @@ protocol SessionReplayServicing {
     
     @MainActor
     func stop()
+    
+    @MainActor
+    var isEnabled: Bool { get set }
 }
 
 struct SessionReplayContext {
@@ -40,7 +43,19 @@ final class SessionReplayService: SessionReplayServicing {
     var sessionReplayExporter: SessionReplayExporter
     let userInteractionManager: UserInteractionManager
     let log: OSLog
-    var isRunning: Bool = false
+    
+    @MainActor
+    var isEnabled = false {
+        didSet {
+            guard oldValue != isEnabled else { return }
+            if isEnabled {
+                internalStart()
+            } else {
+                internalStop()
+            }
+        }
+    }
+    
     private var cancellables = Set<AnyCancellable>()
     
     init(observabilityContext: ObservabilityContext,
@@ -49,7 +64,6 @@ final class SessionReplayService: SessionReplayServicing {
         guard let url = URL(string: observabilityContext.options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
-        
         self.log = observabilityContext.options.log
         let graphQLClient = GraphQLClient(endpoint: url)
         let captureService = ScreenCaptureService(options: sessonReplayOptions)
@@ -91,9 +105,11 @@ final class SessionReplayService: SessionReplayServicing {
     
     @MainActor
     func start() {
-        guard !isRunning else { return }
-        isRunning = true
-        
+        isEnabled = true
+    }
+    
+    @MainActor
+    private func internalStart() {
         userInteractionManager.publisher
             .sink { [transportService] interaction in
                 Task {
@@ -102,15 +118,17 @@ final class SessionReplayService: SessionReplayServicing {
             }
             .store(in: &cancellables)
             
-        snapshotTaker.start()
+        snapshotTaker.isEnabled = true
     }
     
     @MainActor
     func stop() {
-        guard isRunning else { return }
-        isRunning = false
-        
+       isEnabled = false
+    }
+    
+    @MainActor
+    private func internalStop() {
         cancellables.removeAll()
-        snapshotTaker.stop()
+        snapshotTaker.isEnabled = false
     }
 }

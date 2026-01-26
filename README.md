@@ -155,6 +155,23 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 }
 ```
 
+### Manual Start
+
+By default, Session Replay starts recording as soon as the SDK is initialized if `isEnabled` is set to `true`. If you want to initialize Session Replay without activating recording immediately (e.g., to wait for user consent or a specific event), set `isEnabled` to `false` in the options:
+
+```swift
+SessionReplay(options: .init(
+    isEnabled: false,
+    // ... other options
+))
+```
+
+You can then activate recording later by setting `LDReplay.shared.isEnabled` to `true`.
+```swift
+// From a SwiftUI View or @MainActor isolated class
+LDReplay.shared.isEnabled = true
+```
+
 #### Privacy Options
 
 Configure privacy settings to control what data is captured:
@@ -164,9 +181,7 @@ Configure privacy settings to control what data is captured:
 - **maskLabels**: Mask all text labels (default: `false`)
 - **maskImages**: Mask all images (default: `false`)
 - **maskAccessibilityIdentifiers**: Array of accessibility identifiers to mask
-- **ignoreAccessibilityIdentifiers**: Array of accessibility identifiers to ignore from masking
 - **maskUIViews**: Array of UIView classes to mask
-- **ignoreUIViews**: Array of UIView classes to ignore from masking
 - **minimumAlpha**: Minimum alpha value for view visibility (default: `0.02`)
 
 #### Fine-grained Masking Control
@@ -183,7 +198,7 @@ struct ContentView: View {
         VStack {
             // Mask this specific view
             Text("Sensitive information")
-                .ldPrivate()
+                .ldMask()
 
             // Unmask this view (even if it would be masked by default)
             Image("profile-photo")
@@ -210,7 +225,7 @@ class CreditCardViewController: UIViewController {
         super.viewDidLoad()
 
         // Mask the CVV container
-        cvvField.ldPrivate()
+        cvvField.ldMask()
 
         // Unmask the name field (even if text inputs are masked by default)
         nameField.ldUnmask()

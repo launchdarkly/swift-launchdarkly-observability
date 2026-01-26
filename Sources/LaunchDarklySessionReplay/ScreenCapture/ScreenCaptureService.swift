@@ -18,7 +18,9 @@ public final class ScreenCaptureService {
     private let tiledSignatureManager = TiledSignatureManager()
     private var previousSignature: ImageSignature?
     private let signatureLock = NSLock()
-
+    @MainActor
+    private var shouldCapture = false
+    
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
     }
@@ -26,6 +28,7 @@ public final class ScreenCaptureService {
     // MARK: - Capture
     
     /// Capture as UIImage (must be on main thread).
+    @MainActor
     public func captureUIImage(yield: @escaping (CapturedImage?) async -> Void) {
 #if os(iOS)
         let orientation = UIDevice.current.orientation.isLandscape ? 1 : 0
@@ -48,9 +51,10 @@ public final class ScreenCaptureService {
             drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
         }
       
-        // Move collecting masks after to the next tick
+        shouldCapture = true // can be set to false from external class to stop capturing work early
         DispatchQueue.main.async { [weak self, weak maskCollector] in
-            guard let self, let maskCollector else { return }
+            // Move collecting masks after to the next tick
+            guard let self, let maskCollector, shouldCapture else { return }
             
             CATransaction.flush()
             let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
@@ -96,6 +100,11 @@ public final class ScreenCaptureService {
                 await yield(capturedImage)
             }
         }
+    }
+    
+    @MainActor
+    func interuptCapture() {
+        shouldCapture = false
     }
     
     private func allWindowsInZOrder() -> [UIWindow] {
