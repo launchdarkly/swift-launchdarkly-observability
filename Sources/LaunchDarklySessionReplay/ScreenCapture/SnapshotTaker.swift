@@ -6,10 +6,13 @@ import UIKit
 final class SnapshotTaker: EventSource {
     private let captureService: ScreenCaptureService
     private let appLifecycleManager: AppLifecycleManaging
+    @MainActor
     private var displayLink: CADisplayLink?
     private let eventQueue: EventQueue
+    @MainActor
     private var lastFrameDispatchTime: DispatchTime?
     private let frameInterval = 1.0
+    @MainActor
     private var isEventQueueAvailable: Bool = true
     private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
     private var cancellables = Set<AnyCancellable>()
@@ -40,7 +43,7 @@ final class SnapshotTaker: EventSource {
                 .filter { $0.id == sessionExporterId }
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] event in
-                    Task { @MainActor in
+                    MainActor.assumeIsolated {
                         guard let self else { return }
                         switch event.status {
                         case .available:
@@ -57,7 +60,7 @@ final class SnapshotTaker: EventSource {
             .publisher()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] event in
-                Task { @MainActor in
+                MainActor.assumeIsolated {
                     guard let self else { return }
                     switch event {
                     case .didBecomeActive:
