@@ -10,6 +10,7 @@ public final class LDReplay {
         // privacy for singleton
     }
     
+    @MainActor
     public var isEnabled: Bool {
         get { client?.isEnabled ?? false }
         set { client?.isEnabled = newValue }

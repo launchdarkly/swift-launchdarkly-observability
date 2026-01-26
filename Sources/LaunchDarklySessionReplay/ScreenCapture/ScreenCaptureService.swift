@@ -18,7 +18,8 @@ public final class ScreenCaptureService {
     private let tiledSignatureManager = TiledSignatureManager()
     private var previousSignature: ImageSignature?
     private let signatureLock = NSLock()
-    public var shouldCapture = false
+    @MainActor
+    private var shouldCapture = false
     
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
@@ -99,6 +100,11 @@ public final class ScreenCaptureService {
                 await yield(capturedImage)
             }
         }
+    }
+    
+    @MainActor
+    func interuptCapture() {
+        shouldCapture = false
     }
     
     private func allWindowsInZOrder() -> [UIWindow] {

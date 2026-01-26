@@ -15,12 +15,18 @@ final class SnapshotTaker: EventSource {
     private var cancellables = Set<AnyCancellable>()
     
     @MainActor
-    private var isEnabled: Bool {
-        
+    var isEnabled: Bool = false {
+        didSet {
+            // here we shouldn't use guard because service can stop/start internally and isEnabled is flag what supposed to be in foreground
+            if isEnabled {
+                internalStart()
+            } else {
+                internalStop()
+            }
+        }
     }
     
-    init(isEnabled: Bool,
-         captureService: ScreenCaptureService,
+    init(captureService: ScreenCaptureService,
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue) {
         self.captureService = captureService
@@ -34,12 +40,14 @@ final class SnapshotTaker: EventSource {
                 .filter { $0.id == sessionExporterId }
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] event in
-                    guard let self else { return }
-                    switch event.status {
-                    case .available:
-                        self.isEventQueueAvailable = true
-                    case .oveflowed:
-                        self.isEventQueueAvailable = false
+                    Task { @MainActor in
+                        guard let self else { return }
+                        switch event.status {
+                        case .available:
+                            self.isEventQueueAvailable = true
+                        case .oveflowed:
+                            self.isEventQueueAvailable = false
+                        }
                     }
                 }
                 .store(in: &cancellables)
@@ -49,37 +57,23 @@ final class SnapshotTaker: EventSource {
             .publisher()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] event in
-                switch event {
-                case .didBecomeActive:
-                    self?.internalStart()
-                case .willResignActive, .willTerminate:
-                    self?.internalStop()
-                case .didFinishLaunching, .willEnterForeground, .didEnterBackground:
-                    break
+                Task { @MainActor in
+                    guard let self else { return }
+                    switch event {
+                    case .didBecomeActive:
+                        self.internalStart()
+                    case .willResignActive, .willTerminate:
+                        self.internalStop()
+                    case .didFinishLaunching, .willEnterForeground, .didEnterBackground:
+                        break
+                    }
                 }
             }
             .store(in: &cancellables)
     }
-    
-    @MainActor
-    func start() {
-        isEnabled = true
-        internalStart()
-    }
-    
-    @MainActor
-    func stop() {
-        internalStop()
 
-        guard isEnabled else { return }
-        isEnabled = false
-    }
-    
-    func shouldRun() -> Bool {
-        isEnabled
-    }
-    
-    func internalStart() {
+    @MainActor
+    private func internalStart() {
         // isRunning belongs to public start()
         guard isEnabled, displayLink == nil else { return }
         
@@ -88,8 +82,10 @@ final class SnapshotTaker: EventSource {
         self.displayLink = displayLink
     }
     
-    func internalStop() {
-        captureService.shouldCapture = false
+    @MainActor
+    private func internalStop() {
+        // to indicate stopping captureUIImage process in the middle
+        captureService.interuptCapture()
         displayLink?.invalidate()
         displayLink = nil
     }
