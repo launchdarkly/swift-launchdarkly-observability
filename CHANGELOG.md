@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.18.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.17.0...0.18.0) (2026-01-27)
+
+
+### Features
+
+* Interrupt capture in the middle of the process ([#128](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/128)) ([a07d1e0](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/a07d1e052d8edf0e3fba83f260c315fba90f55fb))
+* remove DataCompression dependency by ld_gzip from sdk 11.1.0 ([#125](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/125)) ([0ffb711](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/0ffb71164e48c5064cc329e350990e602cd1ecd7))
+
+
+### Bug Fixes
+
+* turn off KSCrash zombie setting ([#129](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/129)) ([aefb6bd](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/aefb6bde58b7ad9c369247281cb6d6b2615ed3ac))
+
 ## [0.17.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.16.0...0.17.0) (2026-01-16)
 
 
