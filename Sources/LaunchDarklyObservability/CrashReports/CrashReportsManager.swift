@@ -66,7 +66,6 @@ extension KSCrashReportService {
             .userReported,
             .system,
             .applicationState,
-            .zombie,
             .memoryTermination
         ]
         
