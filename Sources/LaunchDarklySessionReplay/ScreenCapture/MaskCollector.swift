@@ -19,10 +19,11 @@ final class MaskCollector {
     struct Settings {
         var maskiOS26ViewTypes: Set<String>
         var maskTextInputs: Bool
+        var maskLabels: Bool
         var maskWebViews: Bool
         var maskImages: Bool
-        var minimumAlpha: CGFloat
-        
+        var minimumAlpha: Float
+        var maximumAlpha: Float
         var maskUIViews: Set<ObjectIdentifier>
         var unmaskUIViews: Set<ObjectIdentifier>
         var ignoreUIViews: Set<ObjectIdentifier>
@@ -34,10 +35,12 @@ final class MaskCollector {
         init(privacySettings: PrivacySettings) {
             self.maskiOS26ViewTypes = Constants.maskiOS26ViewTypes
             self.maskTextInputs = privacySettings.maskTextInputs
+            self.maskLabels = privacySettings.maskLabels
             self.maskWebViews = privacySettings.maskWebViews
             self.maskImages = privacySettings.maskImages
-            self.minimumAlpha = privacySettings.minimumAlpha
-            
+            self.minimumAlpha = Float(privacySettings.minimumAlpha)
+            self.maximumAlpha = Float(1 - privacySettings.minimumAlpha)
+
             self.maskUIViews = Set(privacySettings.maskUIViews.map(ObjectIdentifier.init))
             self.unmaskUIViews = Set(privacySettings.unmaskUIViews.map(ObjectIdentifier.init))
             self.ignoreUIViews = Set(privacySettings.ignoreUIViews.map(ObjectIdentifier.init))
@@ -111,6 +114,10 @@ final class MaskCollector {
                 }
             }
             
+            if maskLabels, let _ = view as? UILabel {
+                return true
+            }
+            
             if maskImages, let imageView = view as? UIImageView {
                 return true
             }
@@ -140,11 +147,13 @@ final class MaskCollector {
         let rPresenation = root.presentation() ?? root
         
         func visit(layer: CALayer) {
-            guard let view = layer.delegate as? UIView,
-                  !view.isHidden,
+            guard let view = layer.delegate as? UIView else { return }
+            guard !view.isHidden,
                   view.window != nil,
-                  view.alpha >= settings.minimumAlpha
-            else { return }
+                  layer.opacity >= settings.minimumAlpha
+            else {
+                return
+            }
             
             guard !settings.shouldIgnore(view) else { return }
             
@@ -160,7 +169,7 @@ final class MaskCollector {
                 return
             }
             
-            if !isSystem(view: view, pLayer: layer) && !isTransparent(view: view, pLayer: layer), result.isNotEmpty {
+            if result.isNotEmpty, !isSystem(view: view, pLayer: layer), !isTransparent(view: view, pLayer: layer) {
                 result.removeAll {
                     effectiveFrame.contains($0.effectiveFrame)
                 }
@@ -207,8 +216,11 @@ final class MaskCollector {
         return result
     }
     
+    // this method should be biased into transparency
     private func isTransparent(view: UIView, pLayer: CALayer) -> Bool {
-        pLayer.opacity < 1 || view.alpha < 1.0 || view.backgroundColor == nil || (view.backgroundColor?.cgColor.alpha ?? 0) < 1.0
+        pLayer.opacity < settings.maximumAlpha
+        || view.backgroundColor == nil
+        || (view.backgroundColor?.cgColor.alpha ?? 0) < CGFloat(settings.maximumAlpha)
     }
     
     private func isSystem(view: UIView, pLayer: CALayer) -> Bool {
@@ -216,7 +228,6 @@ final class MaskCollector {
     }
     
     func createMask(_ rPresenation: CALayer, layer: CALayer, scale: CGFloat) -> Mask? {
-        let scale = 1.0
         let lBounds = layer.bounds
         guard lBounds.width > 0, lBounds.height > 0 else { return nil }
         

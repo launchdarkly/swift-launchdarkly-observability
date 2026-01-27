@@ -13,6 +13,12 @@ public struct CreditCard: Equatable {
     public var postalCode: String?
 }
 
+enum HidingType {
+    case isHidden
+    case alpha
+    case clearBackroundColor
+}
+
 public enum CardBrand: String {
     case visa = "Visa"
     case masterCard = "Mastercard"
@@ -48,32 +54,73 @@ public protocol CreditCardViewControllerDelegate: AnyObject {
 }
 
 // MARK: - Controller
+final class CoverView: UIView {
+    
+}
 
 public final class CreditCardViewController: UIViewController {
+    var hidingType: HidingType = .isHidden {
+        didSet {
+            updateHidingTypeUI()
+            applyHidingType(to: slidingCover, isHidden: true)
+            applyHidingType(to: blinkingCover, isHidden: true)
+        }
+    }
+
+    private lazy var hidingTypeControl: UISegmentedControl = {
+        let control = UISegmentedControl(items: ["Hidden", "Alpha", "Clear BG"]) 
+        control.selectedSegmentIndex = 0
+        control.addTarget(self, action: #selector(hidingTypeChanged(_:)), for: .valueChanged)
+        return control
+    }()
+    
+    private var hidingBarContainerRef: UIStackView?
+    
     var testAnimation: TestAnimation? {
         didSet {
             guard isViewLoaded, oldValue != testAnimation else { return }
             
-            if oldValue == .rotate {
-                stack.layer.removeAllAnimations()
+            if testAnimation != .rotate {
+                if let rotatingContentContainer = self.stack.arrangedSubviews.first(where: { $0 !== self.hidingBarContainerRef }) {
+                    rotatingContentContainer.layer.removeAllAnimations()
+                } else {
+                    stack.layer.removeAllAnimations()
+                }
                 cvvContainer?.layer.removeAllAnimations()
             }
             
+            blinkingCover.layer.removeAllAnimations()
+            
             switch testAnimation  {
             case .slideInFromBottom:
-                cover.backgroundColor = .blue
-                startSlidingFromBottom(view: cover)
+                applyHidingType(to: blinkingCover, isHidden: true)
+                applyHidingType(to: slidingCover, isHidden: false)
+                slidingCover.backgroundColor = .blue
+                startSlidingFromBottom(view: slidingCover)
             case .slideInFromRight:
-                cover.backgroundColor = .blue
-                startSlidingFromRight(view: cover)
+                applyHidingType(to: blinkingCover, isHidden: true)
+                applyHidingType(to: slidingCover, isHidden: false)
+                slidingCover.backgroundColor = .blue
+                startSlidingFromRight(view: slidingCover)
             case .rotate:
-               cover.backgroundColor = .clear
-               startRotating(view: stack)
-               if let cvvContainer = cvvContainer {
-                   startRotating(view: cvvContainer)
-               }
+                applyHidingType(to: slidingCover, isHidden: true)
+                applyHidingType(to: blinkingCover, isHidden: true)
+                if let rotatingContentContainer = self.stack.arrangedSubviews.first(where: { $0 !== self.hidingBarContainerRef }) {
+                    startRotating(view: rotatingContentContainer)
+                } else {
+                    startRotating(view: stack)
+                }
+                if let cvvContainer = cvvContainer {
+                    startRotating(view: cvvContainer)
+                }
             case .none:
-                cover.backgroundColor = .clear
+                applyHidingType(to: slidingCover, isHidden: true)
+                applyHidingType(to: blinkingCover, isHidden: true)
+            case .blink:
+                applyHidingType(to: slidingCover, isHidden: true)
+                applyHidingType(to: blinkingCover, isHidden: false)
+                blinkingCover.backgroundColor = .green
+                blink(view: blinkingCover)
             }
         }
     }
@@ -91,7 +138,19 @@ public final class CreditCardViewController: UIViewController {
     private var cvvContainer: UIStackView?
     private let postalField = UITextField()
     private let saveButton  = UIButton(type: .system)
-    private let cover = UIView()
+    
+    
+    private lazy var slidingCover: UIView = {
+        let view = CoverView()
+        view.tag = 99999
+        return view
+    }()
+    
+    private lazy var blinkingCover: UIView = {
+        let view = CoverView()
+        view.tag = 99998
+        return view
+    }()
     
     // Accessory toolbar
     private lazy var kbToolbar: UIToolbar = {
@@ -115,6 +174,10 @@ public final class CreditCardViewController: UIViewController {
         setupLayout()
         updateSaveButton()
         
+        updateHidingTypeUI()
+        applyHidingType(to: slidingCover, isHidden: true)
+        applyHidingType(to: blinkingCover, isHidden: true)
+        
         nameField.ldUnmask()
         brandChip.accessibilityIdentifier = "card-brand-chip"
     }
@@ -122,8 +185,12 @@ public final class CreditCardViewController: UIViewController {
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        cover.frame = view.bounds
-        //startSliding(view: cover)
+        slidingCover.frame = view.bounds
+        blinkingCover.frame = view.bounds.insetBy(dx: +50, dy: +80)
+        blinkingCover.ldMask()
+        
+        applyHidingType(to: slidingCover, isHidden: true)
+        applyHidingType(to: blinkingCover, isHidden: true)
     }
     
     // MARK: - Public prefill (optional)
@@ -167,7 +234,36 @@ public final class CreditCardViewController: UIViewController {
             stack.bottomAnchor.constraint(equalTo: scroll.bottomAnchor)
         ])
         
-        addLabeledField(title: "Name on Card", field: nameField)
+        // Hiding type toggle bar at the top
+        let hidingBarContainer = UIStackView()
+        hidingBarContainer.axis = .vertical
+        hidingBarContainer.spacing = 6
+        hidingBarContainer.isLayoutMarginsRelativeArrangement = true
+        hidingBarContainer.layoutMargins = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
+        hidingBarContainer.backgroundColor = .secondarySystemBackground
+        hidingBarContainer.layer.cornerRadius = 12
+
+        let hidingTitle = UILabel()
+        hidingTitle.text = "Hiding Type"
+        hidingTitle.font = UIFont.preferredFont(forTextStyle: .subheadline)
+        hidingTitle.textColor = .secondaryLabel
+
+        let hidingContent = UIStackView(arrangedSubviews: [hidingTypeControl])
+        hidingContent.axis = .vertical
+
+        hidingBarContainer.addArrangedSubview(hidingTitle)
+        hidingBarContainer.addArrangedSubview(hidingContent)
+        self.hidingBarContainerRef = hidingBarContainer
+        stack.addArrangedSubview(hidingBarContainer)
+        
+        // Container for content below the hiding bar so we can rotate without rotating the hiding bar
+        let rotatingContentContainer = UIStackView()
+        rotatingContentContainer.axis = .vertical
+        rotatingContentContainer.spacing = 12
+        rotatingContentContainer.isLayoutMarginsRelativeArrangement = false
+        stack.addArrangedSubview(rotatingContentContainer)
+        
+        addLabeledField(to: rotatingContentContainer, title: "Name on Card", field: nameField)
         
         // Card number row with brand chip
         let numberRow = UIStackView()
@@ -194,7 +290,7 @@ public final class CreditCardViewController: UIViewController {
         
         numberRow.addArrangedSubview(numberContainer)
         numberRow.addArrangedSubview(brandChip)
-        stack.addArrangedSubview(numberRow)
+        rotatingContentContainer.addArrangedSubview(numberRow)
         
         // Expiry + CVV row
         let row = UIStackView()
@@ -221,10 +317,10 @@ public final class CreditCardViewController: UIViewController {
         
         row.addArrangedSubview(expiryContainer)
         row.addArrangedSubview(cvvContainer)
-        stack.addArrangedSubview(row)
+        rotatingContentContainer.addArrangedSubview(row)
         
         // Postal
-        addLabeledField(title: "ZIP / Postal", field: postalField)
+        addLabeledField(to: rotatingContentContainer, title: "ZIP / Postal", field: postalField)
         postalField.placeholder = "Optional"
         postalField.keyboardType = .default
         postalField.autocapitalizationType = .allCharacters
@@ -241,12 +337,15 @@ public final class CreditCardViewController: UIViewController {
         saveButton.layer.cornerRadius = 12
         saveButton.heightAnchor.constraint(equalToConstant: 50).isActive = true
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
-        stack.addArrangedSubview(saveButton)
+        rotatingContentContainer.addArrangedSubview(saveButton)
         
         
-        cover.backgroundColor = .clear
-      //  cover.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(cover)
+        slidingCover.backgroundColor = .clear
+        view.addSubview(slidingCover)
+       
+        blinkingCover.backgroundColor = .clear
+        view.addSubview(blinkingCover)
+        
 //        NSLayoutConstraint.activate([
 //            cover.leadingAnchor.constraint(equalTo: view.leadingAnchor),
 //            cover.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -255,14 +354,14 @@ public final class CreditCardViewController: UIViewController {
 //        ])
     }
     
-    private func addLabeledField(title: String, field: UITextField) {
+    private func addLabeledField(to parent: UIStackView, title: String, field: UITextField) {
         let container = fieldContainer(title: title)
         field.inputAccessoryView = kbToolbar
         field.autocapitalizationType = .words
         field.clearButtonMode = .whileEditing
         field.delegate = self
         container.addArrangedSubview(field)
-        stack.addArrangedSubview(container)
+        parent.addArrangedSubview(container)
     }
     
     private func fieldContainer(title: String) -> UIStackView {
@@ -280,6 +379,41 @@ public final class CreditCardViewController: UIViewController {
         v.layer.cornerRadius = 12
         v.layoutMargins = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
         return v
+    }
+    
+    // MARK: - Hiding Type Handling
+    @objc private func hidingTypeChanged(_ sender: UISegmentedControl) {
+        switch sender.selectedSegmentIndex {
+        case 0: hidingType = .isHidden
+        case 1: hidingType = .alpha
+        case 2: hidingType = .clearBackroundColor
+        default: hidingType = .isHidden
+        }
+    }
+
+    private func updateHidingTypeUI() {
+        switch hidingType {
+        case .isHidden: hidingTypeControl.selectedSegmentIndex = 0
+        case .alpha: hidingTypeControl.selectedSegmentIndex = 1
+        case .clearBackroundColor: hidingTypeControl.selectedSegmentIndex = 2
+        }
+    }
+
+    private func applyHidingType(to view: UIView, isHidden: Bool) {
+        switch hidingType {
+        case .isHidden:
+            view.isHidden = isHidden
+            view.alpha = 1.0
+            view.backgroundColor = (view === blinkingCover || view === slidingCover) ? .clear : view.backgroundColor
+        case .alpha:
+            view.isHidden = false
+            view.alpha = isHidden ? 0.0 : 1.0
+            view.backgroundColor = (view === blinkingCover || view === slidingCover) ? .clear : view.backgroundColor
+        case .clearBackroundColor:
+            view.isHidden = false
+            view.alpha = 1.0
+            view.backgroundColor = isHidden ? .clear : view.backgroundColor
+        }
     }
     
     // MARK: - Actions
@@ -489,20 +623,21 @@ private extension CreditCardViewController {
  present(nav, animated: true)
  
  extension YourController: CreditCardViewControllerDelegate {
-     func creditCardViewController(_ vc: CreditCardViewController, didSave card: CreditCard) {
-         // Use the sanitized card model (PAN digits only, uppercased postal)
-         print("Saved card: \(card)")
-         vc.dismiss(animated: true)
-     }
-     func creditCardViewControllerDidCancel(_ vc: CreditCardViewController) {
-         vc.dismiss(animated: true)
-     }
+ func creditCardViewController(_ vc: CreditCardViewController, didSave card: CreditCard) {
+ // Use the sanitized card model (PAN digits only, uppercased postal)
+ print("Saved card: \(card)")
+ vc.dismiss(animated: true)
  }
-*/
+ func creditCardViewControllerDidCancel(_ vc: CreditCardViewController) {
+ vc.dismiss(animated: true)
+ }
+ }
+ */
 
 import SwiftUI
 
 enum TestAnimation {
+    case blink
     case slideInFromBottom
     case slideInFromRight
     case rotate
@@ -552,6 +687,11 @@ struct MaskingCreditCardUIKitView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationTitle("Masking Elements (UIKit)")
                 .toolbar {
+                    Button {
+                        testAnimation = (testAnimation == .rotate) ? .blink : .rotate
+                    } label: {
+                        Image(systemName: "eye")
+                    }
                     Button {
                         testAnimation = (testAnimation == .rotate) ? .slideInFromBottom : .rotate
                     } label: {
