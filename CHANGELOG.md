@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.18.0...0.18.1) (2026-01-27)
+
+
+### Bug Fixes
+
+* handle transparency of masked views ([#130](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/130)) ([e16c143](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/e16c1431a72d102d2fd5b088008e15392127b869))
+
 ## [0.18.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.17.0...0.18.0) (2026-01-27)
 
 
