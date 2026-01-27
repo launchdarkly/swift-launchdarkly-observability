@@ -2,8 +2,6 @@ import Foundation
 import Combine
 
 public protocol EventSource: AnyObject {
-    func start()
-    func stop()
 }
 
 public protocol TransportServicing {
