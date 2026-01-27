@@ -5,7 +5,7 @@ import WebKit
 import UIKit
 import SwiftUI
 #if !LD_COCOAPODS
-    import Common
+import Common
 #endif
 
 typealias PrivacySettings = SessionReplayOptions.PrivacyOptions
@@ -40,7 +40,7 @@ final class MaskCollector {
             self.maskImages = privacySettings.maskImages
             self.minimumAlpha = Float(privacySettings.minimumAlpha)
             self.maximumAlpha = Float(1 - privacySettings.minimumAlpha)
-
+            
             self.maskUIViews = Set(privacySettings.maskUIViews.map(ObjectIdentifier.init))
             self.unmaskUIViews = Set(privacySettings.unmaskUIViews.map(ObjectIdentifier.init))
             self.ignoreUIViews = Set(privacySettings.ignoreUIViews.map(ObjectIdentifier.init))
@@ -78,7 +78,7 @@ final class MaskCollector {
                unmaskAccessibilityIdentifiers.contains(accessibilityIdentifier) {
                 return false
             }
-                        
+            
             let viewType = type(of: view)
             let viewIdentifier = ObjectIdentifier(viewType)
             if unmaskUIViews.contains(viewIdentifier) {
@@ -130,7 +130,7 @@ final class MaskCollector {
                maskAccessibilityIdentifiers.contains(accessibilityIdentifier) {
                 return true
             }
-
+            
             return SessionReplayAssociatedObjects.shouldMaskUIView(view) == true
         }
     }
@@ -150,15 +150,12 @@ final class MaskCollector {
             guard let view = layer.delegate as? UIView else { return }
             guard !view.isHidden,
                   view.window != nil,
-                  layer.opacity >= settings.minimumAlpha
-            else {
-                return
-            }
+                  layer.opacity >= settings.minimumAlpha else { return }
             
             guard !settings.shouldIgnore(view) else { return }
             
             let effectiveFrame = rPresenation.convert(layer.frame, from: layer.superlayer)
-
+            
             let shouldMask = settings.shouldMask(view)
             if shouldMask, let mask = createMask(rPresenation, layer: layer, scale: scale) {
                 var operation = MaskOperation(mask: mask, kind: .fill, effectiveFrame: effectiveFrame)
@@ -203,7 +200,7 @@ final class MaskCollector {
             }
             
             guard diffX * overlapTollerance < before.effectiveFrame.width - moveTollerance,
-                    diffY * overlapTollerance < before.effectiveFrame.height - moveTollerance else {
+                  diffY * overlapTollerance < before.effectiveFrame.height - moveTollerance else {
                 // If movement is bigger the size we drop the frame
                 return nil
             }
@@ -245,7 +242,7 @@ final class MaskCollector {
                                                     ty: ty).scaledBy(x: scale, y: scale)
             return Mask.affine(rect: lBounds, transform: affineTransform)
         } else {
-           // TODO: finish 3D animations
+            // TODO: finish 3D animations
         }
         
         return nil
