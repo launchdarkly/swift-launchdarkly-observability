@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.18.1...0.18.2) (2026-01-27)
+
+
+### Bug Fixes
+
+* o11y-1017 - add default resource attributes to plugin ([#132](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/132)) ([2924c59](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2924c59de82bf7276f253fc3667135b63000d3f3))
+
 ## [0.18.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.18.0...0.18.1) (2026-01-27)
 
 
