@@ -12,4 +12,11 @@ public enum SemanticConvention {
     public static let systemMemoryAppUsageBytes = "system.memory.app_usage_bytes"
     public static let systemMemoryAppTotalBytes = "system.memory.app_total_bytes"
     public static let systemMemoryWarning = "system.memory.memory_warning"
+    public static let deviceModelName = "device.model.name"
+    public static let deviceModelIdentifier = "device.model.identifier"
+    public static let deviceManufacturer = "device.manufacturer"
+    public static let osName = "os.name"
+    public static let osType = "os.type"
+    public static let osVersion = "os.version"
+    public static let osDescription = "os.description"
 }

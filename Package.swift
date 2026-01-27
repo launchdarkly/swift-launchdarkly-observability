@@ -36,6 +36,7 @@ let package = Package(
                 "ObjCBridge",
                 "URLSessionInstrumentation",
                 "OpenTelemetryProtocolExporterCommon",
+                "SDKResourceExtension",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),
@@ -77,6 +78,13 @@ let package = Package(
               ],
               path: "Sources/OpenTelemetry/Instrumentation/NetworkStatus",
               linkerSettings: [.linkedFramework("CoreTelephony", .when(platforms: [.iOS]))]
+        ),
+        .target(
+              name: "SDKResourceExtension",
+              dependencies: [
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core")],
+              path: "Sources/OpenTelemetry/Instrumentation/SDKResourceExtension",
+              exclude: ["README.md"]
         ),
         .testTarget(
             name: "CommonTests",
