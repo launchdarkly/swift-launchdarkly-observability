@@ -1,5 +1,10 @@
 import OSLog
 @_exported import LaunchDarkly
+import OpenTelemetrySdk
+import SDKResourceExtension
+#if !os(macOS)
+import UIKit
+#endif
 
 public final class Observability: Plugin {
     private let options: Options
@@ -35,6 +40,23 @@ public final class Observability: Plugin {
         resourceAttributes[SemanticConvention.serviceVersion] = .string(options.serviceVersion)
         resourceAttributes[SemanticConvention.telemetryDistroName] = .string("swift-launchdarkly-observability")
         resourceAttributes[SemanticConvention.telemetryDistroVersion] = .string(sdkVersion)
+
+        // Device attributes
+        let deviceDataSource = DeviceDataSource()
+        #if !os(macOS)
+        resourceAttributes[SemanticConvention.deviceModelName] = .string(UIDevice.current.model)
+        #endif
+        if let deviceModelIdentifier = deviceDataSource.model {
+            resourceAttributes[SemanticConvention.deviceModelIdentifier] = .string(deviceModelIdentifier)
+        }
+        resourceAttributes[SemanticConvention.deviceManufacturer] = .string("Apple")
+
+        // OS attributes
+        let osDataSource = OperatingSystemDataSource()
+        resourceAttributes[SemanticConvention.osName] = .string(osDataSource.name)
+        resourceAttributes[SemanticConvention.osType] = .string(osDataSource.type)
+        resourceAttributes[SemanticConvention.osVersion] = .string(osDataSource.version)
+        resourceAttributes[SemanticConvention.osDescription] = .string(osDataSource.description)
 
         customHeaders[SemanticConvention.highlightProjectId] = mobileKey
         
