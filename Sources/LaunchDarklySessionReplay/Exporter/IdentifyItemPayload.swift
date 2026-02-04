@@ -36,14 +36,6 @@ extension IdentifyItemPayload {
             }
         }
         
-        print("‼️")
-        print("options: \(options.resourceAttributes)")
-        print("‼️")
-        print("session: \(sessionAttributes)")
-        
-        print("merged: \(attributes)")
-        print("‼️")
-        
         var canonicalKey = ldContext?.fullyQualifiedKey() ?? "unknown"
         var ldContextMap = ldContext?.contextKeys()
         if let ldContextMap {
