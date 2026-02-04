@@ -17,8 +17,11 @@ struct IdentifyItemPayload: EventQueueItemPayload {
 extension IdentifyItemPayload {
     // Using main thread to access to ldContext
     @MainActor
-    init(options: Options, ldContext: LDContext? = nil, timestamp: TimeInterval) {
-        var attributes: [String: String] = options.resourceAttributes.compactMapValues {
+    init(options: Options, sessionAttributes: [String: AttributeValue]?, ldContext: LDContext? = nil, timestamp: TimeInterval) {
+        var attributes: [String: String] = options.resourceAttributes
+            ///keep the existing value from Options if duplicate key is found, client has precedence over session attribute
+            .merging(sessionAttributes ?? [:], uniquingKeysWith: { (current, _) in current })
+            .compactMapValues {
             switch $0 {
             case .array, .set, .boolArray, .intArray, .doubleArray, .stringArray:
                 return nil
@@ -32,6 +35,14 @@ extension IdentifyItemPayload {
                 return String(v)
             }
         }
+        
+        print("‼️")
+        print("options: \(options.resourceAttributes)")
+        print("‼️")
+        print("session: \(sessionAttributes)")
+        
+        print("merged: \(attributes)")
+        print("‼️")
         
         var canonicalKey = ldContext?.fullyQualifiedKey() ?? "unknown"
         var ldContextMap = ldContext?.contextKeys()

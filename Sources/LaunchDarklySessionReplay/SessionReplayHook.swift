@@ -24,9 +24,9 @@ final class SessionReplayHook: Hook {
         guard let options = plugin.observabilityContext?.options else {
             return seriesData
         }
-        
+        let sessionAttributes = plugin.observabilityContext?.sessionAttributes
         Task {
-            let identifyPayload = await IdentifyItemPayload(options: options, ldContext: seriesContext.context, timestamp: Date().timeIntervalSince1970)
+            let identifyPayload = await IdentifyItemPayload(options: options, sessionAttributes: sessionAttributes, ldContext: seriesContext.context, timestamp: Date().timeIntervalSince1970)
             await plugin.sessionReplayService?.scheduleIdentifySession(identifyPayload: identifyPayload)
         }
         
