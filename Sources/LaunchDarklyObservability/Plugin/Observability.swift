@@ -35,7 +35,7 @@ public final class Observability: Plugin {
         var customHeaders = options.customHeaders
         
         add(metadata: metadata, into: &resourceAttributes)
-        var sessionAttributes = makeSessionAttributes()
+        let sessionAttributes = makeSessionAttributes()
 
         customHeaders[SemanticConvention.highlightProjectId] = mobileKey
         
