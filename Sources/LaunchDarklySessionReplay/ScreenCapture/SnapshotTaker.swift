@@ -74,7 +74,7 @@ final class SnapshotTaker: EventSource {
             }
             .store(in: &cancellables)
     }
-
+    
     @MainActor
     private func internalStart() {
         // isRunning belongs to public start()
@@ -97,7 +97,7 @@ final class SnapshotTaker: EventSource {
     @objc private func frameUpdate() {
         queueSnapshot()
     }
-     
+    
     @MainActor
     func queueSnapshot() {
         guard isEnabled, let displayLink, isEventQueueAvailable else {
@@ -115,23 +115,27 @@ final class SnapshotTaker: EventSource {
         let lastFrameDispatchTime = DispatchTime.now()
         self.lastFrameDispatchTime = lastFrameDispatchTime
         
-        captureService.captureUIImage { capturedImage in
-            guard let capturedImage else {
+        captureService.captureUIImage { capturedImages in
+            guard let capturedImages, !capturedImages.isEmpty else {
                 // dropped frame
                 return
             }
             
-            guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
-                                                                    rect: capturedImage.rect,
-                                                                    originalSize: capturedImage.originalSize,
-                                                                    scale: capturedImage.scale,
-                                                                    timestamp: capturedImage.timestamp,
-                                                                    orientation: capturedImage.orientation,
-                                                                    isKeyframe: capturedImage.isKeyframe) else {
-                return
+            var exportImages = [ExportImage]()
+            for capturedImage in capturedImages {
+                guard  let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
+                                                                         rect: capturedImage.rect,
+                                                                         originalSize: capturedImage.originalSize,
+                                                                         scale: capturedImage.scale,
+                                                                         timestamp: capturedImage.timestamp,
+                                                                         orientation: capturedImage.orientation,
+                                                                         isKeyframe: capturedImage.isKeyframe) else {
+                    return
+                }
+                exportImages.append(exportImage)
             }
             
-            await self.eventQueue.send(ImageItemPayload(exportImage: exportImage))
+            await self.eventQueue.send(ImagesItemPayload(exportImages: exportImages))
         }
     }
 }

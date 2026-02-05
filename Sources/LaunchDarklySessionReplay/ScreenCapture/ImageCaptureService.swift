@@ -37,7 +37,7 @@ public final class ImageCaptureService {
     
     /// Capture as UIImage (must be on main thread).
     @MainActor
-    public func captureUIImage(yield: @escaping (CapturedImage?) async -> Void) {
+    public func captureUIImage(yield: @escaping ([CapturedImage]?) async -> Void) {
 #if os(iOS)
         let orientation = UIDevice.current.orientation.isLandscape ? 1 : 0
 #else
@@ -103,7 +103,7 @@ public final class ImageCaptureService {
         shouldCapture = false
     }
     
-    private func computeDiffCapture(image: UIImage, timestamp: TimeInterval, orientation: Int) -> CapturedImage? {
+    private func computeDiffCapture(image: UIImage, timestamp: TimeInterval, orientation: Int) -> [CapturedImage]? {
         guard let imageSignature = self.tiledSignatureManager.compute(image: image) else {
             return nil
         }
@@ -158,7 +158,7 @@ public final class ImageCaptureService {
                                           orientation: orientation,
                                           isKeyframe: isKeyframe)
         previousSignature = imageSignature
-        return capturedImage
+        return [capturedImage]
     }
                                     
     private func allWindowsInZOrder() -> [UIWindow] {

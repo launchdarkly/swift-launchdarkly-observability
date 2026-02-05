@@ -87,6 +87,27 @@ actor SessionReplayEventGenerator {
     
     func appendEvents(item: EventQueueItem, events: inout [Event]) {
         switch item.payload {
+        case let payload as ImagesItemPayload:
+            let exportImages = payload.exportImages
+            defer {
+                lastImageSize = exportImages[0].originalSize
+            }
+            
+            //stats?.addExportImage(exportImage)
+            
+            let timestamp = item.timestamp
+            
+            if let imageId,
+               lastImageSize == exportImages[0].originalSize,
+               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit {
+                for exportImage in exportImages {
+                    events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
+                }
+            } else {
+                // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
+                appendFullSnapshotEvents(exportImages[0], timestamp, &events)
+            }
+
         case let payload as ImageItemPayload:
             let exportImage = payload.exportImage
             defer {
