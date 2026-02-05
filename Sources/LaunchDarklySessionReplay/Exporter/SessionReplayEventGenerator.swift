@@ -35,6 +35,7 @@ actor SessionReplayEventGenerator {
     private var generatingCanvasSize: Int = 0
     
     private var imageId: Int?
+    private var bodyId: Int?
     private var lastImageSize: CGSize?
     private var stats: SessionReplayStats?
     private let isDebug = false
@@ -97,11 +98,11 @@ actor SessionReplayEventGenerator {
             
             let timestamp = item.timestamp
             
-            if let imageId,
+            if let bodyId,
                !exportImage.isKeyframe,
                lastImageSize == exportImage.originalSize,
                generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
-                events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
+                events.append(contentsOf: drawTileEvents(exportImage: exportImage, timestamp: timestamp, bodyId: bodyId))
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
                 appendFullSnapshotEvents(exportImage, timestamp, &events)
@@ -227,32 +228,24 @@ actor SessionReplayEventGenerator {
         return event
     }
     
-    func drawImageEvent(exportImage: ExportImage, timestamp: TimeInterval, imageId: Int) -> Event {
-        let clearRectCommand = ClearRect(rect: exportImage.rect)
-        let base64String = exportImage.data.base64EncodedString()
-        let arrayBuffer = RRArrayBuffer(base64: base64String)
-        let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportImage.mimeType))
-        let drawImageCommand = DrawImage(image: AnyRRNode(RRImageBitmap(args: [blob])),
-                                         rect: exportImage.rect)
-        let commands: [AnyCommand]
-        if exportImage.isKeyframe {
-            commands = [
-                AnyCommand(clearRectCommand, canvasSize: 80),
-                AnyCommand(drawImageCommand, canvasSize: base64String.count)
-               ]
-        } else {
-            commands = [
-                AnyCommand(drawImageCommand, canvasSize: base64String.count)]
-        }
-        let eventData = CanvasDrawData(source: .canvasMutation,
-                                       id: imageId,
-                                       type: .mouseUp,
-                                       commands: commands)
-        let event = Event(type: .IncrementalSnapshot,
-                          data: AnyEventData(eventData),
-                          timestamp: timestamp, _sid: nextSid)
-        generatingCanvasSize += eventData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
-        return event
+    /// Generates a DOM mutation event to add a tile canvas on top of the main canvas.
+    /// The tile canvas uses rr_dataURL to pre-render the image, no separate draw command needed.
+    func drawTileEvents(exportImage: ExportImage, timestamp: TimeInterval, bodyId: Int) -> [Event] {
+        // Create a new canvas node for this tile with the image pre-rendered via rr_dataURL
+        let tileCanvasId = nextId
+        let base64DataURL = exportImage.base64DataURL()
+        let tileNode = exportImage.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL)
+        
+        // Create DOM mutation event to add the tile canvas to body
+        let addedNode = AddedNode(parentId: bodyId, nextId: nil, node: tileNode)
+        let mutationData = MutationData(adds: [addedNode], canvasSize: base64DataURL.count)
+        let mutationEvent = Event(type: .IncrementalSnapshot,
+                                   data: AnyEventData(mutationData),
+                                   timestamp: timestamp,
+                                   _sid: nextSid)
+        
+        generatingCanvasSize += mutationData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
+        return [mutationEvent]
     }
     
     func mouseEvent(timestamp: TimeInterval, x: CGFloat, y: CGFloat, timeOffset: TimeInterval) -> Event? {
@@ -281,13 +274,18 @@ actor SessionReplayEventGenerator {
         rootNode.childNodes.append(htmlDocNode)
         let base64String = exportImage.base64DataURL()
 
-        let htmlNode = EventNode(id: nextId, type: .Element, tagName: "html", attributes: ["lang": "en"], childNodes: [
-            EventNode(id: nextId, type: .Element, tagName: "head", attributes: [:]),
-            EventNode(id: nextId, type: .Element, tagName: "body", attributes: [:], childNodes: [
-                exportImage.eventNode(id: nextId, rr_dataURL: base64String)
-            ]),
-        ])
+        let headNode = EventNode(id: nextId, type: .Element, tagName: "head", attributes: [:])
+        let currentBodyId = nextId
+        let bodyNode = EventNode(id: currentBodyId, type: .Element, tagName: "body",
+                                  attributes: ["style": "position:relative;"],
+                                  childNodes: [
+                                      exportImage.eventNode(id: nextId, rr_dataURL: base64String)
+                                  ])
+        let htmlNode = EventNode(id: nextId, type: .Element, tagName: "html",
+                                  attributes: ["lang": "en"],
+                                  childNodes: [headNode, bodyNode])
         imageId = id
+        bodyId = currentBodyId
         rootNode.childNodes.append(htmlNode)
         
         return DomData(node: rootNode, canvasSize: base64String.count)

@@ -31,6 +31,7 @@ struct ExportImage: Equatable {
         self.isKeyframe = isKeyframe
     }
     
+    /// Creates an EventNode for the main canvas (full snapshot)
     func eventNode(id: Int, rr_dataURL: String) -> EventNode {
         EventNode(
             id: id,
@@ -40,6 +41,21 @@ struct ExportImage: Equatable {
                 "rr_dataURL": rr_dataURL,
                 "width": "\(Int(originalSize.width))",
                 "height": "\(Int(originalSize.height))"]
+        )
+    }
+    
+    /// Creates an EventNode for a tile canvas (positioned absolutely on top of main canvas)
+    func tileEventNode(id: Int, rr_dataURL: String) -> EventNode {
+        let style = "position:absolute;left:\(Int(rect.minX))px;top:\(Int(rect.minY))px;pointer-events:none;"
+        return EventNode(
+            id: id,
+            type: .Element,
+            tagName: "canvas",
+            attributes: [
+                "rr_dataURL": rr_dataURL,
+                "width": "\(Int(rect.width))",
+                "height": "\(Int(rect.height))",
+                "style": style]
         )
     }
     
