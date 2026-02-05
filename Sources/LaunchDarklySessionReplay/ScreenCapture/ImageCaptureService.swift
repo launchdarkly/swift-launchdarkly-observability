@@ -114,7 +114,8 @@ public final class ImageCaptureService {
             signatureLock.unlock()
             return nil
         }
-        
+        previousSignature = imageSignature
+
         let needWholeScreen = (diffRect.size.width >= image.size.width && diffRect.size.height >= image.size.height)
         let isKeyframe: Bool
         if case .drawTiles(let frameWindow) = transferMethod {
@@ -157,7 +158,6 @@ public final class ImageCaptureService {
                                           timestamp: timestamp,
                                           orientation: orientation,
                                           isKeyframe: isKeyframe)
-        previousSignature = imageSignature
         return capturedImage
     }
                                     
