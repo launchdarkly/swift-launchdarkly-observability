@@ -44,7 +44,14 @@ public struct SessionReplayOptions {
         }
     }
     
+    public enum TransferMethod {
+        case screenImage
+        case drawTiles(frameWindow: Int = 4)
+        case tileGrid
+    }
+    
     public var isEnabled: Bool
+    public var transferMethod: TransferMethod = .drawTiles()
     public var serviceName: String
     public var privacy = PrivacyOptions()
     public var log: OSLog

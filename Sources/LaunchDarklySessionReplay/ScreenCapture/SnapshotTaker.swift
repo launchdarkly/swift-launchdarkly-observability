@@ -4,7 +4,7 @@ import LaunchDarklyObservability
 import UIKit
 
 final class SnapshotTaker: EventSource {
-    private let captureService: ScreenCaptureService
+    private let captureService: ImageCaptureService
     private let appLifecycleManager: AppLifecycleManaging
     @MainActor
     private var displayLink: CADisplayLink?
@@ -29,7 +29,7 @@ final class SnapshotTaker: EventSource {
         }
     }
     
-    init(captureService: ScreenCaptureService,
+    init(captureService: ImageCaptureService,
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue) {
         self.captureService = captureService
@@ -122,10 +122,12 @@ final class SnapshotTaker: EventSource {
             }
             
             guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
-                                                                    originalSize: capturedImage.renderSize,
+                                                                    rect: capturedImage.rect,
+                                                                    originalSize: capturedImage.originalSize,
                                                                     scale: capturedImage.scale,
                                                                     timestamp: capturedImage.timestamp,
-                                                                    orientation: capturedImage.orientation) else {
+                                                                    orientation: capturedImage.orientation,
+                                                                    isKeyframe: capturedImage.isKeyframe) else {
                 return
             }
             

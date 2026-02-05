@@ -60,3 +60,42 @@ final class TiledSignatureManager {
         return TiledSignature(hash: hash)
     }
 }
+
+extension ImageSignature {
+    // returns nil if signatures equal
+    func diffRectangle(other: ImageSignature?) -> CGRect? {
+        guard let other else {
+            return CGRect(x: 0,
+                          y: 0,
+                          width: columns * tileSize,
+                          height: rows * tileSize)
+        }
+        
+        guard rows == other.rows, columns == other.columns else {
+            return nil
+        }
+        
+        var minRow = Int.max
+        var maxRow = Int.min
+        var minColumn = Int.max
+        var maxColumn = Int.min
+        
+        for (i, tile) in tiledSignatures.enumerated() where tile != other.tiledSignatures[i] {
+            let row = i / columns
+            let col = i % columns
+            minRow = min(minRow, row)
+            maxRow = max(maxRow, row)
+            minColumn = min(minColumn, col)
+            maxColumn = max(maxColumn, col)
+        }
+        
+        guard minRow != Int.max else {
+            return nil
+        }
+        
+        return CGRect(x: minColumn * tileSize,
+                      y: minRow * tileSize,
+                      width: (maxColumn - minColumn + 1) * tileSize,
+                      height: (maxRow - minRow + 1) * tileSize)
+    }
+}

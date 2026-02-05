@@ -16,3 +16,22 @@ struct ImageItemPayload: EventQueueItemPayload {
     
     let exportImage: ExportImage
 }
+
+//struct ImagesItemPayload: EventQueueItemPayload {
+//    var exporterClass: AnyClass {
+//        SessionReplayExporter.self
+//    }
+//    
+//    init(exportImages: [ExportImage]) {
+//        self.exportImages = exportImages
+//        self.timestamp = exportImages[0].timestamp
+//    }
+//    
+//    var timestamp: TimeInterval
+//    
+//    func cost() -> Int {
+//        exportImage.reduce(0) { $0 + $1.data.count }
+//    }
+//    
+//    let exportImages: [ExportImage]
+//}

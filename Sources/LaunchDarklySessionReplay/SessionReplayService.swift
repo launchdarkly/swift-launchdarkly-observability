@@ -66,7 +66,7 @@ final class SessionReplayService: SessionReplayServicing {
         }
         self.log = observabilityContext.options.log
         let graphQLClient = GraphQLClient(endpoint: url)
-        let captureService = ScreenCaptureService(options: sessonReplayOptions)
+        let captureService = ImageCaptureService(options: sessonReplayOptions)
         self.transportService = observabilityContext.transportService
         self.snapshotTaker = SnapshotTaker(captureService: captureService,
                                            appLifecycleManager: observabilityContext.appLifecycleManager,

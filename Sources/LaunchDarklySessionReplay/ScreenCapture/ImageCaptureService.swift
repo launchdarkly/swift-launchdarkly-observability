@@ -7,22 +7,30 @@ import Foundation
 public struct CapturedImage {
     public let image: UIImage
     public let scale: CGFloat
-    public let renderSize: CGSize
+    public let rect: CGRect
+    public let originalSize: CGSize
     public let timestamp: TimeInterval
     public let orientation: Int
+    public let isKeyframe: Bool
 }
 
-public final class ScreenCaptureService {
+public final class ImageCaptureService {
     private let maskingService = MaskApplier()
     private let maskCollector: MaskCollector
     private let tiledSignatureManager = TiledSignatureManager()
     private var previousSignature: ImageSignature?
+    private var incrementalSnapshots = 0
+
     private let signatureLock = NSLock()
     @MainActor
     private var shouldCapture = false
     
+    private let scale = 1.0
+    private let transferMethod: SessionReplayOptions.TransferMethod
+    
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
+        transferMethod = options.transferMethod
     }
     
     // MARK: - Capture
@@ -36,7 +44,6 @@ public final class ScreenCaptureService {
         let orientation = 0
 #endif
         let timestamp = Date().timeIntervalSince1970
-        let scale = 1.0
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = false
@@ -57,7 +64,7 @@ public final class ScreenCaptureService {
             guard let self, let maskCollector, shouldCapture else { return }
             
             CATransaction.flush()
-            let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
+            let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: self.scale)  }
             
             Task {
                 guard maskOperationsBefore.count == maskOperationsAfter.count else {
@@ -81,22 +88,11 @@ public final class ScreenCaptureService {
                     self.maskingService.applyViewMasks(context: ctx.cgContext, operations: applyOperations.flatMap { $0 })
                 }
                 
-                let signatures = self.tiledSignatureManager.compute(image: image)
-                
-                self.signatureLock.lock()
-                if self.previousSignature == signatures {
-                    self.signatureLock.unlock()
+                guard let capturedImage = self.computeDiffCapture(image: image, timestamp: timestamp, orientation: orientation) else {
                     await yield(nil)
                     return
                 }
-                self.previousSignature = signatures
-                self.signatureLock.unlock()
 
-                let capturedImage = CapturedImage(image: image,
-                                                  scale: scale,
-                                                  renderSize: enclosingBounds.size,
-                                                  timestamp: timestamp,
-                                                  orientation: orientation)
                 await yield(capturedImage)
             }
         }
@@ -107,6 +103,64 @@ public final class ScreenCaptureService {
         shouldCapture = false
     }
     
+    private func computeDiffCapture(image: UIImage, timestamp: TimeInterval, orientation: Int) -> CapturedImage? {
+        guard let imageSignature = self.tiledSignatureManager.compute(image: image) else {
+            return nil
+        }
+        
+        signatureLock.lock()
+        
+        guard let diffRect = imageSignature.diffRectangle(other: previousSignature) else {
+            signatureLock.unlock()
+            return nil
+        }
+        
+        let needWholeScreen = (diffRect.size.width >= image.size.width && diffRect.size.height >= image.size.height)
+        let isKeyframe: Bool
+        if case .drawTiles(let frameWindow) = transferMethod {
+            incrementalSnapshots = (incrementalSnapshots + 1) % frameWindow
+            isKeyframe = needWholeScreen || incrementalSnapshots == 0
+            if needWholeScreen {
+                incrementalSnapshots = 0
+            }
+        } else {
+            isKeyframe = needWholeScreen
+        }
+            
+        signatureLock.unlock()
+
+        let finalRect: CGRect
+        var finalImage: UIImage
+        
+        if isKeyframe {
+            finalImage = image
+            finalRect = CGRect(x: 0,
+                               y: 0,
+                               width: image.size.width,
+                               height: image.size.height)
+          
+        } else {
+            finalRect = CGRect(x: diffRect.minX,
+                                  y: diffRect.minY,
+                                  width: min(image.size.width, diffRect.width),
+                                  height: min(image.size.height, diffRect.height))
+            guard let cropped = image.cgImage?.cropping(to: finalRect) else {
+                return nil
+            }
+            finalImage = UIImage(cgImage: cropped)
+        }
+        
+        let capturedImage = CapturedImage(image: finalImage,
+                                          scale: scale,
+                                          rect: finalRect,
+                                          originalSize: image.size,
+                                          timestamp: timestamp,
+                                          orientation: orientation,
+                                          isKeyframe: isKeyframe)
+        previousSignature = imageSignature
+        return capturedImage
+    }
+                                    
     private func allWindowsInZOrder() -> [UIWindow] {
         let scenes = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
@@ -150,7 +204,7 @@ public final class ScreenCaptureService {
 }
 
 // MARK: - Thread CPU Time
-private extension ScreenCaptureService {
+private extension ImageCaptureService {
     /// Measure CPU and wall-clock time for work executed on the current thread.
     /// Returns the closure result alongside CPU and wall elapsed seconds.
     func measureCurrentThreadCPUTime<T>(_ work: () -> T) -> (result: T, cpu: TimeInterval, wall: TimeInterval) {

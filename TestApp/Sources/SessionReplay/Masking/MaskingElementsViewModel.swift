@@ -3,7 +3,7 @@ import LaunchDarklyObservability
 import LaunchDarklySessionReplay
 
 final class MaskingElementsViewModel: ObservableObject {
-    var screenCaptureService = ScreenCaptureService(options: SessionReplayOptions())
+    var screenCaptureService = ImageCaptureService(options: SessionReplayOptions())
     var capturedImage: CapturedImage?
     @Published var isImagePresented: Bool = false
     
