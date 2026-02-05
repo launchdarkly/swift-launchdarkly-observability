@@ -124,7 +124,7 @@ public final class ImageCaptureService {
                 incrementalSnapshots = 0
             }
         } else {
-            isKeyframe = needWholeScreen
+            isKeyframe = true
         }
             
         signatureLock.unlock()

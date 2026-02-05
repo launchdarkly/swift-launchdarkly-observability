@@ -119,8 +119,9 @@ actor SessionReplayEventGenerator {
             let timestamp = item.timestamp
             
             if let imageId,
+               !exportImage.isKeyframe,
                lastImageSize == exportImage.originalSize,
-               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit {
+               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
                 events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
