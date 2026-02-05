@@ -88,12 +88,12 @@ public final class ImageCaptureService {
                     self.maskingService.applyViewMasks(context: ctx.cgContext, operations: applyOperations.flatMap { $0 })
                 }
                 
-                guard let capturedImage = self.computeDiffCapture(image: image, timestamp: timestamp, orientation: orientation) else {
+                guard let capturedImages = self.computeDiffCapture(image: image, timestamp: timestamp, orientation: orientation) else {
                     await yield(nil)
                     return
                 }
 
-                await yield(capturedImage)
+                await yield(capturedImages)
             }
         }
     }
@@ -114,6 +114,7 @@ public final class ImageCaptureService {
             signatureLock.unlock()
             return nil
         }
+        previousSignature = imageSignature
         
         let needWholeScreen = (diffRect.size.width >= image.size.width && diffRect.size.height >= image.size.height)
         let isKeyframe: Bool
@@ -157,7 +158,6 @@ public final class ImageCaptureService {
                                           timestamp: timestamp,
                                           orientation: orientation,
                                           isKeyframe: isKeyframe)
-        previousSignature = imageSignature
         return [capturedImage]
     }
                                     
