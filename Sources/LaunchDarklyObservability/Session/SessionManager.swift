@@ -70,7 +70,7 @@ final class SessionManager: SessionManaging {
         }
         set {
             // Consider using atomic synchronization
-            stateQueue.sync() {
+            stateQueue.sync(flags: .barrier) {
                 _sessionInfo = newValue
             }
         }
