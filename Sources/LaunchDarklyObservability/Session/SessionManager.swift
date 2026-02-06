@@ -129,24 +129,5 @@ final class SessionManager: SessionManaging {
                 os_log("%{public}@", log: options.log, type: .error, "Resetting Session failed with error: \(error)")
             }
         }
-        /*
-        let oldSession = _sessionInfo
-        let newSession = SessionInfo()
-        self._sessionInfo = newSession
-        
-        // Avoid delivering synchronously while on the stateQueue barrier.
-        // Dispatch onto a separate queue so subscribers that read `sessionInfo`
-        // (which uses `stateQueue.sync`) do not deadlock.
-        let holder = self.subjectHolder
-        notificationQueue.async {
-            holder.subject.send(newSession)
-        }
-        
-        if options.isDebug {
-            os_log("%{public}@", log: options.log, type: .info, "🔄 Session reset: \(oldSession.id) -> \(_sessionInfo.id)")
-            let dateInterval = DateInterval(start: oldSession.startTime, end: newSession.startTime)
-            os_log("%{public}@", log: options.log, type: .info, "Session duration: \(dateInterval.duration) seconds")
-        }
-        */
     }
 }
