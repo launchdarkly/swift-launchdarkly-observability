@@ -44,15 +44,15 @@ struct ExportImage: Equatable {
         )
     }
     
-    /// Creates an EventNode for a tile canvas (positioned absolutely on top of main canvas)
+    /// Creates an EventNode for a tile image (positioned absolutely on top of main canvas)
     func tileEventNode(id: Int, rr_dataURL: String) -> EventNode {
         let style = "position:absolute;left:\(Int(rect.minX))px;top:\(Int(rect.minY))px;pointer-events:none;"
         return EventNode(
             id: id,
             type: .Element,
-            tagName: "canvas",
+            tagName: "img",
             attributes: [
-                "rr_dataURL": rr_dataURL,
+                "src": rr_dataURL,
                 "width": "\(Int(rect.width))",
                 "height": "\(Int(rect.height))",
                 "style": style]

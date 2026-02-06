@@ -97,17 +97,31 @@ actor SessionReplayEventGenerator {
             stats?.addExportImage(exportImage)
             
             let timestamp = item.timestamp
+
             
+//            if let bodyId,
+//               lastImageSize == exportImage.originalSize,
+//               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
+//                events.append(contentsOf: addTileNodes(exportImage: exportImage, timestamp: timestamp, bodyId: bodyId))
+//            } else {
+//                // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
+//                appendFullSnapshotEvents(exportImage, timestamp, &events)
+//            }
+//            
             if let bodyId,
-               !exportImage.isKeyframe,
                lastImageSize == exportImage.originalSize,
                generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
-                events.append(contentsOf: drawTileEvents(exportImage: exportImage, timestamp: timestamp, bodyId: bodyId))
+                if !exportImage.isKeyframe {
+                    events.append(contentsOf: addTileNodes(exportImage: exportImage, timestamp: timestamp, bodyId: bodyId))
+                } else {
+                    appendKeyFrameEvents(exportImage, timestamp, &events)
+                    //appendFullSnapshotEvents(exportImage, timestamp, &events)
+                }
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
                 appendFullSnapshotEvents(exportImage, timestamp, &events)
             }
-            
+//            
         case let interaction as TouchInteraction:
             appendTouchInteraction(interaction: interaction, events: &events)
             
@@ -230,7 +244,7 @@ actor SessionReplayEventGenerator {
     
     /// Generates a DOM mutation event to add a tile canvas on top of the main canvas.
     /// The tile canvas uses rr_dataURL to pre-render the image, no separate draw command needed.
-    func drawTileEvents(exportImage: ExportImage, timestamp: TimeInterval, bodyId: Int) -> [Event] {
+    func addTileNodes(exportImage: ExportImage, timestamp: TimeInterval, bodyId: Int) -> [Event] {
         // Create a new canvas node for this tile with the image pre-rendered via rr_dataURL
         let tileCanvasId = nextId
         let base64DataURL = exportImage.base64DataURL()
@@ -295,6 +309,10 @@ actor SessionReplayEventGenerator {
         events.append(windowEvent(href: "", originalSize: exportImage.originalSize, timestamp: timestamp))
         events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
         events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
+    }
+    
+    private func appendKeyFrameEvents(_ exportImage: ExportImage, _ timestamp: TimeInterval, _ events: inout [Event]) {
+        events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
     }
     
     func updatePushedCanvasSize() {
