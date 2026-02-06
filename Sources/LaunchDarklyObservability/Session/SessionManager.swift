@@ -62,9 +62,17 @@ final class SessionManager: SessionManaging {
     }
     
     var sessionInfo: SessionInfo {
-        // Consider using atomic synchronization
-        stateQueue.sync() {
-            return _sessionInfo
+        get {
+            // Consider using atomic synchronization
+            stateQueue.sync() {
+                return _sessionInfo
+            }
+        }
+        set {
+            // Consider using atomic synchronization
+            stateQueue.sync() {
+                _sessionInfo = newValue
+            }
         }
     }
 
@@ -73,9 +81,9 @@ final class SessionManager: SessionManaging {
     }
     
     func startNewSession() async throws {
-        let oldSession = _sessionInfo
+        let oldSession = self.sessionInfo
         let newSession = try await sessionManagerInfoProvider.getSessionInfo()
-        self._sessionInfo = newSession
+        self.sessionInfo = newSession
         
         let holder = self.subjectHolder
         notificationQueue.async {
