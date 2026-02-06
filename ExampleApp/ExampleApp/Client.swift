@@ -24,7 +24,8 @@ struct Client {
                         memoryWarnings: .enabled,
                         cpu: .disabled,
                         launchTimes: .enabled
-                    )
+                    ),
+                    sessionIdProvider: CustomSessionIdProvider()
                 )
             )
         ]
@@ -56,5 +57,12 @@ struct Client {
                 }
             }
         )
+    }
+}
+
+actor CustomSessionIdProvider: SessionIdProvider {
+    func generateSessionId() async throws -> String {
+        let timestamp = Int(Date().timeIntervalSince1970)
+        return "hello_world_user_\(timestamp)"
     }
 }

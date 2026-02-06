@@ -27,7 +27,8 @@ struct ObservabilityClientFactory {
                 timeout: options.sessionBackgroundTimeout,
                 isDebug: options.isDebug,
                 log: options.log),
-            appLifecycleManager: appLifecycleManager
+            appLifecycleManager: appLifecycleManager,
+            sessionIdProvider: options.sessionIdProvider
         )
         
         /// Discuss adding autoInstrumentationSamplingInterval to options worth it

@@ -7,14 +7,23 @@ import OSLog
 #endif
 
 public protocol SessionManaging {
+    func startNewSession() async throws
     func publisher() -> AnyPublisher<SessionInfo, Never>
     var sessionInfo: SessionInfo { get }
+}
+
+/// Holds a Combine subject so it can be captured in @Sendable closures.
+/// Sending is constrained to a single serial queue (notificationQueue), so this is safe.
+private final class SessionSubjectHolder: @unchecked Sendable {
+    let subject = PassthroughSubject<SessionInfo, Never>()
 }
 
 final class SessionManager: SessionManaging {
     private let appLifecycleManager: AppLifecycleManaging
     private let options: SessionOptions
-    private let subject = PassthroughSubject<SessionInfo, Never>()
+    private let sessionManagerInfoProvider: SessionManagerInfoProvider
+    private let subjectHolder = SessionSubjectHolder()
+    private var subject: PassthroughSubject<SessionInfo, Never> { subjectHolder.subject }
     private var _sessionInfo = SessionInfo()
     private var backgroundTime: DispatchTime?
     private var cancellables = Set<AnyCancellable>()
@@ -24,10 +33,25 @@ final class SessionManager: SessionManaging {
         label: "com.launchdarkly.observability.state-queue",
         attributes: .concurrent)
     
-    init(options: SessionOptions, appLifecycleManager: AppLifecycleManaging) {
+    init(options: SessionOptions, appLifecycleManager: AppLifecycleManaging, sessionIdProvider: SessionIdProvider? = nil) {
         self.options = options
         self.appLifecycleManager = appLifecycleManager
+        if let sessionIdProvider {
+            self.sessionManagerInfoProvider = LaunchDarklySessionInfoProvider(sessionIdProvider: sessionIdProvider)
+        } else {
+            self.sessionManagerInfoProvider = LaunchDarklySessionInfoProvider()
+        }
         self._sessionInfo = SessionInfo()
+        
+        Task { [weak self] in
+            // nil means, no custom id provider
+            guard sessionIdProvider != nil else { return }
+            do {
+                try await self?.startNewSession()
+            } catch {
+                os_log("%{public}@", log: options.log, type: .error, "Starting a new Session with custom Id provider failed with error: \(error)")
+            }
+        }
         
         appLifecycleManager
             .publisher()
@@ -46,6 +70,23 @@ final class SessionManager: SessionManaging {
 
     func publisher() -> AnyPublisher<SessionInfo, Never> {
         subject.eraseToAnyPublisher()
+    }
+    
+    func startNewSession() async throws {
+        let oldSession = _sessionInfo
+        let newSession = try await sessionManagerInfoProvider.getSessionInfo()
+        self._sessionInfo = newSession
+        
+        let holder = self.subjectHolder
+        notificationQueue.async {
+            holder.subject.send(newSession)
+        }
+        
+        if options.isDebug {
+            os_log("%{public}@", log: options.log, type: .info, "🔄 Session reset: \(oldSession.id) -> \(_sessionInfo.id)")
+            let dateInterval = DateInterval(start: oldSession.startTime, end: newSession.startTime)
+            os_log("%{public}@", log: options.log, type: .info, "Session duration: \(dateInterval.duration) seconds")
+        }
     }
     
     private func transition(to newState: AppLifeCycleEvent) {
@@ -81,6 +122,14 @@ final class SessionManager: SessionManaging {
     }
     
     private func resetSession() {
+        Task { [weak self] in
+            do {
+                try await self?.startNewSession()
+            } catch {
+                os_log("%{public}@", log: options.log, type: .error, "Resetting Session failed with error: \(error)")
+            }
+        }
+        /*
         let oldSession = _sessionInfo
         let newSession = SessionInfo()
         self._sessionInfo = newSession
@@ -88,8 +137,9 @@ final class SessionManager: SessionManaging {
         // Avoid delivering synchronously while on the stateQueue barrier.
         // Dispatch onto a separate queue so subscribers that read `sessionInfo`
         // (which uses `stateQueue.sync`) do not deadlock.
-        notificationQueue.async { [weak self] in
-            self?.subject.send(newSession)
+        let holder = self.subjectHolder
+        notificationQueue.async {
+            holder.subject.send(newSession)
         }
         
         if options.isDebug {
@@ -97,5 +147,6 @@ final class SessionManager: SessionManaging {
             let dateInterval = DateInterval(start: oldSession.startTime, end: newSession.startTime)
             os_log("%{public}@", log: options.log, type: .info, "Session duration: \(dateInterval.duration) seconds")
         }
+        */
     }
 }

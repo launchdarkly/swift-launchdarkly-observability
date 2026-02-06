@@ -1,3 +1,5 @@
+import OSLog
+
 protocol InternalObserve: Observe {
     var logClient: LogsApi { get }
 }
@@ -68,5 +70,16 @@ extension ObservabilityClient: Observe {
 
     func startSpan(name: String, attributes: [String : AttributeValue]) -> any Span {
         tracer.startSpan(name: name, attributes: attributes)
+    }
+    
+    /// Session Updater
+    func startNewSession() {
+        Task {
+            do {
+                try await context?.sessionManager.startNewSession()
+            } catch {
+                os_log("%{public}@", log: options.log, type: .error, "Starting a new Session with custom Id provider failed with error: \(error)")
+            }
+        }
     }
 }

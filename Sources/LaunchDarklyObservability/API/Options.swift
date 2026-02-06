@@ -198,6 +198,7 @@ public struct Options {
     public var log: OSLog
     public var crashReporting: CrashReporting
     public var instrumentation: Instrumentation
+    public let sessionIdProvider: SessionIdProvider?
     
     public init(
         serviceName: String = "observability-swift",
@@ -216,7 +217,8 @@ public struct Options {
         metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: CrashReporting = .enabled,
-        instrumentation: Instrumentation = .init()
+        instrumentation: Instrumentation = .init(),
+        sessionIdProvider: SessionIdProvider? = nil
     ) {
         self.serviceName = serviceName
         self.serviceVersion = serviceVersion
@@ -235,5 +237,6 @@ public struct Options {
         self.log = log
         self.crashReporting = crashReporting
         self.instrumentation = instrumentation
+        self.sessionIdProvider = sessionIdProvider
     }
 }

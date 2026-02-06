@@ -56,4 +56,8 @@ extension LDObserve: Observe {
     public func startSpan(name: String, attributes: [String : AttributeValue]) -> any Span {
         client.startSpan(name: name, attributes: attributes)
     }
+    
+    public func startNewSession() {
+        client.startNewSession()
+    }
 }

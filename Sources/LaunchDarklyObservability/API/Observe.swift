@@ -2,11 +2,15 @@
 
 /// Interface for observability operations in the LaunchDarkly iOS SDK.
 /// Provides methods for recording various types of information.
-public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveContext {}
+public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveContext, SessionUpdater {}
 
 /// Context for transfer data from Observability to SessionReplay during initialization
 public protocol ObserveContext {
     var context: ObservabilityContext? { get }
+}
+
+public protocol SessionUpdater {
+    func startNewSession()
 }
 
 public protocol MetricsApi {
