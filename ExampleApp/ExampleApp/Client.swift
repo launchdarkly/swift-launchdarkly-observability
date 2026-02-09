@@ -24,7 +24,8 @@ struct Client {
                         memoryWarnings: .enabled,
                         cpu: .disabled,
                         launchTimes: .enabled
-                    )
+                    ),
+                    isEnabled: false
                 )
             )
         ]

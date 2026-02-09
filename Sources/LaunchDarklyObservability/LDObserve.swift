@@ -23,6 +23,16 @@ public final class LDObserve  {
     }
 }
 
+extension LDObserve {
+    public func start(sessionId: String) {
+        client.start(sessionId: sessionId)
+    }
+    
+    public func start() {
+        client.start()
+    }
+}
+
 extension LDObserve: Observe {
     
     public func recordMetric(metric: Metric) {

@@ -219,7 +219,9 @@ struct ObservabilityClientFactory {
         )
         
         transportService.start()
-        autoInstrumentation.forEach { $0.start() }
+        if options.isEnabled {
+            autoInstrumentation.forEach { $0.start() }
+        }
         os_log("LaunchDarkly Observability started version: %{public}@", log: options.log, type: .info, sdkVersion)
 
         return ObservabilityClient(
