@@ -113,7 +113,7 @@ final class SessionManager: SessionManaging {
         }
 
         let newSessionInfo = SessionInfo(id: sessionId, startTime: Date())
-        stateQueue.async(flags: .barrier) { [weak self] in
+        stateQueue.sync(flags: .barrier) { [weak self] in
             self?._sessionInfo = newSessionInfo
         }
     }
