@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.18.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.18.1...0.18.2) (2026-02-10)
+
+
+### Bug Fixes
+
+* additional attributes only at session level ([#134](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/134)) ([7213846](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/7213846ddd80332a9c4f1259b2ff03d724826205))
+* Make canonicalkey always from fullyQualifiedKey ([#109](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/109)) ([f1a6688](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/f1a6688ecba439f0ac6fec1a6b8708cd991d9960))
+* o11y-1017 - add default resource attributes to plugin ([#132](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/132)) ([2924c59](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2924c59de82bf7276f253fc3667135b63000d3f3))
+
 ## [0.18.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.18.0...0.18.1) (2026-01-27)
 
 
