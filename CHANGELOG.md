@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.18.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.18.0...0.18.1) (2026-01-27)
+
+
+### Bug Fixes
+
+* handle transparency of masked views ([#130](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/130)) ([e16c143](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/e16c1431a72d102d2fd5b088008e15392127b869))
+
+## [0.18.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.17.0...0.18.0) (2026-01-27)
+
+
+### Features
+
+* Interrupt capture in the middle of the process ([#128](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/128)) ([a07d1e0](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/a07d1e052d8edf0e3fba83f260c315fba90f55fb))
+* remove DataCompression dependency by ld_gzip from sdk 11.1.0 ([#125](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/125)) ([0ffb711](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/0ffb71164e48c5064cc329e350990e602cd1ecd7))
+
+
+### Bug Fixes
+
+* turn off KSCrash zombie setting ([#129](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/129)) ([aefb6bd](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/aefb6bde58b7ad9c369247281cb6d6b2615ed3ac))
+
+## [0.17.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.16.0...0.17.0) (2026-01-16)
+
+
+### Features
+
+* Add diagnostic of service version starting ([#119](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/119)) ([8264275](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/8264275a14793480d2435ecf99bbfd28f29c0538))
+* Event queue early stop in buffer overflow ([#118](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/118)) ([4be2201](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/4be22015a52791dc6c073945ea41ea8242586c65))
+* SR manual start/stop ([#124](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/124)) ([c4e1afb](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/c4e1afb50c4cd215f2178693d4aa300f84d68e9e))
+
+
+### Bug Fixes
+
+* crash reporting with kscrash not captured ([#122](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/122)) ([88e97f9](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/88e97f913bff8481520d6160bbca55c47d125b17))
+* observability instance already exists ([#121](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/121)) ([8a03120](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/8a031205dc88b0164812c9331293b8a64f45aecb))
+
+## [0.16.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.15.2...0.16.0) (2026-01-14)
+
+
+### Features
+
+* metric kit & kscrash crash reporting option ([#114](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/114)) ([f77fc79](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/f77fc790f3c2a4598b820b8d60301017e4dc4dea))
+
+
+### Bug Fixes
+
+* flag evaluation span name ([#117](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/117)) ([9a8b12d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/9a8b12d2fc887c6c621fa05f95d96d3913a01f33))
+
+## [0.15.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.15.1...0.15.2) (2026-01-12)
+
+
+### Bug Fixes
+
+* make unlock await aware ([#111](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/111)) ([480ecd4](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/480ecd41e5d9e749022ed5f323de969c35c33f74))
+
+## [0.15.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.15.0...0.15.1) (2026-01-09)
+
+
+### Bug Fixes
+
+* ldMask interfere with hit view testing ([#108](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/108)) ([c5349b0](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/c5349b0f08fcd59ac91d4db4d8e45f56a05a4e3e))
+
 ## [0.15.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.14.0...0.15.0) (2026-01-05)
 
 

@@ -6,13 +6,28 @@ import UIKit
 final class SnapshotTaker: EventSource {
     private let captureService: ScreenCaptureService
     private let appLifecycleManager: AppLifecycleManaging
+    @MainActor
     private var displayLink: CADisplayLink?
     private let eventQueue: EventQueue
+    @MainActor
     private var lastFrameDispatchTime: DispatchTime?
     private let frameInterval = 1.0
-    private var eventQueueAvailable: Bool = true
+    @MainActor
+    private var isEventQueueAvailable: Bool = true
     private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
     private var cancellables = Set<AnyCancellable>()
+    
+    @MainActor
+    var isEnabled: Bool = false {
+        didSet {
+            // here we shouldn't use guard because service can stop/start internally and isEnabled is flag what supposed to be in foreground
+            if isEnabled {
+                internalStart()
+            } else {
+                internalStop()
+            }
+        }
+    }
     
     init(captureService: ScreenCaptureService,
          appLifecycleManager: AppLifecycleManaging,
@@ -28,12 +43,14 @@ final class SnapshotTaker: EventSource {
                 .filter { $0.id == sessionExporterId }
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] event in
-                    guard let self else { return }
-                    switch event.status {
-                    case .available:
-                        self.eventQueueAvailable = true
-                    case .oveflowed:
-                        self.eventQueueAvailable = false
+                    MainActor.assumeIsolated {
+                        guard let self else { return }
+                        switch event.status {
+                        case .available:
+                            self.isEventQueueAvailable = true
+                        case .oveflowed:
+                            self.isEventQueueAvailable = false
+                        }
                     }
                 }
                 .store(in: &cancellables)
@@ -43,38 +60,47 @@ final class SnapshotTaker: EventSource {
             .publisher()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] event in
-                switch event {
-                case .didBecomeActive:
-                    self?.start()
-                case .willResignActive, .willTerminate:
-                    self?.stop()
-                case .didFinishLaunching, .willEnterForeground, .didEnterBackground:
-                    break
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    switch event {
+                    case .didBecomeActive:
+                        self.internalStart()
+                    case .willResignActive, .willTerminate:
+                        self.internalStop()
+                    case .didFinishLaunching, .willEnterForeground, .didEnterBackground:
+                        break
+                    }
                 }
             }
             .store(in: &cancellables)
     }
-    
-    func start() {
-        guard displayLink == nil else { return }
+
+    @MainActor
+    private func internalStart() {
+        // isRunning belongs to public start()
+        guard isEnabled, displayLink == nil else { return }
         
         let displayLink = CADisplayLink(target: self, selector: #selector(frameUpdate))
         displayLink.add(to: .main, forMode: .common)
-        
         self.displayLink = displayLink
     }
     
-    @objc private func frameUpdate() {
-        queueSnapshot()
-    }
-    
-    func stop() {
+    @MainActor
+    private func internalStop() {
+        // to indicate stopping captureUIImage process in the middle
+        captureService.interuptCapture()
         displayLink?.invalidate()
         displayLink = nil
     }
     
+    @MainActor
+    @objc private func frameUpdate() {
+        queueSnapshot()
+    }
+     
+    @MainActor
     func queueSnapshot() {
-        guard let displayLink, eventQueueAvailable else {
+        guard isEnabled, let displayLink, isEventQueueAvailable else {
             return
         }
         

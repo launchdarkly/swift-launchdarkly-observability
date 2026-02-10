@@ -1,5 +1,5 @@
 import Foundation
-import DataCompression
+import LaunchDarkly
 
 public final class GraphQLClient {
     private let endpoint: URL
@@ -39,7 +39,7 @@ public final class GraphQLClient {
         
         let rawData = try gqlRequest.httpBody()
          
-        if isCompressed, let compressedData = rawData.gzip() {
+        if isCompressed, let compressedData = rawData.ld_gzip() {
           request.httpBody = compressedData
           request.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
         } else {

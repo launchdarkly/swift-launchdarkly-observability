@@ -7,7 +7,7 @@ class SessionReplayAssociatedObjects: NSObject {
     private override init() {}
     
     static public func ignoreUIView(_ view: UIView, isEnabled: Bool = true) {
-        objc_setAssociatedObject(view, &ignoreUIViewKey, isEnabled ? 1 : 0, .OBJC_ASSOCIATION_ASSIGN)
+        objc_setAssociatedObject(view, &ignoreUIViewKey, isEnabled ? 1 : 0, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
     
     static public func shouldIgnoreUIView(_ view: UIView) -> Bool? {
@@ -16,7 +16,7 @@ class SessionReplayAssociatedObjects: NSObject {
     }
     
     static public func maskUIView(_ view: UIView, isEnabled: Bool = true) {
-        objc_setAssociatedObject(view, &uiViewMaskKey, isEnabled ? 1 : 0, .OBJC_ASSOCIATION_ASSIGN)
+        objc_setAssociatedObject(view, &uiViewMaskKey, isEnabled ? 1 : 0, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
     
     static public func shouldMaskUIView(_ view: UIView) -> Bool? {

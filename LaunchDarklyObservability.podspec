@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklyObservability"
-  s.version          = "0.15.0" # x-release-please-version
+  s.version          = "0.18.1" # x-release-please-version
   s.summary          = "iOS Observability Plugin for LaunchDarkly."
   s.description      = <<-DESC
                         LaunchDarkly is the feature management platform that software teams use to build better software, faster.
@@ -51,7 +51,7 @@ Pod::Spec.new do |s|
 
   s.subspec "Common" do |ss|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
-    ss.dependency 'DataCompression'
+    ss.dependency "LaunchDarklyObservability/Misc"
   end
 
   # OpenTelemetryProtocolExporterCommon subspec
@@ -84,9 +84,8 @@ Pod::Spec.new do |s|
   end
 
   s.subspec 'Misc' do |ss|
-    ss.dependency 'DataCompression', '~> 3.8.0'
     ss.dependency 'KSCrash'
-    ss.dependency 'LaunchDarkly', '~> 9.15'
+    ss.dependency 'LaunchDarkly', '~> 11.1.0'
   end
 
 end

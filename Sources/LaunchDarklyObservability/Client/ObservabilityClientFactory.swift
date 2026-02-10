@@ -6,18 +6,16 @@ import OpenTelemetrySdk
 #endif
 
 struct ObservabilityClientFactory {
-    static func noOp() -> Observe {
-        return ObservabilityClient(
-            tracer: NoOpTracer(),
-            logger: NoOpLogger(),
-            logClient: NoOpLogger(),
-            meter: NoOpMeter(),
-            crashReportsApi: NoOpCrashReport(),
-            autoInstrumentation: [],
-            options: .init(),
-            context: nil
-        )
-    }
+    static let noOp: Observe = ObservabilityClient(
+        tracer: NoOpTracer(),
+        logger: NoOpLogger(),
+        logClient: NoOpLogger(),
+        meter: NoOpMeter(),
+        crashReportsApi: NoOpCrashReport(),
+        autoInstrumentation: [],
+        options: .init(),
+        context: nil
+    )
     
     static func instantiate(
         withOptions options: Options,
@@ -191,8 +189,22 @@ struct ObservabilityClientFactory {
         }
         
         let crashReporting: CrashReporting
-        if options.crashReporting == .enabled {
+        if options.crashReporting.source == .KSCrash {
             crashReporting = try KSCrashReportService(logsApi: logClient, log: options.log)
+            crashReporting.logPendingCrashReports()
+        } else if options.crashReporting.source == .metricKit {
+            if #available(iOS 15.0, tvOS 15.0, *) {
+                let reporter = MetricKitCrashReporter(logsApi: logClient, logger: options.log)
+                crashReporting = reporter
+                crashReporting.logPendingCrashReports()
+                autoInstrumentation.append(reporter)
+            } else {
+                /// since MetricKit is only fully available for iOS 15+
+                /// we cannot do assumptions on user wants KSCrash as fallback, so
+                /// the safe is to disable crash reporting
+                crashReporting = NoOpCrashReport()
+                os_log("Crash reporting is disabled, MetricKit is not available on this platform version.", log: options.log, type: .info)
+            }
         } else {
             crashReporting = NoOpCrashReport()
         }
@@ -208,6 +220,7 @@ struct ObservabilityClientFactory {
         
         transportService.start()
         autoInstrumentation.forEach { $0.start() }
+        os_log("LaunchDarkly Observability started version: %{public}@", log: options.log, type: .info, sdkVersion)
 
         return ObservabilityClient(
             tracer: appTraceClient,

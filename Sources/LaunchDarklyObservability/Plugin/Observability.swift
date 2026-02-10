@@ -1,5 +1,10 @@
 import OSLog
 @_exported import LaunchDarkly
+import OpenTelemetrySdk
+import SDKResourceExtension
+#if !os(macOS)
+import UIKit
+#endif
 
 public final class Observability: Plugin {
     private let options: Options
@@ -7,6 +12,15 @@ public final class Observability: Plugin {
     
     public init(options: Options) {
         self.options = options
+        if options.crashReporting.source == .KSCrash {
+            /// Very first thing to do, if crash reporting is enabled and it is KSCrash
+            /// Then, try to install before doing anything else
+            do {
+                try KSCrashReportService.install()
+            } catch {
+                os_log("%{public}@", log: options.log, type: .error, "Observability crash reporting service initialization failed with error: \(error)")
+            }
+        }
     }
     
     public func getMetadata() -> PluginMetadata {
@@ -27,12 +41,32 @@ public final class Observability: Plugin {
         resourceAttributes[SemanticConvention.telemetryDistroName] = .string("swift-launchdarkly-observability")
         resourceAttributes[SemanticConvention.telemetryDistroVersion] = .string(sdkVersion)
 
+        // Device attributes
+        let deviceDataSource = DeviceDataSource()
+        #if !os(macOS)
+        resourceAttributes[SemanticConvention.deviceModelName] = .string(UIDevice.current.model)
+        #endif
+        if let deviceModelIdentifier = deviceDataSource.model {
+            resourceAttributes[SemanticConvention.deviceModelIdentifier] = .string(deviceModelIdentifier)
+        }
+        resourceAttributes[SemanticConvention.deviceManufacturer] = .string("Apple")
+
+        // OS attributes
+        let osDataSource = OperatingSystemDataSource()
+        resourceAttributes[SemanticConvention.osName] = .string(osDataSource.name)
+        resourceAttributes[SemanticConvention.osType] = .string(osDataSource.type)
+        resourceAttributes[SemanticConvention.osVersion] = .string(osDataSource.version)
+        resourceAttributes[SemanticConvention.osDescription] = .string(osDataSource.description)
+
         customHeaders[SemanticConvention.highlightProjectId] = mobileKey
         
         options.resourceAttributes = resourceAttributes
         options.customHeaders = customHeaders
         
         do {
+            guard LDObserve.shared.client === ObservabilityClientFactory.noOp else {
+                throw PluginError.observabilityInstanceAlreadyExist
+            }
             let service = try ObservabilityClientFactory.instantiate(
                 withOptions: options,
                 mobileKey: mobileKey
