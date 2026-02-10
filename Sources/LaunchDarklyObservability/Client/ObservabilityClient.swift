@@ -38,6 +38,16 @@ final class ObservabilityClient: InternalObserve {
 }
 
 extension ObservabilityClient: Observe {
+    func start(sessionId: String) {
+        context?.sessionManager.start(sessionId: sessionId)
+        autoInstrumentation.forEach { $0.start() }
+    }
+    
+    func start() {
+        context?.sessionManager.start(sessionId: SecureIDGenerator.generateSecureID())
+        autoInstrumentation.forEach { $0.start() }
+    }
+    
     func recordMetric(metric: Metric) {
         meter.recordMetric(metric: metric)
     }

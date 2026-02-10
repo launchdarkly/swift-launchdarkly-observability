@@ -1,5 +1,6 @@
 import UIKit
 import LaunchDarklyObservability
+import LaunchDarklySessionReplay
 
 struct Client {
     let config = { () -> LDConfig in
@@ -24,6 +25,23 @@ struct Client {
                         memoryWarnings: .enabled,
                         cpu: .disabled,
                         launchTimes: .enabled
+                    ),
+                    isEnabled: false
+                )
+            ),
+            SessionReplay(
+                options: .init(
+                    isEnabled: true,
+                    privacy: .init(
+                        maskTextInputs: true,
+                        maskWebViews: false,
+                        maskImages: false,
+                        maskAccessibilityIdentifiers: [
+                            "email-field",
+                            "password-field",
+                            "card-brand-chip",
+                            "10"
+                        ],
                     )
                 )
             )

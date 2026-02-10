@@ -9,6 +9,12 @@ struct InstrumentationView: View {
             Spacer()
         }
         .padding()
+        .task {
+            LDObserve.shared
+                .start(
+                    sessionId: "Custom-id:\(UUID().uuidString)"
+                )
+        }
     }
 }
 
