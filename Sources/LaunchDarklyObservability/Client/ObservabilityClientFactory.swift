@@ -19,7 +19,8 @@ struct ObservabilityClientFactory {
     
     static func instantiate(
         withOptions options: Options,
-        mobileKey: String
+        mobileKey: String,
+        sessionAttributes: [String: AttributeValue]
     ) throws -> (InternalObserve) {
         let appLifecycleManager = AppLifecycleManager()
         let sessionManager = SessionManager(
@@ -215,7 +216,8 @@ struct ObservabilityClientFactory {
             appLifecycleManager: appLifecycleManager,
             sessionManager: sessionManager,
             transportService: transportService,
-            userInteractionManager: userInteractionManager
+            userInteractionManager: userInteractionManager,
+            sessionAttributes: sessionAttributes
         )
         
         transportService.start()
