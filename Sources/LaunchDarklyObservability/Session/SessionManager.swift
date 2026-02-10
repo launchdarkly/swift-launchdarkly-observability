@@ -116,6 +116,11 @@ final class SessionManager: SessionManaging {
         stateQueue.sync(flags: .barrier) { [weak self] in
             self?._sessionInfo = newSessionInfo
         }
+
+        // Notify publisher subscribers (e.g. SessionReplayExporter) so they pick up the new session ID.
+        notificationQueue.async { [weak self] in
+            self?.subject.send(newSessionInfo)
+        }
     }
 
     func stop() {
