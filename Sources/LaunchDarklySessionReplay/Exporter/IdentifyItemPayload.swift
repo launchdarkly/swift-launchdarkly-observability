@@ -47,8 +47,6 @@ extension IdentifyItemPayload {
         var contextFriendlyName: String? = nil
         if let contextFriendlyNameUnwrapped = options.contextFriendlyName, contextFriendlyNameUnwrapped.isNotEmpty {
             contextFriendlyName = contextFriendlyNameUnwrapped
-        } else if let ldContext, ldContext.isMulti() == true, let user = ldContextMap?["user"], user.isNotEmpty {
-            contextFriendlyName = user
         }
         attributes["key"] = contextFriendlyName ?? canonicalKey
         attributes["canonicalKey"] = canonicalKey
