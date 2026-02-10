@@ -140,14 +140,19 @@ final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashRe
     // MARK: - Public API
 
     func start() {
-        guard self.isStarted == false else { return }
-        MXMetricManager.shared.add(self)
-        self.isStarted = true
+        isStartedQueue.sync {
+            guard _isStarted == false else { return }
+            MXMetricManager.shared.add(self)
+            _isStarted = true
+        }
     }
 
     func stop() {
-        MXMetricManager.shared.remove(self)
-        self.isStarted = false
+        isStartedQueue.sync {
+            guard _isStarted else { return }
+            MXMetricManager.shared.remove(self)
+            _isStarted = false
+        }
     }
     
     /// Diagnostics (crashes, hangs, exceptions)
