@@ -113,7 +113,8 @@ actor RRWebEventGenerator {
                 if !exportFrame.isKeyframe {
                     events.append(contentsOf: addTileNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
                 } else {
-                    events.append(drawImageEvent(exportFrame: exportFrame, timestamp: timestamp, imageId: imageId))
+                    events.append(contentsOf: addTileNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
+                   // events.append(drawImageEvent(exportFrame: exportFrame, timestamp: timestamp, imageId: imageId))
                 }
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server

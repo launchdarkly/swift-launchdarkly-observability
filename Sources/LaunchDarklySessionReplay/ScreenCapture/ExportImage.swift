@@ -25,7 +25,7 @@ struct ExportFrame: Equatable {
         func base64DataURL(mimeType: String) -> String {
             "data:\(mimeType);base64,\(data.base64EncodedString())"
         }
-        
+            
         static func == (lhs: ExportImage, rhs: ExportImage) -> Bool {
             lhs.dataHashValue == rhs.dataHashValue && lhs.data.elementsEqual(rhs.data)
         }
@@ -44,7 +44,7 @@ struct ExportFrame: Equatable {
         EventNode(
             id: id,
             type: .Element,
-            tagName: "canvas",
+            tagName: "img",
             attributes: [
                 "rr_dataURL": rr_dataURL,
                 "width": "\(Int(originalSize.width))",
