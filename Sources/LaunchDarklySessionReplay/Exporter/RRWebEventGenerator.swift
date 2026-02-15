@@ -17,7 +17,7 @@ enum RRWebPlayerConstants {
     static let canvasDrawEntourage = 300 // bytes
 }
 
-actor SessionReplayEventGenerator {
+actor RRWebEventGenerator {
     private var title: String
     private let padding = RRWebPlayerConstants.padding
     private var sid = 0
@@ -98,7 +98,6 @@ actor SessionReplayEventGenerator {
             
             let timestamp = item.timestamp
 
-            
 //            if let bodyId,
 //               lastImageSize == exportImage.originalSize,
 //               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
@@ -108,14 +107,13 @@ actor SessionReplayEventGenerator {
 //                appendFullSnapshotEvents(exportImage, timestamp, &events)
 //            }
 //            
-            if let bodyId,
+            if let bodyId, let imageId,
                lastImageSize == exportImage.originalSize,
                generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
                 if !exportImage.isKeyframe {
                     events.append(contentsOf: addTileNodes(exportImage: exportImage, timestamp: timestamp, bodyId: bodyId))
                 } else {
-                    appendKeyFrameEvents(exportImage, timestamp, &events)
-                    //appendFullSnapshotEvents(exportImage, timestamp, &events)
+                    events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
                 }
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
@@ -242,17 +240,21 @@ actor SessionReplayEventGenerator {
         return event
     }
     
-    /// Generates a DOM mutation event to add a tile canvas on top of the main canvas.
-    /// The tile canvas uses rr_dataURL to pre-render the image, no separate draw command needed.
+    /// Generates a DOM mutation event to add tile canvases on top of the main canvas.
+    /// Each tile canvas uses rr_dataURL to pre-render the image, no separate draw command needed.
     func addTileNodes(exportImage: ExportImage, timestamp: TimeInterval, bodyId: Int) -> [Event] {
-        // Create a new canvas node for this tile with the image pre-rendered via rr_dataURL
-        let tileCanvasId = nextId
-        let base64DataURL = exportImage.base64DataURL()
-        let tileNode = exportImage.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL)
+        var adds = [AddedNode]()
+        var totalCanvasSize = 0
         
-        // Create DOM mutation event to add the tile canvas to body
-        let addedNode = AddedNode(parentId: bodyId, nextId: nil, node: tileNode)
-        let mutationData = MutationData(adds: [addedNode], canvasSize: base64DataURL.count)
+        for image in exportImage.exportedImages {
+            let tileCanvasId = nextId
+            let base64DataURL = image.base64DataURL(mimeType: exportImage.mimeType)
+            let tileNode = image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL)
+            adds.append(AddedNode(parentId: bodyId, nextId: nil, node: tileNode))
+            totalCanvasSize += base64DataURL.count
+        }
+        
+        let mutationData = MutationData(adds: adds, canvasSize: totalCanvasSize)
         let mutationEvent = Event(type: .IncrementalSnapshot,
                                    data: AnyEventData(mutationData),
                                    timestamp: timestamp,
@@ -260,6 +262,31 @@ actor SessionReplayEventGenerator {
         
         generatingCanvasSize += mutationData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
         return [mutationEvent]
+    }
+    
+    func drawImageEvent(exportImage: ExportImage, timestamp: TimeInterval, imageId: Int) -> Event {
+        var commands = [AnyCommand]()
+        for image in exportImage.exportedImages {
+            if exportImage.isKeyframe {
+                let clearRectCommand = ClearRect(rect: image.rect)
+                commands.append(AnyCommand(clearRectCommand, canvasSize: 80))
+            }
+            let base64String = image.data.base64EncodedString()
+            let arrayBuffer = RRArrayBuffer(base64: base64String)
+            let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportImage.mimeType))
+            let drawImageCommand = DrawImage(image: AnyRRNode(RRImageBitmap(args: [blob])),
+                                             rect: image.rect)
+            commands.append(AnyCommand(drawImageCommand, canvasSize: base64String.count))
+        }
+        let eventData = CanvasDrawData(source: .canvasMutation,
+                                       id: imageId,
+                                       type: .mouseUp,
+                                       commands: commands)
+        let event = Event(type: .IncrementalSnapshot,
+                          data: AnyEventData(eventData),
+                          timestamp: timestamp, _sid: nextSid)
+        generatingCanvasSize += eventData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
+        return event
     }
     
     func mouseEvent(timestamp: TimeInterval, x: CGFloat, y: CGFloat, timeOffset: TimeInterval) -> Event? {
@@ -286,7 +313,8 @@ actor SessionReplayEventGenerator {
         var rootNode = EventNode(id: nextId, type: .Document)
         let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: "html")
         rootNode.childNodes.append(htmlDocNode)
-        let base64String = exportImage.base64DataURL()
+        let firstImage = exportImage.exportedImages[0]
+        let base64String = firstImage.base64DataURL(mimeType: exportImage.mimeType)
 
         let headNode = EventNode(id: nextId, type: .Element, tagName: "head", attributes: [:])
         let currentBodyId = nextId
@@ -312,7 +340,6 @@ actor SessionReplayEventGenerator {
     }
     
     private func appendKeyFrameEvents(_ exportImage: ExportImage, _ timestamp: TimeInterval, _ events: inout [Event]) {
-        events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
     }
     
     func updatePushedCanvasSize() {
