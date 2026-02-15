@@ -89,35 +89,35 @@ actor RRWebEventGenerator {
     func appendEvents(item: EventQueueItem, events: inout [Event]) {
         switch item.payload {
         case let payload as ImageItemPayload:
-            let exportImage = payload.exportImage
+            let exportFrame = payload.exportFrame
             defer {
-                lastImageSize = exportImage.originalSize
+                lastImageSize = exportFrame.originalSize
             }
             
-            stats?.addExportImage(exportImage)
+            stats?.addExportFrame(exportFrame)
             
             let timestamp = item.timestamp
 
 //            if let bodyId,
-//               lastImageSize == exportImage.originalSize,
+//               lastImageSize == exportFrame.originalSize,
 //               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
-//                events.append(contentsOf: addTileNodes(exportImage: exportImage, timestamp: timestamp, bodyId: bodyId))
+//                events.append(contentsOf: addTileNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
 //            } else {
 //                // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
-//                appendFullSnapshotEvents(exportImage, timestamp, &events)
+//                appendFullSnapshotEvents(exportFrame, timestamp, &events)
 //            }
 //            
             if let bodyId, let imageId,
-               lastImageSize == exportImage.originalSize,
+               lastImageSize == exportFrame.originalSize,
                generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
-                if !exportImage.isKeyframe {
-                    events.append(contentsOf: addTileNodes(exportImage: exportImage, timestamp: timestamp, bodyId: bodyId))
+                if !exportFrame.isKeyframe {
+                    events.append(contentsOf: addTileNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
                 } else {
-                    events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
+                    events.append(drawImageEvent(exportFrame: exportFrame, timestamp: timestamp, imageId: imageId))
                 }
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
-                appendFullSnapshotEvents(exportImage, timestamp, &events)
+                appendFullSnapshotEvents(exportFrame, timestamp, &events)
             }
 //            
         case let interaction as TouchInteraction:
@@ -224,14 +224,14 @@ actor RRWebEventGenerator {
         return event
     }
     
-    func viewPortEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
-        let payload = ViewportPayload(width: Int(exportImage.originalSize.width),
-                                      height: Int(exportImage.originalSize.height),
-                                      availWidth: Int(exportImage.originalSize.width),
-                                      availHeight: Int(exportImage.originalSize.height),
+    func viewPortEvent(exportFrame: ExportFrame, timestamp: TimeInterval) -> Event {
+        let payload = ViewportPayload(width: Int(exportFrame.originalSize.width),
+                                      height: Int(exportFrame.originalSize.height),
+                                      availWidth: Int(exportFrame.originalSize.width),
+                                      availHeight: Int(exportFrame.originalSize.height),
                                       colorDepth: 30,
                                       pixelDepth: 30,
-                                      orientation: exportImage.orientation)
+                                      orientation: exportFrame.orientation)
         let eventData = CustomEventData(tag: .viewport, payload: payload)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
@@ -242,13 +242,13 @@ actor RRWebEventGenerator {
     
     /// Generates a DOM mutation event to add tile canvases on top of the main canvas.
     /// Each tile canvas uses rr_dataURL to pre-render the image, no separate draw command needed.
-    func addTileNodes(exportImage: ExportImage, timestamp: TimeInterval, bodyId: Int) -> [Event] {
+    func addTileNodes(exportFrame: ExportFrame, timestamp: TimeInterval, bodyId: Int) -> [Event] {
         var adds = [AddedNode]()
         var totalCanvasSize = 0
         
-        for image in exportImage.exportedImages {
+        for image in exportFrame.images {
             let tileCanvasId = nextId
-            let base64DataURL = image.base64DataURL(mimeType: exportImage.mimeType)
+            let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
             let tileNode = image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL)
             adds.append(AddedNode(parentId: bodyId, nextId: nil, node: tileNode))
             totalCanvasSize += base64DataURL.count
@@ -264,16 +264,16 @@ actor RRWebEventGenerator {
         return [mutationEvent]
     }
     
-    func drawImageEvent(exportImage: ExportImage, timestamp: TimeInterval, imageId: Int) -> Event {
+    func drawImageEvent(exportFrame: ExportFrame, timestamp: TimeInterval, imageId: Int) -> Event {
         var commands = [AnyCommand]()
-        for image in exportImage.exportedImages {
-            if exportImage.isKeyframe {
+        for image in exportFrame.images {
+            if exportFrame.isKeyframe {
                 let clearRectCommand = ClearRect(rect: image.rect)
                 commands.append(AnyCommand(clearRectCommand, canvasSize: 80))
             }
             let base64String = image.data.base64EncodedString()
             let arrayBuffer = RRArrayBuffer(base64: base64String)
-            let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportImage.mimeType))
+            let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportFrame.mimeType))
             let drawImageCommand = DrawImage(image: AnyRRNode(RRImageBitmap(args: [blob])),
                                              rect: image.rect)
             commands.append(AnyCommand(drawImageCommand, canvasSize: base64String.count))
@@ -300,28 +300,28 @@ actor RRWebEventGenerator {
         return event
     }
     
-    func fullSnapshotEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
+    func fullSnapshotEvent(exportFrame: ExportFrame, timestamp: TimeInterval) -> Event {
         id = 0
-        let eventData = fullSnapshotData(exportImage: exportImage)
+        let eventData = fullSnapshotData(exportFrame: exportFrame)
         let event = Event(type: .FullSnapshot, data: AnyEventData(eventData), timestamp: timestamp, _sid: nextSid)
         // start again counting canvasSize
         generatingCanvasSize = eventData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
         return event
     }
     
-    func fullSnapshotData(exportImage: ExportImage) -> DomData {
+    func fullSnapshotData(exportFrame: ExportFrame) -> DomData {
         var rootNode = EventNode(id: nextId, type: .Document)
         let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: "html")
         rootNode.childNodes.append(htmlDocNode)
-        let firstImage = exportImage.exportedImages[0]
-        let base64String = firstImage.base64DataURL(mimeType: exportImage.mimeType)
+        let firstImage = exportFrame.images[0]
+        let base64String = firstImage.base64DataURL(mimeType: exportFrame.mimeType)
 
         let headNode = EventNode(id: nextId, type: .Element, tagName: "head", attributes: [:])
         let currentBodyId = nextId
         let bodyNode = EventNode(id: currentBodyId, type: .Element, tagName: "body",
                                   attributes: ["style": "position:relative;"],
                                   childNodes: [
-                                      exportImage.eventNode(id: nextId, rr_dataURL: base64String)
+                                      exportFrame.eventNode(id: nextId, rr_dataURL: base64String)
                                   ])
         let htmlNode = EventNode(id: nextId, type: .Element, tagName: "html",
                                   attributes: ["lang": "en"],
@@ -333,13 +333,13 @@ actor RRWebEventGenerator {
         return DomData(node: rootNode, canvasSize: base64String.count)
     }
     
-    private func appendFullSnapshotEvents(_ exportImage: ExportImage, _ timestamp: TimeInterval, _ events: inout [Event]) {
-        events.append(windowEvent(href: "", originalSize: exportImage.originalSize, timestamp: timestamp))
-        events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
-        events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
+    private func appendFullSnapshotEvents(_ exportFrame: ExportFrame, _ timestamp: TimeInterval, _ events: inout [Event]) {
+        events.append(windowEvent(href: "", originalSize: exportFrame.originalSize, timestamp: timestamp))
+        events.append(fullSnapshotEvent(exportFrame: exportFrame, timestamp: timestamp))
+        events.append(viewPortEvent(exportFrame: exportFrame, timestamp: timestamp))
     }
     
-    private func appendKeyFrameEvents(_ exportImage: ExportImage, _ timestamp: TimeInterval, _ events: inout [Event]) {
+    private func appendKeyFrameEvents(_ exportFrame: ExportFrame, _ timestamp: TimeInterval, _ events: inout [Event]) {
     }
     
     func updatePushedCanvasSize() {

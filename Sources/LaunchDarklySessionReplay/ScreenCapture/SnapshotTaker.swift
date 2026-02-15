@@ -115,23 +115,31 @@ final class SnapshotTaker: EventSource {
         let lastFrameDispatchTime = DispatchTime.now()
         self.lastFrameDispatchTime = lastFrameDispatchTime
         
-        captureService.captureUIImage { capturedImage in
-            guard let capturedImage else {
+        captureService.captureFrame { capturedFrame in
+            guard let capturedFrame else {
                 // dropped frame
                 return
             }
             
-            guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
-                                                                    rect: capturedImage.rect,
-                                                                    originalSize: capturedImage.originalSize,
-                                                                    scale: capturedImage.scale,
-                                                                    timestamp: capturedImage.timestamp,
-                                                                    orientation: capturedImage.orientation,
-                                                                    isKeyframe: capturedImage.isKeyframe) else {
-                return
+            let format = ExportFormat.jpeg(quality: 0.3)
+            var exportedFrames = [ExportFrame.ExportImage]()
+            for capturedImg in capturedFrame.capturedImages {
+                guard let exportedFrame = capturedImg.image.asExportedImage(format: format, rect: capturedImg.rect) else {
+                    return
+                }
+                exportedFrames.append(exportedFrame)
             }
+            guard !exportedFrames.isEmpty else { return }
             
-            await self.eventQueue.send(ImageItemPayload(exportImage: exportImage))
+            let exportFrame = ExportFrame(images: exportedFrames,
+                                          originalSize: capturedFrame.originalSize,
+                                          scale: capturedFrame.scale,
+                                          format: format,
+                                          timestamp: capturedFrame.timestamp,
+                                          orientation: capturedFrame.orientation,
+                                          isKeyframe: capturedFrame.isKeyframe)
+            
+            await self.eventQueue.send(ImageItemPayload(exportFrame: exportFrame))
         }
     }
 }

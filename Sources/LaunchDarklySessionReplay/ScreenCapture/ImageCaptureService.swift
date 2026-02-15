@@ -4,14 +4,31 @@ import UIKit
 import Darwin
 import Foundation
 
-public struct CapturedImage {
-    public let image: UIImage
+public struct CapturedFrame {
+    public struct CapturedImage {
+        public let image: UIImage
+        public let rect: CGRect
+    }
+    
+    public let capturedImages: [CapturedImage]
     public let scale: CGFloat
-    public let rect: CGRect
     public let originalSize: CGSize
     public let timestamp: TimeInterval
     public let orientation: Int
     public let isKeyframe: Bool
+    
+    /// Composites all captured images into a single UIImage by drawing each at its rect.
+    public func wholeImage() -> UIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(size: originalSize, format: format)
+        return renderer.image { _ in
+            for capturedImage in capturedImages {
+                capturedImage.image.draw(in: capturedImage.rect)
+            }
+        }
+    }
 }
 
 public final class ImageCaptureService {
@@ -35,9 +52,16 @@ public final class ImageCaptureService {
     
     // MARK: - Capture
     
+    @MainActor
+    public func captureUIImage(yield: @escaping (UIImage?) async -> Void) {
+        captureFrame { frame in
+            await yield(frame?.wholeImage())
+        }
+    }
+    
     /// Capture as UIImage (must be on main thread).
     @MainActor
-    public func captureUIImage(yield: @escaping (CapturedImage?) async -> Void) {
+    public func captureFrame(yield: @escaping (CapturedFrame?) async -> Void) {
 #if os(iOS)
         let orientation = UIDevice.current.orientation.isLandscape ? 1 : 0
 #else
@@ -103,7 +127,7 @@ public final class ImageCaptureService {
         shouldCapture = false
     }
     
-    private func computeDiffCapture(image: UIImage, timestamp: TimeInterval, orientation: Int) -> CapturedImage? {
+    private func computeDiffCapture(image: UIImage, timestamp: TimeInterval, orientation: Int) -> CapturedFrame? {
         guard let imageSignature = self.tiledSignatureManager.compute(image: image) else {
             return nil
         }
@@ -151,9 +175,8 @@ public final class ImageCaptureService {
             finalImage = UIImage(cgImage: cropped)
         }
         
-        let capturedImage = CapturedImage(image: finalImage,
+        let capturedImage = CapturedFrame(capturedImages: [CapturedFrame.CapturedImage(image: finalImage, rect: finalRect)],
                                           scale: scale,
-                                          rect: finalRect,
                                           originalSize: image.size,
                                           timestamp: timestamp,
                                           orientation: orientation,

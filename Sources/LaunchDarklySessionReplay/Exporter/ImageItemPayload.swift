@@ -7,14 +7,14 @@ struct ImageItemPayload: EventQueueItemPayload {
     }
     
     var timestamp: TimeInterval {
-        exportImage.timestamp
+        exportFrame.timestamp
     }
     
     func cost() -> Int {
-        exportImage.data.count
+        exportFrame.images.reduce(0) { $0 + $1.data.count }
     }
     
-    let exportImage: ExportImage
+    let exportFrame: ExportFrame
 }
 
 //struct ImagesItemPayload: EventQueueItemPayload {
@@ -22,16 +22,16 @@ struct ImageItemPayload: EventQueueItemPayload {
 //        SessionReplayExporter.self
 //    }
 //    
-//    init(exportImages: [ExportImage]) {
-//        self.exportImages = exportImages
-//        self.timestamp = exportImages[0].timestamp
+//    init(exportFrames: [ExportFrame]) {
+//        self.exportFrames = exportFrames
+//        self.timestamp = exportFrames[0].timestamp
 //    }
 //    
 //    var timestamp: TimeInterval
 //    
 //    func cost() -> Int {
-//        exportImage.reduce(0) { $0 + $1.data.count }
+//        exportFrame.reduce(0) { $0 + $1.data.count }
 //    }
 //    
-//    let exportImages: [ExportImage]
+//    let exportFrames: [ExportFrame]
 //}

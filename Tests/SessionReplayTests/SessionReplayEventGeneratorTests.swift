@@ -4,37 +4,39 @@ import LaunchDarklyObservability
 import OSLog
 import CoreGraphics
 
-struct SessionReplayEventGeneratorTests {
+struct RRWebEventGeneratorTests {
     
-    private func makeExportImage(dataSize: Int, width: Int, height: Int, timestamp: TimeInterval) -> ExportImage {
+    private func makeExportFrame(dataSize: Int, width: Int, height: Int, timestamp: TimeInterval) -> ExportFrame {
         let data = Data(count: dataSize)
-        return ExportImage(
-            data: data,
-            originalWidth: width,
-            originalHeight: height,
+        let rect = CGRect(x: 0, y: 0, width: width, height: height)
+        let exportedFrame = ExportFrame.ExportImage(data: data, dataHashValue: data.hashValue, rect: rect)
+        return ExportFrame(
+            images: [exportedFrame],
+            originalSize: CGSize(width: width, height: height),
             scale: 1.0,
             format: .png,
             timestamp: timestamp,
-            orientation: 0
+            orientation: 0,
+            isKeyframe: true
         )
     }
     
     @Test("Appends draw image event when same size and below limit")
     func appendsDrawImageEventWhenSameSizeAndBelowLimit() async {
         // Arrange
-        let generator = SessionReplayEventGenerator(
+        let generator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
             title: "Test"
         )
         
         // First image triggers full snapshot (sets imageId and lastExportImage)
-        let firstImage = makeExportImage(dataSize: 128, width: 320, height: 480, timestamp: 1.0)
+        let firstImage = makeExportFrame(dataSize: 128, width: 320, height: 480, timestamp: 1.0)
         // Second image has same dimensions but different data -> should append drawImageEvent branch
-        let secondImage = makeExportImage(dataSize: 256, width: 320, height: 480, timestamp: 2.0)
+        let secondImage = makeExportFrame(dataSize: 256, width: 320, height: 480, timestamp: 2.0)
         
         let items: [EventQueueItem] = [
-            EventQueueItem(payload: ImageItemPayload(exportImage: firstImage)),
-            EventQueueItem(payload: ImageItemPayload(exportImage: secondImage))
+            EventQueueItem(payload: ImageItemPayload(exportFrame: firstImage)),
+            EventQueueItem(payload: ImageItemPayload(exportFrame: secondImage))
         ]
         
         // Act
@@ -51,19 +53,19 @@ struct SessionReplayEventGeneratorTests {
     @Test("Appends full snapshot when canvas buffer limit exceeded")
     func appendsFullSnapshotWhenCanvasBufferLimitExceeded() async {
         // Arrange
-        let generator = SessionReplayEventGenerator(
+        let generator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
             title: "Test"
         )
         
         // Choose a first image whose base64 string length will exceed the canvasBufferLimit (~10MB)
         // Base64 inflates ~4/3, so ~8MB raw data is sufficient.
-        let largeFirstImage = makeExportImage(dataSize: 8_000_000, width: 320, height: 480, timestamp: 1.0)
-        let secondImageSameSize = makeExportImage(dataSize: 256, width: 320, height: 480, timestamp: 2.0)
+        let largeFirstImage = makeExportFrame(dataSize: 8_000_000, width: 320, height: 480, timestamp: 1.0)
+        let secondImageSameSize = makeExportFrame(dataSize: 256, width: 320, height: 480, timestamp: 2.0)
         
         let items: [EventQueueItem] = [
-            EventQueueItem(payload: ImageItemPayload(exportImage: largeFirstImage)),
-            EventQueueItem(payload: ImageItemPayload(exportImage: secondImageSameSize))
+            EventQueueItem(payload: ImageItemPayload(exportFrame: largeFirstImage)),
+            EventQueueItem(payload: ImageItemPayload(exportFrame: secondImageSameSize))
         ]
         
         // Act
