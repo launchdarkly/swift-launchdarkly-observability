@@ -15,13 +15,12 @@ struct TiledSignature: Hashable {
 }
 
 final class TiledSignatureManager {
-    let tileWidth: Int = 64
-    let tileHeight: Int = 64
-    
     func compute(image: UIImage) -> ImageSignature? {
         guard let image = image.cgImage else { return nil }
         let width = image.width
         let height = image.height
+        let tileWidth = dividingInteger(value: width, center: 64, range: 53...75)
+        let tileHeight = dividingInteger(value: height, center: 44, range: 44...50)
         let columns = (width + tileWidth - 1) / tileWidth
         let rows = (height + tileHeight - 1) / tileHeight
         
@@ -60,6 +59,39 @@ final class TiledSignatureManager {
         var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
         CC_SHA256_Final(&hash, &hasher)
         return TiledSignature(hash: hash)
+    }
+    
+    private func dividingInteger(value: Int, center: Int, range: ClosedRange<Int>) -> Int {
+        guard value > 0 else {
+            return center
+        }
+
+        func isDivisor(_ candidate: Int) -> Bool {
+            candidate > 0 && value.isMultiple(of: candidate)
+        }
+
+        if range.contains(center), isDivisor(center) {
+            return center
+        }
+
+        let maxDistance = max(abs(range.lowerBound - center), abs(range.upperBound - center))
+        guard maxDistance > 0 else {
+            return center
+        }
+
+        for offset in 1...maxDistance {
+            let positiveCandidate = center + offset
+            if range.contains(positiveCandidate), isDivisor(positiveCandidate) {
+                return positiveCandidate
+            }
+
+            let negativeCandidate = center - offset
+            if range.contains(negativeCandidate), isDivisor(negativeCandidate) {
+                return negativeCandidate
+            }
+        }
+
+        return center
     }
 }
 
@@ -101,3 +133,4 @@ extension ImageSignature {
                       height: (maxRow - minRow + 1) * tileHeight)
     }
 }
+
