@@ -105,7 +105,7 @@ extension ImageSignature {
                           height: rows * tileHeight)
         }
         
-        guard rows == other.rows, columns == other.columns else {
+        guard rows == other.rows, columns == other.columns, tileWidth == other.tileWidth, tileHeight == other.tileHeight else {
             return nil
         }
         
