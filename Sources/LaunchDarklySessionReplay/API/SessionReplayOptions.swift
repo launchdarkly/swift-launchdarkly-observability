@@ -46,7 +46,7 @@ public struct SessionReplayOptions {
     
     public enum TransferMethod {
         case screenImage
-        case drawTiles(frameWindow: Int = 3)
+        case drawTiles(frameWindow: Int = 10)
         case tileGrid
     }
     
