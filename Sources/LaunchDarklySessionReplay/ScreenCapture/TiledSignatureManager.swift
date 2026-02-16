@@ -5,7 +5,8 @@ import CommonCrypto
 struct ImageSignature: Hashable {
     let rows: Int
     let columns: Int
-    let tileSize: Int
+    let tileWidth: Int
+    let tileHeight: Int
     let tiledSignatures: [TiledSignature]
 }
 
@@ -14,14 +15,15 @@ struct TiledSignature: Hashable {
 }
 
 final class TiledSignatureManager {
-    let tileSize: Int = 64
+    let tileWidth: Int = 64
+    let tileHeight: Int = 64
     
     func compute(image: UIImage) -> ImageSignature? {
         guard let image = image.cgImage else { return nil }
         let width = image.width
         let height = image.height
-        let columns = (width + tileSize - 1) / tileSize
-        let rows = (height + tileSize - 1) / tileSize
+        let columns = (width + tileWidth - 1) / tileWidth
+        let rows = (height + tileHeight - 1) / tileHeight
         
         guard let data = image.dataProvider?.data,
               let ptr = CFDataGetBytePtr(data) else { return nil }
@@ -31,18 +33,18 @@ final class TiledSignatureManager {
         tiledSignatures.reserveCapacity(columns * rows)
         
         for row in 0..<rows {
-            let startY = row * tileSize
-            let endY = min(startY + tileSize, height)
+            let startY = row * tileHeight
+            let endY = min(startY + tileHeight, height)
             
             for column in 0..<columns {
-                let startX = column * tileSize
-                let endX = min(startX + tileSize, width)
+                let startX = column * tileWidth
+                let endX = min(startX + tileWidth, width)
                 let signature = tileHash(ptr: ptr, startX: startX, startY: startY, endX: endX, endY: endY, bytesPerRow: bytesPerRow)
                 tiledSignatures.append(signature)
             }
         }
         
-        return ImageSignature(rows: rows, columns: columns, tileSize: tileSize, tiledSignatures: tiledSignatures)
+        return ImageSignature(rows: rows, columns: columns, tileWidth: tileWidth, tileHeight: tileHeight, tiledSignatures: tiledSignatures)
     }
     
     @inline(__always)
@@ -67,8 +69,8 @@ extension ImageSignature {
         guard let other else {
             return CGRect(x: 0,
                           y: 0,
-                          width: columns * tileSize,
-                          height: rows * tileSize)
+                          width: columns * tileWidth,
+                          height: rows * tileHeight)
         }
         
         guard rows == other.rows, columns == other.columns else {
@@ -93,9 +95,9 @@ extension ImageSignature {
             return nil
         }
         
-        return CGRect(x: minColumn * tileSize,
-                      y: minRow * tileSize,
-                      width: (maxColumn - minColumn + 1) * tileSize,
-                      height: (maxRow - minRow + 1) * tileSize)
+        return CGRect(x: minColumn * tileWidth,
+                      y: minRow * tileHeight,
+                      width: (maxColumn - minColumn + 1) * tileWidth,
+                      height: (maxRow - minRow + 1) * tileHeight)
     }
 }

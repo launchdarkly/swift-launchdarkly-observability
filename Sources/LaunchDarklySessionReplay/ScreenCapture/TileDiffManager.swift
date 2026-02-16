@@ -1,13 +1,13 @@
 import Foundation
 import UIKit
 
-public struct CapturedFrame {
-    public struct CapturedImage {
+public struct TiledFrame {
+    public struct Tile {
         public let image: UIImage
         public let rect: CGRect
     }
     
-    public let capturedImages: [CapturedImage]
+    public let tiles: [Tile]
     public let scale: CGFloat
     public let originalSize: CGSize
     public let timestamp: TimeInterval
@@ -21,7 +21,7 @@ public struct CapturedFrame {
         format.opaque = false
         let renderer = UIGraphicsImageRenderer(size: originalSize, format: format)
         return renderer.image { _ in
-            for capturedImage in capturedImages {
+            for capturedImage in tiles {
                 capturedImage.image.draw(in: capturedImage.rect)
             }
         }
@@ -41,7 +41,7 @@ final class TileDiffManager {
         self.scale = scale
     }
 
-    func computeDiffCapture(frame: RawCapturedFrame) -> CapturedFrame? {
+    func computeDiffCapture(frame: RawCapturedFrame) -> TiledFrame? {
         guard let imageSignature = self.tiledSignatureManager.compute(image: frame.image) else {
             return nil
         }
@@ -92,8 +92,8 @@ final class TileDiffManager {
             finalImage = UIImage(cgImage: cropped)
         }
 
-        let capturedFrame = CapturedFrame(
-            capturedImages: [CapturedFrame.CapturedImage(image: finalImage, rect: finalRect)],
+        let capturedFrame = TiledFrame(
+            tiles: [TiledFrame.Tile(image: finalImage, rect: finalRect)],
             scale: scale,
             originalSize: frame.image.size,
             timestamp: frame.timestamp,

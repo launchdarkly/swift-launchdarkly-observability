@@ -129,25 +129,32 @@ final class CaptureManager: EventSource {
                 return
             }
             
-            let format = ExportFormat.jpeg(quality: 0.3)
-            var exportedFrames = [ExportFrame.ExportImage]()
-            for capturedImg in capturedFrame.capturedImages {
-                guard let exportedFrame = capturedImg.image.asExportedImage(format: format, rect: capturedImg.rect) else {
-                    return
-                }
-                exportedFrames.append(exportedFrame)
+            guard let exportFrame = self.exportFrame(from: capturedFrame) else {
+                // dropped frame
+                return
             }
-            guard !exportedFrames.isEmpty else { return }
-            
-            let exportFrame = ExportFrame(images: exportedFrames,
-                                          originalSize: capturedFrame.originalSize,
-                                          scale: capturedFrame.scale,
-                                          format: format,
-                                          timestamp: capturedFrame.timestamp,
-                                          orientation: capturedFrame.orientation,
-                                          isKeyframe: capturedFrame.isKeyframe)
             
             await self.eventQueue.send(ImageItemPayload(exportFrame: exportFrame))
         }
+    }
+    
+    private func exportFrame(from capturedFrame: TiledFrame) -> ExportFrame? {
+        let format = ExportFormat.jpeg(quality: 0.3)
+        var exportedFrames = [ExportFrame.ExportImage]()
+        for tile in capturedFrame.tiles {
+            guard let exportedFrame = tile.image.asExportedImage(format: format, rect: tile.rect) else {
+                return nil
+            }
+            exportedFrames.append(exportedFrame)
+        }
+        guard !exportedFrames.isEmpty else { return nil }
+        
+        return ExportFrame(images: exportedFrames,
+                           originalSize: capturedFrame.originalSize,
+                           scale: capturedFrame.scale,
+                           format: format,
+                           timestamp: capturedFrame.timestamp,
+                           orientation: capturedFrame.orientation,
+                           isKeyframe: capturedFrame.isKeyframe)
     }
 }
