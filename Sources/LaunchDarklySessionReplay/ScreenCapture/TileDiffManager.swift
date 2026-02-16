@@ -83,8 +83,8 @@ final class TileDiffManager {
             finalRect = CGRect(
                 x: diffRect.minX,
                 y: diffRect.minY,
-                width: min(frame.image.size.width, diffRect.width),
-                height: min(frame.image.size.height, diffRect.height)
+                width: min(frame.image.size.width - diffRect.minX, diffRect.width),
+                height: min(frame.image.size.height - diffRect.minY, diffRect.height)
             )
             guard let cropped = frame.image.cgImage?.cropping(to: finalRect) else {
                 return nil
