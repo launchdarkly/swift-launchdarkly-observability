@@ -98,15 +98,6 @@ actor RRWebEventGenerator {
             
             let timestamp = item.timestamp
 
-//            if let bodyId,
-//               lastImageSize == exportFrame.originalSize,
-//               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
-//                events.append(contentsOf: addTileNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
-//            } else {
-//                // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
-//                appendFullSnapshotEvents(exportFrame, timestamp, &events)
-//            }
-//            
             if let bodyId, let imageId,
                lastImageSize == exportFrame.originalSize,
                generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
@@ -114,13 +105,12 @@ actor RRWebEventGenerator {
                     events.append(contentsOf: addTileNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
                 } else {
                     events.append(contentsOf: addTileNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
-                   // events.append(drawImageEvent(exportFrame: exportFrame, timestamp: timestamp, imageId: imageId))
                 }
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
                 appendFullSnapshotEvents(exportFrame, timestamp, &events)
             }
-//            
+
         case let interaction as TouchInteraction:
             appendTouchInteraction(interaction: interaction, events: &events)
             
@@ -241,7 +231,7 @@ actor RRWebEventGenerator {
         return event
     }
     
-    /// Generates a DOM mutation event to add tile canvases on top of the main canvas.
+    /// Generates a DOM mutation event to add tile images on top of the main previous images.
     /// Each tile canvas uses rr_dataURL to pre-render the image, no separate draw command needed.
     func addTileNodes(exportFrame: ExportFrame, timestamp: TimeInterval, bodyId: Int) -> [Event] {
         var adds = [AddedNode]()
