@@ -31,37 +31,36 @@ public struct CapturedFrame {
     }
 }
 
+struct RawCapturedFrame {
+    let image: UIImage
+    let timestamp: TimeInterval
+    let orientation: Int
+}
+
 public final class ImageCaptureService {
     private let maskingService = MaskApplier()
     private let maskCollector: MaskCollector
-    private let tiledSignatureManager = TiledSignatureManager()
-    private var previousSignature: ImageSignature?
-    private var incrementalSnapshots = 0
-
-    private let signatureLock = NSLock()
     @MainActor
     private var shouldCapture = false
     
     private let scale = 1.0
-    private let transferMethod: SessionReplayOptions.TransferMethod
     
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
-        transferMethod = options.transferMethod
     }
     
     // MARK: - Capture
     
     @MainActor
     public func captureUIImage(yield: @escaping (UIImage?) async -> Void) {
-        captureFrame { frame in
-            await yield(frame?.wholeImage())
+        captureRawFrame { frame in
+            await yield(frame?.image)
         }
     }
     
-    /// Capture as UIImage (must be on main thread).
+    /// Capture as masked frame (must be on main thread).
     @MainActor
-    public func captureFrame(yield: @escaping (CapturedFrame?) async -> Void) {
+    func captureRawFrame(yield: @escaping (RawCapturedFrame?) async -> Void) {
 #if os(iOS)
         let orientation = UIDevice.current.orientation.isLandscape ? 1 : 0
 #else
@@ -111,79 +110,17 @@ public final class ImageCaptureService {
                     image.draw(at: .zero)
                     self.maskingService.applyViewMasks(context: ctx.cgContext, operations: applyOperations.flatMap { $0 })
                 }
-                
-                guard let capturedImage = self.computeDiffCapture(image: image, timestamp: timestamp, orientation: orientation) else {
-                    await yield(nil)
-                    return
-                }
 
-                await yield(capturedImage)
+                await yield(RawCapturedFrame(image: image, timestamp: timestamp, orientation: orientation))
             }
         }
     }
-    
+
     @MainActor
     func interuptCapture() {
         shouldCapture = false
     }
     
-    private func computeDiffCapture(image: UIImage, timestamp: TimeInterval, orientation: Int) -> CapturedFrame? {
-        guard let imageSignature = self.tiledSignatureManager.compute(image: image) else {
-            return nil
-        }
-        
-        signatureLock.lock()
-        
-        guard let diffRect = imageSignature.diffRectangle(other: previousSignature) else {
-            signatureLock.unlock()
-            return nil
-        }
-        previousSignature = imageSignature
-
-        let needWholeScreen = (diffRect.size.width >= image.size.width && diffRect.size.height >= image.size.height)
-        let isKeyframe: Bool
-        if case .drawTiles(let frameWindow) = transferMethod {
-            incrementalSnapshots = (incrementalSnapshots + 1) % frameWindow
-            isKeyframe = needWholeScreen || incrementalSnapshots == 0
-            if needWholeScreen {
-                incrementalSnapshots = 0
-            }
-        } else {
-            isKeyframe = true
-        }
-            
-        signatureLock.unlock()
-
-        let finalRect: CGRect
-        var finalImage: UIImage
-        
-        if isKeyframe {
-            finalImage = image
-            finalRect = CGRect(x: 0,
-                               y: 0,
-                               width: image.size.width,
-                               height: image.size.height)
-          
-        } else {
-            finalRect = CGRect(x: diffRect.minX,
-                                  y: diffRect.minY,
-                                  width: min(image.size.width, diffRect.width),
-                                  height: min(image.size.height, diffRect.height))
-            guard let cropped = image.cgImage?.cropping(to: finalRect) else {
-                return nil
-            }
-            finalImage = UIImage(cgImage: cropped)
-        }
-        
-        let capturedFrame = CapturedFrame(capturedImages: [CapturedFrame.CapturedImage(image: finalImage, rect: finalRect)],
-                                          scale: scale,
-                                          originalSize: image.size,
-                                          timestamp: timestamp,
-                                          orientation: orientation,
-                                          isKeyframe: isKeyframe)
-        return capturedFrame
-    }
-                                    
     private func allWindowsInZOrder() -> [UIWindow] {
         let scenes = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }

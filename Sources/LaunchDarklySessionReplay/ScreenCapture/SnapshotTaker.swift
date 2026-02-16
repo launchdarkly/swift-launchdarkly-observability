@@ -5,6 +5,7 @@ import UIKit
 
 final class SnapshotTaker: EventSource {
     private let captureService: ImageCaptureService
+    private let tileDiffManager: TileDiffManager
     private let appLifecycleManager: AppLifecycleManaging
     @MainActor
     private var displayLink: CADisplayLink?
@@ -30,9 +31,11 @@ final class SnapshotTaker: EventSource {
     }
     
     init(captureService: ImageCaptureService,
+         transferMethod: SessionReplayOptions.TransferMethod,
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue) {
         self.captureService = captureService
+        self.tileDiffManager = TileDiffManager(transferMethod: transferMethod, scale: 1.0)
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
         
@@ -115,8 +118,13 @@ final class SnapshotTaker: EventSource {
         let lastFrameDispatchTime = DispatchTime.now()
         self.lastFrameDispatchTime = lastFrameDispatchTime
         
-        captureService.captureFrame { capturedFrame in
-            guard let capturedFrame else {
+        captureService.captureRawFrame { rawFrame in
+            guard let rawFrame else {
+                // dropped frame
+                return
+            }
+
+            guard let capturedFrame = self.tileDiffManager.computeDiffCapture(frame: rawFrame) else {
                 // dropped frame
                 return
             }
