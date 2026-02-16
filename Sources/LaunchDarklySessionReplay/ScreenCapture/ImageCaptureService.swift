@@ -4,33 +4,6 @@ import UIKit
 import Darwin
 import Foundation
 
-public struct CapturedFrame {
-    public struct CapturedImage {
-        public let image: UIImage
-        public let rect: CGRect
-    }
-    
-    public let capturedImages: [CapturedImage]
-    public let scale: CGFloat
-    public let originalSize: CGSize
-    public let timestamp: TimeInterval
-    public let orientation: Int
-    public let isKeyframe: Bool
-    
-    /// Composites all captured images into a single UIImage by drawing each at its rect.
-    public func wholeImage() -> UIImage {
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = scale
-        format.opaque = false
-        let renderer = UIGraphicsImageRenderer(size: originalSize, format: format)
-        return renderer.image { _ in
-            for capturedImage in capturedImages {
-                capturedImage.image.draw(in: capturedImage.rect)
-            }
-        }
-    }
-}
-
 struct RawCapturedFrame {
     let image: UIImage
     let timestamp: TimeInterval
@@ -40,6 +13,7 @@ struct RawCapturedFrame {
 public final class ImageCaptureService {
     private let maskingService = MaskApplier()
     private let maskCollector: MaskCollector
+    private let windowCaptureManager = WindowCaptureManager()
     @MainActor
     private var shouldCapture = false
     
@@ -67,18 +41,14 @@ public final class ImageCaptureService {
         let orientation = 0
 #endif
         let timestamp = Date().timeIntervalSince1970
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = scale
-        format.opaque = false
-        
-        let windows = allWindowsInZOrder()
-        let enclosingBounds = minimalBoundsEnclosingWindows(windows)
-        let renderer = UIGraphicsImageRenderer(size: enclosingBounds.size, format: format)
+        let windows = windowCaptureManager.allWindowsInZOrder()
+        let enclosingBounds = windowCaptureManager.minimalBoundsEnclosingWindows(windows)
+        let renderer = windowCaptureManager.makeRenderer(size: enclosingBounds.size, scale: scale)
         
         CATransaction.flush()
         let maskOperationsBefore = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
         let image = renderer.image { ctx in
-            drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
+            windowCaptureManager.drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false)
         }
       
         shouldCapture = true // can be set to false from external class to stop capturing work early
@@ -119,47 +89,6 @@ public final class ImageCaptureService {
     @MainActor
     func interuptCapture() {
         shouldCapture = false
-    }
-    
-    private func allWindowsInZOrder() -> [UIWindow] {
-        let scenes = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .filter { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }
-        let windows = scenes.flatMap { $0.windows }
-        return windows
-            .filter { !$0.isHidden && $0.alpha > 0 }
-            .sorted { $0.windowLevel == $1.windowLevel ? $0.hash < $1.hash : $0.windowLevel < $1.windowLevel }
-    }
-    
-    private func minimalBoundsEnclosingWindows(_ windows: [UIWindow]) -> CGRect {
-        return windows.reduce(into: CGRect.zero) { rect, window in
-            rect = rect.enclosing(with: window.frame)
-        }
-    }
-    
-    private func drawWindows(_ windows: [UIWindow],
-                             into context: CGContext,
-                             bounds: CGRect,
-                             afterScreenUpdates: Bool,
-                             scale: CGFloat) {
-        context.saveGState()
-        context.setFillColor(UIColor.clear.cgColor)
-        context.fill(bounds)
-        context.restoreGState()
-
-        for (i, window) in windows.enumerated() {
-            context.saveGState()
-          
-            context.translateBy(x: window.frame.origin.x, y: window.frame.origin.y)
-            context.concatenate(window.transform)
-            let anchor = CGPoint(x: window.bounds.midX, y: window.bounds.midY)
-            context.translateBy(x: anchor.x, y: anchor.y)
-            context.translateBy(x: -anchor.x, y: -anchor.y)
-            
-            window.drawHierarchy(in: window.layer.frame, afterScreenUpdates: afterScreenUpdates)
-            
-            context.restoreGState()
-        }
     }
 }
 

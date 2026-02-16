@@ -3,7 +3,7 @@ import Combine
 import LaunchDarklyObservability
 import UIKit
 
-final class SnapshotTaker: EventSource {
+final class CaptureManager: EventSource {
     private let captureService: ImageCaptureService
     private let tileDiffManager: TileDiffManager
     private let appLifecycleManager: AppLifecycleManaging

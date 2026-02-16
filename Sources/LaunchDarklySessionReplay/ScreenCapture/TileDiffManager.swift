@@ -1,6 +1,33 @@
 import Foundation
 import UIKit
 
+public struct CapturedFrame {
+    public struct CapturedImage {
+        public let image: UIImage
+        public let rect: CGRect
+    }
+    
+    public let capturedImages: [CapturedImage]
+    public let scale: CGFloat
+    public let originalSize: CGSize
+    public let timestamp: TimeInterval
+    public let orientation: Int
+    public let isKeyframe: Bool
+    
+    /// Composites all captured images into a single UIImage by drawing each at its rect.
+    public func wholeImage() -> UIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(size: originalSize, format: format)
+        return renderer.image { _ in
+            for capturedImage in capturedImages {
+                capturedImage.image.draw(in: capturedImage.rect)
+            }
+        }
+    }
+}
+
 final class TileDiffManager {
     private let tiledSignatureManager = TiledSignatureManager()
     private let transferMethod: SessionReplayOptions.TransferMethod
