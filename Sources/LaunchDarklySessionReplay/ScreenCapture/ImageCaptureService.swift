@@ -175,13 +175,13 @@ public final class ImageCaptureService {
             finalImage = UIImage(cgImage: cropped)
         }
         
-        let capturedImage = CapturedFrame(capturedImages: [CapturedFrame.CapturedImage(image: finalImage, rect: finalRect)],
+        let capturedFrame = CapturedFrame(capturedImages: [CapturedFrame.CapturedImage(image: finalImage, rect: finalRect)],
                                           scale: scale,
                                           originalSize: image.size,
                                           timestamp: timestamp,
                                           orientation: orientation,
                                           isKeyframe: isKeyframe)
-        return capturedImage
+        return capturedFrame
     }
                                     
     private func allWindowsInZOrder() -> [UIWindow] {
