@@ -1,3 +1,6 @@
+import Common
+import OSLog
+
 protocol InternalObserve: Observe {
     var logClient: LogsApi { get }
 }
@@ -39,7 +42,15 @@ final class ObservabilityClient: InternalObserve {
 
 extension ObservabilityClient: Observe {
     func start(sessionId: String) {
-        context?.sessionManager.start(sessionId: sessionId)
+        let id: String
+        if SessionIdFormatVerifier.isURLPathSafeIdentifier(sessionId) {
+            id = sessionId
+        } else {
+            os_log("%{public}@", log: options.log, type: .error, "Invalid SessionID: Using default format. Session ID \(sessionId) is invalid.")
+            id = SecureIDGenerator.generateSecureID()
+        }
+        
+        context?.sessionManager.start(sessionId: id)
         autoInstrumentation.forEach { $0.start() }
     }
     

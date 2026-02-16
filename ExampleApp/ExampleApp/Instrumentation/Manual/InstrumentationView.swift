@@ -12,7 +12,7 @@ struct InstrumentationView: View {
         .task {
             LDObserve.shared
                 .start(
-                    sessionId: "Custom-id:\(UUID().uuidString)"
+                    sessionId: "custom-\(UUID().uuidString)"
                 )
         }
     }
