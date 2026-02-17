@@ -316,8 +316,8 @@ extension ObservabilityService {
             }
             
             do {
-                try await self.start()
                 self.context?.sessionManager.start(sessionId: id)
+                try await self.start()
             } catch {
                 os_log("%{public}@", log: options.log, type: .error, "Failure starting Observability Service: \(error)")
             }
@@ -331,8 +331,8 @@ extension ObservabilityService {
             guard let self else { return }
             
             do {
-                try await self.start()
                 self.context?.sessionManager.start(sessionId: SecureIDGenerator.generateSecureID())
+                try await self.start()
             } catch {
                 os_log("%{public}@", log: options.log, type: .error, "Failure starting Observability Service: \(error)")
             }
