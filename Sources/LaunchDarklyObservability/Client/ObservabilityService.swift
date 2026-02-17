@@ -6,7 +6,7 @@ import OSLog
 #endif
 
 final class ObservabilityService: InternalObserve {
-    var logClient: LogsApi { logger }
+    var logClient: LogsApi { loggerClient }
     private let logger: LogsApi
     private let meter: MetricsApi
     private let tracer: TracesApi
