@@ -293,7 +293,6 @@ extension ObservabilityService {
             sampler.setConfig(config)
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "getSamplingConfig failed with error: \(error)")
-            throw error
         }
         
         for instrument in instruments {
