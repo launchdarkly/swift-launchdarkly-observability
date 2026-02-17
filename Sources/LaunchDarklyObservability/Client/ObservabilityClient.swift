@@ -91,3 +91,16 @@ extension ObservabilityClient: Observe {
         tracer.startSpan(name: name, attributes: attributes)
     }
 }
+
+extension ObservabilityClient {
+    static let noOp: Observe = ObservabilityClient(
+        tracer: NoOpTracer(),
+        logger: NoOpLogger(),
+        logClient: NoOpLogger(),
+        meter: NoOpMeter(),
+        crashReportsApi: NoOpCrashReport(),
+        autoInstrumentation: [],
+        options: .init(),
+        context: nil
+    )
+}

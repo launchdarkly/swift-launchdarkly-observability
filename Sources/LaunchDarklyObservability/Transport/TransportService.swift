@@ -4,6 +4,11 @@ import Combine
 public protocol EventSource: AnyObject {
 }
 
+public protocol TransportingService {
+    func start() async
+    func stop() async
+}
+
 public protocol TransportServicing {
     var eventQueue: EventQueue { get }
     var batchWorker: BatchWorker  { get set }
@@ -11,7 +16,7 @@ public protocol TransportServicing {
     func stop()
 }
 
-final class TransportService: TransportServicing {
+final class TransportService: TransportServicing, TransportingService {
     public let eventQueue: EventQueue
     private let sessionManager: SessionManaging
     private var isRunning: Bool = false
@@ -54,5 +59,15 @@ final class TransportService: TransportServicing {
         Task {
             await batchWorker.stop()
         }
+    }
+    
+    public func start() async {
+        guard !isRunning else { return }
+        await batchWorker.start()
+    }
+    
+    public func stop() async {
+        guard isRunning else { return }
+        await batchWorker.stop()
     }
 }

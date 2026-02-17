@@ -43,17 +43,21 @@ public final class Observability: Plugin {
         options.customHeaders = customHeaders
         
         do {
-            guard LDObserve.shared.client === ObservabilityClientFactory.noOp else {
+            guard LDObserve.shared.client === ObservabilityClient.noOp else {
                 throw PluginError.observabilityInstanceAlreadyExist
             }
-            let service = try ObservabilityClientFactory.instantiate(
-                withOptions: options,
+            let service = try ObservabilityService(
+                options: options,
                 mobileKey: mobileKey,
                 sessionAttributes: sessionAttributes
             )
             observabilityService = service
             LDObserve.shared.client = service
             LDObserve.shared.context = service.context
+            
+            if options.isEnabled {
+                service.start()
+            }
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Observability client initialization failed with error: \(error)")
         }
