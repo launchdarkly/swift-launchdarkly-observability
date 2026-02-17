@@ -57,8 +57,8 @@ final class TileDiffManager {
 
         let needWholeScreen = (diffRect.size.width >= frame.image.size.width && diffRect.size.height >= frame.image.size.height)
         let isKeyframe: Bool
-        if case .overlayTiles(let frameWindow) = compression {
-            incrementalSnapshots = (incrementalSnapshots + 1) % frameWindow
+        if case .overlayTiles(let layers) = compression, layers > 0 {
+            incrementalSnapshots = (incrementalSnapshots + 1) % layers
             isKeyframe = needWholeScreen || incrementalSnapshots == 0
             if needWholeScreen {
                 incrementalSnapshots = 0

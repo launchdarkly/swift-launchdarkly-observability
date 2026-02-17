@@ -106,7 +106,10 @@ extension ImageSignature {
         }
         
         guard rows == other.rows, columns == other.columns, tileWidth == other.tileWidth, tileHeight == other.tileHeight else {
-            return nil
+            return CGRect(x: 0,
+                          y: 0,
+                          width: columns * tileWidth,
+                          height: rows * tileHeight)
         }
         
         var minRow = Int.max
