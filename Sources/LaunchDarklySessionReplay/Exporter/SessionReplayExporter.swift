@@ -68,7 +68,7 @@ actor SessionReplayExporter: EventExporting {
             let session = try await initializeSession(sessionSecureId: sessionInfo.id)
             var identifyPayload = self.identifyPayload
             if identifyPayload == nil {
-                identifyPayload = await IdentifyItemPayload(options: context.observabilityContext.options, timestamp: Date().timeIntervalSince1970)
+                identifyPayload = await IdentifyItemPayload(options: context.observabilityContext.options, sessionAttributes: context.observabilityContext.sessionAttributes, timestamp: Date().timeIntervalSince1970)
             }
             if let identifyPayload {
                 try await identifySession(sessionSecureId: session.secureId, userObject: identifyPayload.attributes)
