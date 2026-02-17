@@ -259,13 +259,13 @@ actor RRWebEventGenerator {
                 frameToLastKeyNodeIndex[signature] = keyNodeIds.count - 1
             }
         }
-    
-        let mutationData = if removes.isEmpty {
-            MutationData(adds: adds, canvasSize: totalCanvasSize)
-        } else {
-            MutationData(adds: adds, removes: removes, canvasSize: totalCanvasSize)
-        }
         
+        if let firstId = keyNodeIds.first?.id, firstId != imageId {
+            // Keyframe replacement can remove the previously tracked node.
+            imageId = firstId
+        }
+    
+        let mutationData = MutationData(adds: adds, removes: removes, canvasSize: totalCanvasSize)
         let mutationEvent = Event(type: .IncrementalSnapshot,
                                   data: AnyEventData(mutationData),
                                   timestamp: timestamp,
