@@ -240,7 +240,9 @@ actor RRWebEventGenerator {
             frameToLastKeyNodeIndex.removeAll()
         }
 
-        if let lastKeyNodeIdx = frameToLastKeyNodeIndex[exportFrame.diffSignature], lastKeyNodeIdx < keyNodeIds.count {
+        if let signature = exportFrame.imageSignature,
+           let lastKeyNodeIdx = frameToLastKeyNodeIndex[signature],
+           lastKeyNodeIdx < keyNodeIds.count {
             removes = Array(keyNodeIds[(lastKeyNodeIdx + 1)...])
             keyNodeIds = Array(keyNodeIds[0...lastKeyNodeIdx])
             frameToLastKeyNodeIndex = frameToLastKeyNodeIndex.filter { $0.value > lastKeyNodeIdx }
@@ -253,7 +255,9 @@ actor RRWebEventGenerator {
                 keyNodeIds.append(RemovedNode(parentId: bodyId, id: tileCanvasId))
                 totalCanvasSize += base64DataURL.count
             }
-            frameToLastKeyNodeIndex[exportFrame.diffSignature] = keyNodeIds.count - 1
+            if let signature = exportFrame.imageSignature {
+                frameToLastKeyNodeIndex[signature] = keyNodeIds.count - 1
+            }
         }
     
         let mutationData = if removes.isEmpty {
@@ -338,7 +342,9 @@ actor RRWebEventGenerator {
         bodyId = currentBodyId
         keyNodeIds = [RemovedNode(parentId: currentBodyId, id: newImageId)]
         frameToLastKeyNodeIndex.removeAll()
-        frameToLastKeyNodeIndex[exportFrame.diffSignature] = 0
+        if let signature = exportFrame.imageSignature {
+            frameToLastKeyNodeIndex[signature] = 0
+        }
         rootNode.childNodes.append(htmlNode)
         
         return DomData(node: rootNode, canvasSize: base64String.count)

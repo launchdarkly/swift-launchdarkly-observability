@@ -44,14 +44,13 @@ public struct SessionReplayOptions {
         }
     }
     
-    public enum TransferMethod {
+    public enum CompressionMethod {
         case screenImage
-        case drawTiles(frameWindow: Int = 10)
-        case tileGrid
+        case overlayTiles(frameWindow: Int = 10)
     }
     
     public var isEnabled: Bool
-    public var transferMethod: TransferMethod = .drawTiles()
+    public var compression: CompressionMethod = .overlayTiles()
     public var serviceName: String
     public var privacy = PrivacyOptions()
     public var log: OSLog
@@ -59,10 +58,12 @@ public struct SessionReplayOptions {
     public init(isEnabled: Bool = true,
                 serviceName: String = "sessionreplay-swift",
                 privacy: PrivacyOptions = PrivacyOptions(),
+                compression: CompressionMethod = .overlayTiles(),
                 log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklySessionReplayPlugin")) {
         self.isEnabled = isEnabled
         self.serviceName = serviceName
         self.privacy = privacy
+        self.compression = compression
         self.log = log
     }
 }

@@ -13,7 +13,7 @@ struct TiledFrame {
     let timestamp: TimeInterval
     let orientation: Int
     let isKeyframe: Bool
-    let diffSignature: ImageSignature
+    let imageSignature: ImageSignature?
     
     /// Composites all captured images into a single UIImage by drawing each at its rect.
     func wholeImage() -> UIImage {
@@ -31,14 +31,14 @@ struct TiledFrame {
 
 final class TileDiffManager {
     private let tiledSignatureManager = TiledSignatureManager()
-    private let transferMethod: SessionReplayOptions.TransferMethod
+    private let compression: SessionReplayOptions.CompressionMethod
     private let scale: CGFloat
     private var previousSignature: ImageSignature?
     private var incrementalSnapshots = 0
     private let signatureLock = NSLock()
 
-    init(transferMethod: SessionReplayOptions.TransferMethod, scale: CGFloat) {
-        self.transferMethod = transferMethod
+    init(compression: SessionReplayOptions.CompressionMethod, scale: CGFloat) {
+        self.compression = compression
         self.scale = scale
     }
 
@@ -57,7 +57,7 @@ final class TileDiffManager {
 
         let needWholeScreen = (diffRect.size.width >= frame.image.size.width && diffRect.size.height >= frame.image.size.height)
         let isKeyframe: Bool
-        if case .drawTiles(let frameWindow) = transferMethod {
+        if case .overlayTiles(let frameWindow) = compression {
             incrementalSnapshots = (incrementalSnapshots + 1) % frameWindow
             isKeyframe = needWholeScreen || incrementalSnapshots == 0
             if needWholeScreen {
@@ -93,6 +93,13 @@ final class TileDiffManager {
             finalImage = UIImage(cgImage: cropped)
         }
 
+        let imageSignatureForTransfer: ImageSignature? = {
+            if case .overlayTiles = compression {
+                return imageSignature
+            }
+            return nil
+        }()
+
         let capturedFrame = TiledFrame(
             tiles: [TiledFrame.Tile(image: finalImage, rect: finalRect)],
             scale: scale,
@@ -100,7 +107,7 @@ final class TileDiffManager {
             timestamp: frame.timestamp,
             orientation: frame.orientation,
             isKeyframe: isKeyframe,
-            diffSignature: imageSignature
+            imageSignature: imageSignatureForTransfer
         )
         return capturedFrame
     }

@@ -69,7 +69,7 @@ final class SessionReplayService: SessionReplayServicing {
         let captureService = ImageCaptureService(options: sessonReplayOptions)
         self.transportService = observabilityContext.transportService
         self.captureManager = CaptureManager(captureService: captureService,
-                                             transferMethod: sessonReplayOptions.transferMethod,
+                                             compression: sessonReplayOptions.compression,
                                              appLifecycleManager: observabilityContext.appLifecycleManager,
                                              eventQueue: transportService.eventQueue)
         self.userInteractionManager = observabilityContext.userInteractionManager

@@ -31,11 +31,11 @@ final class CaptureManager: EventSource {
     }
     
     init(captureService: ImageCaptureService,
-         transferMethod: SessionReplayOptions.TransferMethod,
+         compression: SessionReplayOptions.CompressionMethod,
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue) {
         self.captureService = captureService
-        self.tileDiffManager = TileDiffManager(transferMethod: transferMethod, scale: 1.0)
+        self.tileDiffManager = TileDiffManager(compression: compression, scale: 1.0)
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
         
@@ -156,6 +156,6 @@ final class CaptureManager: EventSource {
                            timestamp: capturedFrame.timestamp,
                            orientation: capturedFrame.orientation,
                            isKeyframe: capturedFrame.isKeyframe,
-                           diffSignature: capturedFrame.diffSignature)
+                           imageSignature: capturedFrame.imageSignature)
     }
 }
