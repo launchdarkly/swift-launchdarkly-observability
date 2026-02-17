@@ -19,8 +19,8 @@ final class TiledSignatureManager {
         guard let image = image.cgImage else { return nil }
         let width = image.width
         let height = image.height
-        let tileWidth = dividingInteger(value: width, center: 64, range: 53...75)
-        let tileHeight = dividingInteger(value: height, center: 44, range: 44...50)
+        let tileWidth = nearestDivisor(value: width, preferred: 64, range: 53...75)
+        let tileHeight = nearestDivisor(value: height, preferred: 44, range: 44...50)
         let columns = (width + tileWidth - 1) / tileWidth
         let rows = (height + tileHeight - 1) / tileHeight
         
@@ -61,37 +61,37 @@ final class TiledSignatureManager {
         return TiledSignature(hash: hash)
     }
     
-    private func dividingInteger(value: Int, center: Int, range: ClosedRange<Int>) -> Int {
+    private func nearestDivisor(value: Int, preferred: Int, range: ClosedRange<Int>) -> Int {
         guard value > 0 else {
-            return center
+            return preferred
         }
 
         func isDivisor(_ candidate: Int) -> Bool {
             candidate > 0 && value.isMultiple(of: candidate)
         }
 
-        if range.contains(center), isDivisor(center) {
-            return center
+        if range.contains(preferred), isDivisor(preferred) {
+            return preferred
         }
 
-        let maxDistance = max(abs(range.lowerBound - center), abs(range.upperBound - center))
+        let maxDistance = max(abs(range.lowerBound - preferred), abs(range.upperBound - preferred))
         guard maxDistance > 0 else {
-            return center
+            return preferred
         }
 
         for offset in 1...maxDistance {
-            let positiveCandidate = center + offset
+            let positiveCandidate = preferred + offset
             if range.contains(positiveCandidate), isDivisor(positiveCandidate) {
                 return positiveCandidate
             }
 
-            let negativeCandidate = center - offset
+            let negativeCandidate = preferred - offset
             if range.contains(negativeCandidate), isDivisor(negativeCandidate) {
                 return negativeCandidate
             }
         }
 
-        return center
+        return preferred
     }
 }
 
