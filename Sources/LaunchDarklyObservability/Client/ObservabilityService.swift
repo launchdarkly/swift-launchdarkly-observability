@@ -40,6 +40,8 @@ final class ObservabilityService: InternalObserve {
     
     private let userInteractionManager: UserInteractionManager
     private var crashReporting: CrashReporting?
+    private let sampler: CustomSampler
+    private let graphQLClient: GraphQLClient
     
     private var task: Task<Void, Never>?
     
@@ -54,6 +56,7 @@ final class ObservabilityService: InternalObserve {
         
         // MARK: - Sampler
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
+        self.sampler = sampler
         
         // MARK: - AppLifecycleManager
         let appLifecycleManager = AppLifecycleManager()
@@ -161,6 +164,13 @@ final class ObservabilityService: InternalObserve {
         
         let userInteractionManager = UserInteractionManager(options: options)
         self.userInteractionManager = userInteractionManager
+        
+        
+        guard let url = URL(string: options.backendUrl) else {
+            throw InstrumentationError.invalidGraphQLUrl
+        }
+        let graphQLClient = GraphQLClient(endpoint: url)
+        self.graphQLClient = graphQLClient
         
         let context = ObservabilityContext(
             sdkKey: mobileKey,
@@ -276,6 +286,15 @@ extension ObservabilityService {
             crashReporting = NoOpCrashReport()
         }
         self.crashReporting = crashReporting
+        
+        do {
+            let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
+            let config = try await samplingConfigClient.getSamplingConfig(mobileKey: mobileKey)
+            sampler.setConfig(config)
+        } catch {
+            os_log("%{public}@", log: options.log, type: .error, "getSamplingConfig failed with error: \(error)")
+            throw error
+        }
         
         for instrument in instruments {
             instrument.start()
