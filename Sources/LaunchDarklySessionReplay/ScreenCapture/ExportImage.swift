@@ -38,6 +38,7 @@ struct ExportFrame: Equatable {
     let timestamp: TimeInterval
     let orientation: Int
     let isKeyframe: Bool
+    let diffSignature: ImageSignature
     
     /// Creates an EventNode for the main canvas (full snapshot)
     func eventNode(id: Int, rr_dataURL: String) -> EventNode {

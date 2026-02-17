@@ -155,6 +155,7 @@ final class CaptureManager: EventSource {
                            format: format,
                            timestamp: capturedFrame.timestamp,
                            orientation: capturedFrame.orientation,
-                           isKeyframe: capturedFrame.isKeyframe)
+                           isKeyframe: capturedFrame.isKeyframe,
+                           diffSignature: capturedFrame.diffSignature)
     }
 }

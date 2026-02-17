@@ -40,6 +40,7 @@ actor RRWebEventGenerator {
     private var stats: SessionReplayStats?
     private let isDebug = false
     private var keyNodeIds = [RemovedNode]()
+    private var frameToLastKeyNodeIndex: [ImageSignature: Int] = [:]
     
     init(log: OSLog, title: String) {
         if isDebug {
@@ -230,23 +231,31 @@ actor RRWebEventGenerator {
     
     func addTileReusedNodes(exportFrame: ExportFrame, timestamp: TimeInterval, bodyId: Int) -> [Event] {
         var removes = [RemovedNode]()
-        if exportFrame.isKeyframe {
-            removes = keyNodeIds
-            keyNodeIds.removeAll(keepingCapacity: true)
-        }
-        
         var adds = [AddedNode]()
         var totalCanvasSize = 0
         
-        for image in exportFrame.images {
-            let tileCanvasId = nextId
-            let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
-            let tileNode = image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL)
-            adds.append(AddedNode(parentId: bodyId, nextId: nil, node: tileNode))
-            keyNodeIds.append(RemovedNode(parentId: bodyId, id: tileCanvasId))
-            totalCanvasSize += base64DataURL.count
+        if exportFrame.isKeyframe {
+            removes = keyNodeIds
+            keyNodeIds.removeAll(keepingCapacity: true)
+            frameToLastKeyNodeIndex.removeAll()
         }
-        
+
+        if let lastKeyNodeIdx = frameToLastKeyNodeIndex[exportFrame.diffSignature], lastKeyNodeIdx < keyNodeIds.count - 1 {
+            removes = Array(keyNodeIds[(lastKeyNodeIdx + 1)...])
+            keyNodeIds = Array(keyNodeIds[0...lastKeyNodeIdx])
+            frameToLastKeyNodeIndex = frameToLastKeyNodeIndex.filter { $0.value > lastKeyNodeIdx }
+        } else {
+            for image in exportFrame.images {
+                let tileCanvasId = nextId
+                let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
+                let tileNode = image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL)
+                adds.append(AddedNode(parentId: bodyId, nextId: nil, node: tileNode))
+                keyNodeIds.append(RemovedNode(parentId: bodyId, id: tileCanvasId))
+                totalCanvasSize += base64DataURL.count
+            }
+            frameToLastKeyNodeIndex[exportFrame.diffSignature] = keyNodeIds.count
+        }
+    
         let mutationData = if removes.isEmpty {
             MutationData(adds: adds, canvasSize: totalCanvasSize)
         } else {

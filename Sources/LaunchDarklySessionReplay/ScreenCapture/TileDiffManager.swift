@@ -1,21 +1,22 @@
 import Foundation
 import UIKit
 
-public struct TiledFrame {
-    public struct Tile {
+struct TiledFrame {
+    struct Tile {
         public let image: UIImage
         public let rect: CGRect
     }
     
-    public let tiles: [Tile]
-    public let scale: CGFloat
-    public let originalSize: CGSize
-    public let timestamp: TimeInterval
-    public let orientation: Int
-    public let isKeyframe: Bool
+    let tiles: [Tile]
+    let scale: CGFloat
+    let originalSize: CGSize
+    let timestamp: TimeInterval
+    let orientation: Int
+    let isKeyframe: Bool
+    let diffSignature: ImageSignature
     
     /// Composites all captured images into a single UIImage by drawing each at its rect.
-    public func wholeImage() -> UIImage {
+    func wholeImage() -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = false
@@ -98,7 +99,8 @@ final class TileDiffManager {
             originalSize: frame.image.size,
             timestamp: frame.timestamp,
             orientation: frame.orientation,
-            isKeyframe: isKeyframe
+            isKeyframe: isKeyframe,
+            diffSignature: imageSignature
         )
         return capturedFrame
     }
