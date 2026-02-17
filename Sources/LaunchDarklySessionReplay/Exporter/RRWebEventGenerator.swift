@@ -18,6 +18,16 @@ enum RRWebPlayerConstants {
 }
 
 actor RRWebEventGenerator {
+    enum Dom {
+        static let html = "html"
+        static let head = "head"
+        static let body = "body"
+        static let lang = "lang"
+        static let en = "en"
+        static let style = "style"
+        static let bodyStyle = "position:relative;"
+    }
+
     private var title: String
     private let padding = RRWebPlayerConstants.padding
     private var sid = 0
@@ -320,23 +330,23 @@ actor RRWebEventGenerator {
         return event
     }
     
-    func fullSnapshotData(exportFrame: ExportFrame) -> DomData {
+    func fullSnapshotData(exportFrame: ExportFrame) -> DomData {        
         var rootNode = EventNode(id: nextId, type: .Document)
-        let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: "html")
+        let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: Dom.html)
         rootNode.childNodes.append(htmlDocNode)
         let firstImage = exportFrame.images[0]
         let base64String = firstImage.base64DataURL(mimeType: exportFrame.mimeType)
         
-        let headNode = EventNode(id: nextId, type: .Element, tagName: "head", attributes: [:])
+        let headNode = EventNode(id: nextId, type: .Element, tagName: Dom.head, attributes: [:])
         let currentBodyId = nextId
         let newImageId = nextId
-        let bodyNode = EventNode(id: currentBodyId, type: .Element, tagName: "body",
-                                 attributes: ["style": "position:relative;"],
+        let bodyNode = EventNode(id: currentBodyId, type: .Element, tagName: Dom.body,
+                                 attributes: [Dom.style: Dom.bodyStyle],
                                  childNodes: [
                                     exportFrame.eventNode(id: newImageId, rr_dataURL: base64String)
                                  ])
-        let htmlNode = EventNode(id: nextId, type: .Element, tagName: "html",
-                                 attributes: ["lang": "en"],
+        let htmlNode = EventNode(id: nextId, type: .Element, tagName: Dom.html,
+                                 attributes: [Dom.lang: Dom.en],
                                  childNodes: [headNode, bodyNode])
         imageId = newImageId
         bodyId = currentBodyId
