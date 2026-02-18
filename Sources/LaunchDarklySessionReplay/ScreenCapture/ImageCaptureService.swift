@@ -4,22 +4,20 @@ import UIKit
 import Darwin
 import Foundation
 
-public struct CapturedImage {
-    public let image: UIImage
-    public let scale: CGFloat
-    public let renderSize: CGSize
-    public let timestamp: TimeInterval
-    public let orientation: Int
+struct RawCapturedFrame {
+    let image: UIImage
+    let timestamp: TimeInterval
+    let orientation: Int
 }
 
-public final class ScreenCaptureService {
+public final class ImageCaptureService {
     private let maskingService = MaskApplier()
     private let maskCollector: MaskCollector
-    private let tiledSignatureManager = TiledSignatureManager()
-    private var previousSignature: ImageSignature?
-    private let signatureLock = NSLock()
+    private let windowCaptureManager = WindowCaptureManager()
     @MainActor
     private var shouldCapture = false
+    
+    private let scale = 1.0
     
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
@@ -27,28 +25,30 @@ public final class ScreenCaptureService {
     
     // MARK: - Capture
     
-    /// Capture as UIImage (must be on main thread).
     @MainActor
-    public func captureUIImage(yield: @escaping (CapturedImage?) async -> Void) {
+    public func captureUIImage(yield: @escaping (UIImage?) async -> Void) {
+        captureRawFrame { frame in
+            await yield(frame?.image)
+        }
+    }
+    
+    /// Capture as masked frame (must be on main thread).
+    @MainActor
+    func captureRawFrame(yield: @escaping (RawCapturedFrame?) async -> Void) {
 #if os(iOS)
         let orientation = UIDevice.current.orientation.isLandscape ? 1 : 0
 #else
         let orientation = 0
 #endif
         let timestamp = Date().timeIntervalSince1970
-        let scale = 1.0
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = scale
-        format.opaque = false
-        
-        let windows = allWindowsInZOrder()
-        let enclosingBounds = minimalBoundsEnclosingWindows(windows)
-        let renderer = UIGraphicsImageRenderer(size: enclosingBounds.size, format: format)
+        let windows = windowCaptureManager.allWindowsInZOrder()
+        let enclosingBounds = windowCaptureManager.minimalBoundsEnclosingWindows(windows)
+        let renderer = windowCaptureManager.makeRenderer(size: enclosingBounds.size, scale: scale)
         
         CATransaction.flush()
         let maskOperationsBefore = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
         let image = renderer.image { ctx in
-            drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, scale: scale)
+            windowCaptureManager.drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false)
         }
       
         shouldCapture = true // can be set to false from external class to stop capturing work early
@@ -57,7 +57,7 @@ public final class ScreenCaptureService {
             guard let self, let maskCollector, shouldCapture else { return }
             
             CATransaction.flush()
-            let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
+            let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: self.scale)  }
             
             Task {
                 guard maskOperationsBefore.count == maskOperationsAfter.count else {
@@ -80,77 +80,20 @@ public final class ScreenCaptureService {
                     image.draw(at: .zero)
                     self.maskingService.applyViewMasks(context: ctx.cgContext, operations: applyOperations.flatMap { $0 })
                 }
-                
-                let signatures = self.tiledSignatureManager.compute(image: image)
-                
-                self.signatureLock.lock()
-                if self.previousSignature == signatures {
-                    self.signatureLock.unlock()
-                    await yield(nil)
-                    return
-                }
-                self.previousSignature = signatures
-                self.signatureLock.unlock()
 
-                let capturedImage = CapturedImage(image: image,
-                                                  scale: scale,
-                                                  renderSize: enclosingBounds.size,
-                                                  timestamp: timestamp,
-                                                  orientation: orientation)
-                await yield(capturedImage)
+                await yield(RawCapturedFrame(image: image, timestamp: timestamp, orientation: orientation))
             }
         }
     }
-    
+
     @MainActor
     func interuptCapture() {
         shouldCapture = false
     }
-    
-    private func allWindowsInZOrder() -> [UIWindow] {
-        let scenes = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .filter { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }
-        let windows = scenes.flatMap { $0.windows }
-        return windows
-            .filter { !$0.isHidden && $0.alpha > 0 }
-            .sorted { $0.windowLevel == $1.windowLevel ? $0.hash < $1.hash : $0.windowLevel < $1.windowLevel }
-    }
-    
-    private func minimalBoundsEnclosingWindows(_ windows: [UIWindow]) -> CGRect {
-        return windows.reduce(into: CGRect.zero) { rect, window in
-            rect = rect.enclosing(with: window.frame)
-        }
-    }
-    
-    private func drawWindows(_ windows: [UIWindow],
-                             into context: CGContext,
-                             bounds: CGRect,
-                             afterScreenUpdates: Bool,
-                             scale: CGFloat) {
-        context.saveGState()
-        context.setFillColor(UIColor.clear.cgColor)
-        context.fill(bounds)
-        context.restoreGState()
-
-        for (i, window) in windows.enumerated() {
-            context.saveGState()
-          
-            context.translateBy(x: window.frame.origin.x, y: window.frame.origin.y)
-            context.concatenate(window.transform)
-            let anchor = CGPoint(x: window.bounds.midX, y: window.bounds.midY)
-            context.translateBy(x: anchor.x, y: anchor.y)
-            context.translateBy(x: -anchor.x, y: -anchor.y)
-            
-            window.drawHierarchy(in: window.layer.frame, afterScreenUpdates: afterScreenUpdates)
-            
-            context.restoreGState()
-        }
-    }
 }
 
 // MARK: - Thread CPU Time
-private extension ScreenCaptureService {
+private extension ImageCaptureService {
     /// Measure CPU and wall-clock time for work executed on the current thread.
     /// Returns the closure result alongside CPU and wall elapsed seconds.
     func measureCurrentThreadCPUTime<T>(_ work: () -> T) -> (result: T, cpu: TimeInterval, wall: TimeInterval) {

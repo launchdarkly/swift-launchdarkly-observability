@@ -3,8 +3,9 @@ import Combine
 import LaunchDarklyObservability
 import UIKit
 
-final class SnapshotTaker: EventSource {
-    private let captureService: ScreenCaptureService
+final class CaptureManager: EventSource {
+    private let captureService: ImageCaptureService
+    private let tileDiffManager: TileDiffManager
     private let appLifecycleManager: AppLifecycleManaging
     @MainActor
     private var displayLink: CADisplayLink?
@@ -29,10 +30,12 @@ final class SnapshotTaker: EventSource {
         }
     }
     
-    init(captureService: ScreenCaptureService,
+    init(captureService: ImageCaptureService,
+         compression: SessionReplayOptions.CompressionMethod,
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue) {
         self.captureService = captureService
+        self.tileDiffManager = TileDiffManager(compression: compression, scale: 1.0)
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
         
@@ -115,21 +118,44 @@ final class SnapshotTaker: EventSource {
         let lastFrameDispatchTime = DispatchTime.now()
         self.lastFrameDispatchTime = lastFrameDispatchTime
         
-        captureService.captureUIImage { capturedImage in
-            guard let capturedImage else {
+        captureService.captureRawFrame { rawFrame in
+            guard let rawFrame else {
+                // dropped frame
+                return
+            }
+
+            guard let capturedFrame = self.tileDiffManager.computeDiffCapture(frame: rawFrame) else {
                 // dropped frame
                 return
             }
             
-            guard let exportImage = capturedImage.image.exportImage(format: .jpeg(quality: 0.3),
-                                                                    originalSize: capturedImage.renderSize,
-                                                                    scale: capturedImage.scale,
-                                                                    timestamp: capturedImage.timestamp,
-                                                                    orientation: capturedImage.orientation) else {
+            guard let exportFrame = self.exportFrame(from: capturedFrame) else {
+                // dropped frame
                 return
             }
             
-            await self.eventQueue.send(ImageItemPayload(exportImage: exportImage))
+            await self.eventQueue.send(ImageItemPayload(exportFrame: exportFrame))
         }
+    }
+    
+    private func exportFrame(from capturedFrame: TiledFrame) -> ExportFrame? {
+        let format = ExportFormat.jpeg(quality: 0.3)
+        var exportedFrames = [ExportFrame.ExportImage]()
+        for tile in capturedFrame.tiles {
+            guard let exportedFrame = tile.image.asExportedImage(format: format, rect: tile.rect) else {
+                return nil
+            }
+            exportedFrames.append(exportedFrame)
+        }
+        guard !exportedFrames.isEmpty else { return nil }
+        
+        return ExportFrame(images: exportedFrames,
+                           originalSize: capturedFrame.originalSize,
+                           scale: capturedFrame.scale,
+                           format: format,
+                           timestamp: capturedFrame.timestamp,
+                           orientation: capturedFrame.orientation,
+                           isKeyframe: capturedFrame.isKeyframe,
+                           imageSignature: capturedFrame.imageSignature)
     }
 }
