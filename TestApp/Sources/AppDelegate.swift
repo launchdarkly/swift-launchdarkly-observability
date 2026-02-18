@@ -25,15 +25,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     otlpEndpoint: "https://otel.observability.ld-stg.launchdarkly.com:4318",
                     backendUrl: "https://pub.observability.ld-stg.launchdarkly.com/",
 
-        //let mobileKey = "mob-f2aca03d-4a84-4b9d-bc35-db20cbb4ca0a" // iOS Session Production
-        //let config = { () -> LDConfig in
-        //    var config = LDConfig(
-        //        mobileKey: mobileKey,
-        //        autoEnvAttributes: .enabled
-        //    )
-        //    config.plugins = [
-        //        Observability(options: .init(
-        //            serviceName: "i-os-sessions",
+//        let mobileKey = "mob-f2aca03d-4a84-4b9d-bc35-db20cbb4ca0a" // iOS Session Production
+//        let config = { () -> LDConfig in
+//            var config = LDConfig(
+//                mobileKey: mobileKey,
+//                autoEnvAttributes: .enabled
+//            )
+//            config.plugins = [
+//                Observability(options: .init(
+//                    serviceName: "i-os-sessions",
                     
                     sessionBackgroundTimeout: 3,
                    )),

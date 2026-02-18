@@ -38,7 +38,7 @@ struct SessionReplayContext {
 }
 
 final class SessionReplayService: SessionReplayServicing {
-    let snapshotTaker: SnapshotTaker
+    let captureManager: CaptureManager
     var transportService: TransportServicing
     var sessionReplayExporter: SessionReplayExporter
     let userInteractionManager: UserInteractionManager
@@ -66,11 +66,12 @@ final class SessionReplayService: SessionReplayServicing {
         }
         self.log = observabilityContext.options.log
         let graphQLClient = GraphQLClient(endpoint: url)
-        let captureService = ScreenCaptureService(options: sessonReplayOptions)
+        let captureService = ImageCaptureService(options: sessonReplayOptions)
         self.transportService = observabilityContext.transportService
-        self.snapshotTaker = SnapshotTaker(captureService: captureService,
-                                           appLifecycleManager: observabilityContext.appLifecycleManager,
-                                           eventQueue: transportService.eventQueue)
+        self.captureManager = CaptureManager(captureService: captureService,
+                                             compression: sessonReplayOptions.compression,
+                                             appLifecycleManager: observabilityContext.appLifecycleManager,
+                                             eventQueue: transportService.eventQueue)
         self.userInteractionManager = observabilityContext.userInteractionManager
         
         let sessionReplayContext = SessionReplayContext(
@@ -118,7 +119,7 @@ final class SessionReplayService: SessionReplayServicing {
             }
             .store(in: &cancellables)
             
-        snapshotTaker.isEnabled = true
+        captureManager.isEnabled = true
     }
     
     @MainActor
@@ -129,6 +130,6 @@ final class SessionReplayService: SessionReplayServicing {
     @MainActor
     private func internalStop() {
         cancellables.removeAll()
-        snapshotTaker.isEnabled = false
+        captureManager.isEnabled = false
     }
 }

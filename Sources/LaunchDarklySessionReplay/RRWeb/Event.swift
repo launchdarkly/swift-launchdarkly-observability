@@ -33,6 +33,8 @@ struct AnyEventData: Codable {
                 self.value = try CanvasDrawData(from: decoder)
             } else if src == .mouseMove {
                 self.value = try MouseMoveEventData(from: decoder)
+            } else if src == .mutation {
+                self.value = try MutationData(from: decoder)
             } else {
                 self.value = try MouseInteractionData(from: decoder)
             }
