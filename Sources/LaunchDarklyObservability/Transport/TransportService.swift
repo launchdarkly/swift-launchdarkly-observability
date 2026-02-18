@@ -4,11 +4,6 @@ import Combine
 public protocol EventSource: AnyObject {
 }
 
-public protocol TransportingService {
-    func start() async
-    func stop() async
-}
-
 public protocol TransportServicing {
     var eventQueue: EventQueue { get }
     var batchWorker: BatchWorker  { get set }
@@ -16,7 +11,7 @@ public protocol TransportServicing {
     func stop()
 }
 
-final class TransportService: TransportServicing, TransportingService {
+final class TransportService: TransportServicing {
     public let eventQueue: EventQueue
     private let sessionManager: SessionManaging
     private var isRunning: Bool = false
