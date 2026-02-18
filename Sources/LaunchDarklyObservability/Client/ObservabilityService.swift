@@ -319,19 +319,7 @@ extension ObservabilityService {
     }
 
     func start() {
-        startQueue.sync {
-            guard task == nil else { return }
-            task = Task { [weak self] in
-                guard let self else { return }
-
-                do {
-                    self.context?.sessionManager.start(sessionId: SecureIDGenerator.generateSecureID())
-                    try await self.start()
-                } catch {
-                    os_log("%{public}@", log: options.log, type: .error, "Failure starting Observability Service: \(error)")
-                }
-            }
-        }
+        start(sessionId: SecureIDGenerator.generateSecureID())
     }
 }
 
