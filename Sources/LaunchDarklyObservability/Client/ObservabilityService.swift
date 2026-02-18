@@ -115,7 +115,7 @@ final class ObservabilityService: InternalObserve {
         
         // MARK: - Metrics
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.metricsPath) else {
-            throw InstrumentationError.invalidTraceExporterUrl
+            throw InstrumentationError.invalidMetricExporterUrl
         }
         
         let metricsEventExporter = OtlpMetricEventExporter(
