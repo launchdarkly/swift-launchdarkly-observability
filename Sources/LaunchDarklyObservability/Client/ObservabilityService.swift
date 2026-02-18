@@ -16,7 +16,6 @@ final class ObservabilityService: InternalObserve {
     public var context: ObservabilityContext?
     
     private let autoInstrumentationSamplingInterval: TimeInterval = 5.0
-    private let batchWorker: BatchWorker
     private let transportService: TransportService
     private let sessionManager: SessionManager
     private let eventQueue: EventQueue
@@ -89,7 +88,6 @@ final class ObservabilityService: InternalObserve {
         
         // MARK: - BatchWorker
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
-        self.batchWorker = batchWorker
         
         // MARK: - Transport Service
         let transportService = TransportService(eventQueue: eventQueue,
@@ -109,6 +107,9 @@ final class ObservabilityService: InternalObserve {
         let appLogClient = AppLogClient(logLevel: options.logsApiLevel, logger: logClient)
         self.appLogClient = appLogClient
         let logExporter = OtlpLogExporter(endpoint: url)
+        Task {
+            await batchWorker.addExporter(logExporter)
+        }
         
         self.appLogBuilder = appLogBuilder
         self.logExporter = logExporter
@@ -123,7 +124,9 @@ final class ObservabilityService: InternalObserve {
             endpoint: url,
             config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
         )
-        
+        Task {
+            await batchWorker.addExporter(metricsEventExporter)
+        }
         self.metricsEventExporter = metricsEventExporter
         let metricsScheduleExporter = OtlpMetricScheduleExporter(eventQueue: eventQueue)
         let reader = PeriodicMetricReaderBuilder(exporter: metricsScheduleExporter)
@@ -153,8 +156,10 @@ final class ObservabilityService: InternalObserve {
             endpoint: url,
             config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
         )
-        self.traceEventExporter = traceEventExporter
-        
+        Task {
+            await batchWorker.addExporter(traceEventExporter)
+        }
+        self.traceEventExporter = traceEventExporter        
         
         let tracerDecorator = TracerDecorator(
             options: options,
@@ -197,9 +202,6 @@ final class ObservabilityService: InternalObserve {
 extension ObservabilityService {
     private func start() async throws {
         let options = self.options
-        await batchWorker.addExporter(logExporter)
-        await batchWorker.addExporter(metricsEventExporter)
-        await batchWorker.addExporter(traceEventExporter)
         
         transportService.start()
         
