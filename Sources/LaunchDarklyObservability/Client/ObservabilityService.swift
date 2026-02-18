@@ -41,6 +41,7 @@ final class ObservabilityService: InternalObserve {
     private let userInteractionManager: UserInteractionManager
     private var crashReporting: CrashReporting?
     
+    private let startQueue = DispatchQueue(label: "com.launchdarkly.observability.service.start")
     private var task: Task<Void, Never>?
     
     init(
@@ -301,32 +302,34 @@ extension ObservabilityService {
 
 extension ObservabilityService {
     func start(sessionId: String) {
-        guard task == nil else { return }
-        
-        task = Task { [weak self] in
-            guard let self else { return }
-            let id = SessionIdResolver.resolve(sessionId: sessionId, log: options.log)
+        startQueue.sync {
+            guard task == nil else { return }
+            task = Task { [weak self] in
+                guard let self else { return }
+                let id = SessionIdResolver.resolve(sessionId: sessionId, log: options.log)
 
-            do {
-                self.context?.sessionManager.start(sessionId: id)
-                try await self.start()
-            } catch {
-                os_log("%{public}@", log: options.log, type: .error, "Failure starting Observability Service: \(error)")
+                do {
+                    self.context?.sessionManager.start(sessionId: id)
+                    try await self.start()
+                } catch {
+                    os_log("%{public}@", log: options.log, type: .error, "Failure starting Observability Service: \(error)")
+                }
             }
         }
     }
-    
+
     func start() {
-        guard task == nil else { return }
-        
-        task = Task { [weak self] in
-            guard let self else { return }
-            
-            do {
-                self.context?.sessionManager.start(sessionId: SecureIDGenerator.generateSecureID())
-                try await self.start()
-            } catch {
-                os_log("%{public}@", log: options.log, type: .error, "Failure starting Observability Service: \(error)")
+        startQueue.sync {
+            guard task == nil else { return }
+            task = Task { [weak self] in
+                guard let self else { return }
+
+                do {
+                    self.context?.sessionManager.start(sessionId: SecureIDGenerator.generateSecureID())
+                    try await self.start()
+                } catch {
+                    os_log("%{public}@", log: options.log, type: .error, "Failure starting Observability Service: \(error)")
+                }
             }
         }
     }
