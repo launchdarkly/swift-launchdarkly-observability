@@ -375,3 +375,12 @@ extension ObservabilityService: Observe {
         tracer.startSpan(name: name, attributes: attributes)
     }
 }
+
+extension ObservabilityService {
+    // Will not throw error using default params
+    static let noOp = try! ObservabilityService(
+        options: .init(),
+        mobileKey: "",
+        sessionAttributes: [:]
+    )
+}
