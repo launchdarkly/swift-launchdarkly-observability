@@ -60,14 +60,4 @@ final class TransportService: TransportServicing, TransportingService {
             await batchWorker.stop()
         }
     }
-    
-    public func start() async {
-        guard !isRunning else { return }
-        await batchWorker.start()
-    }
-    
-    public func stop() async {
-        guard isRunning else { return }
-        await batchWorker.stop()
-    }
 }

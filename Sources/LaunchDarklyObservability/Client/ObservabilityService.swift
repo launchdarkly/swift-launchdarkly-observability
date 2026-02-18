@@ -192,7 +192,7 @@ extension ObservabilityService {
         await batchWorker.addExporter(metricsEventExporter)
         await batchWorker.addExporter(traceEventExporter)
         
-        await transportService.start()
+        transportService.start()
         
         // MARK: - Network
         if options.instrumentation.launchTimes.isEnabled {
