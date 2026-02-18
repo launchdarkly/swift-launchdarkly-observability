@@ -181,6 +181,7 @@ public struct Options {
             self.launchTimes = launchTimes
         }
     }
+    public var isEnabled: Bool
     public var serviceName: String
     public var serviceVersion: String
     public var otlpEndpoint: String
@@ -198,9 +199,9 @@ public struct Options {
     public var log: OSLog
     public var crashReporting: CrashReporting
     public var instrumentation: Instrumentation
-    public var isEnabled: Bool
     
     public init(
+        isEnabled: Bool = true,
         serviceName: String = "observability-swift",
         serviceVersion: String = "0.1.0",
         otlpEndpoint: String = "https://otel.observability.app.launchdarkly.com:4318",
@@ -217,8 +218,7 @@ public struct Options {
         metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: CrashReporting = .enabled,
-        instrumentation: Instrumentation = .init(),
-        isEnabled: Bool = true
+        instrumentation: Instrumentation = .init()
     ) {
         self.serviceName = serviceName
         self.serviceVersion = serviceVersion

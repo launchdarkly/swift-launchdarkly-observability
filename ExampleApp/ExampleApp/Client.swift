@@ -11,6 +11,7 @@ struct Client {
         config.plugins = [
             Observability(
                 options: .init(
+                    isEnabled: false,
                     otlpEndpoint: Env.otelHost,
                     sessionBackgroundTimeout: 3,
                     isDebug: true,
@@ -25,8 +26,7 @@ struct Client {
                         memoryWarnings: .enabled,
                         cpu: .disabled,
                         launchTimes: .enabled
-                    ),
-                    isEnabled: false
+                    )
                 )
             ),
             SessionReplay(
