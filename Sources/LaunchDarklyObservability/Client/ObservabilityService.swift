@@ -176,7 +176,9 @@ final class ObservabilityService: InternalObserve {
         self.tracer = appTraceClient
         self.appTraceClient = appTraceClient
         
-        let userInteractionManager = UserInteractionManager(options: options)
+        let userInteractionManager = UserInteractionManager(options: options) { interaction in
+            interaction.startEndSpan(tracer: tracerDecorator)
+        }
         self.userInteractionManager = userInteractionManager
         
         let context = ObservabilityContext(
@@ -225,10 +227,6 @@ extension ObservabilityService {
             )
         }
         
-        let tracer = tracerDecorator
-        userInteractionManager.setYield { interaction in
-            interaction.startEndSpan(tracer: tracer)
-        }
         userInteractionManager.start()
         
         if options.instrumentation.memory.isEnabled {

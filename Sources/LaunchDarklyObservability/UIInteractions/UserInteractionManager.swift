@@ -20,21 +20,6 @@ public final class UserInteractionManager {
             subject.send(interaction)
         }
     }
-    
-    init(options: Options) {
-        let targetResolver = TargetResolver()
-        self.touchCaptureCoordinator = TouchCaptureCoordinator(targetResolver: targetResolver)        
-    }
-    
-    func setYield(_ yield: TouchInteractionYield?) {
-        guard let yield else {
-            return self.touchCaptureCoordinator.yield = nil
-        }
-        self.touchCaptureCoordinator.yield = { [subject] interaction in
-        yield(interaction)
-        subject.send(interaction)
-    }
-    }
         
     func start() {
         touchCaptureCoordinator.start()
