@@ -43,7 +43,7 @@ public final class Observability: Plugin {
         options.customHeaders = customHeaders
         
         do {
-            guard LDObserve.shared.client === ObservabilityService.noOp else {
+            guard LDObserve.shared.client === NoOpObservabilityService.shared else {
                 throw PluginError.observabilityInstanceAlreadyExist
             }
             let service = try ObservabilityService(
