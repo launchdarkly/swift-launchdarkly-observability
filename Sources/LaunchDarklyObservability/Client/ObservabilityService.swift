@@ -40,8 +40,6 @@ final class ObservabilityService: InternalObserve {
     
     private let userInteractionManager: UserInteractionManager
     private var crashReporting: CrashReporting?
-    private let sampler: CustomSampler
-    private let graphQLClient: GraphQLClient
     
     private var task: Task<Void, Never>?
     
@@ -54,9 +52,22 @@ final class ObservabilityService: InternalObserve {
         self.mobileKey = mobileKey
         self.sessionAttributes = sessionAttributes
         
-        // MARK: - Sampler
+        // MARK: - Sampling
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
-        self.sampler = sampler
+        guard let url = URL(string: options.backendUrl) else {
+            throw InstrumentationError.invalidGraphQLUrl
+        }
+        let graphQLClient = GraphQLClient(endpoint: url)
+        
+        Task {
+            do {
+                let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
+                let config = try await samplingConfigClient.getSamplingConfig(mobileKey: mobileKey)
+                sampler.setConfig(config)
+            } catch {
+                os_log("%{public}@", log: options.log, type: .error, "getSamplingConfig failed with error: \(error)")
+            }
+        }
         
         // MARK: - AppLifecycleManager
         let appLifecycleManager = AppLifecycleManager()
@@ -79,11 +90,13 @@ final class ObservabilityService: InternalObserve {
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
         self.batchWorker = batchWorker
         
+        // MARK: - Transport Service
         let transportService = TransportService(eventQueue: eventQueue,
                                                 batchWorker: batchWorker,
                                                 sessionManager: sessionManager,
                                                 appLifecycleManager: appLifecycleManager)
         self.transportService = transportService
+        
         // MARK: - Logging
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.logsPath) else {
             throw InstrumentationError.invalidLogExporterUrl
@@ -164,13 +177,6 @@ final class ObservabilityService: InternalObserve {
         
         let userInteractionManager = UserInteractionManager(options: options)
         self.userInteractionManager = userInteractionManager
-        
-        
-        guard let url = URL(string: options.backendUrl) else {
-            throw InstrumentationError.invalidGraphQLUrl
-        }
-        let graphQLClient = GraphQLClient(endpoint: url)
-        self.graphQLClient = graphQLClient
         
         let context = ObservabilityContext(
             sdkKey: mobileKey,
@@ -286,15 +292,7 @@ extension ObservabilityService {
             crashReporting = NoOpCrashReport()
         }
         self.crashReporting = crashReporting
-        
-        do {
-            let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
-            let config = try await samplingConfigClient.getSamplingConfig(mobileKey: mobileKey)
-            sampler.setConfig(config)
-        } catch {
-            os_log("%{public}@", log: options.log, type: .error, "getSamplingConfig failed with error: \(error)")
-        }
-        
+
         for instrument in instruments {
             instrument.start()
         }
