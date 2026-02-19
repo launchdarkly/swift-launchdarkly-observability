@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.18.2...0.19.0) (2026-02-18)
+
+
+### Features
+
+* Tile compression - backtracking layers level ([#137](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/137)) ([56d86da](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/56d86da9a4dff005de81102da4d38d517c443763))
+
 ## [0.18.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.18.1...0.18.2) (2026-02-10)
 
 
