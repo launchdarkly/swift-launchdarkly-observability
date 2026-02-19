@@ -13,8 +13,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         guard let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
             fatalError("Missing mobileKey in Info.plist. See Secrets.xcconfig.example.")
         }
-        let otlpEndpoint = secrets["otlpEndpoint"] as? String
-        let backendUrl = secrets["backendUrl"] as? String
+        let otlpEndpoint = secrets["otlpEndpoint1"] as? String
+        let backendUrl = secrets["backendUrl1"] as? String
         let config = { () -> LDConfig in
             var config = LDConfig(
                     mobileKey: mobileKey,
@@ -25,17 +25,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     serviceName: "alexis-perf",
                     otlpEndpoint: otlpEndpoint,
                     backendUrl: backendUrl,
-
-//        let mobileKey = "mob-f2aca03d-4a84-4b9d-bc35-db20cbb4ca0a" // iOS Session Production
-//        let config = { () -> LDConfig in
-//            var config = LDConfig(
-//                mobileKey: mobileKey,
-//                autoEnvAttributes: .enabled
-//            )
-//            config.plugins = [
-//                Observability(options: .init(
-//                    serviceName: "i-os-sessions",
-                    
                     sessionBackgroundTimeout: 3,
                    )),
                 SessionReplay(options: .init(
