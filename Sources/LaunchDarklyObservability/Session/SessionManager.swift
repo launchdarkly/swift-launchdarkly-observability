@@ -115,6 +115,7 @@ final class SessionManager: SessionManaging {
         let newSessionInfo = SessionInfo(id: sessionId, startTime: Date())
         stateQueue.sync(flags: .barrier) { [weak self] in
             self?._sessionInfo = newSessionInfo
+            self?.backgroundTime = nil
         }
 
         // Notify publisher subscribers (e.g. SessionReplayExporter) so they pick up the new session ID.
