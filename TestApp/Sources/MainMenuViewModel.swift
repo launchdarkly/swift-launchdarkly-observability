@@ -12,15 +12,18 @@ final class MainMenuViewModel: ObservableObject {
 		)
 	}
 	
+    
+
 	func recordSpanAndVariation() {
 		let span = LDObserve.shared.startSpan(
 			name: "button-pressed",
 			attributes: [:]
 		)
 		_ = LDClient.get()?.boolVariation(
-			forKey: "my-feature",
+			forKey: "feature1",
 			defaultValue: false
 		)
+        
 		span.end()
 	}
 	

@@ -13,8 +13,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
               let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
             fatalError("Missing mobileKey in Info.plist. See Secrets.xcconfig.example.")
         }
-        let otlpEndpoint = secrets["otlpEndpoint1"] as? String
-        let backendUrl = secrets["backendUrl1"] as? String
+        let otlpEndpoint = secrets["otlpEndpoint"] as? String
+        let backendUrl = secrets["backendUrl"] as? String
         let config = { () -> LDConfig in
             var config = LDConfig(
                     mobileKey: mobileKey,
@@ -66,6 +66,25 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             startWaitSeconds: 5.0,
             completion: completion
         )
+        
+        flagEvaluation()
+
         return true
+    }
+    
+  
+    lazy var client = LDClient.get()!
+    let flagKey = "feature1"
+    lazy var flagObserverOwner = flagKey as LDObserverOwner
+  
+    func flagEvaluation() {
+        let key = flagKey
+        let value = client.boolVariation(forKey: key, defaultValue: false)
+        print("sync \(key) value=", value)
+        client.observe(keys: [key], owner: flagObserverOwner, handler: { changedFlags in
+            if let value = changedFlags[key] {
+                print("observe \(key) value=", value)
+            }
+        })
     }
 }
