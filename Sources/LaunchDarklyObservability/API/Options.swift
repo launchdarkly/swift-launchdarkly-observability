@@ -21,8 +21,8 @@ import OSLog
 
 public struct Options {
     public enum Defaults {
-        static let otlpEndpoint = "https://otel.observability.app.launchdarkly.com:4318"
-        static let backendUrl = "https://pub.observability.app.launchdarkly.com"
+        public static let otlpEndpoint = "https://otel.observability.app.launchdarkly.com:4318"
+        public static let backendUrl = "https://pub.observability.app.launchdarkly.com"
     }
 
     public enum LogLevel: Int, Comparable, CustomStringConvertible, CaseIterable {

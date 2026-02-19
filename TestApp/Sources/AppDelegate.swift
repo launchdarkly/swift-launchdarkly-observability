@@ -8,9 +8,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
-    ) -> Bool {
-        let secrets = Bundle.main.infoDictionary!
-        guard let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
+    ) -> Bool {        
+        guard let secrets = Bundle.main.infoDictionary,
+              let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
             fatalError("Missing mobileKey in Info.plist. See Secrets.xcconfig.example.")
         }
         let otlpEndpoint = secrets["otlpEndpoint1"] as? String
