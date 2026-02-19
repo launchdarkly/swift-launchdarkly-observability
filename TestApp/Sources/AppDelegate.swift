@@ -13,12 +13,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         guard let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
             fatalError("Missing mobileKey in Info.plist. See Secrets.xcconfig.example.")
         }
-        guard let otlpEndpoint = secrets["otlpEndpoint"] as? String, !otlpEndpoint.isEmpty else {
-            fatalError("Missing otlpEndpoint in Info.plist. See Secrets.xcconfig.example.")
-        }
-        guard let backendUrl = secrets["backendUrl"] as? String, !backendUrl.isEmpty else {
-            fatalError("Missing backendUrl in Info.plist. See Secrets.xcconfig.example.")
-        }
+        let otlpEndpoint = secrets["otlpEndpoint"] as? String
+        let backendUrl = secrets["backendUrl"] as? String
         let config = { () -> LDConfig in
             var config = LDConfig(
                     mobileKey: mobileKey,
