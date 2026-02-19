@@ -126,10 +126,6 @@ final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashRe
     private let log: OSLog
     private var _isStarted: Bool = false
     private let isStartedQueue = DispatchQueue(label: "com.launchdarkly.swift.MetricKitCrashReporter.isStartedQueue")
-    private var isStarted: Bool {
-        get { isStartedQueue.sync { _isStarted } }
-        set { isStartedQueue.sync { _isStarted = newValue } }
-    }
     
     init(logsApi: LogsApi, logger log: OSLog) {
         self.logsApi = logsApi
