@@ -186,6 +186,7 @@ public struct Options {
             self.launchTimes = launchTimes
         }
     }
+    public var isEnabled: Bool
     public var serviceName: String
     public var serviceVersion: String
     public var otlpEndpoint: String
@@ -205,6 +206,7 @@ public struct Options {
     public var instrumentation: Instrumentation
     
     public init(
+        isEnabled: Bool = true,
         serviceName: String = "observability-swift",
         serviceVersion: String = "0.1.0",
         otlpEndpoint: String? = nil,
@@ -240,6 +242,7 @@ public struct Options {
         self.log = log
         self.crashReporting = crashReporting
         self.instrumentation = instrumentation
+        self.isEnabled = isEnabled
     }
 }
 

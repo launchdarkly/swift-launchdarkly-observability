@@ -14,6 +14,7 @@ final class MemoryPressureMonitor: AutoInstrumentation {
     }
     
     func start() {
+        guard source == nil else { return }
         startMonitoring()
     }
     

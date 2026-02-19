@@ -124,6 +124,8 @@ fileprivate let formatter: ISO8601DateFormatter = {
 final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashReporting, AutoInstrumentation {
     private let logsApi: LogsApi
     private let log: OSLog
+    private var _isStarted: Bool = false
+    private let isStartedQueue = DispatchQueue(label: "com.launchdarkly.swift.MetricKitCrashReporter.isStartedQueue")
     
     init(logsApi: LogsApi, logger log: OSLog) {
         self.logsApi = logsApi
@@ -134,11 +136,19 @@ final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashRe
     // MARK: - Public API
 
     func start() {
-        MXMetricManager.shared.add(self)
+        isStartedQueue.sync {
+            guard _isStarted == false else { return }
+            MXMetricManager.shared.add(self)
+            _isStarted = true
+        }
     }
 
     func stop() {
-        MXMetricManager.shared.remove(self)
+        isStartedQueue.sync {
+            guard _isStarted else { return }
+            MXMetricManager.shared.remove(self)
+            _isStarted = false
+        }
     }
     
     /// Diagnostics (crashes, hangs, exceptions)

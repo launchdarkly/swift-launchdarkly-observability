@@ -18,8 +18,18 @@ public final class LDObserve  {
     public static let shared = LDObserve()
     public var context: ObservabilityContext?
     
-    init(client: Observe = ObservabilityClientFactory.noOp) {
+    init(client: Observe = NoOpObservabilityService.shared) {
         self._client = client
+    }
+}
+
+extension LDObserve {
+    public func start(sessionId: String) {
+        client.start(sessionId: sessionId)
+    }
+    
+    public func start() {
+        client.start()
     }
 }
 

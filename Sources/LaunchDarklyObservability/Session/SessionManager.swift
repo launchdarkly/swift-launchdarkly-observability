@@ -8,6 +8,7 @@ import OSLog
 
 public protocol SessionManaging {
     func publisher() -> AnyPublisher<SessionInfo, Never>
+    func start(sessionId: String)
     var sessionInfo: SessionInfo { get }
 }
 
@@ -18,6 +19,7 @@ final class SessionManager: SessionManaging {
     private var _sessionInfo = SessionInfo()
     private var backgroundTime: DispatchTime?
     private var cancellables = Set<AnyCancellable>()
+    private let cancellablesQueue = DispatchQueue(label: "com.launchdarkly.observability.cancellables")
     private let notificationQueue = DispatchQueue(label: "com.launchdarkly.observability.session-notifications")
         
     private let stateQueue = DispatchQueue(
@@ -28,19 +30,19 @@ final class SessionManager: SessionManaging {
         self.options = options
         self.appLifecycleManager = appLifecycleManager
         self._sessionInfo = SessionInfo()
-        
-        appLifecycleManager
-            .publisher()
-            .sink { [weak self] event in
-                self?.transition(to: event)
-            }
-            .store(in: &cancellables)
     }
     
     var sessionInfo: SessionInfo {
         // Consider using atomic synchronization
-        stateQueue.sync() {
-            return _sessionInfo
+        get {
+            stateQueue.sync() {
+                return _sessionInfo
+            }
+        }
+        set {
+            stateQueue.sync(flags: .barrier) {
+                _sessionInfo = newValue
+            }
         }
     }
 
@@ -96,6 +98,35 @@ final class SessionManager: SessionManaging {
             os_log("%{public}@", log: options.log, type: .info, "🔄 Session reset: \(oldSession.id) -> \(_sessionInfo.id)")
             let dateInterval = DateInterval(start: oldSession.startTime, end: newSession.startTime)
             os_log("%{public}@", log: options.log, type: .info, "Session duration: \(dateInterval.duration) seconds")
+        }
+    }
+    
+    func start(sessionId: String = SecureIDGenerator.generateSecureID()) {
+        cancellablesQueue.sync {
+            cancellables.removeAll()
+            appLifecycleManager
+                .publisher()
+                .sink { [weak self] event in
+                    self?.transition(to: event)
+                }
+                .store(in: &cancellables)
+        }
+
+        let newSessionInfo = SessionInfo(id: sessionId, startTime: Date())
+        stateQueue.sync(flags: .barrier) { [weak self] in
+            self?._sessionInfo = newSessionInfo
+            self?.backgroundTime = nil
+        }
+
+        // Notify publisher subscribers (e.g. SessionReplayExporter) so they pick up the new session ID.
+        notificationQueue.async { [weak self] in
+            self?.subject.send(newSessionInfo)
+        }
+    }
+
+    func stop() {
+        cancellablesQueue.sync {
+            cancellables.removeAll()
         }
     }
 }
