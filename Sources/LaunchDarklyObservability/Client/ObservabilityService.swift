@@ -21,13 +21,10 @@ final class ObservabilityService: InternalObserve {
     private let appLifecycleManager: AppLifecycleManager
     
     private let loggerClient: LogClient
-    private let appLogClient: AppLogClient
     
     private let metricsClient: MetricsApi
-    private let appMetricsClient: AppMetricsClient
     
     private let traceClient: TraceClient
-    private let appTraceClient: AppTraceClient
     private let tracerDecorator: TracerDecorator
     
     private var instruments = [AutoInstrumentation]()
@@ -98,7 +95,6 @@ final class ObservabilityService: InternalObserve {
         let logClient = LogClient(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
         self.loggerClient = logClient
         let appLogClient = AppLogClient(logLevel: options.logsApiLevel, logger: logClient)
-        self.appLogClient = appLogClient
         let logExporter = OtlpLogExporter(endpoint: url)
         Task {
             await batchWorker.addExporter(logExporter)
@@ -134,7 +130,6 @@ final class ObservabilityService: InternalObserve {
             options: options.metricsApi,
             metricsApiClient: metricsClient
         )
-        self.appMetricsClient = appMetricsClient
         self.meter = appMetricsClient
         
         // MARK: - Tracing
@@ -149,7 +144,7 @@ final class ObservabilityService: InternalObserve {
         )
         Task {
             await batchWorker.addExporter(traceEventExporter)
-        }        
+        }
         
         let tracerDecorator = TracerDecorator(
             options: options,
@@ -169,7 +164,6 @@ final class ObservabilityService: InternalObserve {
             tracingApiClient: traceClient
         )
         self.tracer = appTraceClient
-        self.appTraceClient = appTraceClient
         
         let userInteractionManager = UserInteractionManager(options: options) { interaction in
             interaction.startEndSpan(tracer: tracerDecorator)
