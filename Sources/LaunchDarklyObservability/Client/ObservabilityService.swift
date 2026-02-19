@@ -11,8 +11,6 @@ final class ObservabilityService: InternalObserve {
     private let meter: MetricsApi
     private let tracer: TracesApi
     private let options: Options
-    private let mobileKey: String
-    private let sessionAttributes: [String: AttributeValue]
     public var context: ObservabilityContext?
     
     private let autoInstrumentationSamplingInterval: TimeInterval = 5.0
@@ -21,9 +19,6 @@ final class ObservabilityService: InternalObserve {
     private let eventQueue: EventQueue
     private let appLogBuilder: AppLogBuilder
     private let appLifecycleManager: AppLifecycleManager
-    private let logExporter: OtlpLogExporter
-    private let metricsEventExporter: OtlpMetricEventExporter
-    private let traceEventExporter: OtlpTraceEventExporter
     
     private let loggerClient: LogClient
     private let appLogClient: AppLogClient
@@ -49,8 +44,6 @@ final class ObservabilityService: InternalObserve {
         sessionAttributes: [String: AttributeValue]
     ) throws {
         self.options = options
-        self.mobileKey = mobileKey
-        self.sessionAttributes = sessionAttributes
         
         // MARK: - Sampling
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
@@ -112,7 +105,6 @@ final class ObservabilityService: InternalObserve {
         }
         
         self.appLogBuilder = appLogBuilder
-        self.logExporter = logExporter
         self.logger = appLogClient
         
         // MARK: - Metrics
@@ -127,7 +119,6 @@ final class ObservabilityService: InternalObserve {
         Task {
             await batchWorker.addExporter(metricsEventExporter)
         }
-        self.metricsEventExporter = metricsEventExporter
         let metricsScheduleExporter = OtlpMetricScheduleExporter(eventQueue: eventQueue)
         let reader = PeriodicMetricReaderBuilder(exporter: metricsScheduleExporter)
             .setInterval(timeInterval: 10.0)
@@ -158,8 +149,7 @@ final class ObservabilityService: InternalObserve {
         )
         Task {
             await batchWorker.addExporter(traceEventExporter)
-        }
-        self.traceEventExporter = traceEventExporter        
+        }        
         
         let tracerDecorator = TracerDecorator(
             options: options,
