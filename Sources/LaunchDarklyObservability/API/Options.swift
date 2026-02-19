@@ -20,6 +20,9 @@ import OSLog
 ///
 
 public struct Options {
+    public static let defaultOtlpEndpoint = "https://otel.observability.app.launchdarkly.com:4318"
+    public static let defaultBackendUrl = "https://pub.observability.app.launchdarkly.com"
+
     public enum LogLevel: Int, Comparable, CustomStringConvertible, CaseIterable {
         case
         trace = 1,
@@ -202,8 +205,8 @@ public struct Options {
     public init(
         serviceName: String = "observability-swift",
         serviceVersion: String = "0.1.0",
-        otlpEndpoint: String = "https://otel.observability.app.launchdarkly.com:4318",
-        backendUrl: String = "https://pub.observability.app.launchdarkly.com",
+        otlpEndpoint: String? = nil,
+        backendUrl: String? = nil,
         contextFriendlyName: String? = nil,
         resourceAttributes: [String: AttributeValue] = [:],
         customHeaders: [String: String] = [:],
@@ -220,8 +223,8 @@ public struct Options {
     ) {
         self.serviceName = serviceName
         self.serviceVersion = serviceVersion
-        self.otlpEndpoint = otlpEndpoint
-        self.backendUrl = backendUrl
+        self.otlpEndpoint = otlpEndpoint.flatMap { $0.isEmpty ? nil : $0 } ?? Self.defaultOtlpEndpoint
+        self.backendUrl = backendUrl.flatMap { $0.isEmpty ? nil : $0 } ?? Self.defaultBackendUrl
         self.contextFriendlyName = contextFriendlyName
         self.resourceAttributes = resourceAttributes
         self.customHeaders = customHeaders

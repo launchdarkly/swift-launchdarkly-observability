@@ -9,11 +9,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
-        //let mobileKey = "mob-48fd3788-eab7-4b72-b607-e41712049dbd"
-        let mobileKey = "mob-a211d8b4-9f80-4170-ba05-0120566a7bd7" // Andrey Sessions stg production
-
-
-        //let mobileKey = "mob-d6e200b8-4a13-4c47-8ceb-7eb1f1705070" // Spree demo app Alexis Perflet config = { () -> LDConfig in
+        let secrets = Bundle.main.infoDictionary!
+        guard let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
+            fatalError("Missing mobileKey in Info.plist. See Secrets.xcconfig.example.")
+        }
+        guard let otlpEndpoint = secrets["otlpEndpoint"] as? String, !otlpEndpoint.isEmpty else {
+            fatalError("Missing otlpEndpoint in Info.plist. See Secrets.xcconfig.example.")
+        }
+        guard let backendUrl = secrets["backendUrl"] as? String, !backendUrl.isEmpty else {
+            fatalError("Missing backendUrl in Info.plist. See Secrets.xcconfig.example.")
+        }
         let config = { () -> LDConfig in
             var config = LDConfig(
                     mobileKey: mobileKey,
@@ -22,8 +27,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             config.plugins = [
                 Observability(options: .init(
                     serviceName: "alexis-perf",
-                    otlpEndpoint: "https://otel.observability.ld-stg.launchdarkly.com:4318",
-                    backendUrl: "https://pub.observability.ld-stg.launchdarkly.com/",
+                    otlpEndpoint: otlpEndpoint,
+                    backendUrl: backendUrl,
 
 //        let mobileKey = "mob-f2aca03d-4a84-4b9d-bc35-db20cbb4ca0a" // iOS Session Production
 //        let config = { () -> LDConfig in
