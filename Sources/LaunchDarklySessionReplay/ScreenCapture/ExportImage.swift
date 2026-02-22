@@ -32,6 +32,8 @@ struct ExportFrame: Equatable {
     }
     
     let images: [ExportImage]
+//    let add: [ExportImage]
+//    let remove: [UUID]
     let originalSize: CGSize
     let scale: CGFloat
     let format: ExportFormat

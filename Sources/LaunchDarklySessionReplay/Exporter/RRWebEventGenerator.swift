@@ -51,12 +51,14 @@ actor RRWebEventGenerator {
     private let isDebug = false
     private var keyNodeIds = [RemovedNode]()
     private var frameToLastKeyNodeIndex: [ImageSignature: Int] = [:]
+    private var method: SessionReplayOptions.CompressionMethod
     
-    init(log: OSLog, title: String) {
+    init(log: OSLog, title: String, method: SessionReplayOptions.CompressionMethod) {
         if isDebug {
             self.stats = SessionReplayStats(log: log)
         }
         self.title = title
+        self.method = method
     }
     
     func generateEvents(items: [EventQueueItem]) -> [Event] {
@@ -265,7 +267,7 @@ actor RRWebEventGenerator {
                 keyNodeIds.append(RemovedNode(parentId: bodyId, id: tileCanvasId))
                 totalCanvasSize += base64DataURL.count
             }
-            if let signature = exportFrame.imageSignature {
+            if let signature = exportFrame.imageSignature, case .overlayTiles(_, true) = method {
                 frameToLastKeyNodeIndex[signature] = keyNodeIds.count - 1
             }
         }

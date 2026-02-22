@@ -10,6 +10,10 @@ import Common
 
 typealias PrivacySettings = SessionReplayOptions.PrivacyOptions
 
+struct OffsettedArea {
+    var rect: CGRect
+    var offset: CGPoint
+}
 
 final class MaskCollector {
     enum Constants {
@@ -141,8 +145,10 @@ final class MaskCollector {
         self.settings = Settings(privacySettings: privacySettings)
     }
     
-    func collectViewMasks(in rootView: UIView, window: UIWindow, scale: CGFloat) -> [MaskOperation] {
-        var result = [MaskOperation]()
+    func collectViewMasks(in rootView: UIView, window: UIWindow, scale: CGFloat) -> (maskOperations: [MaskOperation], offsetRects: [OffsettedArea]) {
+        var operations = [MaskOperation]()
+        var offsetRects = [OffsettedArea]()
+
         let root = rootView.layer
         let rPresenation = root.presentation() ?? root
         
@@ -162,12 +168,19 @@ final class MaskCollector {
 #if DEBUG
                 operation.accessibilityIdentifier = view.accessibilityIdentifier
 #endif
-                result.append(operation)
+                operations.append(operation)
                 return
             }
             
-            if result.isNotEmpty, !isSystem(view: view, pLayer: layer), !isTransparent(view: view, pLayer: layer) {
-                result.removeAll {
+            if let scrollView = view as? UIScrollView {
+                let offset = scrollView.contentOffset
+                if offset.x != 0 || offset.y != 0 {
+                    offsetRects.append(OffsettedArea(rect: effectiveFrame, offset: offset))
+                }
+            }
+            
+            if operations.isNotEmpty, !isSystem(view: view, pLayer: layer), !isTransparent(view: view, pLayer: layer) {
+                operations.removeAll {
                     effectiveFrame.contains($0.effectiveFrame)
                 }
             }
@@ -179,7 +192,7 @@ final class MaskCollector {
         
         rPresenation.sublayers?.sorted { $0.zPosition < $1.zPosition }.forEach(visit)
         
-        return result
+        return (operations, offsetRects)
     }
     
     func duplicateUnsimilar(before operationsBefore: [MaskOperation], after operationsAfter: [MaskOperation]) -> [MaskOperation]? {

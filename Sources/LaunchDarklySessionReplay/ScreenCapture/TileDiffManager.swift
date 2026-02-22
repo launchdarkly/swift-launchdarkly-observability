@@ -42,7 +42,7 @@ final class TileDiffManager {
         self.scale = scale
     }
 
-    func computeDiffCapture(frame: RawCapturedFrame) -> TiledFrame? {
+    func computeDiffCapture(frame: RawFrame) -> TiledFrame? {
         guard let imageSignature = self.tiledSignatureManager.compute(image: frame.image) else {
             return nil
         }
@@ -57,7 +57,7 @@ final class TileDiffManager {
 
         let needWholeScreen = (diffRect.size.width >= frame.image.size.width && diffRect.size.height >= frame.image.size.height)
         let isKeyframe: Bool
-        if case .overlayTiles(let layers) = compression, layers > 0 {
+        if case .overlayTiles(let layers, _) = compression, layers > 0 {
             incrementalSnapshots = (incrementalSnapshots + 1) % layers
             isKeyframe = needWholeScreen || incrementalSnapshots == 0
             if needWholeScreen {

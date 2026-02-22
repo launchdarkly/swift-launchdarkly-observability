@@ -32,7 +32,7 @@ actor SessionReplayExporter: EventExporting {
         self.replayApiService = replayApiService
         self.sessionManager = context.observabilityContext.sessionManager
         self.title = title
-        self.eventGenerator = RRWebEventGenerator(log: context.log, title: title)
+        self.eventGenerator = RRWebEventGenerator(log: context.log, title: title, method: context.compression)
         self.log = context.log
         self.sessionInfo = sessionManager.sessionInfo
         
@@ -47,7 +47,7 @@ actor SessionReplayExporter: EventExporting {
     
     private func updateSessionInfo(_ sessionInfo: SessionInfo) async {
         self.sessionInfo = sessionInfo
-        self.eventGenerator = RRWebEventGenerator(log: log, title: title)
+        self.eventGenerator = RRWebEventGenerator(log: log, title: title, method: context.compression)
         self.initializedSession = nil
     }
     

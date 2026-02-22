@@ -46,7 +46,7 @@ public struct SessionReplayOptions {
     
     public enum CompressionMethod {
         case screenImage
-        case overlayTiles(layers: Int = 10)
+        case overlayTiles(layers: Int = 10, backtracking: Bool = true)
     }
     
     public var isEnabled: Bool
