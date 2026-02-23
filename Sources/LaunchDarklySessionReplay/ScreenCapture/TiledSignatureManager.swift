@@ -19,8 +19,8 @@ final class TiledSignatureManager {
         guard let image = image.cgImage else { return nil }
         let width = image.width
         let height = image.height
-        let tileWidth = nearestDivisor(value: width, preferred: 64, range: 53...75)
-        let tileHeight = nearestDivisor(value: height, preferred: 11, range: 11...22)
+        let tileWidth = nearestDivisor(value: width, preferred: 64, range: 60...79)
+        let tileHeight = nearestDivisor(value: height, preferred: 22, range: 22...44)
         let columns = (width + tileWidth - 1) / tileWidth
         let rows = (height + tileHeight - 1) / tileHeight
         

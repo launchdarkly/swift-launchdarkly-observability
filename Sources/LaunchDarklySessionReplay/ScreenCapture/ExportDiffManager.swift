@@ -38,6 +38,7 @@ final class ExportDiffManager {
         }
         
         if let signature = tiledFrame.imageSignature,
+           case .overlayTiles(_, true) = compression,
            let lastKeyNodeIdx = currentImagesIndex[signature],
            lastKeyNodeIdx < currentImages.count {
             removes = Array(currentImages[(lastKeyNodeIdx + 1)...])
