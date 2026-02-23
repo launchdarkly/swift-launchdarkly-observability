@@ -126,7 +126,7 @@ final class CaptureManager: EventSource {
                 // dropped frame
                 return
             }
-
+            
             try? self.rawFrameWriter?.write(rawFrame: rawFrame)
 
             guard let exportFrame = self.exportDiffManager.exportFrame(from: rawFrame) else {

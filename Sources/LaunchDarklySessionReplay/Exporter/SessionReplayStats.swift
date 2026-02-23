@@ -22,7 +22,7 @@ final class SessionReplayStats {
     
     func addExportFrame(_ exportFrame: ExportFrame) {
         images += 1
-        imagesSize += Int64(exportFrame.images.reduce(0) { $0 + $1.data.count })
+        imagesSize += Int64(exportFrame.addImages.reduce(0) { $0 + $1.data.count })
         firstImageTimestamp = firstImageTimestamp ?? exportFrame.timestamp
         lastImageTimestamp = exportFrame.timestamp
         

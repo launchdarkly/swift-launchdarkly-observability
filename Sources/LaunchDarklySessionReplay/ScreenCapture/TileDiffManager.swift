@@ -3,10 +3,11 @@ import UIKit
 
 struct TiledFrame {
     struct Tile {
-        public let image: UIImage
-        public let rect: CGRect
+        let image: UIImage
+        let rect: CGRect
     }
     
+    let id: Int
     let tiles: [Tile]
     let scale: CGFloat
     let originalSize: CGSize
@@ -14,7 +15,6 @@ struct TiledFrame {
     let orientation: Int
     let isKeyframe: Bool
     let imageSignature: ImageSignature?
-    
     /// Composites all captured images into a single UIImage by drawing each at its rect.
     func wholeImage() -> UIImage {
         let format = UIGraphicsImageRendererFormat()
@@ -35,7 +35,7 @@ final class TileDiffManager {
     private let scale: CGFloat
     private var previousSignature: ImageSignature?
     private var incrementalSnapshots = 0
-    private let signatureLock = NSLock()
+    private var frameId = 0
 
     init(compression: SessionReplayOptions.CompressionMethod, scale: CGFloat) {
         self.compression = compression
@@ -47,10 +47,8 @@ final class TileDiffManager {
             return nil
         }
 
-        signatureLock.lock()
-
+        frameId += 1
         guard let diffRect = imageSignature.diffRectangle(other: previousSignature) else {
-            signatureLock.unlock()
             return nil
         }
         previousSignature = imageSignature
@@ -66,8 +64,6 @@ final class TileDiffManager {
         } else {
             isKeyframe = true
         }
-
-        signatureLock.unlock()
 
         let finalRect: CGRect
         let finalImage: UIImage
@@ -101,6 +97,7 @@ final class TileDiffManager {
         }()
 
         let capturedFrame = TiledFrame(
+            id: frameId,
             tiles: [TiledFrame.Tile(image: finalImage, rect: finalRect)],
             scale: scale,
             originalSize: frame.image.size,
