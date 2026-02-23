@@ -166,8 +166,19 @@ fi
 echo ""
 
 if command -v xcpretty >/dev/null 2>&1; then
+    # With `set -e -o pipefail`, a failing pipeline exits immediately, so
+    # temporarily disable errexit to capture both statuses and return xcodebuild's.
+    set +e
     "${CMD[@]}" | xcpretty
-    exit ${PIPESTATUS[0]}
+    xcodebuild_status=${PIPESTATUS[0]}
+    xcpretty_status=${PIPESTATUS[1]}
+    set -e
+
+    if [ "$xcpretty_status" -ne 0 ]; then
+        echo "Warning: xcpretty failed with exit code ${xcpretty_status}; preserving xcodebuild exit code ${xcodebuild_status}" >&2
+    fi
+
+    exit "$xcodebuild_status"
 else
     "${CMD[@]}"
 fi
