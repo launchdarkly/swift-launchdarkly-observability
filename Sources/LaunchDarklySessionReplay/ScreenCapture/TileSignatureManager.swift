@@ -7,14 +7,14 @@ struct ImageSignature: Hashable {
     let columns: Int
     let tileWidth: Int
     let tileHeight: Int
-    let tiledSignatures: [TiledSignature]
+    let tileSignatures: [TileSignature]
 }
 
-struct TiledSignature: Hashable {
+struct TileSignature: Hashable {
     let hash: [UInt8]
 }
 
-final class TiledSignatureManager {
+final class TileSignatureManager {
     func compute(image: UIImage) -> ImageSignature? {
         guard let image = image.cgImage else { return nil }
         let width = image.width
@@ -28,8 +28,8 @@ final class TiledSignatureManager {
               let ptr = CFDataGetBytePtr(data) else { return nil }
         
         let bytesPerRow = image.bytesPerRow
-        var tiledSignatures: [TiledSignature] = []
-        tiledSignatures.reserveCapacity(columns * rows)
+        var tileSignatures: [TileSignature] = []
+        tileSignatures.reserveCapacity(columns * rows)
         
         for row in 0..<rows {
             let startY = row * tileHeight
@@ -39,15 +39,15 @@ final class TiledSignatureManager {
                 let startX = column * tileWidth
                 let endX = min(startX + tileWidth, width)
                 let signature = tileHash(ptr: ptr, startX: startX, startY: startY, endX: endX, endY: endY, bytesPerRow: bytesPerRow)
-                tiledSignatures.append(signature)
+                tileSignatures.append(signature)
             }
         }
         
-        return ImageSignature(rows: rows, columns: columns, tileWidth: tileWidth, tileHeight: tileHeight, tiledSignatures: tiledSignatures)
+        return ImageSignature(rows: rows, columns: columns, tileWidth: tileWidth, tileHeight: tileHeight, tileSignatures: tileSignatures)
     }
     
     @inline(__always)
-    func tileHash(ptr: UnsafePointer<UInt8>, startX: Int, startY: Int, endX: Int, endY: Int, bytesPerRow: Int) -> TiledSignature {
+    func tileHash(ptr: UnsafePointer<UInt8>, startX: Int, startY: Int, endX: Int, endY: Int, bytesPerRow: Int) -> TileSignature {
         var hasher = CC_SHA256_CTX()
         CC_SHA256_Init(&hasher)
         
@@ -58,7 +58,7 @@ final class TiledSignatureManager {
         
         var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
         CC_SHA256_Final(&hash, &hasher)
-        return TiledSignature(hash: hash)
+        return TileSignature(hash: hash)
     }
     
     private func nearestDivisor(value: Int, preferred: Int, range: ClosedRange<Int>) -> Int {
@@ -117,7 +117,7 @@ extension ImageSignature {
         var minColumn = Int.max
         var maxColumn = Int.min
         
-        for (i, tile) in tiledSignatures.enumerated() where tile != other.tiledSignatures[i] {
+        for (i, tile) in tileSignatures.enumerated() where tile != other.tileSignatures[i] {
             let row = i / columns
             let col = i % columns
             minRow = min(minRow, row)
