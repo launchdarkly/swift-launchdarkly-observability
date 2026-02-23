@@ -50,18 +50,13 @@ actor RRWebEventGenerator {
     private var lastImageSize: CGSize?
     private var stats: SessionReplayStats?
     private let isDebug = false
-    private var keyNodeIds = [RemovedNode]()
-    private var frameToLastKeyNodeIndex: [ImageSignature: Int] = [:]
     private var nodeIds: [TiledSignature: Int] = [:]
-
-    private var method: SessionReplayOptions.CompressionMethod
     
-    init(log: OSLog, title: String, method: SessionReplayOptions.CompressionMethod) {
+    init(log: OSLog, title: String, method _: SessionReplayOptions.CompressionMethod) {
         if isDebug {
             self.stats = SessionReplayStats(log: log)
         }
         self.title = title
-        self.method = method
     }
     
     func generateEvents(items: [EventQueueItem]) -> [Event] {
@@ -248,7 +243,7 @@ actor RRWebEventGenerator {
         return event
     }
     
-    private func tileNode(exportFrame: ExportFrame, image: ExportFrame.AddImage, bodyId: Int) -> (node: EventNode, canvasSize: Int) {
+    private func tileNode(exportFrame: ExportFrame, image: ExportFrame.AddImage) -> (node: EventNode, canvasSize: Int) {
         let tileCanvasId = nextId
         if let tiledSignature = image.tiledSignature {
             nodeIds[tiledSignature] = tileCanvasId
@@ -268,7 +263,7 @@ actor RRWebEventGenerator {
         }
         
         let adds: [AddedNode] = exportFrame.addImages.map { image in
-            let (node, canvasSize) = tileNode(exportFrame: exportFrame, image: image, bodyId: bodyId)
+            let (node, canvasSize) = tileNode(exportFrame: exportFrame, image: image)
             totalCanvasSize += canvasSize
             return AddedNode(parentId: bodyId, nextId: nil, node: node)
         }
@@ -294,77 +289,6 @@ actor RRWebEventGenerator {
         
         generatingCanvasSize += mutationData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
         return [mutationEvent]
-    }
-    
-    func addTileReusedNodes(exportFrame: ExportFrame, timestamp: TimeInterval, bodyId: Int) -> [Event] {
-        var removes = [RemovedNode]()
-        var adds = [AddedNode]()
-        var totalCanvasSize = 0
-        
-        if exportFrame.isKeyframe {
-            removes = keyNodeIds
-            keyNodeIds.removeAll(keepingCapacity: true)
-            frameToLastKeyNodeIndex.removeAll()
-        }
-
-        if let signature = exportFrame.imageSignature,
-           let lastKeyNodeIdx = frameToLastKeyNodeIndex[signature],
-           lastKeyNodeIdx < keyNodeIds.count {
-            removes = Array(keyNodeIds[(lastKeyNodeIdx + 1)...])
-            keyNodeIds = Array(keyNodeIds[0...lastKeyNodeIdx])
-            frameToLastKeyNodeIndex = frameToLastKeyNodeIndex.filter { $0.value > lastKeyNodeIdx }
-        } else {
-            for image in exportFrame.addImages {
-                let tileCanvasId = nextId
-                let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
-                let tileNode = image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL)
-                adds.append(AddedNode(parentId: bodyId, nextId: nil, node: tileNode))
-                keyNodeIds.append(RemovedNode(parentId: bodyId, id: tileCanvasId))
-                totalCanvasSize += base64DataURL.count
-            }
-            if let signature = exportFrame.imageSignature, case .overlayTiles(_, true) = method {
-                frameToLastKeyNodeIndex[signature] = keyNodeIds.count - 1
-            }
-        }
-        
-        if let firstId = keyNodeIds.first?.id, firstId != imageId {
-            // Keyframe replacement can remove the previously tracked node.
-            imageId = firstId
-        }
-    
-        let mutationData = MutationData(adds: adds, removes: removes, canvasSize: totalCanvasSize)
-        let mutationEvent = Event(type: .IncrementalSnapshot,
-                                  data: AnyEventData(mutationData),
-                                  timestamp: timestamp,
-                                  _sid: nextSid)
-        
-        generatingCanvasSize += mutationData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
-        return [mutationEvent]
-    }
-    
-    func drawImageEvent(exportFrame: ExportFrame, timestamp: TimeInterval, imageId: Int) -> Event {
-        var commands = [AnyCommand]()
-        for image in exportFrame.addImages {
-            if exportFrame.isKeyframe {
-                let clearRectCommand = ClearRect(rect: image.rect)
-                commands.append(AnyCommand(clearRectCommand, canvasSize: 80))
-            }
-            let base64String = image.data.base64EncodedString()
-            let arrayBuffer = RRArrayBuffer(base64: base64String)
-            let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportFrame.mimeType))
-            let drawImageCommand = DrawImage(image: AnyRRNode(RRImageBitmap(args: [blob])),
-                                             rect: image.rect)
-            commands.append(AnyCommand(drawImageCommand, canvasSize: base64String.count))
-        }
-        let eventData = CanvasDrawData(source: .canvasMutation,
-                                       id: imageId,
-                                       type: .mouseUp,
-                                       commands: commands)
-        let event = Event(type: .IncrementalSnapshot,
-                          data: AnyEventData(eventData),
-                          timestamp: timestamp, _sid: nextSid)
-        generatingCanvasSize += eventData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
-        return event
     }
     
     func mouseEvent(timestamp: TimeInterval, x: CGFloat, y: CGFloat, timeOffset: TimeInterval) -> Event? {
@@ -393,7 +317,7 @@ actor RRWebEventGenerator {
         let headNode = EventNode(id: nextId, type: .Element, tagName: Dom.head, attributes: [:])
         let currentBodyId = nextId
         let tileNodes = exportFrame.addImages.map { image in
-            let (node, canvasSize) = tileNode(exportFrame: exportFrame, image: image, bodyId: currentBodyId)
+            let (node, canvasSize) = tileNode(exportFrame: exportFrame, image: image)
             totalCanvasSize += canvasSize
             return node
         }
@@ -414,9 +338,6 @@ actor RRWebEventGenerator {
         events.append(windowEvent(href: "", originalSize: exportFrame.originalSize, timestamp: timestamp))
         events.append(fullSnapshotEvent(exportFrame: exportFrame, timestamp: timestamp))
         events.append(viewPortEvent(exportFrame: exportFrame, timestamp: timestamp))
-    }
-    
-    private func appendKeyFrameEvents(_ exportFrame: ExportFrame, _ timestamp: TimeInterval, _ events: inout [Event]) {
     }
     
     func updatePushedCanvasSize() {
