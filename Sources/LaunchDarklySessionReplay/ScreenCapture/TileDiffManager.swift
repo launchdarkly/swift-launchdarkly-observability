@@ -30,7 +30,7 @@ struct TiledFrame {
 }
 
 final class TileDiffManager {
-    private let tiledSignatureManager = TiledSignatureManager()
+    private let tileSignatureManager = TileSignatureManager()
     private let compression: SessionReplayOptions.CompressionMethod
     private let scale: CGFloat
     private var previousSignature: ImageSignature?
@@ -42,8 +42,8 @@ final class TileDiffManager {
         self.scale = scale
     }
 
-    func computeDiffCapture(frame: RawFrame) -> TiledFrame? {
-        guard let imageSignature = self.tiledSignatureManager.compute(image: frame.image) else {
+    func computeTiledFrame(frame: RawFrame) -> TiledFrame? {
+        guard let imageSignature = self.tileSignatureManager.compute(image: frame.image) else {
             return nil
         }
 

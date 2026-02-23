@@ -8,7 +8,7 @@ final class ExportDiffManager {
     private var currentImagesIndex: [ImageSignature: Int] = [:]
     private let format = ExportFormat.jpeg(quality: 0.3)
     private let compression: SessionReplayOptions.CompressionMethod
-    private let signatureLock = NSLock()
+    private let lock = NSLock()
     private var keyFrameId: Int = 0
     
     init(compression: SessionReplayOptions.CompressionMethod, scale: CGFloat) {
@@ -17,10 +17,10 @@ final class ExportDiffManager {
     }
 
     func exportFrame(from frame: RawFrame) -> ExportFrame? {
-        signatureLock.lock()
-        defer { signatureLock.unlock() }
+        lock.lock()
+        defer { lock.unlock() }
         
-        guard let capturedFrame = tileDiffManager.computeDiffCapture(frame: frame) else {
+        guard let capturedFrame = tileDiffManager.computeTiledFrame(frame: frame) else {
             return nil
         }
         return exportTiledFrame(capturedFrame)
@@ -43,19 +43,19 @@ final class ExportDiffManager {
            lastKeyNodeIdx < currentImages.count {
             removes = Array(currentImages[(lastKeyNodeIdx + 1)...])
             currentImages = Array(currentImages[0...lastKeyNodeIdx])
-            currentImagesIndex = currentImagesIndex.filter { $0.value > lastKeyNodeIdx }
+            currentImagesIndex = currentImagesIndex.filter { $0.value <= lastKeyNodeIdx }
         } else {
             for (tileIdx, tile) in tiledFrame.tiles.enumerated() {
-                var tiledSignature: TiledSignature?
+                var tileSignature: TileSignature?
                 if let signature = tiledFrame.imageSignature {
-                    tiledSignature = signature.tiledSignatures[tileIdx]
+                    tileSignature = signature.tileSignatures[tileIdx]
                 }
-                guard let addImage = tile.image.asExportedImage(format: format, rect: tile.rect, tiledSignature: tiledSignature) else {
+                guard let addImage = tile.image.asExportedImage(format: format, rect: tile.rect, tileSignature: tileSignature) else {
                     return nil
                 }
                 adds.append(addImage)
-                if let tiledSignature {
-                    currentImages.append(ExportFrame.RemoveImage(keyFrameId: keyFrameId, tiledSignature: tiledSignature))
+                if let tileSignature {
+                    currentImages.append(ExportFrame.RemoveImage(keyFrameId: keyFrameId, tileSignature: tileSignature))
                 }
             }
             if let signature = tiledFrame.imageSignature {

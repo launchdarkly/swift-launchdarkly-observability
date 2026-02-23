@@ -50,7 +50,7 @@ actor RRWebEventGenerator {
     private var lastImageSize: CGSize?
     private var stats: SessionReplayStats?
     private let isDebug = false
-    private var nodeIds: [TiledSignature: Int] = [:]
+    private var nodeIds: [TileSignature: Int] = [:]
     
     init(log: OSLog, title: String, method _: SessionReplayOptions.CompressionMethod) {
         if isDebug {
@@ -245,8 +245,8 @@ actor RRWebEventGenerator {
     
     private func tileNode(exportFrame: ExportFrame, image: ExportFrame.AddImage) -> (node: EventNode, canvasSize: Int) {
         let tileCanvasId = nextId
-        if let tiledSignature = image.tiledSignature {
-            nodeIds[tiledSignature] = tileCanvasId
+        if let tileSignature = image.tileSignature {
+            nodeIds[tileSignature] = tileCanvasId
         }
         let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
         return (image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL), base64DataURL.count)
@@ -269,7 +269,7 @@ actor RRWebEventGenerator {
         }
         
         let removes: [RemovedNode] = exportFrame.removeImages?.compactMap { removal in
-            guard let nodeId = nodeIds[removal.tiledSignature] else {
+            guard let nodeId = nodeIds[removal.tileSignature] else {
                 return nil
             }
             
