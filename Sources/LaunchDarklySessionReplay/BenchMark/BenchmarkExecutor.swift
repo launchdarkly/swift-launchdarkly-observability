@@ -5,7 +5,11 @@ import OSLog
 import LaunchDarklyObservability
 
 public final class BenchmarkExecutor {
-    public typealias CompressionResult = (compression: SessionReplayOptions.CompressionMethod, bytes: Int)
+    public typealias CompressionResult = (
+        compression: SessionReplayOptions.CompressionMethod,
+        bytes: Int,
+        executionTime: TimeInterval
+    )
 
     private static let compressionMethods: [SessionReplayOptions.CompressionMethod] = [
         .screenImage,
@@ -15,18 +19,28 @@ public final class BenchmarkExecutor {
 
     public init() {}
 
-    public func compression(framesDirectory: URL) async -> [CompressionResult] {
+    public func compression(framesDirectory: URL, runs: Int = 1) async -> [CompressionResult] {
         var results = [CompressionResult]()
+        let runCount = max(1, runs)
 
         for method in Self.compressionMethods {
-            let bytes = await runCompression(method, framesDirectory: framesDirectory)
-            results.append((compression: method, bytes: bytes))
+            var bytes = 0
+            var executionTime: TimeInterval = 0
+
+            for _ in 0..<runCount {
+                let runResult = await runCompression(method, framesDirectory: framesDirectory)
+                bytes = runResult.bytes
+                executionTime += runResult.executionTime
+            }
+
+            results.append((compression: method, bytes: bytes, executionTime: executionTime))
         }
 
         return results
     }
 
-    private func runCompression(_ method: SessionReplayOptions.CompressionMethod, framesDirectory: URL) async -> Int {
+    private func runCompression(_ method: SessionReplayOptions.CompressionMethod, framesDirectory: URL) async -> (bytes: Int, executionTime: TimeInterval) {
+        let start = CFAbsoluteTimeGetCurrent()
         var bytes = 0
         do {
             let reader = try RawFrameReader(directory: framesDirectory)
@@ -50,7 +64,7 @@ public final class BenchmarkExecutor {
             print("BenchmarkExecutor: failed to read frames – \(error)")
         }
 
-        return bytes
+        return (bytes: bytes, executionTime: CFAbsoluteTimeGetCurrent() - start)
     }
 }
 

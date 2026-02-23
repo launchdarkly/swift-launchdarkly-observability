@@ -5,6 +5,7 @@ struct BenchmarkView: View {
     private static let framesDirectory = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .appendingPathComponent("Benchmark/mastodon")
+    private let benchmarkRuns = 3
     private let executor = BenchmarkExecutor()
 
     @State private var results = [BenchmarkResultRow]()
@@ -34,13 +35,14 @@ struct BenchmarkView: View {
     private func runBenchmark() {
         isRunning = true
         Task {
-            let compressionResults = await executor.compression(framesDirectory: Self.framesDirectory)
+            let compressionResults = await executor.compression(framesDirectory: Self.framesDirectory, runs: benchmarkRuns)
             let baseline = compressionResults.first?.bytes ?? 1
             results = compressionResults.map { result in
                 let pct = Double(result.bytes) / Double(baseline) * 100
                 return BenchmarkResultRow(
                     name: result.compression.displayName,
                     bytes: result.bytes,
+                    executionTime: result.executionTime,
                     percent: String(format: "%.0f%%", pct)
                 )
             }
@@ -54,10 +56,15 @@ private struct BenchmarkResultRow: Identifiable {
     let id = UUID()
     let name: String
     let bytes: Int
+    let executionTime: TimeInterval
     let percent: String
 
     var formattedBytes: String {
         ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+    }
+
+    var formattedExecutionTime: String {
+        String(format: "%.2fs", executionTime)
     }
 }
 
@@ -74,6 +81,9 @@ private struct BenchmarkResultsSheet: View {
                     Text(row.percent)
                         .foregroundStyle(.secondary)
                         .frame(width: 60, alignment: .trailing)
+                    Text(row.formattedExecutionTime)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 64, alignment: .trailing)
                     Text(row.formattedBytes)
                         .foregroundStyle(.secondary)
                         .frame(width: 80, alignment: .trailing)
