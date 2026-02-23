@@ -17,7 +17,8 @@ struct RRWebEventGeneratorTests {
             format: .png,
             timestamp: timestamp,
             orientation: 0,
-            isKeyframe: true
+            isKeyframe: true,
+            imageSignature: nil
         )
     }
     
