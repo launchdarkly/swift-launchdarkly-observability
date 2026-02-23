@@ -119,7 +119,7 @@ actor RRWebEventGenerator {
                 knownKeyFrameId = exportFrame.keyFrameId
             }
             
-            if let bodyId, let imageId,
+            if let bodyId,
                lastImageSize == exportFrame.originalSize,
                generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
                 events.append(contentsOf: addCommandNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
@@ -248,13 +248,13 @@ actor RRWebEventGenerator {
         return event
     }
     
-    private func tileNode(exportFrame: ExportFrame, image: ExportFrame.AddImage, bodyId: Int) -> EventNode {
+    private func tileNode(exportFrame: ExportFrame, image: ExportFrame.AddImage, bodyId: Int) -> (node: EventNode, canvasSize: Int) {
         let tileCanvasId = nextId
         if let tiledSignature = image.tiledSignature {
             nodeIds[tiledSignature] = tileCanvasId
         }
         let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
-        return image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL)
+        return (image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL), base64DataURL.count)
     }
     
     private func addCommandNodes(exportFrame: ExportFrame, timestamp: TimeInterval, bodyId: Int) -> [Event] {
@@ -268,8 +268,9 @@ actor RRWebEventGenerator {
         }
         
         let adds: [AddedNode] = exportFrame.addImages.map { image in
-            let tileNode = tileNode(exportFrame: exportFrame, image: image, bodyId: bodyId)
-            return AddedNode(parentId: bodyId, nextId: nil, node: tileNode)
+            let (node, canvasSize) = tileNode(exportFrame: exportFrame, image: image, bodyId: bodyId)
+            totalCanvasSize += canvasSize
+            return AddedNode(parentId: bodyId, nextId: nil, node: node)
         }
         
         let removes: [RemovedNode] = exportFrame.removeImages?.compactMap { removal in
@@ -388,14 +389,13 @@ actor RRWebEventGenerator {
     
     func fullSnapshotData(exportFrame: ExportFrame) -> DomData {        
         var rootNode = EventNode(id: nextId, type: .Document)
-        let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: Dom.html)
-
-
+        var totalCanvasSize = 0
         let headNode = EventNode(id: nextId, type: .Element, tagName: Dom.head, attributes: [:])
         let currentBodyId = nextId
-        let newImageId = nextId
         let tileNodes = exportFrame.addImages.map { image in
-            tileNode(exportFrame: exportFrame, image: image, bodyId: currentBodyId)
+            let (node, canvasSize) = tileNode(exportFrame: exportFrame, image: image, bodyId: currentBodyId)
+            totalCanvasSize += canvasSize
+            return node
         }
         let bodyNode = EventNode(id: currentBodyId, type: .Element, tagName: Dom.body,
                                  attributes: [Dom.style: Dom.bodyStyle],
@@ -407,7 +407,7 @@ actor RRWebEventGenerator {
         bodyId = currentBodyId
         rootNode.childNodes.append(htmlNode)
         
-        return DomData(node: rootNode, canvasSize: 0) //TODO: base64String.count
+        return DomData(node: rootNode, canvasSize: totalCanvasSize)
     }
     
     private func appendFullSnapshotEvents(_ exportFrame: ExportFrame, _ timestamp: TimeInterval, _ events: inout [Event]) {

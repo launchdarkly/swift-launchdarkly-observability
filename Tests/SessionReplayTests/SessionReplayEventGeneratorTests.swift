@@ -9,9 +9,11 @@ struct RRWebEventGeneratorTests {
     private func makeExportFrame(dataSize: Int, width: Int, height: Int, timestamp: TimeInterval) -> ExportFrame {
         let data = Data(count: dataSize)
         let rect = CGRect(x: 0, y: 0, width: width, height: height)
-        let exportedFrame = ExportFrame.ExportImage(data: data, dataHashValue: data.hashValue, rect: rect)
+        let addImage = ExportFrame.AddImage(data: data, rect: rect, tiledSignature: nil)
         return ExportFrame(
-            images: [exportedFrame],
+            keyFrameId: 0,
+            addImages: [addImage],
+            removeImages: nil,
             originalSize: CGSize(width: width, height: height),
             scale: 1.0,
             format: .png,
@@ -27,7 +29,8 @@ struct RRWebEventGeneratorTests {
         // Arrange
         let generator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
-            title: "Test"
+            title: "Test",
+            method: .overlayTiles()
         )
         
         // First image triggers full snapshot (sets imageId and lastExportImage)
@@ -56,7 +59,8 @@ struct RRWebEventGeneratorTests {
         // Arrange
         let generator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
-            title: "Test"
+            title: "Test",
+            method: .overlayTiles()
         )
         
         // Choose a first image whose base64 string length will exceed the canvasBufferLimit (~10MB)

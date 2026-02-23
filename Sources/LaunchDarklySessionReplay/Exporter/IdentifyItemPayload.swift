@@ -36,8 +36,8 @@ extension IdentifyItemPayload {
             }
         }
         
-        var canonicalKey = ldContext?.fullyQualifiedKey() ?? "unknown"
-        var ldContextMap = ldContext?.contextKeys()
+        let canonicalKey = ldContext?.fullyQualifiedKey() ?? "unknown"
+        let ldContextMap = ldContext?.contextKeys()
         if let ldContextMap {
             for (k, v) in ldContextMap {
                 attributes[k] = v

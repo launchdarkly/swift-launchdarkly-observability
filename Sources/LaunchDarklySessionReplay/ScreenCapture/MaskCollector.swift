@@ -97,14 +97,14 @@ final class MaskCollector {
             
             if maskWebViews {
 #if canImport(WebKit)
-                if let wkWebView = view as? WKWebView {
+                if view is WKWebView {
                     return true
                 }
 #endif
             }
             
             if maskTextInputs  {
-                if let textInput = view as? UITextInput {
+                if view is UITextInput {
 #if canImport(WebKit)
                     if stringViewType != "WKContentView" {
                         return true
@@ -122,7 +122,7 @@ final class MaskCollector {
                 return true
             }
             
-            if maskImages, let imageView = view as? UIImageView {
+            if maskImages, view is UIImageView {
                 return true
             }
             
@@ -271,3 +271,4 @@ final class MaskCollector {
                       height: abs(corner2.y - corner1.y))
     }
 }
+
