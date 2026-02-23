@@ -6,12 +6,17 @@ import CoreGraphics
 
 struct RRWebEventGeneratorTests {
     
-    private func makeExportFrame(dataSize: Int, width: Int, height: Int, timestamp: TimeInterval) -> ExportFrame {
+    private func makeExportFrame(dataSize: Int,
+                                 width: Int,
+                                 height: Int,
+                                 timestamp: TimeInterval,
+                                 keyFrameId: Int = 0,
+                                 isKeyframe: Bool = true) -> ExportFrame {
         let data = Data(count: dataSize)
         let rect = CGRect(x: 0, y: 0, width: width, height: height)
         let addImage = ExportFrame.AddImage(data: data, rect: rect, tiledSignature: nil)
         return ExportFrame(
-            keyFrameId: 0,
+            keyFrameId: keyFrameId,
             addImages: [addImage],
             removeImages: nil,
             originalSize: CGSize(width: width, height: height),
@@ -19,7 +24,7 @@ struct RRWebEventGeneratorTests {
             format: .png,
             timestamp: timestamp,
             orientation: 0,
-            isKeyframe: true,
+            isKeyframe: isKeyframe,
             imageSignature: nil
         )
     }
@@ -84,6 +89,50 @@ struct RRWebEventGeneratorTests {
         #expect(events[3].type == .Meta)
         #expect(events[4].type == .FullSnapshot)
         #expect(events[5].type == .Custom)
+    }
+    
+    @Test("Appends mutation when canvas buffer limit exceeded for non-keyframe")
+    func appendsMutationWhenCanvasBufferLimitExceededForNonKeyframe() async {
+        // Arrange
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        
+        // First keyframe exceeds buffer limit. Second frame is not a keyframe,
+        // so it should still use addCommandNodes per line-124 condition.
+        let keyframeImage = makeExportFrame(
+            dataSize: 8_000_000,
+            width: 320,
+            height: 480,
+            timestamp: 1.0,
+            keyFrameId: 1,
+            isKeyframe: true
+        )
+        let nonKeyframeImage = makeExportFrame(
+            dataSize: 256,
+            width: 320,
+            height: 480,
+            timestamp: 2.0,
+            keyFrameId: 1,
+            isKeyframe: false
+        )
+        
+        let items: [EventQueueItem] = [
+            EventQueueItem(payload: ImageItemPayload(exportFrame: keyframeImage)),
+            EventQueueItem(payload: ImageItemPayload(exportFrame: nonKeyframeImage))
+        ]
+        
+        // Act
+        let events = await generator.generateEvents(items: items)
+        
+        // Assert
+        #expect(events.count == 4) // full snapshot events + one mutation event
+        #expect(events[0].type == .Meta)
+        #expect(events[1].type == .FullSnapshot)
+        #expect(events[2].type == .Custom)
+        #expect(events[3].type == .IncrementalSnapshot)
     }
 }
 

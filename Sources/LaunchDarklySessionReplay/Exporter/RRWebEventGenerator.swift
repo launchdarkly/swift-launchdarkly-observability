@@ -12,7 +12,7 @@ enum RRWebPlayerConstants {
     // padding requiered by used html dom structure
     static let padding = CGSize(width: 11, height: 11)
     // size limit of accumulated continues canvas operations on the RRWeb player
-    static let canvasBufferLimit = 10_000_000 // ~10mb
+    static let canvasBufferLimit = 9_000_000 // ~9mb (10mb - 1mb for keyframe logic)
     
     static let canvasDrawEntourage = 300 // bytes
 }
@@ -121,7 +121,7 @@ actor RRWebEventGenerator {
             
             if let bodyId,
                lastImageSize == exportFrame.originalSize,
-               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
+               (generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit || !exportFrame.isKeyframe) {
                 events.append(contentsOf: addCommandNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
