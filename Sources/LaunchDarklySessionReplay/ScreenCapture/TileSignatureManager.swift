@@ -16,18 +16,18 @@ struct TileSignature: Hashable {
 
 final class TileSignatureManager {
     func compute(image: UIImage) -> ImageSignature? {
-        guard let image = image.cgImage else { return nil }
-        let width = image.width
-        let height = image.height
+        guard let cgImage = image.cgImage else { return nil }
+        let width = cgImage.width
+        let height = cgImage.height
         let tileWidth = nearestDivisor(value: width, preferred: 64, range: 60...79)
         let tileHeight = nearestDivisor(value: height, preferred: 22, range: 22...44)
         let columns = (width + tileWidth - 1) / tileWidth
         let rows = (height + tileHeight - 1) / tileHeight
         
-        guard let data = image.dataProvider?.data,
+        guard let data = cgImage.dataProvider?.data,
               let ptr = CFDataGetBytePtr(data) else { return nil }
         
-        let bytesPerRow = image.bytesPerRow
+        let bytesPerRow = cgImage.bytesPerRow
         var tileSignatures: [TileSignature] = []
         tileSignatures.reserveCapacity(columns * rows)
         

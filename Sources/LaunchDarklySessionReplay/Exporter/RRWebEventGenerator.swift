@@ -50,7 +50,7 @@ actor RRWebEventGenerator {
     private var lastImageSize: CGSize?
     private var stats: SessionReplayStats?
     private let isDebug = false
-    private var nodeIds: [TileSignature: Int] = [:]
+    private var nodeIds: [ImageSignature: Int] = [:]
     
     init(log: OSLog, title: String, method _: SessionReplayOptions.CompressionMethod) {
         if isDebug {
@@ -245,8 +245,8 @@ actor RRWebEventGenerator {
     
     private func tileNode(exportFrame: ExportFrame, image: ExportFrame.AddImage) -> (node: EventNode, canvasSize: Int) {
         let tileCanvasId = nextId
-        if let tileSignature = image.tileSignature {
-            nodeIds[tileSignature] = tileCanvasId
+        if let imageSignature = image.imageSignature {
+            nodeIds[imageSignature] = tileCanvasId
         }
         let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
         return (image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL), base64DataURL.count)
@@ -254,10 +254,17 @@ actor RRWebEventGenerator {
     
     private func addCommandNodes(exportFrame: ExportFrame, timestamp: TimeInterval, bodyId: Int) -> [Event] {
         var totalCanvasSize = 0
+        let removes: [RemovedNode] = exportFrame.removeImages?.compactMap { removal in
+            guard let nodeId = nodeIds[removal.imageSignature] else {
+                return nil
+            }
+            
+            return RemovedNode(parentId: bodyId, id: nodeId)
+        } ?? []
+        
         if exportFrame.isKeyframe {
             nodeIds.removeAll()
-        }
-        if !exportFrame.isKeyframe, exportFrame.keyFrameId != knownKeyFrameId {
+        } else if exportFrame.keyFrameId != knownKeyFrameId {
             // drop frame, we can reconstruct whole image only from known key frame
             return []
         }
@@ -267,14 +274,6 @@ actor RRWebEventGenerator {
             totalCanvasSize += canvasSize
             return AddedNode(parentId: bodyId, nextId: nil, node: node)
         }
-        
-        let removes: [RemovedNode] = exportFrame.removeImages?.compactMap { removal in
-            guard let nodeId = nodeIds[removal.tileSignature] else {
-                return nil
-            }
-            
-            return RemovedNode(parentId: bodyId, id: nodeId)
-        } ?? []
         
         if exportFrame.isKeyframe, let firstId = adds.first?.node.id, firstId != imageId {
             // Keyframe replacement can remove the previously tracked node.

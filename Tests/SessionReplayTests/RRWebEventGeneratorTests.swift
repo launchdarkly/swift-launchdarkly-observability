@@ -14,7 +14,7 @@ struct RRWebEventGeneratorTests {
                                  isKeyframe: Bool = true) -> ExportFrame {
         let data = Data(count: dataSize)
         let rect = CGRect(x: 0, y: 0, width: width, height: height)
-        let addImage = ExportFrame.AddImage(data: data, rect: rect, tileSignature: nil)
+        let addImage = ExportFrame.AddImage(data: data, rect: rect, imageSignature: nil)
         return ExportFrame(
             keyFrameId: keyFrameId,
             addImages: [addImage],

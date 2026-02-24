@@ -4,13 +4,13 @@ import UIKit
 struct ExportFrame {
     struct RemoveImage {
         let keyFrameId: Int
-        let tileSignature: TileSignature
+        let imageSignature: ImageSignature
     }
     
     struct AddImage {
         let data: Data
         let rect: CGRect
-        let tileSignature: TileSignature?
+        let imageSignature: ImageSignature?
         
         /// Creates an EventNode for a tile image (positioned absolutely on top of main canvas)
         func tileEventNode(id: Int, rr_dataURL: String) -> EventNode {
@@ -67,9 +67,9 @@ struct ExportFrame {
 }
 
 extension UIImage {
-    func asExportedImage(format: ExportFormat, rect: CGRect, tileSignature: TileSignature?) -> ExportFrame.AddImage? {
+    func asExportedImage(format: ExportFormat, rect: CGRect, imageSignature: ImageSignature?) -> ExportFrame.AddImage? {
         guard let data = asData(format: format) else { return nil }
-        return ExportFrame.AddImage(data: data, rect: rect, tileSignature: tileSignature)
+        return ExportFrame.AddImage(data: data, rect: rect, imageSignature: imageSignature)
     }
 }
 

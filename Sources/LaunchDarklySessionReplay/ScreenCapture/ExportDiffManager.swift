@@ -45,17 +45,14 @@ final class ExportDiffManager {
             currentImages = Array(currentImages[0...lastKeyNodeIdx])
             currentImagesIndex = currentImagesIndex.filter { $0.value <= lastKeyNodeIdx }
         } else {
-            for (tileIdx, tile) in tiledFrame.tiles.enumerated() {
-                var tileSignature: TileSignature?
-                if let signature = tiledFrame.imageSignature {
-                    tileSignature = signature.tileSignatures[tileIdx]
-                }
-                guard let addImage = tile.image.asExportedImage(format: format, rect: tile.rect, tileSignature: tileSignature) else {
+            for tile in tiledFrame.tiles {
+                let imageSignature = tiledFrame.imageSignature
+                guard let addImage = tile.image.asExportedImage(format: format, rect: tile.rect, imageSignature: imageSignature) else {
                     return nil
                 }
                 adds.append(addImage)
-                if let tileSignature {
-                    currentImages.append(ExportFrame.RemoveImage(keyFrameId: keyFrameId, tileSignature: tileSignature))
+                if let imageSignature {
+                    currentImages.append(ExportFrame.RemoveImage(keyFrameId: keyFrameId, imageSignature: imageSignature))
                 }
             }
             if let signature = tiledFrame.imageSignature {
