@@ -170,8 +170,9 @@ if command -v xcpretty >/dev/null 2>&1; then
     # temporarily disable errexit to capture both statuses and return xcodebuild's.
     set +e
     "${CMD[@]}" | xcpretty
-    xcodebuild_status=${PIPESTATUS[0]}
-    xcpretty_status=${PIPESTATUS[1]}
+    pipeline_status=("${PIPESTATUS[@]}")
+    xcodebuild_status=${pipeline_status[0]}
+    xcpretty_status=${pipeline_status[1]}
     set -e
 
     if [ "$xcpretty_status" -ne 0 ]; then

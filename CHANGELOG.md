@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.19.0...0.20.0) (2026-02-19)
+
+
+### Features
+
+* external session id ([#136](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/136)) ([9c29451](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/9c29451abb9b27d0efc60fd3736519f58ca82e20))
+
 ## [0.19.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.18.2...0.19.0) (2026-02-18)
 
 
