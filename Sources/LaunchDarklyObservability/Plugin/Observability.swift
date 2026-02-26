@@ -54,6 +54,7 @@ public final class Observability: Plugin {
             observabilityService = service
             LDObserve.shared.client = service
             LDObserve.shared.context = service.context
+            LDObserve.shared.plugin = self
             
             if options.isEnabled {
                 service.start()
@@ -64,11 +65,14 @@ public final class Observability: Plugin {
     }
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        [ObservabilityHook(plugin: self,
-                         withSpans: true,
-                         withValue: true,
-                         version: options.serviceVersion,
-                         options: options)]
+        let exporter = ObservabilityHookExporter(
+            plugin: self,
+            withSpans: true,
+            withValue: true,
+            options: options
+        )
+        LDObserve.shared.hookProxy = ObservabilityHookProxy(exporter: exporter)
+        return [ObservabilityHook(exporter: exporter)]
     }
 }
 

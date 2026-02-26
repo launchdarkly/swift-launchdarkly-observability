@@ -7,6 +7,7 @@ import OSLog
 
 final class ObservabilityService: InternalObserve {
     var logClient: LogsApi { loggerClient }
+    var traceClient: TracesApi { _traceClient }
     private let logger: LogsApi
     private let meter: MetricsApi
     private let tracer: TracesApi
@@ -24,7 +25,7 @@ final class ObservabilityService: InternalObserve {
     
     private let metricsClient: MetricsApi
     
-    private let traceClient: TraceClient
+    private let _traceClient: TraceClient
     private let tracerDecorator: TracerDecorator
     
     private var instruments = [AutoInstrumentation]()
@@ -157,7 +158,7 @@ final class ObservabilityService: InternalObserve {
             options: options.tracesApi,
             tracer: tracerDecorator
         )
-        self.traceClient = traceClient
+        self._traceClient = traceClient
         
         let appTraceClient = AppTraceClient(
             options: options.tracesApi,
@@ -195,7 +196,7 @@ extension ObservabilityService {
             instruments
                 .append(
                     InstrumentationTask<TraceClient>(
-                        instrument: traceClient,
+                        instrument: _traceClient,
                         samplingInterval: autoInstrumentationSamplingInterval
                     ) {
                         await launchTracker.trace(using: $0)
