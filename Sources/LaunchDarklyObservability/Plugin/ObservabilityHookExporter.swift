@@ -12,17 +12,22 @@ import Common
 /// delegate here so the tracing logic is written exactly once.
 final class ObservabilityHookExporter {
 
-    private let spans = AtomicDictionary<String, any Span>()
+    private let spans: BoundedMap<String, any Span>
     private let options: Options
     private let withSpans: Bool
     private let withValue: Bool
     weak var plugin: Observability?
 
-    init(plugin: Observability, withSpans: Bool, withValue: Bool, options: Options) {
+    init(plugin: Observability,
+         withSpans: Bool,
+         withValue: Bool,
+         options: Options,
+         maxInFlightSpans: Int = 1024) {
         self.plugin = plugin
         self.withSpans = withSpans
         self.withValue = withValue
         self.options = options
+        self.spans = BoundedMap(capacity: maxInFlightSpans)
     }
 
     // MARK: - Evaluation
@@ -35,7 +40,10 @@ final class ObservabilityHookExporter {
         attributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(contextKey)
 
         guard let span = plugin?.observabilityService?.traceClient.startSpan(name: Self.FEATURE_FLAG_SPAN_NAME, attributes: attributes) else { return }
-        spans.setValue(span, forKey: evaluationId)
+
+        if let (_, evictedSpan) = spans.setValue(span, forKey: evaluationId) {
+            evictedSpan.end()
+        }
     }
 
     func afterEvaluation(evaluationId: String, flagKey: String, contextKey: String,
