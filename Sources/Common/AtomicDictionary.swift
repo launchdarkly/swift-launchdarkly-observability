@@ -14,9 +14,27 @@ where Key: Hashable, Key: Sendable {
 
   public init() {}
 
+  // Asynchronous barrier write:
+  // callers rely on this mutation being visible after return.
   public subscript(key: Key) -> Value? {
     get { queue.sync { storage[key] }}
     set { queue.async(flags: .barrier) { [weak self] in self?.storage[key] = newValue } }
+  }
+
+  public func setValue(_ value: Value?, forKey key: Key) {
+    // Synchronous barrier write:
+    // callers rely on this mutation being visible immediately after return.
+    queue.sync(flags: .barrier) {
+      storage[key] = value
+    }
+  }
+
+  public func removeValue(forKey key: Key) -> Value? {
+    // Synchronous barrier remove:
+    // this acts like an atomic "pop" (read + remove in one critical section).
+    queue.sync(flags: .barrier) {
+      storage.removeValue(forKey: key)
+    }
   }
 
   public var debugDescription: String {

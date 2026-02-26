@@ -12,8 +12,7 @@ import Common
 /// delegate here so the tracing logic is written exactly once.
 final class ObservabilityHookExporter {
 
-    private var spans: [String: any Span] = [:]
-    private let lock = NSLock()
+    private let spans = AtomicDictionary<String, any Span>()
     private let options: Options
     private let withSpans: Bool
     private let withValue: Bool
@@ -36,9 +35,7 @@ final class ObservabilityHookExporter {
         attributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(contextKey)
 
         guard let span = plugin?.observabilityService?.traceClient.startSpan(name: Self.FEATURE_FLAG_SPAN_NAME, attributes: attributes) else { return }
-        lock.lock()
-        spans[evaluationId] = span
-        lock.unlock()
+        spans.setValue(span, forKey: evaluationId)
     }
 
     func afterEvaluation(evaluationId: String, flagKey: String, contextKey: String,
@@ -67,12 +64,7 @@ final class ObservabilityHookExporter {
 
     private func sendAfterEvaluation(evaluationId: String, flagKey: String, contextKey: String,
                                      value: LDValue, variationIndex: Int?, inExperiment: Bool?) {
-        lock.lock()
-        guard let span = spans.removeValue(forKey: evaluationId) else {
-            lock.unlock()
-            return
-        }
-        lock.unlock()
+        guard let span = spans.removeValue(forKey: evaluationId) else { return }
 
         var attributes = options.resourceAttributes
         attributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(flagKey)
