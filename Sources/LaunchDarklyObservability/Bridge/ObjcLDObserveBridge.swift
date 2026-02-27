@@ -28,4 +28,5 @@ public final class ObjcLDObserveBridge: NSObject {
 
         LDObserve.shared.recordLog(message: message, severity: sev, attributes: attrs)
     }
+    
 }
