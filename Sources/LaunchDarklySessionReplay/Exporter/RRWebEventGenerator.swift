@@ -5,7 +5,7 @@ import UIKit
 import LaunchDarklyObservability
 import OSLog
 #if !LD_COCOAPODS
-    import Common
+import Common
 #endif
 
 enum RRWebPlayerConstants {
@@ -17,7 +17,17 @@ enum RRWebPlayerConstants {
     static let canvasDrawEntourage = 300 // bytes
 }
 
-actor SessionReplayEventGenerator {
+actor RRWebEventGenerator {
+    enum Dom {
+        static let html = "html"
+        static let head = "head"
+        static let body = "body"
+        static let lang = "lang"
+        static let en = "en"
+        static let style = "style"
+        static let bodyStyle = "position:relative;"
+    }
+
     private var title: String
     private let padding = RRWebPlayerConstants.padding
     private var sid = 0
@@ -35,10 +45,12 @@ actor SessionReplayEventGenerator {
     private var generatingCanvasSize: Int = 0
     
     private var imageId: Int?
-    private var lastImageWidth: Int = -1
-    private var lastImageHeight: Int = -1
+    private var bodyId: Int?
+    private var lastImageSize: CGSize?
     private var stats: SessionReplayStats?
     private let isDebug = false
+    private var keyNodeIds = [RemovedNode]()
+    private var frameToLastKeyNodeIndex: [ImageSignature: Int] = [:]
     
     init(log: OSLog, title: String) {
         if isDebug {
@@ -70,18 +82,18 @@ actor SessionReplayEventGenerator {
         // artificial mouse movement to wake up session replay player
         events.append(Event(type: .IncrementalSnapshot,
                             data: AnyEventData(MouseInteractionData(source: .mouseInteraction,
-                                                         type: .mouseDown,
-                                                         id: imageId,
-                                                         x: padding.width,
-                                                         y: padding.height)),
+                                                                    type: .mouseDown,
+                                                                    id: imageId,
+                                                                    x: padding.width,
+                                                                    y: padding.height)),
                             timestamp: timestamp,
                             _sid: nextSid))
         events.append(Event(type: .IncrementalSnapshot,
                             data: AnyEventData(MouseInteractionData(source: .mouseInteraction,
-                                                         type: .mouseUp,
-                                                         id: imageId,
-                                                         x: padding.width,
-                                                         y: padding.height)),
+                                                                    type: .mouseUp,
+                                                                    id: imageId,
+                                                                    x: padding.width,
+                                                                    y: padding.height)),
                             timestamp: timestamp,
                             _sid: nextSid))
     }
@@ -89,24 +101,22 @@ actor SessionReplayEventGenerator {
     func appendEvents(item: EventQueueItem, events: inout [Event]) {
         switch item.payload {
         case let payload as ImageItemPayload:
-            let exportImage = payload.exportImage
+            let exportFrame = payload.exportFrame
             defer {
-                lastImageWidth = exportImage.originalWidth
-                lastImageHeight = exportImage.originalHeight
+                lastImageSize = exportFrame.originalSize
             }
             
-            stats?.addExportImage(exportImage)
+            stats?.addExportFrame(exportFrame)
             
             let timestamp = item.timestamp
             
-            if let imageId,
-               lastImageWidth == exportImage.originalWidth,
-               lastImageHeight == exportImage.originalHeight,
-               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit {
-                events.append(drawImageEvent(exportImage: exportImage, timestamp: timestamp, imageId: imageId))
+            if let bodyId, let imageId,
+               lastImageSize == exportFrame.originalSize,
+               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
+                events.append(contentsOf: addTileReusedNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
-                appendFullSnapshotEvents(exportImage, timestamp, &events)
+                appendFullSnapshotEvents(exportFrame, timestamp, &events)
             }
             
         case let interaction as TouchInteraction:
@@ -122,29 +132,25 @@ actor SessionReplayEventGenerator {
         }
     }
     
-    func paddedWidth(_ width: Int) -> Int {
-        width + Int(padding.width) * 2
-    }
-    
-    func paddedHeight(_ height: Int) -> Int {
-        height + Int(padding.height) * 2
+    func paddedSize(_ size: CGSize) -> CGSize {
+        CGSize(width: size.width + padding.width * 2, height: size.height + padding.height * 2)
     }
     
     fileprivate func appendTouchInteraction(interaction: TouchInteraction, events: inout [Event]) {
         if let touchEventData: EventDataProtocol = switch interaction.kind {
         case .touchDown(let point):
             MouseInteractionData(source: .mouseInteraction,
-                      type: .touchStart,
-                      id: imageId,
-                      x: point.x + padding.width,
-                      y: point.y + padding.height)
+                                 type: .touchStart,
+                                 id: imageId,
+                                 x: point.x + padding.width,
+                                 y: point.y + padding.height)
             
         case .touchUp(let point):
             MouseInteractionData(source: .mouseInteraction,
-                      type: .touchEnd,
-                      id: imageId,
-                      x: point.x + padding.width,
-                      y: point.y + padding.height)
+                                 type: .touchEnd,
+                                 id: imageId,
+                                 x: point.x + padding.width,
+                                 y: point.y + padding.height)
             
         case .touchPath(let points):
             MouseMoveEventData(
@@ -154,7 +160,7 @@ actor SessionReplayEventGenerator {
                     y: p.position.y + padding.height,
                     id: imageId,
                     timeOffset: p.timestamp - interaction.timestamp) })
-
+            
         default:
             Optional<MouseInteractionData>.none
         } {
@@ -184,8 +190,8 @@ actor SessionReplayEventGenerator {
         return event
     }
     
-    func windowEvent(href: String, width: Int, height: Int, timestamp: TimeInterval) -> Event {
-        let eventData = WindowData(href: href, width: width, height: height)
+    func windowEvent(href: String, originalSize: CGSize, timestamp: TimeInterval) -> Event {
+        let eventData = WindowData(href: href, size: paddedSize(originalSize))
         let event = Event(type: .Meta,
                           data: AnyEventData(eventData),
                           timestamp: timestamp,
@@ -217,14 +223,14 @@ actor SessionReplayEventGenerator {
         return event
     }
     
-    func viewPortEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
-        let payload = ViewportPayload(width: exportImage.originalWidth,
-                                      height: exportImage.originalHeight,
-                                      availWidth: exportImage.originalWidth,
-                                      availHeight: exportImage.originalHeight,
+    func viewPortEvent(exportFrame: ExportFrame, timestamp: TimeInterval) -> Event {
+        let payload = ViewportPayload(width: Int(exportFrame.originalSize.width),
+                                      height: Int(exportFrame.originalSize.height),
+                                      availWidth: Int(exportFrame.originalSize.width),
+                                      availHeight: Int(exportFrame.originalSize.height),
                                       colorDepth: 30,
                                       pixelDepth: 30,
-                                      orientation: exportImage.orientation)
+                                      orientation: exportFrame.orientation)
         let eventData = CustomEventData(tag: .viewport, payload: payload)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
@@ -233,24 +239,70 @@ actor SessionReplayEventGenerator {
         return event
     }
     
-    func drawImageEvent(exportImage: ExportImage, timestamp: TimeInterval, imageId: Int) -> Event {
-        let clearRectCommand = ClearRect(x: 0, y: 0, width: exportImage.originalWidth, height: exportImage.originalHeight)
-        let base64String = exportImage.data.base64EncodedString()
-        let arrayBuffer = RRArrayBuffer(base64: base64String)
-        let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportImage.mimeType))
-        let drawImageCommand = DrawImage(image: AnyRRNode(RRImageBitmap(args: [blob])),
-                                         dx: 0,
-                                         dy: 0,
-                                         dw: exportImage.originalWidth,
-                                         dh: exportImage.originalHeight)
+    func addTileReusedNodes(exportFrame: ExportFrame, timestamp: TimeInterval, bodyId: Int) -> [Event] {
+        var removes = [RemovedNode]()
+        var adds = [AddedNode]()
+        var totalCanvasSize = 0
         
+        if exportFrame.isKeyframe {
+            removes = keyNodeIds
+            keyNodeIds.removeAll(keepingCapacity: true)
+            frameToLastKeyNodeIndex.removeAll()
+        }
+
+        if let signature = exportFrame.imageSignature,
+           let lastKeyNodeIdx = frameToLastKeyNodeIndex[signature],
+           lastKeyNodeIdx < keyNodeIds.count {
+            removes = Array(keyNodeIds[(lastKeyNodeIdx + 1)...])
+            keyNodeIds = Array(keyNodeIds[0...lastKeyNodeIdx])
+            frameToLastKeyNodeIndex = frameToLastKeyNodeIndex.filter { $0.value > lastKeyNodeIdx }
+        } else {
+            for image in exportFrame.images {
+                let tileCanvasId = nextId
+                let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
+                let tileNode = image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL)
+                adds.append(AddedNode(parentId: bodyId, nextId: nil, node: tileNode))
+                keyNodeIds.append(RemovedNode(parentId: bodyId, id: tileCanvasId))
+                totalCanvasSize += base64DataURL.count
+            }
+            if let signature = exportFrame.imageSignature {
+                frameToLastKeyNodeIndex[signature] = keyNodeIds.count - 1
+            }
+        }
+        
+        if let firstId = keyNodeIds.first?.id, firstId != imageId {
+            // Keyframe replacement can remove the previously tracked node.
+            imageId = firstId
+        }
+    
+        let mutationData = MutationData(adds: adds, removes: removes, canvasSize: totalCanvasSize)
+        let mutationEvent = Event(type: .IncrementalSnapshot,
+                                  data: AnyEventData(mutationData),
+                                  timestamp: timestamp,
+                                  _sid: nextSid)
+        
+        generatingCanvasSize += mutationData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
+        return [mutationEvent]
+    }
+    
+    func drawImageEvent(exportFrame: ExportFrame, timestamp: TimeInterval, imageId: Int) -> Event {
+        var commands = [AnyCommand]()
+        for image in exportFrame.images {
+            if exportFrame.isKeyframe {
+                let clearRectCommand = ClearRect(rect: image.rect)
+                commands.append(AnyCommand(clearRectCommand, canvasSize: 80))
+            }
+            let base64String = image.data.base64EncodedString()
+            let arrayBuffer = RRArrayBuffer(base64: base64String)
+            let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportFrame.mimeType))
+            let drawImageCommand = DrawImage(image: AnyRRNode(RRImageBitmap(args: [blob])),
+                                             rect: image.rect)
+            commands.append(AnyCommand(drawImageCommand, canvasSize: base64String.count))
+        }
         let eventData = CanvasDrawData(source: .canvasMutation,
                                        id: imageId,
                                        type: .mouseUp,
-                                       commands: [
-                                        AnyCommand(clearRectCommand, canvasSize: 80),
-                                        AnyCommand(drawImageCommand, canvasSize: base64String.count)
-                                       ])
+                                       commands: commands)
         let event = Event(type: .IncrementalSnapshot,
                           data: AnyEventData(eventData),
                           timestamp: timestamp, _sid: nextSid)
@@ -269,37 +321,52 @@ actor SessionReplayEventGenerator {
         return event
     }
     
-    func fullSnapshotEvent(exportImage: ExportImage, timestamp: TimeInterval) -> Event {
+    func fullSnapshotEvent(exportFrame: ExportFrame, timestamp: TimeInterval) -> Event {
         id = 0
-        let eventData = fullSnapshotData(exportImage: exportImage)
+        let eventData = fullSnapshotData(exportFrame: exportFrame)
         let event = Event(type: .FullSnapshot, data: AnyEventData(eventData), timestamp: timestamp, _sid: nextSid)
         // start again counting canvasSize
         generatingCanvasSize = eventData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
         return event
     }
     
-    func fullSnapshotData(exportImage: ExportImage) -> DomData {
+    func fullSnapshotData(exportFrame: ExportFrame) -> DomData {        
         var rootNode = EventNode(id: nextId, type: .Document)
-        let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: "html")
+        let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: Dom.html)
         rootNode.childNodes.append(htmlDocNode)
-        let base64String = exportImage.base64DataURL()
-
-        let htmlNode = EventNode(id: nextId, type: .Element, tagName: "html", attributes: ["lang": "en"], childNodes: [
-            EventNode(id: nextId, type: .Element, tagName: "head", attributes: [:]),
-            EventNode(id: nextId, type: .Element, tagName: "body", attributes: [:], childNodes: [
-                exportImage.eventNode(id: nextId, rr_dataURL: base64String)
-            ]),
-        ])
-        imageId = id
+        let firstImage = exportFrame.images[0]
+        let base64String = firstImage.base64DataURL(mimeType: exportFrame.mimeType)
+        
+        let headNode = EventNode(id: nextId, type: .Element, tagName: Dom.head, attributes: [:])
+        let currentBodyId = nextId
+        let newImageId = nextId
+        let bodyNode = EventNode(id: currentBodyId, type: .Element, tagName: Dom.body,
+                                 attributes: [Dom.style: Dom.bodyStyle],
+                                 childNodes: [
+                                    exportFrame.eventNode(id: newImageId, rr_dataURL: base64String)
+                                 ])
+        let htmlNode = EventNode(id: nextId, type: .Element, tagName: Dom.html,
+                                 attributes: [Dom.lang: Dom.en],
+                                 childNodes: [headNode, bodyNode])
+        imageId = newImageId
+        bodyId = currentBodyId
+        keyNodeIds = [RemovedNode(parentId: currentBodyId, id: newImageId)]
+        frameToLastKeyNodeIndex.removeAll()
+        if let signature = exportFrame.imageSignature {
+            frameToLastKeyNodeIndex[signature] = 0
+        }
         rootNode.childNodes.append(htmlNode)
         
         return DomData(node: rootNode, canvasSize: base64String.count)
     }
     
-    private func appendFullSnapshotEvents(_ exportImage: ExportImage, _ timestamp: TimeInterval, _ events: inout [Event]) {
-        events.append(windowEvent(href: "", width: paddedWidth(exportImage.originalWidth), height: paddedHeight(exportImage.originalHeight), timestamp: timestamp))
-        events.append(fullSnapshotEvent(exportImage: exportImage, timestamp: timestamp))
-        events.append(viewPortEvent(exportImage: exportImage, timestamp: timestamp))
+    private func appendFullSnapshotEvents(_ exportFrame: ExportFrame, _ timestamp: TimeInterval, _ events: inout [Event]) {
+        events.append(windowEvent(href: "", originalSize: exportFrame.originalSize, timestamp: timestamp))
+        events.append(fullSnapshotEvent(exportFrame: exportFrame, timestamp: timestamp))
+        events.append(viewPortEvent(exportFrame: exportFrame, timestamp: timestamp))
+    }
+    
+    private func appendKeyFrameEvents(_ exportFrame: ExportFrame, _ timestamp: TimeInterval, _ events: inout [Event]) {
     }
     
     func updatePushedCanvasSize() {

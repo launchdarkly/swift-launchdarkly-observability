@@ -20,6 +20,11 @@ import OSLog
 ///
 
 public struct Options {
+    public enum Defaults {
+        public static let otlpEndpoint = "https://otel.observability.app.launchdarkly.com:4318"
+        public static let backendUrl = "https://pub.observability.app.launchdarkly.com"
+    }
+
     public enum LogLevel: Int, Comparable, CustomStringConvertible, CaseIterable {
         case
         trace = 1,
@@ -126,6 +131,21 @@ public struct Options {
     public enum AppMetrics {
         case enabled, disabled
     }
+    public enum CrashReportingSource {
+        case KSCrash
+        case metricKit
+        case none
+    }
+    public struct CrashReporting {
+        public let source: CrashReportingSource
+        public static var enabled: Self {
+            .init()
+        }
+        
+        public init(source: CrashReportingSource = .KSCrash) {
+            self.source = source
+        }
+    }
     public enum FeatureFlag {
         case enabled
         case disabled
@@ -166,6 +186,7 @@ public struct Options {
             self.launchTimes = launchTimes
         }
     }
+    public var isEnabled: Bool
     public var serviceName: String
     public var serviceVersion: String
     public var otlpEndpoint: String
@@ -181,14 +202,15 @@ public struct Options {
     public var metricsApi: AppMetrics
     public var tracesApi: AppTracing
     public var log: OSLog
-    public var crashReporting: FeatureFlag
+    public var crashReporting: CrashReporting
     public var instrumentation: Instrumentation
     
     public init(
+        isEnabled: Bool = true,
         serviceName: String = "observability-swift",
         serviceVersion: String = "0.1.0",
-        otlpEndpoint: String = "https://otel.observability.app.launchdarkly.com:4318",
-        backendUrl: String = "https://pub.observability.app.launchdarkly.com",
+        otlpEndpoint: String? = nil,
+        backendUrl: String? = nil,
         contextFriendlyName: String? = nil,
         resourceAttributes: [String: AttributeValue] = [:],
         customHeaders: [String: String] = [:],
@@ -200,13 +222,13 @@ public struct Options {
         tracesApi: AppTracing = .enabled,
         metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
-        crashReporting: FeatureFlag = .enabled,
+        crashReporting: CrashReporting = .enabled,
         instrumentation: Instrumentation = .init()
     ) {
         self.serviceName = serviceName
         self.serviceVersion = serviceVersion
-        self.otlpEndpoint = otlpEndpoint
-        self.backendUrl = backendUrl
+        self.otlpEndpoint = otlpEndpoint.flatMap { $0.isEmpty ? nil : $0 } ?? Defaults.otlpEndpoint
+        self.backendUrl = backendUrl.flatMap { $0.isEmpty ? nil : $0 } ?? Defaults.backendUrl
         self.contextFriendlyName = contextFriendlyName
         self.resourceAttributes = resourceAttributes
         self.customHeaders = customHeaders
@@ -220,5 +242,7 @@ public struct Options {
         self.log = log
         self.crashReporting = crashReporting
         self.instrumentation = instrumentation
+        self.isEnabled = isEnabled
     }
 }
+

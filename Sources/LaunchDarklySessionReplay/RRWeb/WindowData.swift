@@ -5,9 +5,9 @@ struct WindowData: EventDataProtocol {
     var width: Int?
     var height: Int?
     
-    init(href: String? = nil, width: Int? = nil, height: Int? = nil) {
+    init(href: String? = nil, size: CGSize) {
         self.href = href
-        self.width = width
-        self.height = height
+        self.width = Int(size.width)
+        self.height = Int(size.height)
     }
 }

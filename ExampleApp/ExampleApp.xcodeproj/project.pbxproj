@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */; };
+		E7E464C82F3A9DFF0080DEF9 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = E7E464C72F3A9DFF0080DEF9 /* LaunchDarklySessionReplay */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E7E464C82F3A9DFF0080DEF9 /* LaunchDarklySessionReplay in Frameworks */,
 				E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -38,6 +40,7 @@
 			isa = PBXGroup;
 			children = (
 				E7904AC62E6A523D00A15337 /* ExampleApp */,
+				E7E464C62F3A9DFF0080DEF9 /* Frameworks */,
 				E7904AC52E6A523D00A15337 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -48,6 +51,13 @@
 				E7904AC42E6A523D00A15337 /* ExampleApp.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E7E464C62F3A9DFF0080DEF9 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -71,6 +81,7 @@
 			name = ExampleApp;
 			packageProductDependencies = (
 				E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */,
+				E7E464C72F3A9DFF0080DEF9 /* LaunchDarklySessionReplay */,
 			);
 			productName = ExampleApp;
 			productReference = E7904AC42E6A523D00A15337 /* ExampleApp.app */;
@@ -258,7 +269,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
@@ -276,6 +287,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.launchdarkly..ExampleApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -287,7 +299,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
@@ -305,6 +317,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.launchdarkly..ExampleApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -345,6 +358,11 @@
 		E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LaunchDarklyObservability;
+		};
+		E7E464C72F3A9DFF0080DEF9 /* LaunchDarklySessionReplay */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E7904AD52E6A52CE00A15337 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */;
+			productName = LaunchDarklySessionReplay;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

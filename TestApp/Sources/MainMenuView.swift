@@ -1,5 +1,6 @@
 import SwiftUI
 import LaunchDarklyObservability
+import LaunchDarklySessionReplay
 import LaunchDarkly
 
 enum Failure: LocalizedError {
@@ -91,43 +92,44 @@ struct MainMenuView: View {
                 
                 HStack {
                     Button {
-                        viewModel.recordSpanAndVariation()
-                    } label: {
-                        Text("span")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    
-                    Button {
                         viewModel.recordLogs()
                     } label: {
-                        Text("logs")
+                        Text("Logs")
                     }
                     .buttonStyle(.borderedProminent)
                     
                     Button {
                         viewModel.recordCounterMetric()
                     } label: {
-                        Text("metric: counter")
+                        Text("Metric: counter")
                     }
                     .buttonStyle(.borderedProminent)
                 }
                 
-                Button {
-                    Task {
-                        await viewModel.performNetworkRequest()
+                HStack {
+                    Button {
+                        viewModel.recordSpanAndVariation()
+                    } label: {
+                        Text("Span & Flag Eval")
                     }
-                } label: {
-                    if viewModel.isNetworkInProgress {
-                        ProgressView {
-                            Text("get request to launchdarkly.com...")
+                    .buttonStyle(.borderedProminent)
+                    Button {
+                        Task {
+                            await viewModel.performNetworkRequest()
                         }
-                    } else {
-                        Text("network request: span")
+                    } label: {
+                        if viewModel.isNetworkInProgress {
+                            ProgressView {
+                                Text("get request to launchdarkly.com...")
+                            }
+                        } else {
+                            Text("Network Request")
+                        }
                     }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(viewModel.isNetworkInProgress)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(viewModel.isNetworkInProgress)
-               
+                
                 HStack {
                     Button {
                         viewModel.recordError()
@@ -145,8 +147,22 @@ struct MainMenuView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
                 }
-                
-   
+
+                HStack {
+                    Button {
+                        LDReplay.shared.start()
+                    } label: {
+                        Text("Start Replay")
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button {
+                        LDReplay.shared.stop()
+                    } label: {
+                        Text("Stop Replay")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             }.background(Color.clear)
             .navigationDestination(for: String.self) { value in
                 if value == "fruta" {

@@ -12,6 +12,7 @@ public class ObservabilityContext {
     public let transportService: TransportServicing
     public let appLifecycleManager: AppLifecycleManaging
     public let userInteractionManager: UserInteractionManager
+    public let sessionAttributes: [String: AttributeValue]
     
     public init(
         sdkKey: String,
@@ -19,12 +20,14 @@ public class ObservabilityContext {
         appLifecycleManager: AppLifecycleManaging,
         sessionManager: SessionManaging,
         transportService: TransportServicing,
-        userInteractionManager: UserInteractionManager) {
+        userInteractionManager: UserInteractionManager,
+        sessionAttributes: [String: AttributeValue]) {
             self.sdkKey = sdkKey
             self.options = options
             self.appLifecycleManager = appLifecycleManager
             self.sessionManager = sessionManager
             self.transportService = transportService
             self.userInteractionManager = userInteractionManager
+            self.sessionAttributes = sessionAttributes
         }
 }

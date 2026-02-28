@@ -1,4 +1,5 @@
 import Foundation
+import LaunchDarklyObservability
 
 struct InitializeSessionVariables: Codable {
     struct ClientConfig: Codable {
@@ -86,7 +87,7 @@ extension SessionReplayAPIService {
             privacySetting: "none",
             serviceName: context.serviceName,
             backendUrl: context.backendUrl,
-            manualStart: true,
+            manualStart: false,
             organizationID: context.sdkKey,
             environment: "production",
             sessionSecureID: sessionSecureId
@@ -192,8 +193,8 @@ extension SessionReplayAPIService {
                    enableStrictPrivacy: false,
                    privacySetting: "none",
                    enableRecordingNetworkContents: false,
-                   clientVersion: "9.18.23",
-                   firstloadVersion: "9.18.23",
+                   clientVersion: sdkVersion,
+                   firstloadVersion: sdkVersion,
                    clientConfig: clientConfigString,
                    environment: "production",
                    id: "31MMpqmDG2DsZvbxo0Lzx4xelbt7",

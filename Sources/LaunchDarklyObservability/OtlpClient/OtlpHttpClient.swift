@@ -1,6 +1,6 @@
 import Foundation
 import SwiftProtobuf
-import DataCompression
+import LaunchDarkly
 #if !LD_COCOAPODS
     import OpenTelemetryProtocolExporterCommon
     import Common
@@ -63,7 +63,7 @@ public final class OtlpHttpClient {
             request.httpMethod = "POST"
             request.setValue(Headers.getUserAgentHeader(), forHTTPHeaderField: Constants.HTTP.userAgent)
             request.setValue("application/x-protobuf", forHTTPHeaderField: "Content-Type")
-            if let compressedData = rawData.gzip() {
+            if let compressedData = rawData.ld_gzip() {
                 request.httpBody = compressedData
                 request.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
             } else {

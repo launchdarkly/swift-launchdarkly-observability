@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 @objcMembers
 public final class AppStartTime: NSObject {

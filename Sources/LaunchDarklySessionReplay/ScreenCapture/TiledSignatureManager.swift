@@ -5,7 +5,8 @@ import CommonCrypto
 struct ImageSignature: Hashable {
     let rows: Int
     let columns: Int
-    let tileSize: Int
+    let tileWidth: Int
+    let tileHeight: Int
     let tiledSignatures: [TiledSignature]
 }
 
@@ -14,14 +15,14 @@ struct TiledSignature: Hashable {
 }
 
 final class TiledSignatureManager {
-    let tileSize: Int = 64
-    
     func compute(image: UIImage) -> ImageSignature? {
         guard let image = image.cgImage else { return nil }
         let width = image.width
         let height = image.height
-        let columns = (width + tileSize - 1) / tileSize
-        let rows = (height + tileSize - 1) / tileSize
+        let tileWidth = nearestDivisor(value: width, preferred: 64, range: 53...75)
+        let tileHeight = nearestDivisor(value: height, preferred: 44, range: 44...50)
+        let columns = (width + tileWidth - 1) / tileWidth
+        let rows = (height + tileHeight - 1) / tileHeight
         
         guard let data = image.dataProvider?.data,
               let ptr = CFDataGetBytePtr(data) else { return nil }
@@ -31,18 +32,18 @@ final class TiledSignatureManager {
         tiledSignatures.reserveCapacity(columns * rows)
         
         for row in 0..<rows {
-            let startY = row * tileSize
-            let endY = min(startY + tileSize, height)
+            let startY = row * tileHeight
+            let endY = min(startY + tileHeight, height)
             
             for column in 0..<columns {
-                let startX = column * tileSize
-                let endX = min(startX + tileSize, width)
+                let startX = column * tileWidth
+                let endX = min(startX + tileWidth, width)
                 let signature = tileHash(ptr: ptr, startX: startX, startY: startY, endX: endX, endY: endY, bytesPerRow: bytesPerRow)
                 tiledSignatures.append(signature)
             }
         }
         
-        return ImageSignature(rows: rows, columns: columns, tileSize: tileSize, tiledSignatures: tiledSignatures)
+        return ImageSignature(rows: rows, columns: columns, tileWidth: tileWidth, tileHeight: tileHeight, tiledSignatures: tiledSignatures)
     }
     
     @inline(__always)
@@ -59,4 +60,80 @@ final class TiledSignatureManager {
         CC_SHA256_Final(&hash, &hasher)
         return TiledSignature(hash: hash)
     }
+    
+    private func nearestDivisor(value: Int, preferred: Int, range: ClosedRange<Int>) -> Int {
+        guard value > 0 else {
+            return preferred
+        }
+
+        func isDivisor(_ candidate: Int) -> Bool {
+            candidate > 0 && value.isMultiple(of: candidate)
+        }
+
+        if range.contains(preferred), isDivisor(preferred) {
+            return preferred
+        }
+
+        let maxDistance = max(abs(range.lowerBound - preferred), abs(range.upperBound - preferred))
+        guard maxDistance > 0 else {
+            return preferred
+        }
+
+        for offset in 1...maxDistance {
+            let positiveCandidate = preferred + offset
+            if range.contains(positiveCandidate), isDivisor(positiveCandidate) {
+                return positiveCandidate
+            }
+
+            let negativeCandidate = preferred - offset
+            if range.contains(negativeCandidate), isDivisor(negativeCandidate) {
+                return negativeCandidate
+            }
+        }
+
+        return preferred
+    }
 }
+
+extension ImageSignature {
+    // returns nil if signatures equal
+    func diffRectangle(other: ImageSignature?) -> CGRect? {
+        guard let other else {
+            return CGRect(x: 0,
+                          y: 0,
+                          width: columns * tileWidth,
+                          height: rows * tileHeight)
+        }
+        
+        guard rows == other.rows, columns == other.columns, tileWidth == other.tileWidth, tileHeight == other.tileHeight else {
+            return CGRect(x: 0,
+                          y: 0,
+                          width: columns * tileWidth,
+                          height: rows * tileHeight)
+        }
+        
+        var minRow = Int.max
+        var maxRow = Int.min
+        var minColumn = Int.max
+        var maxColumn = Int.min
+        
+        for (i, tile) in tiledSignatures.enumerated() where tile != other.tiledSignatures[i] {
+            let row = i / columns
+            let col = i % columns
+            minRow = min(minRow, row)
+            maxRow = max(maxRow, row)
+            minColumn = min(minColumn, col)
+            maxColumn = max(maxColumn, col)
+        }
+        
+        guard minRow != Int.max else {
+            return nil
+        }
+        
+        return CGRect(x: minColumn * tileWidth,
+                      y: minRow * tileHeight,
+                      width: (maxColumn - minColumn + 1) * tileWidth,
+                      height: (maxRow - minRow + 1) * tileHeight)
+    }
+}
+

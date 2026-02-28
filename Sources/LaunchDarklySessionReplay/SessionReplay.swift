@@ -17,18 +17,27 @@ public final class SessionReplay: Plugin {
     }
     
     public func register(client: LaunchDarkly.LDClient, metadata: LaunchDarkly.EnvironmentMetadata) {
-        guard options.isEnabled,
-              let context = LDObserve.shared.context else {
+        guard let context = LDObserve.shared.context else {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service could not find Observability Service")
             return
         }
         
         observabilityContext = context
-
+        
         do {
-            sessionReplayService = try SessionReplayService(observabilityContext: context,
-                                                            sessonReplayOptions: options,
-                                                            metadata: metadata)
+            guard LDReplay.shared.client == nil else {
+                throw PluginError.sessionReplayInstanceAlreadyExist
+            }
+           
+            let sessionReplayService = try SessionReplayService(observabilityContext: context,
+                                                                sessonReplayOptions: options,
+                                                                metadata: metadata)
+            LDReplay.shared.client = sessionReplayService
+            self.sessionReplayService = sessionReplayService
+            
+            if options.isEnabled {
+                start()
+            }
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service initialization failed with error: \(error)")
         }
@@ -37,4 +46,17 @@ public final class SessionReplay: Plugin {
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
         [SessionReplayHook(plugin: self)]
     }
+    
+    public func start() {
+        Task { @MainActor in
+            sessionReplayService?.start()
+        }
+    }
+    
+    public func stop() {
+        Task { @MainActor in
+            sessionReplayService?.stop()
+        }
+    }
 }
+

@@ -1,36 +1,55 @@
 import Foundation
 import UIKit
 
-struct ExportImage: Equatable {
-    let data: Data
-    let dataHashValue: Int
-    let originalWidth: Int
-    let originalHeight: Int
+struct ExportFrame: Equatable {
+    struct ExportImage: Equatable {
+        let data: Data
+        let dataHashValue: Int
+        let rect: CGRect
+        
+        /// Creates an EventNode for a tile image (positioned absolutely on top of main canvas)
+        func tileEventNode(id: Int, rr_dataURL: String) -> EventNode {
+            let style = "position:absolute;left:\(Int(rect.minX))px;top:\(Int(rect.minY))px;pointer-events:none;"
+            return EventNode(
+                id: id,
+                type: .Element,
+                tagName: "img",
+                attributes: [
+                    "src": rr_dataURL,
+                    "width": "\(Int(rect.width))",
+                    "height": "\(Int(rect.height))",
+                    "style": style]
+            )
+        }
+        
+        func base64DataURL(mimeType: String) -> String {
+            "data:\(mimeType);base64,\(data.base64EncodedString())"
+        }
+            
+        static func == (lhs: ExportImage, rhs: ExportImage) -> Bool {
+            lhs.dataHashValue == rhs.dataHashValue && lhs.data.elementsEqual(rhs.data)
+        }
+    }
+    
+    let images: [ExportImage]
+    let originalSize: CGSize
     let scale: CGFloat
     let format: ExportFormat
     let timestamp: TimeInterval
     let orientation: Int
-
-    init(data: Data, originalWidth: Int, originalHeight: Int, scale: CGFloat, format: ExportFormat, timestamp: TimeInterval, orientation: Int) {
-        self.data = data
-        self.dataHashValue = data.hashValue
-        self.originalWidth = originalWidth
-        self.originalHeight = originalHeight
-        self.scale = scale
-        self.format = format
-        self.timestamp = timestamp
-        self.orientation = orientation
-    }
+    let isKeyframe: Bool
+    let imageSignature: ImageSignature?
     
+    /// Creates an EventNode for the main canvas (full snapshot)
     func eventNode(id: Int, rr_dataURL: String) -> EventNode {
         EventNode(
             id: id,
             type: .Element,
-            tagName: "canvas",
+            tagName: "img",
             attributes: [
                 "rr_dataURL": rr_dataURL,
-                "width": "\(originalWidth)",
-                "height": "\(originalHeight)"]
+                "width": "\(Int(originalSize.width))",
+                "height": "\(Int(originalSize.height))"]
         )
     }
     
@@ -43,25 +62,15 @@ struct ExportImage: Equatable {
         }
     }
     
-    func base64DataURL() -> String {
-        "data:\(mimeType);base64,\(data.base64EncodedString())"
-    }
-    
-    static func == (lhs: ExportImage, rhs: ExportImage) -> Bool {
-        lhs.dataHashValue == rhs.dataHashValue && lhs.data.elementsEqual(rhs.data)
+    static func == (lhs: ExportFrame, rhs: ExportFrame) -> Bool {
+        lhs.images == rhs.images
     }
 }
 
 extension UIImage {
-    func exportImage(format: ExportFormat, originalSize: CGSize, scale: CGFloat, timestamp: TimeInterval, orientation: Int) -> ExportImage? {
+    func asExportedImage(format: ExportFormat, rect: CGRect) -> ExportFrame.ExportImage? {
         guard let data = asData(format: format) else { return nil }
-        return ExportImage(data: data,
-                           originalWidth: Int(originalSize.width),
-                           originalHeight: Int(originalSize.height),
-                           scale: scale,
-                           format: format,
-                           timestamp: timestamp,
-                           orientation: orientation)
+        return ExportFrame.ExportImage(data: data, dataHashValue: data.hashValue, rect: rect)
     }
 }
 

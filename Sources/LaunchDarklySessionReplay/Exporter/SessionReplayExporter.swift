@@ -11,7 +11,7 @@ actor SessionReplayExporter: EventExporting {
     private let context: SessionReplayContext
     private let sessionManager: SessionManaging
     private var isInitializing = false
-    private var eventGenerator: SessionReplayEventGenerator
+    private var eventGenerator: RRWebEventGenerator
     private var log: OSLog
     private var initializedSession: InitializeSessionResponse?
     private var sessionInfo: SessionInfo?
@@ -32,7 +32,7 @@ actor SessionReplayExporter: EventExporting {
         self.replayApiService = replayApiService
         self.sessionManager = context.observabilityContext.sessionManager
         self.title = title
-        self.eventGenerator = SessionReplayEventGenerator(log: context.log, title: title)
+        self.eventGenerator = RRWebEventGenerator(log: context.log, title: title)
         self.log = context.log
         self.sessionInfo = sessionManager.sessionInfo
         
@@ -47,7 +47,7 @@ actor SessionReplayExporter: EventExporting {
     
     private func updateSessionInfo(_ sessionInfo: SessionInfo) async {
         self.sessionInfo = sessionInfo
-        self.eventGenerator = SessionReplayEventGenerator(log: log, title: title)
+        self.eventGenerator = RRWebEventGenerator(log: log, title: title)
         self.initializedSession = nil
     }
     
@@ -68,7 +68,7 @@ actor SessionReplayExporter: EventExporting {
             let session = try await initializeSession(sessionSecureId: sessionInfo.id)
             var identifyPayload = self.identifyPayload
             if identifyPayload == nil {
-                identifyPayload = await IdentifyItemPayload(options: context.observabilityContext.options, timestamp: Date().timeIntervalSince1970)
+                identifyPayload = await IdentifyItemPayload(options: context.observabilityContext.options, sessionAttributes: context.observabilityContext.sessionAttributes, timestamp: Date().timeIntervalSince1970)
             }
             if let identifyPayload {
                 try await identifySession(sessionSecureId: session.secureId, userObject: identifyPayload.attributes)
@@ -77,6 +77,7 @@ actor SessionReplayExporter: EventExporting {
         } catch {
             initializedSession = nil
             os_log("%{public}@", log: log, type: .error, "Failed to initialize Session Replay:\n\(error)")
+            throw error
         }
     }
     

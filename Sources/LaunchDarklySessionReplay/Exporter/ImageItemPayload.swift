@@ -7,12 +7,12 @@ struct ImageItemPayload: EventQueueItemPayload {
     }
     
     var timestamp: TimeInterval {
-        exportImage.timestamp
+        exportFrame.timestamp
     }
     
     func cost() -> Int {
-        exportImage.data.count
+        exportFrame.images.reduce(0) { $0 + $1.data.count }
     }
     
-    let exportImage: ExportImage
+    let exportFrame: ExportFrame
 }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>mobileKey</key>
+	<string>$(mobileKey)</string>
+	<key>otlpEndpoint</key>
+	<string>$(otlpEndpoint)</string>
+	<key>backendUrl</key>
+	<string>$(backendUrl)</string>
+</dict>
+</plist>

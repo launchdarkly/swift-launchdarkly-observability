@@ -7,13 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5006D6B32EEB4D460081FEA5 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B22EEB4D460081FEA5 /* LaunchDarklyObservability */; };
 		5006D6B52EEB4D460081FEA5 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B42EEB4D460081FEA5 /* LaunchDarklySessionReplay */; };
+		503DA8C82F31678400E7E47F /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B22EEB4D460081FEA5 /* LaunchDarklyObservability */; };
 		50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = 50C584C92EE23723006A0045 /* LaunchDarkly */; };
 		E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AA00000000000000000001 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		E7904AC42E6A523D00A15337 /* TestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -43,9 +44,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				503DA8C82F31678400E7E47F /* LaunchDarklyObservability in Frameworks */,
 				5006D6B52EEB4D460081FEA5 /* LaunchDarklySessionReplay in Frameworks */,
 				E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */,
-				5006D6B32EEB4D460081FEA5 /* LaunchDarklyObservability in Frameworks */,
 				50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -63,6 +64,7 @@
 		E7904ABB2E6A523D00A15337 = {
 			isa = PBXGroup;
 			children = (
+				AA00000000000000000001 /* Secrets.xcconfig */,
 				E7904AC62E6A523D00A15337 /* Sources */,
 				50E1D9852E9DFAB600241A6B /* Frameworks */,
 				E7904AC52E6A523D00A15337 /* Products */,
@@ -286,6 +288,7 @@
 		};
 		E7904AD02E6A523E00A15337 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA00000000000000000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -295,6 +298,7 @@
 				ENABLE_PREVIEWS = YES;
 				"EXCLUDED_SOURCE_FILE_NAMES[sdk=appletv*]" = "**/Fruits/**";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -318,6 +322,7 @@
 		};
 		E7904AD12E6A523E00A15337 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA00000000000000000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -327,6 +332,7 @@
 				ENABLE_PREVIEWS = YES;
 				"EXCLUDED_SOURCE_FILE_NAMES[sdk=appletv*]" = "**/Fruits/**";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

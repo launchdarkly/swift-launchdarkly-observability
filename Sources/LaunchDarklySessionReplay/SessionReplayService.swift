@@ -1,9 +1,21 @@
 import Foundation
 import LaunchDarklyObservability
 import OSLog
+import Combine
 #if !LD_COCOAPODS
 import Common
 #endif
+
+protocol SessionReplayServicing {
+    @MainActor
+    func start()
+    
+    @MainActor
+    func stop()
+    
+    @MainActor
+    var isEnabled: Bool { get set }
+}
 
 struct SessionReplayContext {
     public var sdkKey: String
@@ -25,11 +37,26 @@ struct SessionReplayContext {
     }
 }
 
-final class SessionReplayService {
-    let snapshotTaker: SnapshotTaker
+final class SessionReplayService: SessionReplayServicing {
+    let captureManager: CaptureManager
     var transportService: TransportServicing
     var sessionReplayExporter: SessionReplayExporter
+    let userInteractionManager: UserInteractionManager
     let log: OSLog
+    
+    @MainActor
+    var isEnabled = false {
+        didSet {
+            guard oldValue != isEnabled else { return }
+            if isEnabled {
+                internalStart()
+            } else {
+                internalStop()
+            }
+        }
+    }
+    
+    private var cancellables = Set<AnyCancellable>()
     
     init(observabilityContext: ObservabilityContext,
          sessonReplayOptions: SessionReplayOptions,
@@ -37,23 +64,15 @@ final class SessionReplayService {
         guard let url = URL(string: observabilityContext.options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
-        
         self.log = observabilityContext.options.log
         let graphQLClient = GraphQLClient(endpoint: url)
-        let captureService = ScreenCaptureService(options: sessonReplayOptions)
+        let captureService = ImageCaptureService(options: sessonReplayOptions)
         self.transportService = observabilityContext.transportService
-        self.snapshotTaker = SnapshotTaker(captureService: captureService,
-                                           appLifecycleManager: observabilityContext.appLifecycleManager,
-                                           eventQueue: transportService.eventQueue)
-        snapshotTaker.start()
-        
-        let eventQueue = transportService.eventQueue
-        let userInteractionManager = observabilityContext.userInteractionManager
-        userInteractionManager.addYield { interaction in
-            Task {
-                await eventQueue.send(interaction)
-            }
-        }
+        self.captureManager = CaptureManager(captureService: captureService,
+                                             compression: sessonReplayOptions.compression,
+                                             appLifecycleManager: observabilityContext.appLifecycleManager,
+                                             eventQueue: transportService.eventQueue)
+        self.userInteractionManager = observabilityContext.userInteractionManager
         
         let sessionReplayContext = SessionReplayContext(
             sdkKey: observabilityContext.sdkKey,
@@ -68,10 +87,12 @@ final class SessionReplayService {
                                                           replayApiService: replayApiService,
                                                           title: ApplicationProperties.name ?? "iOS app")
         self.sessionReplayExporter = sessionReplayExporter
+        
         Task {
             await transportService.batchWorker.addExporter(sessionReplayExporter)
             transportService.start()
         }
+        os_log("LaunchDarkly Session Replay started, version: %{public}@", log: log, type: .info, sdkVersion)
     }
     
     func scheduleIdentifySession(identifyPayload: IdentifyItemPayload) async {
@@ -81,5 +102,34 @@ final class SessionReplayService {
         } catch {
             os_log("%{public}@", log: log, type: .error, "Failed to identifySession:\n\(error)")
         }
+    }
+    
+    @MainActor
+    func start() {
+        isEnabled = true
+    }
+    
+    @MainActor
+    private func internalStart() {
+        userInteractionManager.publisher
+            .sink { [transportService] interaction in
+                Task {
+                    await transportService.eventQueue.send(interaction)
+                }
+            }
+            .store(in: &cancellables)
+            
+        captureManager.isEnabled = true
+    }
+    
+    @MainActor
+    func stop() {
+       isEnabled = false
+    }
+    
+    @MainActor
+    private func internalStop() {
+        cancellables.removeAll()
+        captureManager.isEnabled = false
     }
 }

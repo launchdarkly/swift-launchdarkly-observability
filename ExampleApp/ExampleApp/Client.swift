@@ -1,5 +1,6 @@
 import UIKit
 import LaunchDarklyObservability
+import LaunchDarklySessionReplay
 
 struct Client {
     let config = { () -> LDConfig in
@@ -10,13 +11,14 @@ struct Client {
         config.plugins = [
             Observability(
                 options: .init(
+                    isEnabled: false,
                     otlpEndpoint: Env.otelHost,
                     sessionBackgroundTimeout: 3,
                     isDebug: true,
                     logsApiLevel: .info,
                     tracesApi: .enabled,
                     metricsApi: .enabled,
-                    crashReporting: .disabled,
+                    crashReporting: .enabled,
                     instrumentation: .init(
                         urlSession: .enabled,
                         userTaps: .enabled,
@@ -24,6 +26,22 @@ struct Client {
                         memoryWarnings: .enabled,
                         cpu: .disabled,
                         launchTimes: .enabled
+                    )
+                )
+            ),
+            SessionReplay(
+                options: .init(
+                    isEnabled: false,
+                    privacy: .init(
+                        maskTextInputs: true,
+                        maskWebViews: false,
+                        maskImages: false,
+                        maskAccessibilityIdentifiers: [
+                            "email-field",
+                            "password-field",
+                            "card-brand-chip",
+                            "10"
+                        ],
                     )
                 )
             )
