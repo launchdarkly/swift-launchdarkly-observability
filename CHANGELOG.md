@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.20.0...0.21.0) (2026-02-27)
+
+
+### Features
+
+* Bridging hooks calls from MAUI ([#142](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/142)) ([915ef63](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/915ef63e8a23fa325f06e9652f8b0676069ccfbe))
+
 ## [0.20.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.19.0...0.20.0) (2026-02-19)
 
 
