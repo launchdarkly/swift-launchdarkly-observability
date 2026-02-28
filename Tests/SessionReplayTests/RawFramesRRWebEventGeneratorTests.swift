@@ -27,7 +27,6 @@ struct RawFramesRRWebEventGeneratorTests {
 
         var extractedColors = [UIColor]()
         var extractedSizes = [CGSize]()
-        var extractedScales = [CGFloat]()
 
         for frame in frames {
             guard let exportFrame = exportDiffManager.exportFrame(from: frame) else {
@@ -117,19 +116,7 @@ struct RawFramesRRWebEventGeneratorTests {
             method: method
         )
 
-        let frame1 = makeRawFrame(color: .blue, timestamp: 1.0)
-        let frame2 = makeRawFrameWithTopBar(baseColor: .blue, topBarColor: .green, topBarHeight: 22, timestamp: 2.0)
-        let frame3 = makeRawFrameWithTopAndBottomBars(
-            baseColor: .blue,
-            topBarColor: .green,
-            topBarHeight: 22,
-            bottomBarColor: .green,
-            bottomBarHeight: 22,
-            timestamp: 3.0
-        )
-        // Reuse the same underlying image buffers to guarantee identical signatures for backtracking.
-        let frame4 = RawFrame(image: frame2.image, timestamp: 4.0, orientation: frame2.orientation, areas: frame2.areas)
-        let frame5 = RawFrame(image: frame1.image, timestamp: 5.0, orientation: frame1.orientation, areas: frame1.areas)
+        let (frame1, frame2, frame3, frame4, frame5) = makeBacktrackingFrames()
 
         guard let exportFrame1 = exportDiffManager.exportFrame(from: frame1) else {
             #expect(Bool(false), "Expected export frame for frame 1")
@@ -196,6 +183,93 @@ struct RawFramesRRWebEventGeneratorTests {
         let fifthRemovedIds = Set(fifthMutation.removes.map(\.id))
         #expect(!secondAddedIds.isEmpty)
         #expect(fifthRemovedIds == Set(secondAddedIds))
+    }
+
+    @Test("Keyframe resets backtracking when layer limit is reached")
+    func keyframeResetsBacktrackingWhenLayerLimitReached() async {
+        let method: SessionReplayOptions.CompressionMethod = .overlayTiles(layers: 3, backtracking: true)
+        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0)
+        let eventGenerator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Benchmark",
+            method: method
+        )
+
+        let (frame1, frame2, frame3, frame4, frame5) = makeBacktrackingFrames()
+        var trackedNodeIds = Set<Int>()
+
+        guard let exportFrame1 = exportDiffManager.exportFrame(from: frame1) else {
+            #expect(Bool(false), "Expected export frame for frame 1")
+            return
+        }
+        let events1 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame1))])
+        trackedNodeIds.formUnion(addedNodeIds(events: events1))
+
+        guard let exportFrame2 = exportDiffManager.exportFrame(from: frame2) else {
+            #expect(Bool(false), "Expected export frame for frame 2")
+            return
+        }
+        let events2 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame2))])
+        trackedNodeIds.formUnion(addedNodeIds(events: events2))
+
+        guard let exportFrame3 = exportDiffManager.exportFrame(from: frame3) else {
+            #expect(Bool(false), "Expected export frame for frame 3")
+            return
+        }
+        let events3 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame3))])
+        trackedNodeIds.formUnion(addedNodeIds(events: events3))
+        #expect(trackedNodeIds.count == 3)
+
+        guard let exportFrame4 = exportDiffManager.exportFrame(from: frame4) else {
+            #expect(Bool(false), "Expected export frame for frame 4")
+            return
+        }
+        #expect(exportFrame4.isKeyframe, "Frame 4 should be a keyframe with layers: 3")
+        let events4 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame4))])
+
+        guard let fourthMutation = firstMutationData(events: events4) else {
+            #expect(Bool(false), "Expected mutation event for frame 4")
+            return
+        }
+        #expect(fourthMutation.adds.count == 1, "Keyframe should add new nodes")
+        #expect(fourthMutation.removes.count == 3, "Keyframe should remove previous nodes")
+        let fourthRemovedIds = Set(fourthMutation.removes.map(\.id))
+        #expect(fourthRemovedIds == trackedNodeIds)
+        
+        trackedNodeIds.subtract(fourthRemovedIds)
+        trackedNodeIds.formUnion(fourthMutation.adds.compactMap(\.node.id))
+        #expect(trackedNodeIds.count == 1, "After keyframe, only one node should remain tracked")
+        
+        guard let exportFrame5 = exportDiffManager.exportFrame(from: frame5) else {
+            #expect(Bool(false), "Expected export frame for frame 5")
+            return
+        }
+        let events5 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame5))])
+        
+        guard let fifthMutation = firstMutationData(events: events5) else {
+            #expect(Bool(false), "Expected mutation event for frame 5")
+            return
+        }
+        #expect(!fifthMutation.adds.isEmpty)
+        #expect(fifthMutation.removes.isEmpty)
+        trackedNodeIds.formUnion(fifthMutation.adds.compactMap(\.node.id))
+        #expect(trackedNodeIds.count == 2, "After keyframe reset, frame 5 should add new tracked node instead of backtracking rollback")
+    }
+
+    private func makeBacktrackingFrames() -> (frame1: RawFrame, frame2: RawFrame, frame3: RawFrame, frame4: RawFrame, frame5: RawFrame) {
+        let frame1 = makeRawFrame(color: .blue, timestamp: 1.0)
+        let frame2 = makeRawFrameWithTopBar(baseColor: .blue, topBarColor: .green, topBarHeight: 22, timestamp: 2.0)
+        let frame3 = makeRawFrameWithTopAndBottomBars(
+            baseColor: .blue,
+            topBarColor: .green,
+            topBarHeight: 22,
+            bottomBarColor: .green,
+            bottomBarHeight: 22,
+            timestamp: 3.0
+        )
+        let frame4 = RawFrame(image: frame2.image, timestamp: 4.0, orientation: frame2.orientation, areas: frame2.areas)
+        let frame5 = RawFrame(image: frame1.image, timestamp: 5.0, orientation: frame1.orientation, areas: frame1.areas)
+        return (frame1, frame2, frame3, frame4, frame5)
     }
 
     private func makeRawFrame(color: UIColor, timestamp: TimeInterval) -> RawFrame {
