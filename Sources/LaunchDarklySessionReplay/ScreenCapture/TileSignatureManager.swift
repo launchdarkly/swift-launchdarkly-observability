@@ -1,6 +1,6 @@
 import UIKit
 import CoreGraphics
-import TileHashC
+import TileHashSwift
 
 struct ImageSignature: Hashable {
     let rows: Int
@@ -48,7 +48,7 @@ final class TileSignatureManager {
     }
     
     func tileHash(ptr: UnsafePointer<UInt8>, startX: Int, startY: Int, endX: Int, endY: Int, bytesPerRow: Int) -> TileSignature {
-        let result = tile_hash(ptr, Int32(startX), Int32(startY), Int32(endX), Int32(endY), Int32(bytesPerRow))
+        let result = TileHashSwift.tileHash(ptr: ptr, startX: startX, startY: startY, endX: endX, endY: endY, bytesPerRow: bytesPerRow)
         return TileSignature(hashLo: result.hashLo, hashHi: result.hashHi)
     }
     

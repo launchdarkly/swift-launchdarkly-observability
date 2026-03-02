@@ -28,8 +28,8 @@ let package = Package(
             publicHeadersPath: "."
         ),
         .target(
-            name: "TileHashC",
-            publicHeadersPath: "include"
+            name: "TileHashSwift",
+            swiftSettings: [.unsafeFlags(["-O"])]
         ),
         .target(name: "Common",
                 dependencies: [.product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))]),
@@ -57,8 +57,9 @@ let package = Package(
             dependencies: [
                 "Common",
                 "LaunchDarklyObservability",
-                "TileHashC",
+                "TileHashSwift",
             ],
+            swiftSettings: [.unsafeFlags(["-O"])]
         ),
         .target(
           name: "OpenTelemetryProtocolExporterCommon",
