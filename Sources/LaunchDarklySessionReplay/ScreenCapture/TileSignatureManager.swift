@@ -1,6 +1,5 @@
 import UIKit
 import CoreGraphics
-import CommonCrypto
 
 struct ImageSignature: Hashable {
     let rows: Int
@@ -11,7 +10,8 @@ struct ImageSignature: Hashable {
 }
 
 struct TileSignature: Hashable {
-    let hash: [UInt8]
+    let hashLo: Int64
+    let hashHi: Int64
 }
 
 final class TileSignatureManager {
@@ -48,17 +48,34 @@ final class TileSignatureManager {
     
     @inline(__always)
     func tileHash(ptr: UnsafePointer<UInt8>, startX: Int, startY: Int, endX: Int, endY: Int, bytesPerRow: Int) -> TileSignature {
-        var hasher = CC_SHA256_CTX()
-        CC_SHA256_Init(&hasher)
-        
-        for row in startY..<endY {
-            let offset = startX * 4 + row * bytesPerRow
-            CC_SHA256_Update(&hasher, ptr + offset, CC_LONG(endX - startX) * 4)
+        // Two independent 64-bit lanes to reduce collision probability vs single-lane hashing.
+        var hashLo: Int64 = 5_163_949_831_757_626_579
+        var hashHi: Int64 = 4_657_936_482_115_123_397
+        let primeLo: Int64 = 1_238_197_591_667_094_937
+        let primeHi: Int64 = 1_700_294_137_212_722_571
+
+        for y in startY..<endY {
+            let rowBase = y &* bytesPerRow
+            for x in startX..<endX {
+                let offset = rowBase &+ x &* 4
+                let b0 = Int64(ptr[offset])
+                let b1 = Int64(ptr[offset &+ 1])
+                let b2 = Int64(ptr[offset &+ 2])
+                let b3 = Int64(ptr[offset &+ 3])
+
+                hashLo = (hashLo ^ b0) &* primeLo
+                hashLo = (hashLo ^ b1) &* primeLo
+                hashLo = (hashLo ^ b2) &* primeLo
+                hashLo = (hashLo ^ b3) &* primeLo
+
+                hashHi = (hashHi ^ b3) &* primeHi
+                hashHi = (hashHi ^ b2) &* primeHi
+                hashHi = (hashHi ^ b1) &* primeHi
+                hashHi = (hashHi ^ b0) &* primeHi
+            }
         }
-        
-        var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
-        CC_SHA256_Final(&hash, &hasher)
-        return TileSignature(hash: hash)
+
+        return TileSignature(hashLo: hashLo, hashHi: hashHi)
     }
     
     private func nearestDivisor(value: Int, preferred: Int, range: ClosedRange<Int>) -> Int {
