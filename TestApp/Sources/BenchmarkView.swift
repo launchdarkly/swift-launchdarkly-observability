@@ -11,6 +11,7 @@ struct BenchmarkView: View {
     @State private var results = [BenchmarkResultRow]()
     @State private var isRunning = false
     @State private var showResults = false
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 20) {
@@ -20,7 +21,7 @@ struct BenchmarkView: View {
                 if isRunning {
                     ProgressView()
                 } else {
-                    Text("Mastodon Compression")
+                    Text("Mastodon iOS 200 sec walk")
                 }
             }
             .buttonStyle(.borderedProminent)
@@ -30,24 +31,36 @@ struct BenchmarkView: View {
         .sheet(isPresented: $showResults) {
             BenchmarkResultsSheet(results: results)
         }
+        .alert("Benchmark Failed", isPresented: Binding(
+            get: { errorMessage != nil },
+            set: { if !$0 { errorMessage = nil } }
+        )) {
+            Button("OK") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
     }
 
     private func runBenchmark() {
         isRunning = true
         Task {
-            let compressionResults = await executor.compression(framesDirectory: Self.framesDirectory, runs: benchmarkRuns)
-            let baseline = compressionResults.first?.bytes ?? 1
-            results = compressionResults.map { result in
-                let pct = Double(result.bytes) / Double(baseline) * 100
-                return BenchmarkResultRow(
-                    name: result.compression.displayName,
-                    bytes: result.bytes,
-                    executionTime: result.executionTime,
-                    percent: String(format: "%.0f%%", pct)
-                )
+            do {
+                let compressionResults = try await executor.compression(framesDirectory: Self.framesDirectory, runs: benchmarkRuns)
+                let baseline = compressionResults.first?.bytes ?? 1
+                results = compressionResults.map { result in
+                    let pct = Double(result.bytes) / Double(baseline) * 100
+                    return BenchmarkResultRow(
+                        name: result.compression.displayName,
+                        bytes: result.bytes,
+                        executionTime: result.executionTime,
+                        percent: String(format: "%.0f%%", pct)
+                    )
+                }
+                showResults = true
+            } catch {
+                errorMessage = error.localizedDescription
             }
             isRunning = false
-            showResults = true
         }
     }
 }

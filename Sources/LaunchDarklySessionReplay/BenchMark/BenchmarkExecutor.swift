@@ -19,15 +19,9 @@ public final class BenchmarkExecutor {
 
     public init() {}
 
-    public func compression(framesDirectory: URL, runs: Int = 1) async -> [CompressionResult] {
-        let frames: [RawFrame]
-        do {
-            let reader = try RawFrameReader(directory: framesDirectory)
-            frames = Array(reader)
-        } catch {
-            print("BenchmarkExecutor: failed to read frames – \(error)")
-            return []
-        }
+    public func compression(framesDirectory: URL, runs: Int = 1) async throws -> [CompressionResult] {
+        let reader = try RawFrameReader(directory: framesDirectory)
+        let frames = Array(reader)
 
         var results = [CompressionResult]()
         let runCount = max(1, runs)
