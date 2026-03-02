@@ -27,6 +27,10 @@ let package = Package(
             name: "ObjCBridge",
             publicHeadersPath: "."
         ),
+        .target(
+            name: "TileHashC",
+            publicHeadersPath: "include"
+        ),
         .target(name: "Common",
                 dependencies: [.product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))]),
         .target(
@@ -53,6 +57,7 @@ let package = Package(
             dependencies: [
                 "Common",
                 "LaunchDarklyObservability",
+                "TileHashC",
             ],
         ),
         .target(
