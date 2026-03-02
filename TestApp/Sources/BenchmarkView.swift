@@ -52,7 +52,8 @@ struct BenchmarkView: View {
                     return BenchmarkResultRow(
                         name: result.compression.displayName,
                         bytes: result.bytes,
-                        executionTime: result.executionTime,
+                        captureTime: result.captureTime,
+                        totalTime: result.totalTime,
                         percent: String(format: "%.0f%%", pct)
                     )
                 }
@@ -69,15 +70,20 @@ private struct BenchmarkResultRow: Identifiable {
     let id = UUID()
     let name: String
     let bytes: Int
-    let executionTime: TimeInterval
+    let captureTime: TimeInterval
+    let totalTime: TimeInterval
     let percent: String
 
     var formattedBytes: String {
         ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
     }
 
-    var formattedExecutionTime: String {
-        String(format: "%.2fs", executionTime)
+    var formattedCaptureTime: String {
+        String(format: "%.2fs", captureTime)
+    }
+
+    var formattedTotalTime: String {
+        String(format: "%.2fs", totalTime)
     }
 }
 
@@ -94,9 +100,9 @@ private struct BenchmarkResultsSheet: View {
                     Text(row.percent)
                         .foregroundStyle(.secondary)
                         .frame(width: 60, alignment: .trailing)
-                    Text(row.formattedExecutionTime)
+                    (Text(row.formattedCaptureTime) + Text(" / ") + Text(row.formattedTotalTime).bold())
                         .foregroundStyle(.secondary)
-                        .frame(width: 64, alignment: .trailing)
+                        .frame(width: 120, alignment: .trailing)
                     Text(row.formattedBytes)
                         .foregroundStyle(.secondary)
                         .frame(width: 80, alignment: .trailing)
