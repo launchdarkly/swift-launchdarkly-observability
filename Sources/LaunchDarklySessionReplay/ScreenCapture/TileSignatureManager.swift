@@ -46,32 +46,32 @@ final class TileSignatureManager {
         return ImageSignature(rows: rows, columns: columns, tileWidth: tileWidth, tileHeight: tileHeight, tileSignatures: tileSignatures)
     }
     
-    @inline(__always)
+    @_optimize(speed)
     func tileHash(ptr: UnsafePointer<UInt8>, startX: Int, startY: Int, endX: Int, endY: Int, bytesPerRow: Int) -> TileSignature {
-        // Two independent 64-bit lanes to reduce collision probability vs single-lane hashing.
         var hashLo: Int64 = 5_163_949_831_757_626_579
         var hashHi: Int64 = 4_657_936_482_115_123_397
         let primeLo: Int64 = 1_238_197_591_667_094_937
         let primeHi: Int64 = 1_700_294_137_212_722_571
 
+        let raw = UnsafeRawPointer(ptr)
+        let pixelCount = endX &- startX
+        let pairCount = pixelCount >> 1
+        let hasTrailingPixel = pixelCount & 1 != 0
+
         for y in startY..<endY {
-            let rowBase = y &* bytesPerRow
-            for x in startX..<endX {
-                let offset = rowBase &+ x &* 4
-                let b0 = Int64(ptr[offset])
-                let b1 = Int64(ptr[offset &+ 1])
-                let b2 = Int64(ptr[offset &+ 2])
-                let b3 = Int64(ptr[offset &+ 3])
+            var p = raw + (y &* bytesPerRow &+ startX &* 4)
 
-                hashLo = (hashLo ^ b0) &* primeLo
-                hashLo = (hashLo ^ b1) &* primeLo
-                hashLo = (hashLo ^ b2) &* primeLo
-                hashLo = (hashLo ^ b3) &* primeLo
+            for _ in 0..<pairCount {
+                let v = Int64(bitPattern: p.loadUnaligned(as: UInt64.self))
+                hashLo = (hashLo ^ v) &* primeLo
+                hashHi = (hashHi ^ v) &* primeHi
+                p += 8
+            }
 
-                hashHi = (hashHi ^ b3) &* primeHi
-                hashHi = (hashHi ^ b2) &* primeHi
-                hashHi = (hashHi ^ b1) &* primeHi
-                hashHi = (hashHi ^ b0) &* primeHi
+            if hasTrailingPixel {
+                let v = Int64(p.loadUnaligned(as: UInt32.self))
+                hashLo = (hashLo ^ v) &* primeLo
+                hashHi = (hashHi ^ v) &* primeHi
             }
         }
 
