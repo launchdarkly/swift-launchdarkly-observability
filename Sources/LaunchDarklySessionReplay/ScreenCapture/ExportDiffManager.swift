@@ -16,13 +16,14 @@ final class ExportDiffManager {
         self.tileDiffManager = TileDiffManager(compression: compression, scale: scale)
     }
 
-    func exportFrame(from frame: RawFrame) -> ExportFrame? {
+    func exportFrame(from frame: RawFrame, onTiledFrameComputed: (() -> Void)? = nil) -> ExportFrame? {
         lock.lock()
         defer { lock.unlock() }
         
         guard let capturedFrame = tileDiffManager.computeTiledFrame(frame: frame) else {
             return nil
         }
+        onTiledFrameComputed?()
         return exportTiledFrame(capturedFrame)
     }
 
