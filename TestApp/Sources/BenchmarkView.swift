@@ -11,6 +11,7 @@ struct BenchmarkView: View {
     @State private var results = [BenchmarkResultRow]()
     @State private var isRunning = false
     @State private var showResults = false
+    @State private var signatureResult: String?
 
     var body: some View {
         VStack(spacing: 20) {
@@ -25,6 +26,20 @@ struct BenchmarkView: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(isRunning)
+
+            Button {
+                runSignatureBenchmark()
+            } label: {
+                Text("Compute ImageSignature")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(isRunning)
+
+            if let signatureResult {
+                Text(signatureResult)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
         .navigationTitle("Benchmark")
         .sheet(isPresented: $showResults) {
@@ -48,6 +63,28 @@ struct BenchmarkView: View {
             }
             isRunning = false
             showResults = true
+        }
+    }
+
+    private func runSignatureBenchmark() {
+        isRunning = true
+        signatureResult = nil
+        Task.detached(priority: .userInitiated) {
+            do {
+                let r = try executor.signatureBenchmark(framesDirectory: Self.framesDirectory)
+                let mbString = String(format: "%.1f MB", Double(r.totalBytes) / (1024 * 1024))
+                let timeString = String(format: "%.3fs", r.elapsedTime)
+                let result = "\(timeString) — \(mbString) (\(r.frameCount) frames)"
+                await MainActor.run {
+                    signatureResult = result
+                    isRunning = false
+                }
+            } catch {
+                await MainActor.run {
+                    signatureResult = "Error: \(error.localizedDescription)"
+                    isRunning = false
+                }
+            }
         }
     }
 }
@@ -88,6 +125,7 @@ private struct BenchmarkResultsSheet: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 80, alignment: .trailing)
                 }
+                .font(.subheadline)
             }
             .navigationTitle("Results")
             .navigationBarTitleDisplayMode(.inline)
