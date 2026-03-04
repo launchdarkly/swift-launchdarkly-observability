@@ -310,7 +310,8 @@ actor RRWebEventGenerator {
         return event
     }
     
-    func fullSnapshotData(exportFrame: ExportFrame) -> DomData {        
+    func fullSnapshotData(exportFrame: ExportFrame) -> DomData {
+        nodeIds.removeAll()
         var rootNode = EventNode(id: nextId, type: .Document)
         var totalCanvasSize = 0
         let headNode = EventNode(id: nextId, type: .Element, tagName: Dom.head, attributes: [:])
