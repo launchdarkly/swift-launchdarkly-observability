@@ -59,7 +59,6 @@ let package = Package(
                 "LaunchDarklyObservability",
                 "SessionReplayHotPath",
             ],
-            //swiftSettings: [.unsafeFlags(["-O"])]
         ),
         .target(
           name: "OpenTelemetryProtocolExporterCommon",
