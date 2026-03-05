@@ -6,6 +6,7 @@ public struct ImageSignature: Hashable {
     public let tileWidth: Int
     public let tileHeight: Int
     public let tileSignatures: [TileSignature]
+    private let _hashValue: Int
 
     public init(rows: Int, columns: Int, tileWidth: Int, tileHeight: Int, tileSignatures: [TileSignature]) {
         self.rows = rows
@@ -13,6 +14,27 @@ public struct ImageSignature: Hashable {
         self.tileWidth = tileWidth
         self.tileHeight = tileHeight
         self.tileSignatures = tileSignatures
+
+        var hasher = Hasher()
+        hasher.combine(rows)
+        hasher.combine(columns)
+        hasher.combine(tileWidth)
+        hasher.combine(tileHeight)
+        hasher.combine(tileSignatures)
+        self._hashValue = hasher.finalize()
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(_hashValue)
+    }
+
+    public static func == (lhs: ImageSignature, rhs: ImageSignature) -> Bool {
+        lhs._hashValue == rhs._hashValue &&
+        lhs.rows == rhs.rows &&
+        lhs.columns == rhs.columns &&
+        lhs.tileWidth == rhs.tileWidth &&
+        lhs.tileHeight == rhs.tileHeight &&
+        lhs.tileSignatures == rhs.tileSignatures
     }
 }
 
