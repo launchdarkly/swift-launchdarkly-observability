@@ -43,19 +43,6 @@ struct ExportFrame {
     let isKeyframe: Bool
     let imageSignature: ImageSignature?
     
-    /// Creates an EventNode for the main canvas (full snapshot)
-    func eventNode(id: Int, rr_dataURL: String) -> EventNode {
-        EventNode(
-            id: id,
-            type: .Element,
-            tagName: "img",
-            attributes: [
-                "rr_dataURL": rr_dataURL,
-                "width": "\(Int(originalSize.width))",
-                "height": "\(Int(originalSize.height))"]
-        )
-    }
-    
     var mimeType: String {
         switch format {
         case .jpeg:
