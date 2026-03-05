@@ -41,6 +41,12 @@ struct BenchmarkView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.subheadline)
+                    .foregroundStyle(.red)
+            }
         }
         .navigationTitle("Benchmark")
         .sheet(isPresented: $showResults) {
@@ -50,6 +56,7 @@ struct BenchmarkView: View {
 
     private func runBenchmark() {
         isRunning = true
+        errorMessage = nil
         Task {
             do {
                 let compressionResults = try await executor.compression(framesDirectory: Self.framesDirectory, runs: benchmarkRuns)
