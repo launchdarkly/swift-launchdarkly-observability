@@ -5,7 +5,7 @@ import UIKit
 
 final class CaptureManager: EventSource {
     private let captureService: ImageCaptureService
-    private let tileDiffManager: TileDiffManager
+    private let exportDiffManager: ExportDiffManager
     private let appLifecycleManager: AppLifecycleManaging
     @MainActor
     private var displayLink: CADisplayLink?
@@ -17,6 +17,8 @@ final class CaptureManager: EventSource {
     private var isEventQueueAvailable: Bool = true
     private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
     private var cancellables = Set<AnyCancellable>()
+    private let debugFrameWriter = false
+    private let rawFrameWriter: RawFrameWriter?
     
     @MainActor
     var isEnabled: Bool = false {
@@ -35,9 +37,10 @@ final class CaptureManager: EventSource {
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue) {
         self.captureService = captureService
-        self.tileDiffManager = TileDiffManager(compression: compression, scale: 1.0)
+        self.exportDiffManager = ExportDiffManager(compression: compression, scale: 1.0)
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
+        self.rawFrameWriter = debugFrameWriter ? (try? RawFrameWriter()) : nil
         
         let sessionExporterId = self.sessionExporterId
         Task { @MainActor in
@@ -103,59 +106,34 @@ final class CaptureManager: EventSource {
      
     @MainActor
     func queueSnapshot() {
-        guard isEnabled, let displayLink, isEventQueueAvailable else {
+        guard isEnabled, displayLink != nil, isEventQueueAvailable else {
             return
         }
         
         let now = DispatchTime.now()
         if let lastFrameDispatchTime {
-            let timeInBackground = Double(DispatchTime.now().uptimeNanoseconds - lastFrameDispatchTime.uptimeNanoseconds) / Double(NSEC_PER_SEC)
+            let timeInBackground = Double(now.uptimeNanoseconds - lastFrameDispatchTime.uptimeNanoseconds) / Double(NSEC_PER_SEC)
             guard timeInBackground >= frameInterval else {
                 return
             }
         }
         
-        let lastFrameDispatchTime = DispatchTime.now()
-        self.lastFrameDispatchTime = lastFrameDispatchTime
+        self.lastFrameDispatchTime = now
         
         captureService.captureRawFrame { rawFrame in
             guard let rawFrame else {
                 // dropped frame
                 return
             }
-
-            guard let capturedFrame = self.tileDiffManager.computeDiffCapture(frame: rawFrame) else {
-                // dropped frame
-                return
-            }
             
-            guard let exportFrame = self.exportFrame(from: capturedFrame) else {
+            try? self.rawFrameWriter?.write(rawFrame: rawFrame)
+
+            guard let exportFrame = self.exportDiffManager.exportFrame(from: rawFrame) else {
                 // dropped frame
                 return
             }
             
             await self.eventQueue.send(ImageItemPayload(exportFrame: exportFrame))
         }
-    }
-    
-    private func exportFrame(from capturedFrame: TiledFrame) -> ExportFrame? {
-        let format = ExportFormat.jpeg(quality: 0.3)
-        var exportedFrames = [ExportFrame.ExportImage]()
-        for tile in capturedFrame.tiles {
-            guard let exportedFrame = tile.image.asExportedImage(format: format, rect: tile.rect) else {
-                return nil
-            }
-            exportedFrames.append(exportedFrame)
-        }
-        guard !exportedFrames.isEmpty else { return nil }
-        
-        return ExportFrame(images: exportedFrames,
-                           originalSize: capturedFrame.originalSize,
-                           scale: capturedFrame.scale,
-                           format: format,
-                           timestamp: capturedFrame.timestamp,
-                           orientation: capturedFrame.orientation,
-                           isKeyframe: capturedFrame.isKeyframe,
-                           imageSignature: capturedFrame.imageSignature)
     }
 }

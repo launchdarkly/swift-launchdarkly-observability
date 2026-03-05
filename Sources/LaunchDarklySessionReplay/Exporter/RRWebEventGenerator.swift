@@ -12,7 +12,7 @@ enum RRWebPlayerConstants {
     // padding requiered by used html dom structure
     static let padding = CGSize(width: 11, height: 11)
     // size limit of accumulated continues canvas operations on the RRWeb player
-    static let canvasBufferLimit = 10_000_000 // ~10mb
+    static let canvasBufferLimit = 9_000_000 // ~9mb (10mb - 1mb for keyframe logic)
     
     static let canvasDrawEntourage = 300 // bytes
 }
@@ -46,13 +46,13 @@ actor RRWebEventGenerator {
     
     private var imageId: Int?
     private var bodyId: Int?
+    private var knownKeyFrameId: Int?
     private var lastImageSize: CGSize?
     private var stats: SessionReplayStats?
     private let isDebug = false
-    private var keyNodeIds = [RemovedNode]()
-    private var frameToLastKeyNodeIndex: [ImageSignature: Int] = [:]
+    private var nodeIds: [ImageSignature: Int] = [:]
     
-    init(log: OSLog, title: String) {
+    init(log: OSLog, title: String, method _: SessionReplayOptions.CompressionMethod) {
         if isDebug {
             self.stats = SessionReplayStats(log: log)
         }
@@ -110,10 +110,14 @@ actor RRWebEventGenerator {
             
             let timestamp = item.timestamp
             
-            if let bodyId, let imageId,
+            if exportFrame.isKeyframe {
+                knownKeyFrameId = exportFrame.keyFrameId
+            }
+            
+            if let bodyId,
                lastImageSize == exportFrame.originalSize,
-               generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit  {
-                events.append(contentsOf: addTileReusedNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
+               (generatingCanvasSize < RRWebPlayerConstants.canvasBufferLimit || !exportFrame.isKeyframe) {
+                events.append(contentsOf: addCommandNodes(exportFrame: exportFrame, timestamp: timestamp, bodyId: bodyId))
             } else {
                 // if screen changed size we send fullSnapshot as canvas resizing might take to many hours on the server
                 appendFullSnapshotEvents(exportFrame, timestamp, &events)
@@ -239,38 +243,39 @@ actor RRWebEventGenerator {
         return event
     }
     
-    func addTileReusedNodes(exportFrame: ExportFrame, timestamp: TimeInterval, bodyId: Int) -> [Event] {
-        var removes = [RemovedNode]()
-        var adds = [AddedNode]()
+    private func tileNode(exportFrame: ExportFrame, image: ExportFrame.AddImage) -> (node: EventNode, canvasSize: Int) {
+        let tileCanvasId = nextId
+        if let imageSignature = image.imageSignature {
+            nodeIds[imageSignature] = tileCanvasId
+        }
+        let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
+        return (image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL), base64DataURL.count)
+    }
+    
+    private func addCommandNodes(exportFrame: ExportFrame, timestamp: TimeInterval, bodyId: Int) -> [Event] {
         var totalCanvasSize = 0
+        let removes: [RemovedNode] = exportFrame.removeImages?.compactMap { removal in
+            guard let nodeId = nodeIds[removal.imageSignature] else {
+                return nil
+            }
+            
+            return RemovedNode(parentId: bodyId, id: nodeId)
+        } ?? []
         
         if exportFrame.isKeyframe {
-            removes = keyNodeIds
-            keyNodeIds.removeAll(keepingCapacity: true)
-            frameToLastKeyNodeIndex.removeAll()
-        }
-
-        if let signature = exportFrame.imageSignature,
-           let lastKeyNodeIdx = frameToLastKeyNodeIndex[signature],
-           lastKeyNodeIdx < keyNodeIds.count {
-            removes = Array(keyNodeIds[(lastKeyNodeIdx + 1)...])
-            keyNodeIds = Array(keyNodeIds[0...lastKeyNodeIdx])
-            frameToLastKeyNodeIndex = frameToLastKeyNodeIndex.filter { $0.value > lastKeyNodeIdx }
-        } else {
-            for image in exportFrame.images {
-                let tileCanvasId = nextId
-                let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
-                let tileNode = image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL)
-                adds.append(AddedNode(parentId: bodyId, nextId: nil, node: tileNode))
-                keyNodeIds.append(RemovedNode(parentId: bodyId, id: tileCanvasId))
-                totalCanvasSize += base64DataURL.count
-            }
-            if let signature = exportFrame.imageSignature {
-                frameToLastKeyNodeIndex[signature] = keyNodeIds.count - 1
-            }
+            nodeIds.removeAll()
+        } else if exportFrame.keyFrameId != knownKeyFrameId {
+            // drop frame, we can reconstruct whole image only from known key frame
+            return []
         }
         
-        if let firstId = keyNodeIds.first?.id, firstId != imageId {
+        let adds: [AddedNode] = exportFrame.addImages.map { image in
+            let (node, canvasSize) = tileNode(exportFrame: exportFrame, image: image)
+            totalCanvasSize += canvasSize
+            return AddedNode(parentId: bodyId, nextId: nil, node: node)
+        }
+        
+        if exportFrame.isKeyframe, let firstId = adds.first?.node.id, firstId != imageId {
             // Keyframe replacement can remove the previously tracked node.
             imageId = firstId
         }
@@ -283,31 +288,6 @@ actor RRWebEventGenerator {
         
         generatingCanvasSize += mutationData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
         return [mutationEvent]
-    }
-    
-    func drawImageEvent(exportFrame: ExportFrame, timestamp: TimeInterval, imageId: Int) -> Event {
-        var commands = [AnyCommand]()
-        for image in exportFrame.images {
-            if exportFrame.isKeyframe {
-                let clearRectCommand = ClearRect(rect: image.rect)
-                commands.append(AnyCommand(clearRectCommand, canvasSize: 80))
-            }
-            let base64String = image.data.base64EncodedString()
-            let arrayBuffer = RRArrayBuffer(base64: base64String)
-            let blob = AnyRRNode(RRBlob(data: [AnyRRNode(arrayBuffer)], type: exportFrame.mimeType))
-            let drawImageCommand = DrawImage(image: AnyRRNode(RRImageBitmap(args: [blob])),
-                                             rect: image.rect)
-            commands.append(AnyCommand(drawImageCommand, canvasSize: base64String.count))
-        }
-        let eventData = CanvasDrawData(source: .canvasMutation,
-                                       id: imageId,
-                                       type: .mouseUp,
-                                       commands: commands)
-        let event = Event(type: .IncrementalSnapshot,
-                          data: AnyEventData(eventData),
-                          timestamp: timestamp, _sid: nextSid)
-        generatingCanvasSize += eventData.canvasSize + RRWebPlayerConstants.canvasDrawEntourage
-        return event
     }
     
     func mouseEvent(timestamp: TimeInterval, x: CGFloat, y: CGFloat, timeOffset: TimeInterval) -> Event? {
@@ -330,43 +310,34 @@ actor RRWebEventGenerator {
         return event
     }
     
-    func fullSnapshotData(exportFrame: ExportFrame) -> DomData {        
+    func fullSnapshotData(exportFrame: ExportFrame) -> DomData {
+        nodeIds.removeAll()
         var rootNode = EventNode(id: nextId, type: .Document)
-        let htmlDocNode = EventNode(id: nextId, type: .DocumentType, name: Dom.html)
-        rootNode.childNodes.append(htmlDocNode)
-        let firstImage = exportFrame.images[0]
-        let base64String = firstImage.base64DataURL(mimeType: exportFrame.mimeType)
-        
+        var totalCanvasSize = 0
         let headNode = EventNode(id: nextId, type: .Element, tagName: Dom.head, attributes: [:])
         let currentBodyId = nextId
-        let newImageId = nextId
+        let tileNodes = exportFrame.addImages.map { image in
+            let (node, canvasSize) = tileNode(exportFrame: exportFrame, image: image)
+            totalCanvasSize += canvasSize
+            return node
+        }
         let bodyNode = EventNode(id: currentBodyId, type: .Element, tagName: Dom.body,
                                  attributes: [Dom.style: Dom.bodyStyle],
-                                 childNodes: [
-                                    exportFrame.eventNode(id: newImageId, rr_dataURL: base64String)
-                                 ])
+                                 childNodes: tileNodes)
         let htmlNode = EventNode(id: nextId, type: .Element, tagName: Dom.html,
                                  attributes: [Dom.lang: Dom.en],
                                  childNodes: [headNode, bodyNode])
-        imageId = newImageId
+        imageId = tileNodes.first?.id
         bodyId = currentBodyId
-        keyNodeIds = [RemovedNode(parentId: currentBodyId, id: newImageId)]
-        frameToLastKeyNodeIndex.removeAll()
-        if let signature = exportFrame.imageSignature {
-            frameToLastKeyNodeIndex[signature] = 0
-        }
         rootNode.childNodes.append(htmlNode)
         
-        return DomData(node: rootNode, canvasSize: base64String.count)
+        return DomData(node: rootNode, canvasSize: totalCanvasSize)
     }
     
     private func appendFullSnapshotEvents(_ exportFrame: ExportFrame, _ timestamp: TimeInterval, _ events: inout [Event]) {
         events.append(windowEvent(href: "", originalSize: exportFrame.originalSize, timestamp: timestamp))
         events.append(fullSnapshotEvent(exportFrame: exportFrame, timestamp: timestamp))
         events.append(viewPortEvent(exportFrame: exportFrame, timestamp: timestamp))
-    }
-    
-    private func appendKeyFrameEvents(_ exportFrame: ExportFrame, _ timestamp: TimeInterval, _ events: inout [Event]) {
     }
     
     func updatePushedCanvasSize() {

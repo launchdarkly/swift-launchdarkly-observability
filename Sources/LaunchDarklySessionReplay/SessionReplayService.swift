@@ -23,17 +23,20 @@ struct SessionReplayContext {
     public var backendUrl: URL
     public var log: OSLog
     public var observabilityContext: ObservabilityContext
+    public var compression: SessionReplayOptions.CompressionMethod
     
     init(sdkKey: String,
          serviceName: String,
          backendUrl: URL,
          log: OSLog,
-         observabilityContext: ObservabilityContext) {
+         observabilityContext: ObservabilityContext,
+         compression: SessionReplayOptions.CompressionMethod) {
         self.sdkKey = sdkKey
         self.serviceName = serviceName
         self.backendUrl = backendUrl
         self.log = log
         self.observabilityContext = observabilityContext
+        self.compression = compression
     }
 }
 
@@ -79,7 +82,8 @@ final class SessionReplayService: SessionReplayServicing {
             serviceName: observabilityContext.options.serviceName,
             backendUrl: url,
             log: observabilityContext.options.log,
-            observabilityContext: observabilityContext)
+            observabilityContext: observabilityContext,
+            compression: sessonReplayOptions.compression)
         
         
         let replayApiService = SessionReplayAPIService(gqlClient: graphQLClient)

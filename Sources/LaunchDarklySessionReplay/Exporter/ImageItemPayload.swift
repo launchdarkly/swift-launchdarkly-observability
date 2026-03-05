@@ -11,7 +11,7 @@ struct ImageItemPayload: EventQueueItemPayload {
     }
     
     func cost() -> Int {
-        exportFrame.images.reduce(0) { $0 + $1.data.count }
+        exportFrame.addImages.reduce(0) { $0 + $1.data.count }
     }
     
     let exportFrame: ExportFrame

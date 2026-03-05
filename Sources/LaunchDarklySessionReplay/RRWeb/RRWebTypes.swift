@@ -1,6 +1,6 @@
 import Foundation
 
-public enum EventType: Int, Codable {
+enum EventType: Int, Codable {
     case DomContentLoaded = 0,
          Load = 1,
          FullSnapshot = 2,
@@ -10,7 +10,7 @@ public enum EventType: Int, Codable {
          Plugin = 6
 }
 
-public enum NodeType: Int, Codable {
+enum NodeType: Int, Codable {
     case Document = 0,
          DocumentType = 1,
          Element = 2,
@@ -19,7 +19,7 @@ public enum NodeType: Int, Codable {
          Comment = 5
 }
 
-public enum IncrementalSource: Int, Codable {
+enum IncrementalSource: Int, Codable {
     case mutation = 0,
          mouseMove = 1,
          mouseInteraction = 2,
@@ -39,7 +39,7 @@ public enum IncrementalSource: Int, Codable {
          customElement
 }
 
-public enum MouseInteractions: Int, Codable {
+enum MouseInteractions: Int, Codable {
     case mouseUp = 0,
          mouseDown = 1,
          click = 2,
@@ -53,7 +53,7 @@ public enum MouseInteractions: Int, Codable {
          touchCancel = 10
 }
 
-public enum CustomDataTag: String, Codable {
+enum CustomDataTag: String, Codable {
     case click = "Click"
     case focus = "Focus"
     case viewport = "Viewport"

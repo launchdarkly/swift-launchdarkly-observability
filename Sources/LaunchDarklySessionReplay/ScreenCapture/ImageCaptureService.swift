@@ -4,10 +4,11 @@ import UIKit
 import Darwin
 import Foundation
 
-struct RawCapturedFrame {
+struct RawFrame {
     let image: UIImage
     let timestamp: TimeInterval
     let orientation: Int
+    let areas: [OffsettedArea]
 }
 
 public final class ImageCaptureService {
@@ -34,7 +35,7 @@ public final class ImageCaptureService {
     
     /// Capture as masked frame (must be on main thread).
     @MainActor
-    func captureRawFrame(yield: @escaping (RawCapturedFrame?) async -> Void) {
+    func captureRawFrame(yield: @escaping (RawFrame?) async -> Void) {
 #if os(iOS)
         let orientation = UIDevice.current.orientation.isLandscape ? 1 : 0
 #else
@@ -66,8 +67,10 @@ public final class ImageCaptureService {
                 }
                 
                 var applyOperations = [[MaskOperation]]()
+                var areas = [OffsettedArea]()
                 for (before, after) in zip(maskOperationsBefore, maskOperationsAfter) {
-                    if let newOperations = maskCollector.duplicateUnsimilar(before: before, after: after) {
+                    if let newOperations = maskCollector.duplicateUnsimilar(before: before.maskOperations, after: after.maskOperations) {
+                        areas.append(contentsOf: before.offsetRects)
                         applyOperations.append(newOperations)
                     } else {
                         // drop the frame, movement was bigger than mask itself
@@ -81,7 +84,7 @@ public final class ImageCaptureService {
                     self.maskingService.applyViewMasks(context: ctx.cgContext, operations: applyOperations.flatMap { $0 })
                 }
 
-                await yield(RawCapturedFrame(image: image, timestamp: timestamp, orientation: orientation))
+                await yield(RawFrame(image: image, timestamp: timestamp, orientation: orientation, areas: areas))
             }
         }
     }

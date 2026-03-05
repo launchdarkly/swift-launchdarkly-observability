@@ -163,6 +163,10 @@ struct MainMenuView: View {
                     }
                     .buttonStyle(.borderedProminent)
                 }
+
+                NavigationLink(destination: BenchmarkView()) {
+                    Text("Benchmark")
+                }
             }.background(Color.clear)
             .navigationDestination(for: String.self) { value in
                 if value == "fruta" {

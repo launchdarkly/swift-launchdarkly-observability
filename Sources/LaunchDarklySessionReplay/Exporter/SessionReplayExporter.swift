@@ -32,10 +32,14 @@ actor SessionReplayExporter: EventExporting {
         self.replayApiService = replayApiService
         self.sessionManager = context.observabilityContext.sessionManager
         self.title = title
-        self.eventGenerator = RRWebEventGenerator(log: context.log, title: title)
+        self.eventGenerator = RRWebEventGenerator(log: context.log, title: title, method: context.compression)
         self.log = context.log
         self.sessionInfo = sessionManager.sessionInfo
         
+        Task { await self.subscribeToSession() }
+    }
+    
+    private func subscribeToSession() {
         self.sessionCancellable = sessionManager
             .publisher()
             .sink { [weak self] newSessionInfo in
@@ -43,11 +47,18 @@ actor SessionReplayExporter: EventExporting {
                     await self?.updateSessionInfo(newSessionInfo)
                 }
             }
+        
+        // Reconcile once after subscribing to avoid missing a session update
+        // emitted between init-time snapshot and sink attachment.
+        let latestSessionInfo = sessionManager.sessionInfo
+        if latestSessionInfo != sessionInfo {
+            updateSessionInfo(latestSessionInfo)
+        }
     }
     
-    private func updateSessionInfo(_ sessionInfo: SessionInfo) async {
+    private func updateSessionInfo(_ sessionInfo: SessionInfo) {
         self.sessionInfo = sessionInfo
-        self.eventGenerator = RRWebEventGenerator(log: log, title: title)
+        self.eventGenerator = RRWebEventGenerator(log: log, title: title, method: context.compression)
         self.initializedSession = nil
     }
     
@@ -85,7 +96,7 @@ actor SessionReplayExporter: EventExporting {
         try await initializeSessionIfNeeded()
         guard let initializedSession else { return }
 
-        var events = await eventGenerator.generateEvents(items: items)
+        let events = await eventGenerator.generateEvents(items: items)
         try await pushPayload(initializedSession: initializedSession, events: events)
         
         if shouldWakeUpSession {
