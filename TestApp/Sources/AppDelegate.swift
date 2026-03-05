@@ -28,7 +28,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     sessionBackgroundTimeout: 3,
                    )),
                 SessionReplay(options: .init(
-                    isEnabled: false,
+                    isEnabled: true,
                     privacy: .init(
                         maskTextInputs: true,
                         maskWebViews: false,
