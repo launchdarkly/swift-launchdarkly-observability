@@ -9,6 +9,15 @@ public struct ImageSignature: Hashable {
     private let _hashValue: Int
 
     public init(rows: Int, columns: Int, tileWidth: Int, tileHeight: Int, tileSignatures: [TileSignature]) {
+        self.init(
+            rows: rows, columns: columns,
+            tileWidth: tileWidth, tileHeight: tileHeight,
+            tileSignatures: tileSignatures,
+            tileAccHash: Self._accumulateHash(tileSignatures)
+        )
+    }
+
+    init(rows: Int, columns: Int, tileWidth: Int, tileHeight: Int, tileSignatures: [TileSignature], tileAccHash: Int) {
         self.rows = rows
         self.columns = columns
         self.tileWidth = tileWidth
@@ -20,8 +29,19 @@ public struct ImageSignature: Hashable {
         hasher.combine(columns)
         hasher.combine(tileWidth)
         hasher.combine(tileHeight)
-        hasher.combine(tileSignatures)
+        hasher.combine(tileAccHash)
         self._hashValue = hasher.finalize()
+    }
+
+    @inline(__always)
+    static func _accumulateTile(_ acc: Int, _ sig: TileSignature) -> Int {
+        (acc &* 31) &+ Int(truncatingIfNeeded: sig.hashLo ^ sig.hashHi)
+    }
+
+    private static func _accumulateHash(_ tiles: [TileSignature]) -> Int {
+        var acc = 0
+        for sig in tiles { acc = _accumulateTile(acc, sig) }
+        return acc
     }
 
     public func hash(into hasher: inout Hasher) {
@@ -68,6 +88,7 @@ public final class TileSignatureManager {
         let totalTiles = columns * rows
         let raw = UnsafeRawPointer(ptr)
 
+        var tileAccHash = 0
         let tileSignatures = [TileSignature](unsafeUninitializedCapacity: totalTiles) { buffer, count in
             var idx = 0
             for row in 0..<rows {
@@ -77,14 +98,16 @@ public final class TileSignatureManager {
                 for column in 0..<columns {
                     let startX = column * tileWidth
                     let endX = min(startX + tileWidth, width)
-                    buffer[idx] = Self.tileHash(raw: raw, startX: startX, startY: startY, endX: endX, endY: endY, bytesPerRow: bytesPerRow)
+                    let sig = Self.tileHash(raw: raw, startX: startX, startY: startY, endX: endX, endY: endY, bytesPerRow: bytesPerRow)
+                    buffer[idx] = sig
+                    tileAccHash = ImageSignature._accumulateTile(tileAccHash, sig)
                     idx += 1
                 }
             }
             count = totalTiles
         }
 
-        return ImageSignature(rows: rows, columns: columns, tileWidth: tileWidth, tileHeight: tileHeight, tileSignatures: tileSignatures)
+        return ImageSignature(rows: rows, columns: columns, tileWidth: tileWidth, tileHeight: tileHeight, tileSignatures: tileSignatures, tileAccHash: tileAccHash)
     }
 
     @inline(__always)
