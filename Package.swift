@@ -28,7 +28,7 @@ let package = Package(
             publicHeadersPath: "."
         ),
         .target(
-            name: "TileHashSwift",
+            name: "SessionReplayHotPath",
             swiftSettings: [.unsafeFlags(["-O"])]
         ),
         .target(name: "Common",
@@ -57,9 +57,9 @@ let package = Package(
             dependencies: [
                 "Common",
                 "LaunchDarklyObservability",
-                "TileHashSwift",
+                "SessionReplayHotPath",
             ],
-            swiftSettings: [.unsafeFlags(["-O"])]
+            //swiftSettings: [.unsafeFlags(["-O"])]
         ),
         .target(
           name: "OpenTelemetryProtocolExporterCommon",
