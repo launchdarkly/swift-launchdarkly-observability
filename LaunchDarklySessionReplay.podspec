@@ -27,9 +27,17 @@ Pod::Spec.new do |s|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
   end
 
+  s.subspec "SessionReplayOptimized" do |ss|
+    ss.source_files = "Sources/SessionReplayOptimized/**/*.{swift,h,m}"
+    ss.pod_target_xcconfig = {
+      'SWIFT_OPTIMIZATION_LEVEL' => '-O'
+    }
+  end
+
   s.subspec "LaunchDarklySessionReplay" do |ss|
     ss.source_files = "Sources/LaunchDarklySessionReplay/**/*.{swift,h,m}"
     ss.dependency "LaunchDarklySessionReplay/Common"
+    ss.dependency "LaunchDarklySessionReplay/SessionReplayOptimized"
     ss.dependency "LaunchDarklyObservability/LaunchDarklyObservability"
   end
 end

@@ -1,5 +1,5 @@
 import UIKit
-@_exported import SessionReplayHotPath
+@_exported import SessionReplayOptimized
 
 extension TileSignatureManager {
     func compute(image: UIImage) -> ImageSignature? {

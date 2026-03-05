@@ -28,7 +28,7 @@ let package = Package(
             publicHeadersPath: "."
         ),
         .target(
-            name: "SessionReplayHotPath",
+            name: "SessionReplayOptimized",
             swiftSettings: [.unsafeFlags(["-O"])]
         ),
         .target(name: "Common",
@@ -57,7 +57,7 @@ let package = Package(
             dependencies: [
                 "Common",
                 "LaunchDarklyObservability",
-                "SessionReplayHotPath",
+                "SessionReplayOptimized",
             ],
         ),
         .target(
