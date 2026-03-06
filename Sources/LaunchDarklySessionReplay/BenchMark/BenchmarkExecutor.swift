@@ -83,9 +83,9 @@ public final class BenchmarkExecutor {
 
         for frame in frames {
             let captureStart = CFAbsoluteTimeGetCurrent()
-            guard let exportFrame = exportDiffManager.exportFrame(from: frame, onTiledFrameComputed: {
-                captureTime += CFAbsoluteTimeGetCurrent() - captureStart
-            }) else {
+            let exportFrame = exportDiffManager.exportFrame(from: frame)
+            captureTime += CFAbsoluteTimeGetCurrent() - captureStart
+            guard let exportFrame else {
                 continue
             }
 
