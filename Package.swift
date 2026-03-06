@@ -28,12 +28,8 @@ let package = Package(
             publicHeadersPath: "."
         ),
         .target(
-            name: "TileHashC",
+            name: "SessionReplayC",
             publicHeadersPath: "include"
-        ),
-        .target(
-            name: "SessionReplayOptimized",
-            dependencies: ["TileHashC"]
         ),
         .target(name: "Common",
                 dependencies: [.product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))]),
@@ -61,7 +57,7 @@ let package = Package(
             dependencies: [
                 "Common",
                 "LaunchDarklyObservability",
-                "SessionReplayOptimized",
+                "SessionReplayC",
             ],
         ),
         .target(
