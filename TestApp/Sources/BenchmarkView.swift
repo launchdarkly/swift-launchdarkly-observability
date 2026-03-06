@@ -54,6 +54,19 @@ struct BenchmarkView: View {
             }
         }
         .navigationTitle("Benchmark")
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                VStack {
+                    Text("Benchmark").font(.headline)
+                    #if DEBUG
+                    Text("DEBUG").font(.caption2).foregroundStyle(.orange)
+                    #else
+                    Text("RELEASE").font(.caption2).foregroundStyle(.green)
+                    #endif
+                }
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showResults) {
             BenchmarkResultsSheet(results: results)
         }
