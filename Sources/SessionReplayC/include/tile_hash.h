@@ -22,6 +22,18 @@ TileHashResult tile_hash(const void *data,
                          int endX,   int endY,
                          int bytesPerRow);
 
+/// Always-scalar variant of tile_hash_w64, for parity testing.
+TileHashResult tile_hash_w64_scalar(const unsigned char *rowPtr,
+                                     int rows,
+                                     int bytesPerRow);
+
+#if defined(__ARM_NEON)
+/// Always-NEON variant of tile_hash_w64, for parity testing.
+TileHashResult tile_hash_w64_neon(const unsigned char *rowPtr,
+                                   int rows,
+                                   int bytesPerRow);
+#endif
+
 /// Computes tile layout (tile dimensions, row/column counts) for an image.
 TileLayout tile_compute_layout(int imageWidth, int imageHeight);
 

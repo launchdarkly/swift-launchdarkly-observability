@@ -102,7 +102,8 @@ let package = Package(
             name: "SessionReplayTests",
             dependencies: [
                 "LaunchDarklySessionReplay",
-                "LaunchDarklyObservability"
+                "LaunchDarklyObservability",
+                "SessionReplayC",
             ]
         ),
     ]

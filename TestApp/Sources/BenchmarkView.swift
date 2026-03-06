@@ -2,9 +2,14 @@ import SwiftUI
 import LaunchDarklySessionReplay
 
 struct BenchmarkView: View {
-    private static let framesDirectory = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .appendingPathComponent("Benchmark/mastodon")
+    private static let framesDirectory: URL = {
+        if let csv = Bundle.main.url(forResource: "frames", withExtension: "csv") {
+            return csv.deletingLastPathComponent()
+        }
+        return URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Benchmark/mastodon")
+    }()
     private let benchmarkRuns = 3
     private let executor = BenchmarkExecutor()
 
