@@ -27,8 +27,14 @@ Pod::Spec.new do |s|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
   end
 
+  s.subspec "TileHashC" do |ss|
+    ss.source_files = "Sources/TileHashC/**/*.{c,h}"
+    ss.public_header_files = "Sources/TileHashC/include/**/*.h"
+  end
+
   s.subspec "SessionReplayOptimized" do |ss|
     ss.source_files = "Sources/SessionReplayOptimized/**/*.{swift,h,m}"
+    ss.dependency "LaunchDarklySessionReplay/TileHashC"
     ss.pod_target_xcconfig = {
       'SWIFT_OPTIMIZATION_LEVEL' => '-O'
     }

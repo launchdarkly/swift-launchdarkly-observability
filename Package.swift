@@ -28,8 +28,12 @@ let package = Package(
             publicHeadersPath: "."
         ),
         .target(
+            name: "TileHashC",
+            publicHeadersPath: "include"
+        ),
+        .target(
             name: "SessionReplayOptimized",
-            swiftSettings: [.unsafeFlags(["-O"])]
+            dependencies: ["TileHashC"]
         ),
         .target(name: "Common",
                 dependencies: [.product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))]),
