@@ -27,6 +27,10 @@ let package = Package(
             name: "ObjCBridge",
             publicHeadersPath: "."
         ),
+        .target(
+            name: "SessionReplayC",
+            publicHeadersPath: "include"
+        ),
         .target(name: "Common",
                 dependencies: [.product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))]),
         .target(
@@ -53,6 +57,7 @@ let package = Package(
             dependencies: [
                 "Common",
                 "LaunchDarklyObservability",
+                "SessionReplayC",
             ],
         ),
         .target(
@@ -97,7 +102,8 @@ let package = Package(
             name: "SessionReplayTests",
             dependencies: [
                 "LaunchDarklySessionReplay",
-                "LaunchDarklyObservability"
+                "LaunchDarklyObservability",
+                "SessionReplayC",
             ]
         ),
     ]

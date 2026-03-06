@@ -2,15 +2,21 @@ import SwiftUI
 import LaunchDarklySessionReplay
 
 struct BenchmarkView: View {
-    private static let framesDirectory = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .appendingPathComponent("Benchmark/mastodon")
+    private static let framesDirectory: URL = {
+        if let csv = Bundle.main.url(forResource: "frames", withExtension: "csv") {
+            return csv.deletingLastPathComponent()
+        }
+        return URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Benchmark/mastodon")
+    }()
     private let benchmarkRuns = 3
     private let executor = BenchmarkExecutor()
 
     @State private var results = [BenchmarkResultRow]()
     @State private var isRunning = false
     @State private var showResults = false
+    @State private var signatureResult: String?
     @State private var errorMessage: String?
 
     var body: some View {
@@ -26,23 +32,49 @@ struct BenchmarkView: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(isRunning)
+
+            Button {
+                runSignatureBenchmark()
+            } label: {
+                Text("Compute ImageSignature")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(isRunning)
+
+            if let signatureResult {
+                Text(signatureResult)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.subheadline)
+                    .foregroundStyle(.red)
+            }
         }
         .navigationTitle("Benchmark")
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                VStack {
+                    Text("Benchmark").font(.headline)
+                    #if DEBUG
+                    Text("DEBUG").font(.caption2).foregroundStyle(.orange)
+                    #else
+                    Text("RELEASE").font(.caption2).foregroundStyle(.green)
+                    #endif
+                }
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showResults) {
             BenchmarkResultsSheet(results: results)
-        }
-        .alert("Benchmark Failed", isPresented: Binding(
-            get: { errorMessage != nil },
-            set: { if !$0 { errorMessage = nil } }
-        )) {
-            Button("OK") { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
         }
     }
 
     private func runBenchmark() {
         isRunning = true
+        errorMessage = nil
         Task {
             do {
                 let compressionResults = try await executor.compression(framesDirectory: Self.framesDirectory, runs: benchmarkRuns)
@@ -62,6 +94,28 @@ struct BenchmarkView: View {
                 errorMessage = error.localizedDescription
             }
             isRunning = false
+        }
+    }
+
+    private func runSignatureBenchmark() {
+        isRunning = true
+        signatureResult = nil
+        Task.detached(priority: .userInitiated) {
+            do {
+                let r = try executor.signatureBenchmark(framesDirectory: Self.framesDirectory)
+                let mbString = String(format: "%.1f MB", Double(r.totalBytes) / (1024 * 1024))
+                let timeString = String(format: "%.3fs", r.elapsedTime)
+                let result = "\(timeString) — \(mbString) (\(r.frameCount) frames)"
+                await MainActor.run {
+                    signatureResult = result
+                    isRunning = false
+                }
+            } catch {
+                await MainActor.run {
+                    signatureResult = "Error: \(error.localizedDescription)"
+                    isRunning = false
+                }
+            }
         }
     }
 }
@@ -107,6 +161,7 @@ private struct BenchmarkResultsSheet: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 80, alignment: .trailing)
                 }
+                .font(.subheadline)
             }
             .navigationTitle("Results")
             .navigationBarTitleDisplayMode(.inline)

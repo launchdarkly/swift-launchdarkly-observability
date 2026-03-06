@@ -1,6 +1,5 @@
 import Testing
 import Foundation
-@testable import LaunchDarklyObservability
 import LaunchDarkly
 
 // MARK: - toFoundation()

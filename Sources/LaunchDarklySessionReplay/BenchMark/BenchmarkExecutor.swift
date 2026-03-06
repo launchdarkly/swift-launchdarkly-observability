@@ -20,6 +20,33 @@ public final class BenchmarkExecutor {
 
     public init() {}
 
+    public typealias SignatureResult = (
+        elapsedTime: TimeInterval,
+        totalBytes: Int,
+        frameCount: Int
+    )
+
+    public func signatureBenchmark(framesDirectory: URL) throws -> SignatureResult {
+        let reader = try RawFrameReader(directory: framesDirectory)
+        let frames = Array(reader)
+        let manager = TileSignatureManager()
+        var totalBytes = 0
+
+        for frame in frames {
+            if let cgImage = frame.image.cgImage {
+                totalBytes += cgImage.bytesPerRow * cgImage.height
+            }
+        }
+
+        let start = CFAbsoluteTimeGetCurrent()
+        for frame in frames {
+            let _ = manager.compute(image: frame.image)
+        }
+        let elapsed = CFAbsoluteTimeGetCurrent() - start
+
+        return (elapsedTime: elapsed, totalBytes: totalBytes, frameCount: frames.count)
+    }
+    
     public func compression(framesDirectory: URL, runs: Int = 1) async throws -> [CompressionResult] {
         let reader = try RawFrameReader(directory: framesDirectory)
         let frames = Array(reader)
@@ -56,9 +83,9 @@ public final class BenchmarkExecutor {
 
         for frame in frames {
             let captureStart = CFAbsoluteTimeGetCurrent()
-            guard let exportFrame = exportDiffManager.exportFrame(from: frame, onTiledFrameComputed: {
-                captureTime += CFAbsoluteTimeGetCurrent() - captureStart
-            }) else {
+            let exportFrame = exportDiffManager.exportFrame(from: frame)
+            captureTime += CFAbsoluteTimeGetCurrent() - captureStart
+            guard let exportFrame else {
                 continue
             }
 

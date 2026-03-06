@@ -119,9 +119,10 @@ final class RawFrameReader: Sequence {
                 image = cached
             } else {
                 let imageURL = directory.appendingPathComponent(String(format: "%06d.png", imageIndex))
-                guard let loaded = UIImage(contentsOfFile: imageURL.path) else { return nil }
-                imageCache[imageIndex] = loaded
-                image = loaded
+                guard let loaded = UIImage(contentsOfFile: imageURL.path),
+                      let decoded = Self.forceDecoded(loaded) else { return nil }
+                imageCache[imageIndex] = decoded
+                image = decoded
             }
 
             let areasJSON = columns[4].replacingOccurrences(of: "\"\"", with: "\"")
@@ -141,6 +142,25 @@ final class RawFrameReader: Sequence {
             }
 
             return RawFrame(image: image, timestamp: timestamp, orientation: orientation, areas: areas)
+        }
+
+        private static func forceDecoded(_ source: UIImage) -> UIImage? {
+            guard let cgImage = source.cgImage else { return nil }
+            let width = cgImage.width
+            let height = cgImage.height
+            let colorSpace = cgImage.colorSpace ?? CGColorSpaceCreateDeviceRGB()
+            guard let ctx = CGContext(
+                data: nil,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: width * 4,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+            ) else { return nil }
+            ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+            guard let decoded = ctx.makeImage() else { return nil }
+            return UIImage(cgImage: decoded, scale: source.scale, orientation: source.imageOrientation)
         }
 
         private static func parseCSV(line: String) -> [String] {

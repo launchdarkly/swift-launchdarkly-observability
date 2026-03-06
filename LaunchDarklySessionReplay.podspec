@@ -27,9 +27,15 @@ Pod::Spec.new do |s|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
   end
 
+  s.subspec "SessionReplayC" do |ss|
+    ss.source_files = "Sources/SessionReplayC/**/*.{c,h}"
+    ss.public_header_files = "Sources/SessionReplayC/include/**/*.h"
+  end
+
   s.subspec "LaunchDarklySessionReplay" do |ss|
     ss.source_files = "Sources/LaunchDarklySessionReplay/**/*.{swift,h,m}"
     ss.dependency "LaunchDarklySessionReplay/Common"
+    ss.dependency "LaunchDarklySessionReplay/SessionReplayC"
     ss.dependency "LaunchDarklyObservability/LaunchDarklyObservability"
   end
 end
