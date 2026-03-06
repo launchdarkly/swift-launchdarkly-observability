@@ -66,6 +66,13 @@ struct TileSignature: Hashable {
 }
 
 final class TileSignatureManager {
+    private var cBuffer: UnsafeMutablePointer<TileHashResult>?
+    private var cBufferCapacity = 0
+
+    deinit {
+        cBuffer?.deallocate()
+    }
+
     func compute(image: UIImage) -> ImageSignature? {
         guard let cgImage = image.cgImage else { return nil }
         return compute(cgImage: cgImage)
@@ -76,80 +83,41 @@ final class TileSignatureManager {
         let height = cgImage.height
         guard width > 0, height > 0 else { return nil }
 
-        let tileWidth = nearestDivisor(value: width, preferred: 64, range: 60...79)
-        let tileHeight = nearestDivisor(value: height, preferred: 22, range: 22...44)
-        let columns = (width + tileWidth - 1) / tileWidth
-        let rows = (height + tileHeight - 1) / tileHeight
-
         guard let data = cgImage.dataProvider?.data,
               let ptr = CFDataGetBytePtr(data) else { return nil }
 
-        let bytesPerRow = cgImage.bytesPerRow
-        let totalTiles = columns * rows
-        let raw = UnsafeRawPointer(ptr)
+        let layout = tile_compute_layout(Int32(width), Int32(height))
+        let rows = Int(layout.rows)
+        let columns = Int(layout.columns)
+        let totalTiles = rows * columns
+
+        if totalTiles > cBufferCapacity {
+            cBuffer?.deallocate()
+            cBuffer = .allocate(capacity: totalTiles)
+            cBufferCapacity = totalTiles
+        }
+        let buf = cBuffer!
+
+        tile_compute_all(UnsafeRawPointer(ptr),
+                         Int32(width), Int32(height),
+                         Int32(cgImage.bytesPerRow),
+                         layout,
+                         buf)
 
         var tileAccHash = 0
         let tileSignatures = [TileSignature](unsafeUninitializedCapacity: totalTiles) { buffer, count in
-            var idx = 0
-            for row in 0..<rows {
-                let startY = row * tileHeight
-                let endY = min(startY + tileHeight, height)
-
-                for column in 0..<columns {
-                    let startX = column * tileWidth
-                    let endX = min(startX + tileWidth, width)
-                    let sig = Self.tileHash(raw: raw, startX: startX, startY: startY, endX: endX, endY: endY, bytesPerRow: bytesPerRow)
-                    buffer[idx] = sig
-                    tileAccHash = ImageSignature._accumulateTile(tileAccHash, sig)
-                    idx += 1
-                }
+            for i in 0..<totalTiles {
+                let r = buf[i]
+                let sig = TileSignature(hashLo: r.hashLo, hashHi: r.hashHi)
+                buffer[i] = sig
+                tileAccHash = ImageSignature._accumulateTile(tileAccHash, sig)
             }
             count = totalTiles
         }
 
-        return ImageSignature(rows: rows, columns: columns, tileWidth: tileWidth, tileHeight: tileHeight, tileSignatures: tileSignatures, tileAccHash: tileAccHash)
-    }
-
-    @inline(__always)
-    private static func tileHash(raw: UnsafeRawPointer, startX: Int, startY: Int, endX: Int, endY: Int, bytesPerRow: Int) -> TileSignature {
-        let result = tile_hash(raw,
-                               Int32(startX), Int32(startY),
-                               Int32(endX),   Int32(endY),
-                               Int32(bytesPerRow))
-        return TileSignature(hashLo: result.hashLo, hashHi: result.hashHi)
-    }
-
-    private func nearestDivisor(value: Int, preferred: Int, range: ClosedRange<Int>) -> Int {
-        guard value > 0 else {
-            return preferred
-        }
-
-        func isDivisor(_ candidate: Int) -> Bool {
-            candidate > 0 && value.isMultiple(of: candidate)
-        }
-
-        if range.contains(preferred), isDivisor(preferred) {
-            return preferred
-        }
-
-        let maxDistance = max(abs(range.lowerBound - preferred), abs(range.upperBound - preferred))
-        guard maxDistance > 0 else {
-            return preferred
-        }
-
-        for offset in 1...maxDistance {
-            let positiveCandidate = preferred + offset
-            if range.contains(positiveCandidate), isDivisor(positiveCandidate) {
-                return positiveCandidate
-            }
-
-            let negativeCandidate = preferred - offset
-            if range.contains(negativeCandidate), isDivisor(negativeCandidate) {
-                return negativeCandidate
-            }
-        }
-
-        return preferred
+        return ImageSignature(rows: rows, columns: columns,
+                              tileWidth: Int(layout.tileWidth), tileHeight: Int(layout.tileHeight),
+                              tileSignatures: tileSignatures, tileAccHash: tileAccHash)
     }
 }
 
