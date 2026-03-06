@@ -1,6 +1,6 @@
 #include "tile_hash.h"
 
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) && defined(__OPTIMIZE__)
 #include <arm_neon.h>
 #endif
 
