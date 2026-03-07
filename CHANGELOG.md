@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.22.0...0.23.0) (2026-03-06)
+
+
+### Features
+
+* CPU utilization optimization in image diff calculations ([#146](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/146)) ([80e0cf8](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/80e0cf8a5f35d01a3715d6edb9470eb241c375ab))
+
 ## [0.22.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.21.0...0.22.0) (2026-03-05)
 
 
