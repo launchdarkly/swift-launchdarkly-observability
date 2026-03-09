@@ -28,6 +28,7 @@ Pod::Spec.new do |s|
     ]
     ss.public_header_files = "Sources/ObjCBridge/*.h"
     ss.dependency "LaunchDarklyObservability/Core"
+    ss.dependency "LaunchDarklyObservability/SDKResourceExtension"
   end
 
   # Observability Core
@@ -74,6 +75,13 @@ Pod::Spec.new do |s|
     ss.source_files = "Sources/OpenTelemetry/Instrumentation/URLSession/**/*.{swift,h,m}"
     ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.3.0'
     ss.dependency "LaunchDarklyObservability/NetworkStatus"
+  end
+
+  # SDKResourceExtension subspec
+  s.subspec "SDKResourceExtension" do |ss|
+    ss.source_files = "Sources/OpenTelemetry/Instrumentation/SDKResourceExtension/**/*.{swift,h,m}"
+    ss.exclude_files = "Sources/OpenTelemetry/Instrumentation/SDKResourceExtension/README.md"
+    ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.3.0'
   end
 
   # External

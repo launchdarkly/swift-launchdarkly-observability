@@ -20,11 +20,9 @@ Pod::Spec.new do |s|
     'OTHER_SWIFT_FLAGS' => '$(inherited) -package-name LaunchDarklyObservability'
   }
 
-  s.dependency "LaunchDarklyObservability/LaunchDarklyObservability", s.version.to_s
-  
-
   s.subspec "Common" do |ss|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
+    ss.dependency 'LaunchDarkly', '~> 11.1.0'
   end
 
   s.subspec "SessionReplayC" do |ss|
