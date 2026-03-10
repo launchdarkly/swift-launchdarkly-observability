@@ -21,15 +21,37 @@ A complete example application is available in the [swift-launchdarkly-observabi
 
 ## Install
 
-Add the Swift Package dependency in Xcode or
+> **NOTE: since APIs are subject to change until a 1.x version is released, pointing to main branch is a temporal workaround to test/use the package**
 
-## Adding as a dependency
+### Swift Package Manager
 
-**NOTE: since APIs are subject to change until a 1.x version is released, pointing to main branch is a temporal workaround to test/use the package**
-LaunchDarkly Observability is designed for Swift 5. To depend on the swift-launchdarkly-observability package, you need to add it in your `Package.swift` as follows:
+Add the Swift Package dependency in Xcode or add it to your `Package.swift`:
 
 ```swift
 .package(url: "https://github.com/launchdarkly/swift-launchdarkly-observability", branch: "main"),
+```
+
+### CocoaPods
+
+Add the pods to your `Podfile`:
+
+```ruby
+pod 'LaunchDarklyObservability'
+pod 'LaunchDarklySessionReplay'   # optional, only if using Session Replay
+```
+
+Some transitive dependencies (SwiftProtobuf, LDSwiftEventSource) still declare an iOS 11.0 deployment target, which is below the minimum required by recent Xcode SDKs. Add the following `post_install` hook to your `Podfile` to raise their deployment target automatically:
+
+```ruby
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 13.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      end
+    end
+  end
+end
 ```
 
 ## Usage

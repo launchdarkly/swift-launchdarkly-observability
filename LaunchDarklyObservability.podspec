@@ -20,6 +20,12 @@ Pod::Spec.new do |s|
     'OTHER_SWIFT_FLAGS' => '$(inherited) -package-name LaunchDarklyObservability'
   }
 
+  # KSCrash ships resource bundles inside its framework. Xcode's user script
+  # sandboxing blocks the CocoaPods embed script from copying them at build time,
+  # causing rsync "Operation not permitted" errors. Disabling it on the consumer
+  # target is the standard workaround until KSCrash resolves this upstream.
+  s.user_target_xcconfig = { 'ENABLE_USER_SCRIPT_SANDBOXING' => 'NO' }
+
   # Main LaunchDarklyObservability subspec
   s.subspec "LaunchDarklyObservability" do |ss|
     ss.source_files = [
