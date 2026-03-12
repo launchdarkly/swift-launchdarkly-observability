@@ -1,39 +1,49 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklySessionReplay"
   s.version          = "0.23.0" # x-release-please-version
-  s.summary          = "Session replay library for LaunchDarkly"
+  s.summary          = "iOS Session Replay Plugin for LaunchDarkly."
   s.description      = <<-DESC
-                        Session Replay captures user interactions and screen recordings to help you understand how users interact with your application.
+                        LaunchDarkly is the feature management platform that software teams use to build better software, faster.
                        DESC
   s.homepage         = "https://github.com/launchdarkly/swift-launchdarkly-observability"
   s.license          = { :type => "Apache License, Version 2.0", :file => "LICENSE.txt" }
   s.author           = { "LaunchDarkly" => "sdks@launchdarkly.com" }
   s.platforms        = { :ios => "13.0" }
+  # use tag instead branch once this spec is ready to be published
+  # :tag => s.version.to_s
   s.source           = { :git => "https://github.com/launchdarkly/swift-launchdarkly-observability.git",
-                         :tag => s.version.to_s }
+                         :branch => "fix/cocoapods" }
   s.swift_version    = "5.9"
 
-  s.default_subspec = 'LaunchDarklySessionReplay'
+  s.default_subspec  = 'LaunchDarklySessionReplay'
 
   s.pod_target_xcconfig = {
-    'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => 'LD_COCOAPODS',
-    'OTHER_SWIFT_FLAGS' => '$(inherited) -package-name LaunchDarklyObservability'
+    'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited) LD_COCOAPODS'
   }
 
+  s.user_target_xcconfig = { 'ENABLE_USER_SCRIPT_SANDBOXING' => 'NO' }
+  
   s.subspec "Common" do |ss|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
     ss.dependency 'LaunchDarkly', '~> 11.1.0'
   end
 
+  # SessionReplayC — C target with public headers under include/
   s.subspec "SessionReplayC" do |ss|
-    ss.source_files = "Sources/SessionReplayC/**/*.{c,h}"
+    ss.source_files        = "Sources/SessionReplayC/**/*.{c,h}"
     ss.public_header_files = "Sources/SessionReplayC/include/**/*.h"
   end
 
+  # LaunchDarklySessionReplay — Swift target
   s.subspec "LaunchDarklySessionReplay" do |ss|
     ss.source_files = "Sources/LaunchDarklySessionReplay/**/*.{swift,h,m}"
+    ss.pod_target_xcconfig = {
+      'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited) LD_COCOAPODS',
+      'OTHER_SWIFT_FLAGS'                   => '$(inherited) -package-name LaunchDarklyObservability'
+    }
     ss.dependency "LaunchDarklySessionReplay/Common"
     ss.dependency "LaunchDarklySessionReplay/SessionReplayC"
-    ss.dependency "LaunchDarklyObservability/LaunchDarklyObservability"
+    ss.dependency "LaunchDarklyObservability"
   end
+
 end
