@@ -9,8 +9,10 @@ Pod::Spec.new do |s|
   s.license          = { :type => "Apache License, Version 2.0", :file => "LICENSE.txt" }
   s.author           = { "LaunchDarkly" => "sdks@launchdarkly.com" }
   s.platforms        = { :ios => "13.0" }
+  # use tag instead branch once this spec is ready to be published
+  # :tag => s.version.to_s
   s.source           = { :git => "https://github.com/launchdarkly/swift-launchdarkly-observability.git",
-                         :tag => s.version.to_s }
+                         :branch => "fix/cocoapods" }
   s.swift_version    = "5.9"
 
   s.default_subspec  = 'LaunchDarklyObservability'
