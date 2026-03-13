@@ -58,7 +58,7 @@ enum AttributeConverter {
             case "d", "f":
                 return .double(nsNum.doubleValue)
             default:
-                return .int(nsNum.intValue)
+                return .int(nsNum.integerValue)
             }
         }
 
