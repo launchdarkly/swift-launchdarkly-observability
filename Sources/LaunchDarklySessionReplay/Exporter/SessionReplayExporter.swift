@@ -2,7 +2,9 @@ import Foundation
 import Combine
 import LaunchDarklyObservability
 import OSLog
-#if !LD_COCOAPODS
+#if LD_COCOAPODS
+    import LaunchDarklyObservability_Common
+#else
     import Common
 #endif
 
