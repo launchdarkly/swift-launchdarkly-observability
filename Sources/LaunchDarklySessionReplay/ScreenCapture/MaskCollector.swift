@@ -5,7 +5,7 @@ import WebKit
 import UIKit
 import SwiftUI
 #if LD_COCOAPODS
-import LaunchDarklyObservability_Common
+import LaunchDarklyObservability
 #else
 import Common
 #endif

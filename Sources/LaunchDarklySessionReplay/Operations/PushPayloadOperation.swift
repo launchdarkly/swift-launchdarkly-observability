@@ -1,6 +1,6 @@
 import Foundation
 #if LD_COCOAPODS
-    import LaunchDarklyObservability_Common
+    import LaunchDarklyObservability
 #else
     import Common
 #endif
