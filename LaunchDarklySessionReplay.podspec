@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
   s.author           = { "LaunchDarkly" => "sdks@launchdarkly.com" }
   s.platforms        = { :ios => "13.0" }
   s.source           = { :git => "https://github.com/launchdarkly/swift-launchdarkly-observability.git",
-                         :branch => "fix/cocoapods" }
+                         :tag => s.version.to_s }
   s.swift_version    = "5.9"
 
   s.default_subspec  = 'LaunchDarklySessionReplay'
