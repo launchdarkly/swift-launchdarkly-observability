@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.23.0...0.24.0) (2026-03-13)
+
+
+### Features
+
+* pod specs ([#150](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/150)) ([d0211ce](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/d0211ce247bba605d1d93c9b0856f15340a89cc3))
+
 ## [0.23.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.22.0...0.23.0) (2026-03-06)
 
 
