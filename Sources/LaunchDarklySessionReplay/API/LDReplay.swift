@@ -4,6 +4,9 @@ import LaunchDarkly
 public final class LDReplay {
     public static var shared = LDReplay()
 
+    /// Hook proxy for the C# / MAUI bridge. Set by the SessionReplay plugin during getHooks().
+    public var hookProxy: SessionReplayHookProxy?
+
     var client: SessionReplayServicing?
     
     private init() {

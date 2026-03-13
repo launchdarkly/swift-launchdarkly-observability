@@ -54,5 +54,40 @@ extension IdentifyItemPayload {
         self.attributes = attributes
         self.timestamp = timestamp
     }
+
+    /// Proxy-friendly initialiser that accepts pre-extracted context keys
+    /// instead of LDContext, so the MAUI bridge can call it with simple types.
+    init(options: Options, sessionAttributes: [String: AttributeValue]?, contextKeys: [String: String], canonicalKey: String, timestamp: TimeInterval) {
+        var attributes: [String: String] = options.resourceAttributes
+            .merging(sessionAttributes ?? [:], uniquingKeysWith: { (current, _) in current })
+            .compactMapValues {
+            switch $0 {
+            case .array, .set, .boolArray, .intArray, .doubleArray, .stringArray:
+                return nil
+            case .string(let v):
+                return v
+            case .bool(let v):
+                return v.description
+            case .int(let v):
+                return String(v)
+            case .double(let v):
+                return String(v)
+            }
+        }
+
+        for (k, v) in contextKeys {
+            attributes[k] = v
+        }
+
+        var contextFriendlyName: String? = nil
+        if let contextFriendlyNameUnwrapped = options.contextFriendlyName, contextFriendlyNameUnwrapped.isNotEmpty {
+            contextFriendlyName = contextFriendlyNameUnwrapped
+        }
+        attributes["key"] = contextFriendlyName ?? canonicalKey
+        attributes["canonicalKey"] = canonicalKey
+
+        self.attributes = attributes
+        self.timestamp = timestamp
+    }
 }
 
