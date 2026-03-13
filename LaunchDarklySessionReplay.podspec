@@ -20,11 +20,6 @@ Pod::Spec.new do |s|
   }
 
   s.user_target_xcconfig = { 'ENABLE_USER_SCRIPT_SANDBOXING' => 'NO' }
-  
-  s.subspec "Common" do |ss|
-    ss.source_files = "Sources/Common/**/*.{swift,h,m}"
-    ss.dependency 'LaunchDarkly', '~> 11.1.0'
-  end
 
   # SessionReplayC — C target with public headers under include/
   s.subspec "SessionReplayC" do |ss|
@@ -39,7 +34,6 @@ Pod::Spec.new do |s|
       'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited) LD_COCOAPODS',
       'OTHER_SWIFT_FLAGS'                   => '$(inherited) -package-name LaunchDarklyObservability'
     }
-    ss.dependency "LaunchDarklySessionReplay/Common"
     ss.dependency "LaunchDarklySessionReplay/SessionReplayC"
     ss.dependency "LaunchDarklyObservability"
   end
