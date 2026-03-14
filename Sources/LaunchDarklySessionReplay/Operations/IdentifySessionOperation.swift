@@ -1,5 +1,7 @@
 import Foundation
-#if !LD_COCOAPODS
+#if LD_COCOAPODS
+    import LaunchDarklyObservability
+#else
     import Common
 #endif
 

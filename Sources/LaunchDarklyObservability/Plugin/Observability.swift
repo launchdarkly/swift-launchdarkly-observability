@@ -1,7 +1,9 @@
 import OSLog
 @_exported import LaunchDarkly
 import OpenTelemetrySdk
+#if !LD_COCOAPODS
 import SDKResourceExtension
+#endif
 #if !os(macOS)
 import UIKit
 #endif

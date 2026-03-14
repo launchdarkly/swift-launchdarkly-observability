@@ -4,8 +4,10 @@ import UIKit
 #endif
 import LaunchDarklyObservability
 import OSLog
-#if !LD_COCOAPODS
-import Common
+#if LD_COCOAPODS
+    import LaunchDarklyObservability
+#else
+    import Common
 #endif
 
 enum RRWebPlayerConstants {

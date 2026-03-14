@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklyObservability"
-  s.version          = "0.23.0" # x-release-please-version
+  s.version          = "0.24.0" # x-release-please-version
   s.summary          = "iOS Observability Plugin for LaunchDarkly."
   s.description      = <<-DESC
                         LaunchDarkly is the feature management platform that software teams use to build better software, faster.
@@ -13,52 +13,43 @@ Pod::Spec.new do |s|
                          :tag => s.version.to_s }
   s.swift_version    = "5.9"
 
-  s.default_subspec = 'LaunchDarklyObservability'
+  s.default_subspec  = 'LaunchDarklyObservability'
 
   s.pod_target_xcconfig = {
-    'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => 'LD_COCOAPODS',
-    'OTHER_SWIFT_FLAGS' => '$(inherited) -package-name LaunchDarklyObservability'
+    'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited) LD_COCOAPODS'
   }
 
-  # Main LaunchDarklyObservability subspec
+  # KSCrash ships resource bundles inside its framework. Xcode's user script
+  # sandboxing blocks the CocoaPods embed script from copying them at build time,
+  # causing rsync "Operation not permitted" errors. Disabling it on the consumer
+  # target is the standard workaround until KSCrash resolves this upstream.
+  s.user_target_xcconfig = { 'ENABLE_USER_SCRIPT_SANDBOXING' => 'NO' }
+
+  # --- LaunchDarklyObservability (main target) ---
   s.subspec "LaunchDarklyObservability" do |ss|
     ss.source_files = [
-        "Sources/#{ss.module_name}/**/*.{swift,h,m}",
-        "Sources/ObjCBridge/**/*.{h,m}"
+      "Sources/LaunchDarklyObservability/**/*.{swift,h,m}",
+      "Sources/ObjCBridge/**/*.{h,m}"
     ]
     ss.public_header_files = "Sources/ObjCBridge/*.h"
-    ss.dependency "LaunchDarklyObservability/Core"
-  end
-
-  # Observability Core
-
-  s.subspec "Core" do |ss|
-    #ss.source_files = "Sources/#{ss.module_name}/**/*.{swift,h,m}"
+    ss.dependency "LaunchDarklyObservability/Common"
+    ss.dependency "LaunchDarklyObservability/OpenTelemetryProtocolExporterCommon"
+    ss.dependency "LaunchDarklyObservability/URLSessionInstrumentation"
+    ss.dependency "LaunchDarklyObservability/SDKResourceExtension"
     ss.dependency "LaunchDarklyObservability/OpenTelemetry"
     ss.dependency "LaunchDarklyObservability/Misc"
-    ss.dependency "LaunchDarklyObservability/Internal"
   end
 
-  # Internal
-
-  s.subspec "Internal" do |ss|
-    ss.dependency "LaunchDarklyObservability/Common"
-    #ss.dependency "LaunchDarklyObservability/ObjCBridge"
-    ss.dependency "LaunchDarklyObservability/OpenTelemetryProtocolExporterCommon"
-    ss.dependency "LaunchDarklyObservability/NetworkStatus"
-    ss.dependency "LaunchDarklyObservability/URLSessionInstrumentation"    
-  end
-
+  # Common sources + LaunchDarkly SDK dependency
   s.subspec "Common" do |ss|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
-    ss.dependency "LaunchDarklyObservability/Misc"
+    ss.dependency 'LaunchDarkly', '~> 11.1.0'
   end
 
   # OpenTelemetryProtocolExporterCommon subspec
   s.subspec "OpenTelemetryProtocolExporterCommon" do |ss|
     ss.source_files = "Sources/OpenTelemetry/OpenTelemetryProtocolExporterCommon/**/*.{swift,h,m}"
     ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.3.0'
-    #ss.dependency 'SwiftLog'
     ss.dependency 'SwiftProtobuf'
   end
 
@@ -76,16 +67,22 @@ Pod::Spec.new do |s|
     ss.dependency "LaunchDarklyObservability/NetworkStatus"
   end
 
-  # External
+  # SDKResourceExtension subspec
+  s.subspec "SDKResourceExtension" do |ss|
+    ss.source_files = "Sources/OpenTelemetry/Instrumentation/SDKResourceExtension/**/*.{swift,h,m}"
+    ss.exclude_files = "Sources/OpenTelemetry/Instrumentation/SDKResourceExtension/README.md"
+    ss.dependency "LaunchDarklyObservability/OpenTelemetry"
+  end
 
+  # OpenTelemetry API + SDK
   s.subspec 'OpenTelemetry' do |ss|
     ss.dependency 'OpenTelemetry-Swift-Api', '~> 2.3.0'
     ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.3.0'
   end
 
+  # KSCrash (Installations product maps to the KSCrash pod)
   s.subspec 'Misc' do |ss|
     ss.dependency 'KSCrash'
-    ss.dependency 'LaunchDarkly', '~> 11.1.0'
   end
 
 end
