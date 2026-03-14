@@ -1,4 +1,5 @@
 import Foundation
+import OpenTelemetryApi
 
 @objc(LDObserveBridge)
 public final class ObjcLDObserveBridge: NSObject {
@@ -7,26 +8,51 @@ public final class ObjcLDObserveBridge: NSObject {
     /// - Parameters:
     ///   - message: log message
     ///   - severity: numeric severity (maps to your Swift `Severity(rawValue:)`)
-    ///   - attributes: Foundation types only (String, Bool, Int, Double, [..], NSDictionary/NSArray)
+    ///   - attributes: Foundation types only (String, Bool, Int, Double, NSDictionary, NSArray)
     @objc(recordLogWithMessage:severity:attributes:)
     public static func recordLog(message: String,
                                  severity: Int,
                                  attributes: [String: Any] = [:]) {
-        // Map severity Int -> your Swift Severity. Choose a sensible default.
         let sev = Severity(rawValue: severity) ?? .info
-
-        // Convert Foundation values to your AttributeValue using the existing init?(Any)
-        var attrs: [String: AttributeValue] = [:]
-        for (k, v) in attributes {
-            if let av = AttributeValue(v) {
-                attrs[k] = av
-            } else {
-                // Fallback: stringify unsupported types
-                attrs[k] = .string(String(describing: v))
-            }
-        }
-
+        let attrs = AttributeConverter.convert(attributes)
         LDObserve.shared.recordLog(message: message, severity: sev, attributes: attrs)
     }
-    
+
+    @objc(recordErrorWithMessage:cause:)
+    public static func recordError(message: String, cause: String?) {
+        let error = NSError(
+            domain: "com.launchdarkly.observability",
+            code: 0,
+            userInfo: [
+                NSLocalizedDescriptionKey: message,
+                "cause": cause ?? ""
+            ]
+        )
+        LDObserve.shared.recordError(error: error, attributes: [:])
+    }
+
+    @objc(recordMetricWithName:value:)
+    public static func recordMetric(name: String, value: Double) {
+        LDObserve.shared.recordMetric(metric: Metric(name: name, value: value))
+    }
+
+    @objc(recordCountWithName:value:)
+    public static func recordCount(name: String, value: Double) {
+        LDObserve.shared.recordCount(metric: Metric(name: name, value: value))
+    }
+
+    @objc(recordIncrWithName:value:)
+    public static func recordIncr(name: String, value: Double) {
+        LDObserve.shared.recordIncr(metric: Metric(name: name, value: value))
+    }
+
+    @objc(recordHistogramWithName:value:)
+    public static func recordHistogram(name: String, value: Double) {
+        LDObserve.shared.recordHistogram(metric: Metric(name: name, value: value))
+    }
+
+    @objc(recordUpDownCounterWithName:value:)
+    public static func recordUpDownCounter(name: String, value: Double) {
+        LDObserve.shared.recordUpDownCounter(metric: Metric(name: name, value: value))
+    }
 }

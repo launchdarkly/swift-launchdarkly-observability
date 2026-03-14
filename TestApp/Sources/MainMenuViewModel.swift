@@ -41,7 +41,7 @@ final class MainMenuViewModel: ObservableObject {
 		LDObserve.shared.recordLog(
 			message: "logs-button-pressed",
 			severity: .info,
-			attributes: ["testuser": .string("andrey")]
+            attributes: ["test-log": .string("ios"), "nested": .set(.init(labels: ["a": .array(.init(values: [.int(1)]))]))]
 		)
 	}
 	
