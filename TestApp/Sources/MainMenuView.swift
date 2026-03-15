@@ -27,6 +27,8 @@ struct MainMenuView: View {
     @State private var isNotebookEnabled: Bool = false
     @State private var isStoryboardEnabled: Bool = false
     @State private var isWebviewEnabled: Bool = false
+    @State private var isDialogsUIKitEnabled: Bool = false
+    @State private var isDialogsSwiftUIEnabled: Bool = false
     @State private var isSessionReplayEnabled: Bool = true
     
     var body: some View {
@@ -37,7 +39,7 @@ struct MainMenuView: View {
             }
             
             List {
-                maskingSection
+                sessionReplaySection
                 observabilitySection
                 benchmarkSection
             }
@@ -73,6 +75,12 @@ struct MainMenuView: View {
         .sheet(isPresented: $isNotebookEnabled) {
             NotebookView()
         }
+        .sheet(isPresented: $isDialogsUIKitEnabled) {
+            DialogsUIKitView()
+        }
+        .sheet(isPresented: $isDialogsSwiftUIEnabled) {
+            DialogsSwiftUIView()
+        }
 #endif
         .sheet(isPresented: $isNumberPadEnabled) {
             NumberPadView()
@@ -87,20 +95,10 @@ struct MainMenuView: View {
 #endif
     }
 
-    // MARK: - Masking
+    // MARK: - Session Replay
 
-    private var maskingSection: some View {
-        Section("Masking") {
-            Toggle("Session Replay", isOn: $isSessionReplayEnabled)
-                .fontWeight(.bold)
-                .onChange(of: isSessionReplayEnabled) { enabled in
-                    if enabled {
-                        LDReplay.shared.start()
-                    } else {
-                        LDReplay.shared.stop()
-                    }
-                }
-
+    private var sessionReplaySection: some View {
+        Section {
             MaskingGridRow(title: "One TextField", uikitAction: {
                 isMaskingUIKitOneFieldEnabled = true
             }, swiftUIAction: nil)
@@ -113,23 +111,47 @@ struct MainMenuView: View {
             MaskingGridRow(title: "Number Pad", uikitAction: nil) {
                 isNumberPadEnabled = true
             }
-#endif
-            MaskingGridRow(title: "Notebook", uikitAction: nil) {
-                isNotebookEnabled = true
+            MaskingGridRow(title: "Dialogs", uikitAction: {
+                isDialogsUIKitEnabled = true
+            }) {
+                isDialogsSwiftUIEnabled = true
             }
+#endif
 #if os(iOS)
             MaskingGridRow(title: "Fruta", uikitAction: nil) {
                 path.append("fruta")
             }
 #endif
-            MaskingGridRow(title: "Storyboard", uikitAction: {
-                isStoryboardEnabled = true
-            }, swiftUIAction: nil)
+            HStack {
+                Button("Drawing") {
+                    isNotebookEnabled = true
+                }
+                .buttonStyle(.borderedProminent)
+                Button("Storyboard") {
+                    isStoryboardEnabled = true
+                }
+                .buttonStyle(.borderedProminent)
 #if canImport(WebKit)
-            MaskingGridRow(title: "WebView", uikitAction: {
-                isWebviewEnabled = true
-            }, swiftUIAction: nil)
+                Button("WebView") {
+                    isWebviewEnabled = true
+                }
+                .buttonStyle(.borderedProminent)
 #endif
+            }
+        } header: {
+            HStack {
+                Text("Session Replay")
+                Spacer()
+                Toggle("", isOn: $isSessionReplayEnabled)
+                    .labelsHidden()
+                    .onChange(of: isSessionReplayEnabled) { enabled in
+                        if enabled {
+                            LDReplay.shared.start()
+                        } else {
+                            LDReplay.shared.stop()
+                        }
+                    }
+            }
         }
     }
 
@@ -204,12 +226,20 @@ struct MainMenuView: View {
             Text("Metric")
                 .fontWeight(.bold)
 
-            Button {
-                viewModel.recordCounterMetric()
-            } label: {
-                Text("Counter")
+            HStack {
+                Button("Metric") { viewModel.recordMetric() }
+                    .buttonStyle(.borderedProminent)
+                Button("Histogram") { viewModel.recordHistogramMetric() }
+                    .buttonStyle(.borderedProminent)
+                Button("Count") { viewModel.recordCounterMetric() }
+                    .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
+            HStack {
+                Button("Incremental") { viewModel.recordIncrementalMetric() }
+                    .buttonStyle(.borderedProminent)
+                Button("UpDownCounter") { viewModel.recordUpDownCounterMetric() }
+                    .buttonStyle(.borderedProminent)
+            }
 
             Text("Customer API")
                 .fontWeight(.bold)
