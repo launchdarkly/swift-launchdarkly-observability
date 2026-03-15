@@ -6,10 +6,10 @@ struct DialogsSwiftUIView: View {
 
     @State private var showAlert = false
     @State private var showConfirmation = false
-    @State private var showHalfSheet = false
     @State private var showFullSheet = false
     @State private var showFullScreenCover = false
     @State private var showOverlay = false
+    @State private var activeHalfSheetSizing: DimSizing?
     @State private var windowPresenter = WindowSheetPresenter()
 
     var body: some View {
@@ -21,10 +21,28 @@ struct DialogsSwiftUIView: View {
                 }
 
                 Section("Bottom Sheets") {
-                    Button("Half Sheet") { showHalfSheet = true }
                     Button("Full Sheet") { showFullSheet = true }
                     Button("Full Screen Cover") { showFullScreenCover = true }
-                    Button("UIWindow Sheet") { presentWindowSheet() }
+                }
+
+                Section("Half Sheet") {
+                    HStack(spacing: 6) {
+                        ForEach(DimSizing.allCases, id: \.self) { sizing in
+                            Button(sizing.rawValue) { activeHalfSheetSizing = sizing }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
+                        }
+                    }
+                }
+
+                Section("UIWindow Sizing") {
+                    HStack(spacing: 6) {
+                        ForEach(DimSizing.allCases, id: \.self) { sizing in
+                            Button(sizing.rawValue) { presentWindowSheet(sizing: sizing) }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
+                        }
+                    }
                 }
 
                 Section("Overlay") {
@@ -47,10 +65,6 @@ struct DialogsSwiftUIView: View {
                 Button("Delete", role: .destructive) { }
                 Button("Cancel", role: .cancel) { }
             }
-            .sheet(isPresented: $showHalfSheet) {
-                DialogsCountdownSheet(title: "Half Sheet")
-                    .presentationDetents([.medium])
-            }
             .sheet(isPresented: $showFullSheet) {
                 DialogsCountdownSheet(title: "Full Sheet")
                     .presentationDetents([.large])
@@ -59,8 +73,15 @@ struct DialogsSwiftUIView: View {
                 DialogsCountdownSheet(title: "Full Screen Cover")
             }
             .overlay {
+                if let sizing = activeHalfSheetSizing {
+                    DialogsHalfSheetOverlay(sizing: sizing) {
+                        activeHalfSheetSizing = nil
+                    }
+                }
+            }
+            .overlay {
                 if showOverlay {
-                    DialogsCountdownOverlay {
+                    DialogsCountdownOverlay(sizing: .bounded) {
                         showOverlay = false
                     }
                 }
@@ -68,14 +89,16 @@ struct DialogsSwiftUIView: View {
         }
     }
 
-    private func presentWindowSheet() {
+    private func presentWindowSheet(sizing: DimSizing) {
         windowPresenter.present(
-            content: DialogsCountdownOverlay {
+            content: DialogsHalfSheetOverlay(sizing: sizing) {
                 windowPresenter.dismiss()
             }
         )
     }
 }
+
+// MARK: - Countdown sheet (full sheet / full screen cover)
 
 private struct DialogsCountdownSheet: View {
     let title: String
@@ -101,23 +124,66 @@ private struct DialogsCountdownSheet: View {
     }
 }
 
-private struct DialogsCountdownOverlay: View {
+// MARK: - Half sheet overlay with parameterized dim sizing
+
+private struct DialogsHalfSheetOverlay: View {
+    let sizing: DimSizing
     let onDismiss: () -> Void
 
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .onTapGesture { onDismiss() }
+        GeometryReader { geo in
+            let screen = geo.size
+            let frame = sizing.dimFrame(for: CGRect(origin: .zero, size: screen))
 
-            VStack {
-                CountdownTimerView {
-                    onDismiss()
+            ZStack(alignment: .topLeading) {
+                Color.black.opacity(0.4)
+                    .onTapGesture { onDismiss() }
+
+                VStack {
+                    CountdownTimerView { onDismiss() }
                 }
+                .frame(width: screen.width, height: screen.height * 0.5)
+                .background(.regularMaterial)
+                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 16, topTrailingRadius: 16))
+                .offset(
+                    x: -frame.origin.x,
+                    y: -frame.origin.y + screen.height * 0.5
+                )
             }
-            .padding(32)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .frame(width: frame.width, height: frame.height)
+            .position(
+                x: frame.origin.x + frame.width / 2,
+                y: frame.origin.y + frame.height / 2
+            )
         }
+        .ignoresSafeArea()
+    }
+}
+
+// MARK: - Centered overlay (for View Overlay button)
+
+private struct DialogsCountdownOverlay: View {
+    let sizing: DimSizing
+    let onDismiss: () -> Void
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                let frame = sizing.dimFrame(for: CGRect(origin: .zero, size: geo.size))
+                Color.black.opacity(0.4)
+                    .frame(width: frame.width, height: frame.height)
+                    .position(x: geo.size.width / 2, y: geo.size.height / 2)
+                    .onTapGesture { onDismiss() }
+
+                VStack {
+                    CountdownTimerView { onDismiss() }
+                }
+                .padding(32)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .position(x: geo.size.width / 2, y: geo.size.height / 2)
+            }
+        }
+        .ignoresSafeArea()
     }
 }
 #endif

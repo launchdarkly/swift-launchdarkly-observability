@@ -38,14 +38,20 @@ final class DialogsUIKitViewController: UIViewController {
         stack.addArrangedSubview(makeButton("Action Sheet", action: #selector(showActionSheet)))
 
         stack.addArrangedSubview(makeSectionLabel("Bottom Sheets"))
-        stack.addArrangedSubview(makeButton("Half Sheet", action: #selector(showHalfSheet)))
         stack.addArrangedSubview(makeButton("Full Sheet", action: #selector(showFullSheet)))
         stack.addArrangedSubview(makeButton("Full Screen Cover", action: #selector(showFullScreenCover)))
-        stack.addArrangedSubview(makeButton("UIWindow Sheet", action: #selector(showWindowSheet)))
+
+        stack.addArrangedSubview(makeSectionLabel("Half Sheet"))
+        stack.addArrangedSubview(makeSizingRow { [weak self] sizing in self?.showHalfSheetSizing(sizing) })
+
+        stack.addArrangedSubview(makeSectionLabel("UIWindow Sizing"))
+        stack.addArrangedSubview(makeSizingRow { [weak self] sizing in self?.showWindowSizing(sizing) })
 
         stack.addArrangedSubview(makeSectionLabel("Overlay"))
         stack.addArrangedSubview(makeButton("View Overlay", action: #selector(showViewOverlay)))
     }
+
+    // MARK: - Helpers
 
     private func makeSectionLabel(_ text: String) -> UILabel {
         let label = UILabel()
@@ -60,6 +66,19 @@ final class DialogsUIKitViewController: UIViewController {
         let button = UIButton(configuration: config)
         button.addTarget(self, action: action, for: .touchUpInside)
         return button
+    }
+
+    private func makeSizingRow(handler: @escaping (DimSizing) -> Void) -> UIStackView {
+        let row = UIStackView(arrangedSubviews: DimSizing.allCases.map { sizing in
+            var config = UIButton.Configuration.filled()
+            config.title = sizing.rawValue
+            config.buttonSize = .small
+            config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8)
+            return UIButton(configuration: config, primaryAction: UIAction { _ in handler(sizing) })
+        })
+        row.axis = .horizontal
+        row.spacing = 6
+        return row
     }
 
     // MARK: - Alerts
@@ -89,15 +108,6 @@ final class DialogsUIKitViewController: UIViewController {
 
     // MARK: - Bottom Sheets
 
-    @objc private func showHalfSheet() {
-        let timerVC = CountdownTimerViewController()
-        timerVC.onComplete = { [weak timerVC] in timerVC?.dismiss(animated: true) }
-        if let sheet = timerVC.sheetPresentationController {
-            sheet.detents = [.medium()]
-        }
-        present(timerVC, animated: true)
-    }
-
     @objc private func showFullSheet() {
         let timerVC = CountdownTimerViewController()
         timerVC.onComplete = { [weak timerVC] in timerVC?.dismiss(animated: true) }
@@ -121,33 +131,84 @@ final class DialogsUIKitViewController: UIViewController {
         present(nav, animated: true)
     }
 
-    @objc private func showWindowSheet() {
-        let containerVC = UIViewController()
-        containerVC.view.backgroundColor = UIColor.black.withAlphaComponent(0.4)
+    // MARK: - Half Sheet (parameterized dim sizing)
+
+    private func showHalfSheetSizing(_ sizing: DimSizing) {
+        let viewBounds = view.bounds
+        let oversizedFrame = sizing.dimFrame(for: viewBounds)
+
+        let dimView = DismissableDimView(frame: oversizedFrame)
 
         let timerVC = CountdownTimerViewController()
         timerVC.view.translatesAutoresizingMaskIntoConstraints = false
         timerVC.view.backgroundColor = .systemBackground
         timerVC.view.layer.cornerRadius = 16
+        timerVC.view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        timerVC.view.clipsToBounds = true
+
+        let cleanup: () -> Void = {
+            timerVC.willMove(toParent: nil)
+            timerVC.view.removeFromSuperview()
+            timerVC.removeFromParent()
+            dimView.removeFromSuperview()
+        }
+
+        timerVC.onComplete = cleanup
+        dimView.onTap = cleanup
+
+        addChild(timerVC)
+        dimView.addSubview(timerVC.view)
+        timerVC.didMove(toParent: self)
+
+        let visibleX = -oversizedFrame.origin.x
+        let visibleY = -oversizedFrame.origin.y
+
+        NSLayoutConstraint.activate([
+            timerVC.view.leadingAnchor.constraint(equalTo: dimView.leadingAnchor, constant: visibleX),
+            timerVC.view.widthAnchor.constraint(equalToConstant: viewBounds.width),
+            timerVC.view.topAnchor.constraint(equalTo: dimView.topAnchor, constant: visibleY + viewBounds.height / 2),
+            timerVC.view.heightAnchor.constraint(equalToConstant: viewBounds.height / 2),
+        ])
+
+        view.addSubview(dimView)
+    }
+
+    // MARK: - UIWindow Sizing (parameterized dim sizing)
+
+    private func showWindowSizing(_ sizing: DimSizing) {
+        let screenBounds = UIScreen.main.bounds
+        let windowFrame = sizing.dimFrame(for: screenBounds)
+
+        let containerVC = UIViewController()
+        containerVC.view.backgroundColor = UIColor.black.withAlphaComponent(0.4)
+
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissWindowSheet))
+        containerVC.view.addGestureRecognizer(tap)
+
+        let timerVC = CountdownTimerViewController()
+        timerVC.view.translatesAutoresizingMaskIntoConstraints = false
+        timerVC.view.backgroundColor = .systemBackground
+        timerVC.view.layer.cornerRadius = 16
+        timerVC.view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         timerVC.view.clipsToBounds = true
 
         containerVC.addChild(timerVC)
         containerVC.view.addSubview(timerVC.view)
         timerVC.didMove(toParent: containerVC)
 
+        let visibleX = -windowFrame.origin.x
+        let visibleY = -windowFrame.origin.y
+
         NSLayoutConstraint.activate([
-            timerVC.view.centerXAnchor.constraint(equalTo: containerVC.view.centerXAnchor),
-            timerVC.view.centerYAnchor.constraint(equalTo: containerVC.view.centerYAnchor),
-            timerVC.view.widthAnchor.constraint(equalToConstant: 260),
-            timerVC.view.heightAnchor.constraint(equalToConstant: 280),
+            timerVC.view.leadingAnchor.constraint(equalTo: containerVC.view.leadingAnchor, constant: visibleX),
+            timerVC.view.widthAnchor.constraint(equalToConstant: screenBounds.width),
+            timerVC.view.topAnchor.constraint(equalTo: containerVC.view.topAnchor, constant: visibleY + screenBounds.height / 2),
+            timerVC.view.heightAnchor.constraint(equalToConstant: screenBounds.height / 2),
         ])
 
         timerVC.onComplete = { [weak self] in self?.windowPresenter.dismiss() }
 
-        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissWindowSheet))
-        containerVC.view.addGestureRecognizer(tap)
-
-        windowPresenter.presentViewController(containerVC)
+        windowPresenter.presentViewController(containerVC, windowFrame: windowFrame)
     }
 
     @objc private func dismissWindowSheet() {
@@ -157,9 +218,7 @@ final class DialogsUIKitViewController: UIViewController {
     // MARK: - Overlay
 
     @objc private func showViewOverlay() {
-        guard let window = view.window else { return }
-
-        let dimView = DismissableDimView(frame: window.bounds)
+        let dimView = DismissableDimView(frame: view.bounds)
         dimView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
         let timerVC = CountdownTimerViewController()
@@ -168,12 +227,11 @@ final class DialogsUIKitViewController: UIViewController {
         timerVC.view.layer.cornerRadius = 16
         timerVC.view.clipsToBounds = true
 
-        let cleanup: () -> Void = { [weak self] in
+        let cleanup: () -> Void = {
             timerVC.willMove(toParent: nil)
             timerVC.view.removeFromSuperview()
             timerVC.removeFromParent()
             dimView.removeFromSuperview()
-            _ = self // prevent unused capture warning
         }
 
         timerVC.onComplete = cleanup
@@ -190,7 +248,7 @@ final class DialogsUIKitViewController: UIViewController {
             timerVC.view.heightAnchor.constraint(equalToConstant: 280),
         ])
 
-        window.addSubview(dimView)
+        view.addSubview(dimView)
     }
 }
 
