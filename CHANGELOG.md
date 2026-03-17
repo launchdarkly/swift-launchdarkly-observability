@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.24.0...0.25.0) (2026-03-14)
+
+
+### Features
+
+* Identify Proxy, Record and Logs for MAUI ([#149](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/149)) ([e2e55af](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/e2e55af224d2a7716162b45367ebfc725f28664b))
+
 ## [0.24.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.23.0...0.24.0) (2026-03-13)
 
 

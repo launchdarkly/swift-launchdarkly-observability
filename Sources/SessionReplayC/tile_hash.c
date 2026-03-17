@@ -7,7 +7,7 @@
 #define USE_NEON 0
 #endif
 
-#if USE_NEON
+#if defined(__ARM_NEON)
 #include <arm_neon.h>
 #endif
 
@@ -49,7 +49,7 @@ TileHashResult tile_hash_w64_scalar(const unsigned char *rowPtr,
     return result;
 }
 
-#if USE_NEON
+#if defined(__ARM_NEON)
 TileHashResult tile_hash_w64_neon(const unsigned char *rowPtr,
                                    int rows,
                                    int bytesPerRow) {

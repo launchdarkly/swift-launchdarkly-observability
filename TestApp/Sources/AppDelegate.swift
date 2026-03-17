@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     serviceName: "alexis-perf",
                     otlpEndpoint: otlpEndpoint,
                     backendUrl: backendUrl,
+                    resourceAttributes: ["test-options-attribute": .string("ios-test-app")],
                     sessionBackgroundTimeout: 3,
                    )),
                 SessionReplay(options: .init(

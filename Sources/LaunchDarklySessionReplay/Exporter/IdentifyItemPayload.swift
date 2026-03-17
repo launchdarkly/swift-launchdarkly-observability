@@ -15,11 +15,17 @@ struct IdentifyItemPayload: EventQueueItemPayload {
 }
 
 extension IdentifyItemPayload {
-    // Using main thread to access to ldContext
-    @MainActor
-    init(options: Options, sessionAttributes: [String: AttributeValue]?, ldContext: LDContext? = nil, timestamp: TimeInterval) {
+    /// Builds the final attribute dictionary from resource/session attributes,
+    /// context keys, canonical key, and the optional friendly-name override.
+    private static func buildAttributes(
+        options: Options,
+        sessionAttributes: [String: AttributeValue]?,
+        contextKeys: [String: String],
+        canonicalKey: String
+    ) -> [String: String] {
+        // Keep the existing value from Options if duplicate key is found;
+        // client has precedence over session attribute.
         var attributes: [String: String] = options.resourceAttributes
-            ///keep the existing value from Options if duplicate key is found, client has precedence over session attribute
             .merging(sessionAttributes ?? [:], uniquingKeysWith: { (current, _) in current })
             .compactMapValues {
             switch $0 {
@@ -35,23 +41,44 @@ extension IdentifyItemPayload {
                 return String(v)
             }
         }
-        
-        let canonicalKey = ldContext?.fullyQualifiedKey() ?? "unknown"
-        let ldContextMap = ldContext?.contextKeys()
-        if let ldContextMap {
-            for (k, v) in ldContextMap {
-                attributes[k] = v
-            }
+
+        for (k, v) in contextKeys {
+            attributes[k] = v
         }
-        
+
         var contextFriendlyName: String? = nil
         if let contextFriendlyNameUnwrapped = options.contextFriendlyName, contextFriendlyNameUnwrapped.isNotEmpty {
             contextFriendlyName = contextFriendlyNameUnwrapped
         }
         attributes["key"] = contextFriendlyName ?? canonicalKey
         attributes["canonicalKey"] = canonicalKey
-        
-        self.attributes = attributes
+
+        return attributes
+    }
+
+    @MainActor
+    init(options: Options, sessionAttributes: [String: AttributeValue]?, ldContext: LDContext? = nil, timestamp: TimeInterval) {
+        let canonicalKey = ldContext?.fullyQualifiedKey() ?? "unknown"
+        let contextKeys = ldContext?.contextKeys() ?? [:]
+
+        self.attributes = Self.buildAttributes(
+            options: options,
+            sessionAttributes: sessionAttributes,
+            contextKeys: contextKeys,
+            canonicalKey: canonicalKey
+        )
+        self.timestamp = timestamp
+    }
+
+    /// Proxy-friendly initialiser that accepts pre-extracted context keys
+    /// instead of LDContext, so the MAUI bridge can call it with simple types.
+    init(options: Options, sessionAttributes: [String: AttributeValue]?, contextKeys: [String: String], canonicalKey: String, timestamp: TimeInterval) {
+        self.attributes = Self.buildAttributes(
+            options: options,
+            sessionAttributes: sessionAttributes,
+            contextKeys: contextKeys,
+            canonicalKey: canonicalKey
+        )
         self.timestamp = timestamp
     }
 }

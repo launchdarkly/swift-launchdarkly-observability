@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklySessionReplay"
-  s.version          = "0.24.0" # x-release-please-version
+  s.version          = "0.25.0" # x-release-please-version
   s.summary          = "iOS Session Replay Plugin for LaunchDarkly."
   s.description      = <<-DESC
                         LaunchDarkly is the feature management platform that software teams use to build better software, faster.
