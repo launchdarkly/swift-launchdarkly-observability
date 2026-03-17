@@ -35,7 +35,6 @@ Pod::Spec.new do |s|
       'OTHER_SWIFT_FLAGS'                   => '$(inherited) -package-name LaunchDarklyObservability'
     }
     ss.dependency "LaunchDarklySessionReplay/SessionReplayC"
-    ss.dependency "LaunchDarklyObservability/Common"
     ss.dependency "LaunchDarklyObservability"
   end
 
