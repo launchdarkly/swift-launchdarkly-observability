@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.25.0...0.26.0) (2026-03-17)
+
+
+### Features
+
+* cocoapods support for session replay ([#153](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/153)) ([2aea30a](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2aea30a161eb5939c85cb4fd8f4d5ad70fa102a1))
+
 ## [0.25.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.24.0...0.25.0) (2026-03-14)
 
 
