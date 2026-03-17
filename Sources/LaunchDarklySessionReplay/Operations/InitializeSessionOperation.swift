@@ -189,7 +189,7 @@ extension SessionReplayAPIService {
             """,
             variables: InitializeSessionVariables(
                    sessionSecureId: sessionSecureId,
-                   organizationVerboseId:  context.sdkKey,
+                   organizationVerboseId: context.sdkKey,
                    enableStrictPrivacy: false,
                    privacySetting: "none",
                    enableRecordingNetworkContents: false,
