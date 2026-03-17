@@ -1,0 +1,20 @@
+name: "Publish Podspecs"
+description: "Publish both podspecs to CocoaPods trunk"
+
+inputs:
+  dry_run:
+    description: "Is this a dry run. If so no package will be published."
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Push LaunchDarklyObservability to CocoaPods
+      if: ${{ inputs.dry_run == 'false' }}
+      shell: bash
+      run: pod trunk push LaunchDarklyObservability.podspec --allow-warnings --verbose
+
+    - name: Push LaunchDarklySessionReplay to CocoaPods
+      if: ${{ inputs.dry_run == 'false' }}
+      shell: bash
+      run: pod trunk push LaunchDarklySessionReplay.podspec --allow-warnings --verbose

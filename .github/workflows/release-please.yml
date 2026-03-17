@@ -29,3 +29,16 @@ jobs:
               if: ${{ steps.release.outputs.releases_created == 'true' }}
               with:
                   fetch-depth: 0 # If you only need the current version keep this.
+
+            - name: Get CocoaPods token
+              uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+              if: ${{ steps.release.outputs.releases_created == 'true' }}
+              with:
+                  aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
+                  ssm_parameter_pairs: '/production/common/releasing/cocoapods/token = COCOAPODS_TRUNK_TOKEN'
+
+            - name: Publish to CocoaPods
+              uses: ./.github/actions/publish
+              if: ${{ steps.release.outputs.releases_created == 'true' }}
+              with:
+                  dry_run: 'false'
