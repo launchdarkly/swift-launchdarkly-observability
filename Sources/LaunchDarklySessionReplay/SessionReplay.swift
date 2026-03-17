@@ -44,8 +44,9 @@ public final class SessionReplay: Plugin {
     }
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        LDReplay.shared.hookProxy = SessionReplayHookProxy(plugin: self)
-        return [SessionReplayHook(plugin: self)]
+        let exporter = SessionReplayHookExporter(plugin: self)
+        LDReplay.shared.hookProxy = SessionReplayHookProxy(exporter: exporter)
+        return [SessionReplayHook(exporter: exporter)]
     }
     
     public func start() {

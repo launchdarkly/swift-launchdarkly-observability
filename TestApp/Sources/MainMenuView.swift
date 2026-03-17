@@ -43,6 +43,8 @@ struct MainMenuView: View {
                 observabilitySection
                 benchmarkSection
             }
+            .environment(\.defaultMinListRowHeight, 0)
+            .listRowSpacing(0)
             .background(Color.clear)
             .navigationDestination(for: String.self) { value in
                 switch value {

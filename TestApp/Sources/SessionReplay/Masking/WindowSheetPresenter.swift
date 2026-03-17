@@ -24,7 +24,7 @@ enum DimSizing: String, CaseIterable {
 final class WindowSheetPresenter {
     private var overlayWindow: UIWindow?
 
-    func present<Content: View>(content: Content) {
+    func present<Content: View>(content: Content, windowFrame: CGRect? = nil) {
         guard let windowScene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first(where: { $0.activationState == .foregroundActive })
@@ -32,6 +32,9 @@ final class WindowSheetPresenter {
 
         let window = UIWindow(windowScene: windowScene)
         window.windowLevel = .alert + 1
+        if let windowFrame {
+            window.frame = windowFrame
+        }
         let hostingController = UIHostingController(rootView: content)
         hostingController.view.backgroundColor = .clear
         window.rootViewController = hostingController

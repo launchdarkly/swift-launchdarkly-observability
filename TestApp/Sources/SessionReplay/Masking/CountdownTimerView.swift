@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CountdownTimerView: View {
+    let title: String?
     let duration: Int
     let onComplete: () -> Void
 
@@ -9,7 +10,8 @@ struct CountdownTimerView: View {
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    init(duration: Int = 60, onComplete: @escaping () -> Void) {
+    init(title: String? = nil, duration: Int = 60, onComplete: @escaping () -> Void) {
+        self.title = title
         self.duration = duration
         self.onComplete = onComplete
         _remaining = State(initialValue: duration)
@@ -17,6 +19,10 @@ struct CountdownTimerView: View {
 
     var body: some View {
         VStack(spacing: 20) {
+            if let title {
+                Text(title)
+                    .font(.headline)
+            }
             ZStack {
                 Circle()
                     .stroke(Color.gray.opacity(0.2), lineWidth: 8)

@@ -3,6 +3,7 @@ import UIKit
 
 final class CountdownTimerViewController: UIViewController {
     var duration: Int = 60
+    var titleText: String?
     var onComplete: (() -> Void)?
 
     private var remaining: Int = 60
@@ -71,7 +72,17 @@ final class CountdownTimerViewController: UIViewController {
         stopButton.addTarget(self, action: #selector(stopTapped), for: .touchUpInside)
         stopButton.translatesAutoresizingMaskIntoConstraints = false
 
-        let stack = UIStackView(arrangedSubviews: [circleContainer, stopButton])
+        var arrangedViews: [UIView] = []
+        if let titleText {
+            let titleLabel = UILabel()
+            titleLabel.text = titleText
+            titleLabel.font = .preferredFont(forTextStyle: .headline)
+            titleLabel.textAlignment = .center
+            arrangedViews.append(titleLabel)
+        }
+        arrangedViews.append(contentsOf: [circleContainer, stopButton])
+
+        let stack = UIStackView(arrangedSubviews: arrangedViews)
         stack.axis = .vertical
         stack.alignment = .center
         stack.spacing = 20

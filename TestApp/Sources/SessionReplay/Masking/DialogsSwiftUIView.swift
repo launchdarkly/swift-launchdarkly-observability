@@ -74,14 +74,14 @@ struct DialogsSwiftUIView: View {
             }
             .overlay {
                 if let sizing = activeHalfSheetSizing {
-                    DialogsHalfSheetOverlay(sizing: sizing) {
+                    DialogsHalfSheetOverlay(title: "Half Sheet · \(sizing.rawValue)", sizing: sizing) {
                         activeHalfSheetSizing = nil
                     }
                 }
             }
             .overlay {
                 if showOverlay {
-                    DialogsCountdownOverlay(sizing: .bounded) {
+                    DialogsCountdownOverlay(title: "View Overlay", sizing: .bounded) {
                         showOverlay = false
                     }
                 }
@@ -90,10 +90,16 @@ struct DialogsSwiftUIView: View {
     }
 
     private func presentWindowSheet(sizing: DimSizing) {
+        let screenBounds = UIScreen.main.bounds
+        let windowFrame = sizing.dimFrame(for: screenBounds)
         windowPresenter.present(
-            content: DialogsHalfSheetOverlay(sizing: sizing) {
-                windowPresenter.dismiss()
-            }
+            content: DialogsWindowContent(
+                title: "UIWindow · \(sizing.rawValue)",
+                sizing: sizing,
+                screenSize: screenBounds.size,
+                onDismiss: { windowPresenter.dismiss() }
+            ),
+            windowFrame: windowFrame
         )
     }
 }
@@ -107,10 +113,7 @@ private struct DialogsCountdownSheet: View {
     var body: some View {
         NavigationStack {
             VStack {
-                Text(title)
-                    .font(.headline)
-                    .padding(.top)
-                CountdownTimerView {
+                CountdownTimerView(title: title) {
                     dismiss()
                 }
             }
@@ -124,36 +127,88 @@ private struct DialogsCountdownSheet: View {
     }
 }
 
-// MARK: - Half sheet overlay with parameterized dim sizing
+// MARK: - Half sheet overlay backed by an oversized UIView
 
-private struct DialogsHalfSheetOverlay: View {
+private struct DialogsHalfSheetOverlay: UIViewRepresentable {
+    let title: String
     let sizing: DimSizing
     let onDismiss: () -> Void
 
+    func makeCoordinator() -> Coordinator { Coordinator(onDismiss: onDismiss) }
+
+    func makeUIView(context: Context) -> UIView {
+        let wrapper = UIView()
+        wrapper.clipsToBounds = false
+        wrapper.backgroundColor = .clear
+
+        let screenBounds = UIScreen.main.bounds
+        let oversizedFrame = sizing.dimFrame(for: screenBounds)
+
+        let container = UIView(frame: oversizedFrame)
+        container.backgroundColor = UIColor.black.withAlphaComponent(0.4)
+        let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap))
+        container.addGestureRecognizer(tap)
+
+        let timerView = CountdownTimerView(title: title) { context.coordinator.handleTap() }
+        let hosting = UIHostingController(rootView: timerView)
+        hosting.view.backgroundColor = .systemBackground
+        hosting.view.layer.cornerRadius = 16
+        hosting.view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        hosting.view.clipsToBounds = true
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        context.coordinator.retainedController = hosting
+
+        container.addSubview(hosting.view)
+
+        let visibleX = -oversizedFrame.origin.x
+        let visibleY = -oversizedFrame.origin.y
+
+        NSLayoutConstraint.activate([
+            hosting.view.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: visibleX),
+            hosting.view.widthAnchor.constraint(equalToConstant: screenBounds.width),
+            hosting.view.topAnchor.constraint(equalTo: container.topAnchor, constant: visibleY + screenBounds.height / 2),
+            hosting.view.heightAnchor.constraint(equalToConstant: screenBounds.height / 2),
+        ])
+
+        wrapper.addSubview(container)
+        return wrapper
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+
+    final class Coordinator: NSObject {
+        let onDismiss: () -> Void
+        var retainedController: UIViewController?
+
+        init(onDismiss: @escaping () -> Void) { self.onDismiss = onDismiss }
+        @objc func handleTap() { onDismiss() }
+    }
+}
+
+// MARK: - Window overlay content (fills an oversized UIWindow)
+
+private struct DialogsWindowContent: View {
+    let title: String
+    let sizing: DimSizing
+    let screenSize: CGSize
+    let onDismiss: () -> Void
+
     var body: some View {
-        GeometryReader { geo in
-            let screen = geo.size
-            let frame = sizing.dimFrame(for: CGRect(origin: .zero, size: screen))
+        let frame = sizing.dimFrame(for: CGRect(origin: .zero, size: screenSize))
 
-            ZStack(alignment: .topLeading) {
-                Color.black.opacity(0.4)
-                    .onTapGesture { onDismiss() }
+        ZStack(alignment: .topLeading) {
+            Color.black.opacity(0.4)
+                .onTapGesture { onDismiss() }
 
-                VStack {
-                    CountdownTimerView { onDismiss() }
-                }
-                .frame(width: screen.width, height: screen.height * 0.5)
-                .background(.regularMaterial)
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 16, topTrailingRadius: 16))
-                .offset(
-                    x: -frame.origin.x,
-                    y: -frame.origin.y + screen.height * 0.5
-                )
+            VStack {
+                CountdownTimerView(title: title) { onDismiss() }
             }
-            .frame(width: frame.width, height: frame.height)
-            .position(
-                x: frame.origin.x + frame.width / 2,
-                y: frame.origin.y + frame.height / 2
+            .frame(width: screenSize.width, height: screenSize.height * 0.5)
+            .background(.regularMaterial)
+            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 16, topTrailingRadius: 16))
+            .offset(
+                x: -frame.origin.x,
+                y: -frame.origin.y + screenSize.height * 0.5
             )
         }
         .ignoresSafeArea()
@@ -163,6 +218,7 @@ private struct DialogsHalfSheetOverlay: View {
 // MARK: - Centered overlay (for View Overlay button)
 
 private struct DialogsCountdownOverlay: View {
+    let title: String
     let sizing: DimSizing
     let onDismiss: () -> Void
 
@@ -176,7 +232,7 @@ private struct DialogsCountdownOverlay: View {
                     .onTapGesture { onDismiss() }
 
                 VStack {
-                    CountdownTimerView { onDismiss() }
+                    CountdownTimerView(title: title) { onDismiss() }
                 }
                 .padding(32)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))

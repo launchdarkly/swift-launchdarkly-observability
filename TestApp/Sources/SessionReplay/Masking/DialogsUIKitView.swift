@@ -44,7 +44,10 @@ final class DialogsUIKitViewController: UIViewController {
         stack.addArrangedSubview(makeSectionLabel("Half Sheet"))
         stack.addArrangedSubview(makeSizingRow { [weak self] sizing in self?.showHalfSheetSizing(sizing) })
 
-        stack.addArrangedSubview(makeSectionLabel("UIWindow Sizing"))
+        stack.addArrangedSubview(makeSectionLabel("Current Window Sizing"))
+        stack.addArrangedSubview(makeSizingRow { [weak self] sizing in self?.showCurrentWindowSizing(sizing) })
+
+        stack.addArrangedSubview(makeSectionLabel("New UIWindow Sizing"))
         stack.addArrangedSubview(makeSizingRow { [weak self] sizing in self?.showWindowSizing(sizing) })
 
         stack.addArrangedSubview(makeSectionLabel("Overlay"))
@@ -110,6 +113,7 @@ final class DialogsUIKitViewController: UIViewController {
 
     @objc private func showFullSheet() {
         let timerVC = CountdownTimerViewController()
+        timerVC.titleText = "Full Sheet"
         timerVC.onComplete = { [weak timerVC] in timerVC?.dismiss(animated: true) }
         timerVC.modalPresentationStyle = .pageSheet
         present(timerVC, animated: true)
@@ -117,6 +121,7 @@ final class DialogsUIKitViewController: UIViewController {
 
     @objc private func showFullScreenCover() {
         let timerVC = CountdownTimerViewController()
+        timerVC.titleText = "Full Screen Cover"
         timerVC.onComplete = { [weak timerVC] in
             timerVC?.navigationController?.dismiss(animated: true)
         }
@@ -140,6 +145,7 @@ final class DialogsUIKitViewController: UIViewController {
         let dimView = DismissableDimView(frame: oversizedFrame)
 
         let timerVC = CountdownTimerViewController()
+        timerVC.titleText = "Half Sheet · \(sizing.rawValue)"
         timerVC.view.translatesAutoresizingMaskIntoConstraints = false
         timerVC.view.backgroundColor = .systemBackground
         timerVC.view.layer.cornerRadius = 16
@@ -173,7 +179,48 @@ final class DialogsUIKitViewController: UIViewController {
         view.addSubview(dimView)
     }
 
-    // MARK: - UIWindow Sizing (parameterized dim sizing)
+    // MARK: - Current Window Sizing (inserted into the app's existing UIWindow)
+
+    private func showCurrentWindowSizing(_ sizing: DimSizing) {
+        guard let window = view.window else { return }
+
+        let screenBounds = window.bounds
+        let oversizedFrame = sizing.dimFrame(for: screenBounds)
+
+        let dimView = DismissableDimView(frame: oversizedFrame)
+
+        let timerVC = CountdownTimerViewController()
+        timerVC.titleText = "Current Window · \(sizing.rawValue)"
+        timerVC.view.translatesAutoresizingMaskIntoConstraints = false
+        timerVC.view.backgroundColor = .systemBackground
+        timerVC.view.layer.cornerRadius = 16
+        timerVC.view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        timerVC.view.clipsToBounds = true
+
+        let cleanup: () -> Void = {
+            timerVC.view.removeFromSuperview()
+            dimView.removeFromSuperview()
+        }
+
+        timerVC.onComplete = cleanup
+        dimView.onTap = cleanup
+
+        dimView.addSubview(timerVC.view)
+
+        let visibleX = -oversizedFrame.origin.x
+        let visibleY = -oversizedFrame.origin.y
+
+        NSLayoutConstraint.activate([
+            timerVC.view.leadingAnchor.constraint(equalTo: dimView.leadingAnchor, constant: visibleX),
+            timerVC.view.widthAnchor.constraint(equalToConstant: screenBounds.width),
+            timerVC.view.topAnchor.constraint(equalTo: dimView.topAnchor, constant: visibleY + screenBounds.height / 2),
+            timerVC.view.heightAnchor.constraint(equalToConstant: screenBounds.height / 2),
+        ])
+
+        window.addSubview(dimView)
+    }
+
+    // MARK: - New UIWindow Sizing (parameterized dim sizing)
 
     private func showWindowSizing(_ sizing: DimSizing) {
         let screenBounds = UIScreen.main.bounds
@@ -186,6 +233,7 @@ final class DialogsUIKitViewController: UIViewController {
         containerVC.view.addGestureRecognizer(tap)
 
         let timerVC = CountdownTimerViewController()
+        timerVC.titleText = "New UIWindow · \(sizing.rawValue)"
         timerVC.view.translatesAutoresizingMaskIntoConstraints = false
         timerVC.view.backgroundColor = .systemBackground
         timerVC.view.layer.cornerRadius = 16
@@ -222,6 +270,7 @@ final class DialogsUIKitViewController: UIViewController {
         dimView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
         let timerVC = CountdownTimerViewController()
+        timerVC.titleText = "View Overlay"
         timerVC.view.translatesAutoresizingMaskIntoConstraints = false
         timerVC.view.backgroundColor = .systemBackground
         timerVC.view.layer.cornerRadius = 16
