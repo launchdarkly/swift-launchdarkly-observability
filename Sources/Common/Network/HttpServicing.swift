@@ -24,6 +24,19 @@ public protocol HttpServicing {
 }
 
 public final class HttpService: HttpServicing {
+//    func buildUserAgent(sdkVersion: String) -> String {
+//        let device = UIDevice.current
+//        let osVersion = device.systemVersion.replacingOccurrences(of: ".", with: "_")
+//        let model = device.model // "iPhone" or "iPad"
+//        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
+//        
+//        if model == "iPad" {
+//            return "Mozilla/5.0 (\(model); CPU OS \(osVersion) like Mac OS X) Mobile/\(buildNumber) YourSDK/\(sdkVersion)"
+//        } else {
+//            return "Mozilla/5.0 (\(model); CPU \(model) OS \(osVersion) like Mac OS X) Mobile/\(buildNumber) YourSDK/\(sdkVersion)"
+//        }
+//    }
+
     private let session: URLSession
 
     public init(session: URLSession = .shared) {
