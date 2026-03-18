@@ -3,6 +3,13 @@ name: Manual Publish
 on:
     workflow_dispatch:
         inputs:
+            package:
+                description: "Which package to publish"
+                type: choice
+                required: true
+                options:
+                    - LaunchDarklyObservability
+                    - LaunchDarklySessionReplay
             dry_run:
                 description: "Is this a dry run. If so no package will be published."
                 type: boolean
@@ -23,7 +30,14 @@ jobs:
                   aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
                   ssm_parameter_pairs: '/production/common/releasing/cocoapods/token = COCOAPODS_TRUNK_TOKEN'
 
-            - name: Publish to CocoaPods
-              uses: ./.github/actions/publish
+            - name: Publish LaunchDarklyObservability
+              uses: ./.github/actions/publish-observability
+              if: ${{ inputs.package == 'LaunchDarklyObservability' }}
+              with:
+                  dry_run: ${{ inputs.dry_run }}
+
+            - name: Publish LaunchDarklySessionReplay
+              uses: ./.github/actions/publish-session-replay
+              if: ${{ inputs.package == 'LaunchDarklySessionReplay' }}
               with:
                   dry_run: ${{ inputs.dry_run }}

@@ -20,6 +20,7 @@ jobs:
               with:
                   aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
                   ssm_parameter_pairs: '/production/common/releasing/o11y_gh_pat = GITHUB_PAT'
+
             - uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d8567266a2445
               id: release
               with:
@@ -28,7 +29,7 @@ jobs:
             - uses: actions/checkout@v4
               if: ${{ steps.release.outputs.releases_created == 'true' }}
               with:
-                  fetch-depth: 0 # If you only need the current version keep this.
+                  fetch-depth: 0
 
             - name: Get CocoaPods token
               uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
@@ -37,8 +38,14 @@ jobs:
                   aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
                   ssm_parameter_pairs: '/production/common/releasing/cocoapods/token = COCOAPODS_TRUNK_TOKEN'
 
-            - name: Publish to CocoaPods
-              uses: ./.github/actions/publish
-              if: ${{ steps.release.outputs.releases_created == 'true' }}
+            - name: Publish LaunchDarklyObservability
+              uses: ./.github/actions/publish-observability
+              if: ${{ steps.release.outputs['.--release_created'] == 'true' }}
+              with:
+                  dry_run: 'false'
+
+            - name: Publish LaunchDarklySessionReplay
+              uses: ./.github/actions/publish-session-replay
+              if: ${{ steps.release.outputs['Sources/LaunchDarklySessionReplay--release_created'] == 'true' }}
               with:
                   dry_run: 'false'

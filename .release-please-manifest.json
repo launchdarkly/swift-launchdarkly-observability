@@ -1,3 +1,4 @@
 {
-	".": "0.26.0"
+	".": "0.26.0",
+	"Sources/LaunchDarklySessionReplay": "0.26.0"
 }

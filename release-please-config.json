@@ -3,13 +3,21 @@
 	"include-v-in-tag": false,
 	"packages": {
 		".": {
-			"package-name": "swift-launchdarkly-observability",
+			"package-name": "LaunchDarklyObservability",
 			"release-type": "simple",
 			"versioning": "default",
 			"bump-minor-pre-major": true,
 			"extra-files": [
 				"Sources/LaunchDarklyObservability/Version.swift",
-				"LaunchDarklyObservability.podspec",
+				"LaunchDarklyObservability.podspec"
+			]
+		},
+		"Sources/LaunchDarklySessionReplay": {
+			"package-name": "LaunchDarklySessionReplay",
+			"release-type": "simple",
+			"versioning": "default",
+			"bump-minor-pre-major": true,
+			"extra-files": [
 				"LaunchDarklySessionReplay.podspec"
 			]
 		}

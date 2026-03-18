@@ -1,5 +1,5 @@
-name: "Publish Podspecs"
-description: "Publish both podspecs to CocoaPods trunk"
+name: "Publish LaunchDarklyObservability"
+description: "Publish LaunchDarklyObservability.podspec to CocoaPods trunk"
 
 inputs:
   dry_run:
@@ -13,8 +13,3 @@ runs:
       if: ${{ inputs.dry_run == 'false' }}
       shell: bash
       run: pod trunk push LaunchDarklyObservability.podspec --allow-warnings --verbose
-
-    - name: Push LaunchDarklySessionReplay to CocoaPods
-      if: ${{ inputs.dry_run == 'false' }}
-      shell: bash
-      run: pod trunk push LaunchDarklySessionReplay.podspec --allow-warnings --verbose
