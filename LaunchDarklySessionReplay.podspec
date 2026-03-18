@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklySessionReplay"
-  s.version          = "0.24.0" # x-release-please-version
+  s.version          = "0.26.0" # x-release-please-version
   s.summary          = "iOS Session Replay Plugin for LaunchDarkly."
   s.description      = <<-DESC
                         LaunchDarkly is the feature management platform that software teams use to build better software, faster.
@@ -35,7 +35,6 @@ Pod::Spec.new do |s|
       'OTHER_SWIFT_FLAGS'                   => '$(inherited) -package-name LaunchDarklyObservability'
     }
     ss.dependency "LaunchDarklySessionReplay/SessionReplayC"
-    ss.dependency "LaunchDarklyObservability/Common"
     ss.dependency "LaunchDarklyObservability"
   end
 
