@@ -28,7 +28,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     backendUrl: backendUrl,
                     resourceAttributes: ["test-options-attribute": .string("ios-test-app")],
                     sessionBackgroundTimeout: 3,
-                    crashReporting: .init(source: .none)
+                    crashReporting: .enabled
                    )),
                 SessionReplay(options: .init(
                     isEnabled: true,
