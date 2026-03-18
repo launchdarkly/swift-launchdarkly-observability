@@ -27,13 +27,33 @@ final class MainMenuViewModel: ObservableObject {
 		span.end()
 	}
 	
+	func recordMetric() {
+		LDObserve.shared.recordMetric(
+			metric: .init(name: "test-gauge", value: 50.0)
+		)
+	}
+
+	func recordHistogramMetric() {
+		LDObserve.shared.recordHistogram(
+			metric: .init(name: "test-histogram", value: 15.0)
+		)
+	}
+
 	func recordCounterMetric() {
 		LDObserve.shared.recordCount(
-			metric: .init(
-				name: "press-count",
-				value: 1,
-				timestamp: .now
-			)
+			metric: .init(name: "test-counter", value: 10.0)
+		)
+	}
+
+	func recordIncrementalMetric() {
+		LDObserve.shared.recordIncr(
+			metric: .init(name: "test-incremental-counter", value: 12.0)
+		)
+	}
+
+	func recordUpDownCounterMetric() {
+		LDObserve.shared.recordUpDownCounter(
+			metric: .init(name: "test-up-down-counter", value: 25.0)
 		)
 	}
 	
