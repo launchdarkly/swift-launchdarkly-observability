@@ -13,7 +13,8 @@ public final class GraphQLClient {
                 decoder: JSONDecoder = JSONDecoder(),
                 defaultHeaders: [String: String] = [
                     "Content-Type": "application/json",
-                    "Accept": "application/json"
+                    "Accept": "application/json",
+                    "User-Agent": "iOS"
                 ]) {
         self.endpoint = endpoint
         self.network = network
