@@ -152,11 +152,11 @@ final class DialogsUIKitViewController: UIViewController {
         timerVC.view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         timerVC.view.clipsToBounds = true
 
-        let cleanup: () -> Void = {
-            timerVC.willMove(toParent: nil)
-            timerVC.view.removeFromSuperview()
-            timerVC.removeFromParent()
-            dimView.removeFromSuperview()
+        let cleanup: () -> Void = { [weak timerVC, weak dimView] in
+            timerVC?.willMove(toParent: nil)
+            timerVC?.view.removeFromSuperview()
+            timerVC?.removeFromParent()
+            dimView?.removeFromSuperview()
         }
 
         timerVC.onComplete = cleanup
@@ -197,15 +197,19 @@ final class DialogsUIKitViewController: UIViewController {
         timerVC.view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         timerVC.view.clipsToBounds = true
 
-        let cleanup: () -> Void = {
-            timerVC.view.removeFromSuperview()
-            dimView.removeFromSuperview()
+        let cleanup: () -> Void = { [weak timerVC, weak dimView] in
+            timerVC?.willMove(toParent: nil)
+            timerVC?.view.removeFromSuperview()
+            timerVC?.removeFromParent()
+            dimView?.removeFromSuperview()
         }
 
         timerVC.onComplete = cleanup
         dimView.onTap = cleanup
 
+        addChild(timerVC)
         dimView.addSubview(timerVC.view)
+        timerVC.didMove(toParent: self)
 
         let visibleX = -oversizedFrame.origin.x
         let visibleY = -oversizedFrame.origin.y
@@ -276,11 +280,11 @@ final class DialogsUIKitViewController: UIViewController {
         timerVC.view.layer.cornerRadius = 16
         timerVC.view.clipsToBounds = true
 
-        let cleanup: () -> Void = {
-            timerVC.willMove(toParent: nil)
-            timerVC.view.removeFromSuperview()
-            timerVC.removeFromParent()
-            dimView.removeFromSuperview()
+        let cleanup: () -> Void = { [weak timerVC, weak dimView] in
+            timerVC?.willMove(toParent: nil)
+            timerVC?.view.removeFromSuperview()
+            timerVC?.removeFromParent()
+            dimView?.removeFromSuperview()
         }
 
         timerVC.onComplete = cleanup
