@@ -5,7 +5,9 @@ public final class LDReplay {
     public static var shared = LDReplay()
 
     /// Hook proxy for the C# / MAUI bridge. Set by the SessionReplay plugin during getHooks().
-    public var hookProxy: SessionReplayHookProxy?
+    public var hookProxy: SessionReplayHookProxy? {
+        client.map { SessionReplayHookProxy(sessionReplayService: $0) }
+    }
 
     var client: SessionReplayServicing?
     

@@ -8,7 +8,7 @@ import LaunchDarklyObservability
 import Common
 #endif
 
-protocol SessionReplayServicing {
+protocol SessionReplayServicing: AnyObject {
     @MainActor
     func start()
     
@@ -17,6 +17,8 @@ protocol SessionReplayServicing {
     
     @MainActor
     var isEnabled: Bool { get set }
+    
+    func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool)
 }
 
 struct SessionReplayContext {
@@ -48,6 +50,7 @@ final class SessionReplayService: SessionReplayServicing {
     var sessionReplayExporter: SessionReplayExporter
     let userInteractionManager: UserInteractionManager
     let log: OSLog
+    var observabilityContext: ObservabilityContext
     
     @MainActor
     var isEnabled = false {
@@ -69,6 +72,7 @@ final class SessionReplayService: SessionReplayServicing {
         guard let url = URL(string: observabilityContext.options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
+        self.observabilityContext = observabilityContext
         self.log = observabilityContext.options.log
         let graphQLClient = GraphQLClient(endpoint: url)
         let captureService = ImageCaptureService(options: sessonReplayOptions)
@@ -99,6 +103,20 @@ final class SessionReplayService: SessionReplayServicing {
             transportService.start()
         }
         os_log("LaunchDarkly Session Replay started, version: %{public}@", log: log, type: .info, sdkVersion)
+    }
+    
+    func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool) {
+        guard completed else { return }
+        Task {
+            let identifyPayload = IdentifyItemPayload(
+                options: observabilityContext.options,
+                sessionAttributes: observabilityContext.sessionAttributes,
+                contextKeys: contextKeys,
+                canonicalKey: canonicalKey,
+                timestamp: Date().timeIntervalSince1970
+            )
+            await scheduleIdentifySession(identifyPayload: identifyPayload)
+        }
     }
     
     func scheduleIdentifySession(identifyPayload: IdentifyItemPayload) async {

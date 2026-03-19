@@ -2,8 +2,12 @@ import LaunchDarkly
 import Foundation
 import LaunchDarklyObservability
 import OSLog
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public final class SessionReplay: Plugin {
+    let sessionReplayHook = SessionReplayHook()
     let options: SessionReplayOptions
     var sessionReplayService: SessionReplayService?
     var observabilityContext: ObservabilityContext?
@@ -17,6 +21,8 @@ public final class SessionReplay: Plugin {
     }
     
     public func register(client: LaunchDarkly.LDClient, metadata: LaunchDarkly.EnvironmentMetadata) {
+        debugAssertMainThread()
+
         guard let context = LDObserve.shared.context else {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service could not find Observability Service")
             return
@@ -34,7 +40,7 @@ public final class SessionReplay: Plugin {
                                                                 metadata: metadata)
             LDReplay.shared.client = sessionReplayService
             self.sessionReplayService = sessionReplayService
-            
+            sessionReplayHook.delegate = sessionReplayService
             if options.isEnabled {
                 start()
             }
@@ -44,9 +50,7 @@ public final class SessionReplay: Plugin {
     }
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        let exporter = SessionReplayHookExporter(plugin: self)
-        LDReplay.shared.hookProxy = SessionReplayHookProxy(exporter: exporter)
-        return [SessionReplayHook(exporter: exporter)]
+        return [sessionReplayHook]
     }
     
     public func start() {

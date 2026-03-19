@@ -11,10 +11,10 @@ import LaunchDarklyObservability
 /// and delegates to SessionReplayHookExporter.
 @objc(SessionReplayHookProxy)
 public final class SessionReplayHookProxy: NSObject {
-    private let exporter: SessionReplayHookExporter
+    private let sessionReplayService: SessionReplayServicing
 
-    init(exporter: SessionReplayHookExporter) {
-        self.exporter = exporter
+    init(sessionReplayService: SessionReplayServicing) {
+        self.sessionReplayService = sessionReplayService
         super.init()
     }
 
@@ -24,6 +24,6 @@ public final class SessionReplayHookProxy: NSObject {
         for (k, v) in contextKeys {
             if let key = k as? String, let val = v as? String { keys[key] = val }
         }
-        exporter.afterIdentify(contextKeys: keys, canonicalKey: canonicalKey, completed: completed)
+        sessionReplayService.afterIdentify(contextKeys: keys, canonicalKey: canonicalKey, completed: completed)
     }
 }
