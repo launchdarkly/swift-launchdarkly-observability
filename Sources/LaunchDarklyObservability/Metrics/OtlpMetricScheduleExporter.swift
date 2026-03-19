@@ -8,7 +8,7 @@ final class OtlpMetricScheduleExporter: MetricExporter {
     private let defaultAggregationSelector: DefaultAggregationSelector
     
     init(eventQueue: EventQueue,
-         aggregationTemporalitySelector: AggregationTemporalitySelector = AggregationTemporality.alwaysDelta(),
+         aggregationTemporalitySelector: AggregationTemporalitySelector = AggregationTemporality.deltaPreferred(),
          defaultAggregationSelector: DefaultAggregationSelector = AggregationSelector.instance) {
         self.eventQueue = eventQueue
         self.aggregationTemporalitySelector = aggregationTemporalitySelector
