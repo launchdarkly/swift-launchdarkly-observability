@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.26.1...0.26.2) (2026-03-19)
+
+
+### Bug Fixes
+
+* switch to deltaPrefered aggregation for metrics ([#161](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/161)) ([ae50360](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/ae50360aae3e3b0e1835098029ebab052dd9b2e0))
+
 ## [0.26.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.26.0...0.26.1) (2026-03-18)
 
 
