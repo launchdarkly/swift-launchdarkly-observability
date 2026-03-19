@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.26.0...0.26.1) (2026-03-18)
+
+
+### Bug Fixes
+
+* make iOS requests recognized by backend ([#159](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/159)) ([2155896](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2155896450a2b0695163254b94b3684b0e369fa9))
+
 ## [0.26.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.25.0...0.26.0) (2026-03-17)
 
 

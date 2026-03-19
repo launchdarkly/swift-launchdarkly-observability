@@ -27,7 +27,9 @@ struct MainMenuView: View {
     @State private var isNotebookEnabled: Bool = false
     @State private var isStoryboardEnabled: Bool = false
     @State private var isWebviewEnabled: Bool = false
-    @State private var identifyText: String = ""
+    @State private var isDialogsUIKitEnabled: Bool = false
+    @State private var isDialogsSwiftUIEnabled: Bool = false
+    @State private var isSessionReplayEnabled: Bool = true
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -37,167 +39,55 @@ struct MainMenuView: View {
             }
             
             List {
-                #if os(iOS)
-                NavigationLink("Fruta (SwiftUI)", value: "fruta")
-                #endif
-                NavigationLink(destination: MaskingElementsView()) {
-                    Text("Masking Elements (SwiftUI)")
-                }
-
-                FauxLinkToggleRow(title: "Masking One TextField (UIKit)", isOn: $isMaskingUIKitOneFieldEnabled)
-#if os(iOS)
-                FauxLinkToggleRow(title: "Masking Credit Card (UIKit)", isOn: $isMaskingUIKitCreditCardEnabled)
-                FauxLinkToggleRow(title: "Masking Credit Card (SwiftUI)", isOn: $isMaskingSwiftUICreditCardEnabled)
-                FauxLinkToggleRow(title: "Number Pad (SwiftUI)", isOn: $isNumberPadEnabled)
-#endif
-
-                FauxLinkToggleRow(title: "Notebook (SwiftUI)", isOn: $isNotebookEnabled)
-                FauxLinkToggleRow(title: "Storyboad (UIKit)", isOn: $isStoryboardEnabled)
-#if canImport(WebKit)
-                FauxLinkToggleRow(title: "WebView (WebKit)", isOn: $isWebviewEnabled)
-#endif
-#if os(iOS)
-                NavigationLink(destination: SystemUnderPressureView()) {
-                    Text("Simulate System Under Pressure")
-                }
-#endif
-                
-                HStack {
-                    Text("Identify:")
-                    
-                    Button {
-                        viewModel.identifyUser()
-                    } label: {
-                        Text("User").foregroundStyle(Colors.identifyTextColor)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Colors.identifyBgColor)
-                    
-                    Button {
-                        viewModel.identifyMulti()
-                    } label: {
-                        Text("Multi").foregroundStyle(Colors.identifyTextColor)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Colors.identifyBgColor)
-                    
-                    Button {
-                        viewModel.identifyAnonymous()
-                    } label: {
-                        Text("Anon").foregroundStyle(Colors.identifyTextColor)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Colors.identifyBgColor)
-                }
-                
-                HStack {
-                    Button {
-                        viewModel.recordLogs()
-                    } label: {
-                        Text("Logs")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    
-                    Button {
-                        viewModel.recordCounterMetric()
-                    } label: {
-                        Text("Metric: counter")
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-                
-                HStack {
-                    Button {
-                        viewModel.recordSpanAndVariation()
-                    } label: {
-                        Text("Span & Flag Eval")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    Button {
-                        Task {
-                            await viewModel.performNetworkRequest()
-                        }
-                    } label: {
-                        if viewModel.isNetworkInProgress {
-                            ProgressView {
-                                Text("get request to launchdarkly.com...")
-                            }
-                        } else {
-                            Text("Network Request")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(viewModel.isNetworkInProgress)
-                }
-                
-                HStack {
-                    Button {
-                        viewModel.recordError()
-                    } label: {
-                        Text("error")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
-                    
-                    Button {
-                        viewModel.crash()
-                    } label: {
-                        Text("Crash")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
-                }
-
-                HStack {
-                    Button {
-                        LDReplay.shared.start()
-                    } label: {
-                        Text("Start Replay")
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button {
-                        LDReplay.shared.stop()
-                    } label: {
-                        Text("Stop Replay")
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-
-                NavigationLink(destination: BenchmarkView()) {
-                    Text("Benchmark")
-                }
-            }.background(Color.clear)
+                sessionReplaySection
+                observabilitySection
+                benchmarkSection
+            }
+            .environment(\.defaultMinListRowHeight, 0)
+            .listRowSpacing(0)
+            .background(Color.clear)
             .navigationDestination(for: String.self) { value in
-                if value == "fruta" {
+                switch value {
+                case "fruta":
                     FrutaAppView()
+                default:
+                    EmptyView()
                 }
-             }
+            }
         }
-         .onChange(of: path) { newValue in
-             if !newValue.contains("fruta") {
-                 if AppTabNavigation.pullPushLoop > 0 {
-                     DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 0.9...1.1)) {
-                         path.append("fruta")
-                     }
-                 }
-             }
-         }
-
+        .onChange(of: path) { newValue in
+            if !newValue.contains("fruta") {
+                if AppTabNavigation.pullPushLoop > 0 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 0.9...1.1)) {
+                        path.append("fruta")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $isMaskingUIKitOneFieldEnabled) {
+            MaskingElementsSimpleUIKitView()
+        }
 #if os(iOS)
         .sheet(isPresented: $isMaskingUIKitCreditCardEnabled) {
             MaskingCreditCardUIKitView()
-        }.sheet(isPresented: $isMaskingSwiftUICreditCardEnabled) {
+        }
+        .sheet(isPresented: $isMaskingSwiftUICreditCardEnabled) {
             MaskingCreditCardSwiftUIView()
-        }.sheet(isPresented: $isNotebookEnabled) {
+        }
+        .sheet(isPresented: $isNotebookEnabled) {
             NotebookView()
         }
+        .sheet(isPresented: $isDialogsUIKitEnabled) {
+            DialogsUIKitView()
+        }
+        .sheet(isPresented: $isDialogsSwiftUIEnabled) {
+            DialogsSwiftUIView()
+        }
 #endif
-        .sheet(isPresented: $isMaskingUIKitOneFieldEnabled) {
-            MaskingElementsSimpleUIKitView()
-        }.sheet(isPresented: $isNumberPadEnabled) {
+        .sheet(isPresented: $isNumberPadEnabled) {
             NumberPadView()
-        }.sheet(isPresented: $isStoryboardEnabled) {
+        }
+        .sheet(isPresented: $isStoryboardEnabled) {
             StoryboardRootView()
         }
 #if canImport(WebKit)
@@ -205,6 +95,191 @@ struct MainMenuView: View {
             WebViewControllertView()
         }
 #endif
+    }
+
+    // MARK: - Session Replay
+
+    private var sessionReplaySection: some View {
+        Section {
+            MaskingGridRow(title: "One TextField", uikitAction: {
+                isMaskingUIKitOneFieldEnabled = true
+            }, swiftUIAction: nil)
+#if os(iOS)
+            MaskingGridRow(title: "Credit Card", uikitAction: {
+                isMaskingUIKitCreditCardEnabled = true
+            }) {
+                isMaskingSwiftUICreditCardEnabled = true
+            }
+            MaskingGridRow(title: "Number Pad", uikitAction: nil) {
+                isNumberPadEnabled = true
+            }
+            MaskingGridRow(title: "Dialogs", uikitAction: {
+                isDialogsUIKitEnabled = true
+            }) {
+                isDialogsSwiftUIEnabled = true
+            }
+#endif
+#if os(iOS)
+            MaskingGridRow(title: "Fruta", uikitAction: nil) {
+                path.append("fruta")
+            }
+#endif
+            HStack {
+                Button("Drawing") {
+                    isNotebookEnabled = true
+                }
+                .buttonStyle(.borderedProminent)
+                Button("Storyboard") {
+                    isStoryboardEnabled = true
+                }
+                .buttonStyle(.borderedProminent)
+#if canImport(WebKit)
+                Button("WebView") {
+                    isWebviewEnabled = true
+                }
+                .buttonStyle(.borderedProminent)
+#endif
+            }
+        } header: {
+            HStack {
+                Text("Session Replay")
+                Spacer()
+                Toggle("", isOn: $isSessionReplayEnabled)
+                    .labelsHidden()
+                    .onChange(of: isSessionReplayEnabled) { enabled in
+                        if enabled {
+                            LDReplay.shared.start()
+                        } else {
+                            LDReplay.shared.stop()
+                        }
+                    }
+            }
+        }
+    }
+
+    // MARK: - Observability
+
+    private var observabilitySection: some View {
+        Section("Observability") {
+            Text("Identify")
+                .fontWeight(.bold)
+
+            HStack {
+                Button {
+                    viewModel.identifyUser()
+                } label: {
+                    Text("User").foregroundStyle(Colors.identifyTextColor)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Colors.identifyBgColor)
+
+                Button {
+                    viewModel.identifyMulti()
+                } label: {
+                    Text("Multi").foregroundStyle(Colors.identifyTextColor)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Colors.identifyBgColor)
+
+                Button {
+                    viewModel.identifyAnonymous()
+                } label: {
+                    Text("Anon").foregroundStyle(Colors.identifyTextColor)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Colors.identifyBgColor)
+            }
+
+            Text("Instrumentation")
+                .fontWeight(.bold)
+
+            HStack {
+                Button {
+                    Task {
+                        await viewModel.performNetworkRequest()
+                    }
+                } label: {
+                    if viewModel.isNetworkInProgress {
+                        ProgressView {
+                            Text("get request to launchdarkly.com...")
+                        }
+                    } else {
+                        Text("Network Request")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.isNetworkInProgress)
+
+                Button {
+                    viewModel.crash()
+                } label: {
+                    Text("Crash")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+            }
+
+#if os(iOS)
+            NavigationLink(destination: SystemUnderPressureView()) {
+                Text("Simulate System Under Pressure")
+            }
+#endif
+
+            Text("Metric")
+                .fontWeight(.bold)
+
+            HStack {
+                Button("Metric") { viewModel.recordMetric() }
+                    .buttonStyle(.borderedProminent)
+                Button("Histogram") { viewModel.recordHistogramMetric() }
+                    .buttonStyle(.borderedProminent)
+                Button("Count") { viewModel.recordCounterMetric() }
+                    .buttonStyle(.borderedProminent)
+            }
+            HStack {
+                Button("Incremental") { viewModel.recordIncrementalMetric() }
+                    .buttonStyle(.borderedProminent)
+                Button("UpDownCounter") { viewModel.recordUpDownCounterMetric() }
+                    .buttonStyle(.borderedProminent)
+            }
+
+            Text("Customer API")
+                .fontWeight(.bold)
+
+            HStack {
+                Button {
+                    viewModel.recordError()
+                } label: {
+                    Text("Error")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+
+                Button {
+                    viewModel.recordLogs()
+                } label: {
+                    Text("Logs")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+
+            Button {
+                viewModel.recordSpanAndVariation()
+            } label: {
+                Text("Span & Flag Eval")
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+
+    // MARK: - Benchmark
+
+    private var benchmarkSection: some View {
+        Section("Benchmark") {
+            NavigationLink(destination: BenchmarkView()) {
+                Text("Benchmark")
+            }
+        }
     }
 }
 
@@ -222,33 +297,26 @@ enum Colors {
     )
 }
 
-
-struct FauxLinkToggleRow: View {
-    private struct NoDestinationTag: Hashable {}
-    
+private struct MaskingGridRow: View {
     let title: String
-    @Binding var isOn: Bool
-    
+    let uikitAction: (() -> Void)?
+    let swiftUIAction: (() -> Void)?
+
     var body: some View {
-        ZStack {
-            // Visuals only: system chevron/spacing
-            NavigationLink(value: NoDestinationTag()) {
-                Text(title)
-            }
-            .allowsHitTesting(false) // <- disables all taps on the link (incl. chevron)
-            
-            // Full-row tap handler
-            Rectangle()
-                .fill(.clear)
+        HStack(spacing: 12) {
+            Text(title)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button("UIKit") { uikitAction?() }
+                .disabled(uikitAction == nil)
                 .frame(maxWidth: .infinity)
-                .contentShape(Rectangle()) // full-row hit area
-                .onTapGesture {
-                    isOn.toggle()
-                }
+                .buttonStyle(.borderedProminent)
+            Button("SwiftUI") { swiftUIAction?() }
+                .disabled(swiftUIAction == nil)
+                .frame(maxWidth: .infinity)
+                .buttonStyle(.borderedProminent)
         }
     }
 }
-
 
 #Preview {
     MainMenuView()
