@@ -22,11 +22,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                 )
             config.plugins = [
                 Observability(options: .init(
+                    isEnabled: true,
                     serviceName: "observability-ios-test-app",
                     otlpEndpoint: otlpEndpoint,
                     backendUrl: backendUrl,
                     resourceAttributes: ["test-options-attribute": .string("ios-test-app")],
                     sessionBackgroundTimeout: 3,
+                    crashReporting: .enabled
                    )),
                 SessionReplay(options: .init(
                     isEnabled: true,

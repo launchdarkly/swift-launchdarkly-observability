@@ -7,31 +7,31 @@ import LaunchDarklyObservability
     import Common
 #endif
 
+/// Hook protocol adapter for native Swift SDK usage.
+/// Extracts data from SDK types and delegates to SessionReplayHookExporter.
 final class SessionReplayHook: Hook {
-    private let plugin: SessionReplay
-    
-    init(plugin: SessionReplay) {
-        self.plugin = plugin
+    weak var delegate: SessionReplayServicing?
+
+    init() {
     }
-    
+
     public func metadata() -> Metadata {
         return Metadata(name: "SessionReplay")
     }
-    
+
     public func afterIdentify(seriesContext: IdentifySeriesContext, seriesData: IdentifySeriesData, result: IdentifyResult) -> IdentifySeriesData {
-        guard case .complete = result else {
+        guard case .complete = result, let delegate else {
             return seriesData
         }
-        
-        guard let options = plugin.observabilityContext?.options else {
-            return seriesData
-        }
-        let sessionAttributes = plugin.observabilityContext?.sessionAttributes
-        Task {
-            let identifyPayload = await IdentifyItemPayload(options: options, sessionAttributes: sessionAttributes, ldContext: seriesContext.context, timestamp: Date().timeIntervalSince1970)
-            await plugin.sessionReplayService?.scheduleIdentifySession(identifyPayload: identifyPayload)
-        }
-        
+
+        var keys = [String: String]()
+        for (k, v) in seriesContext.context.contextKeys() { keys[k] = v }
+
+        delegate.afterIdentify(
+            contextKeys: keys,
+            canonicalKey: seriesContext.context.fullyQualifiedKey(),
+            completed: true
+        )
         return seriesData
     }
 }

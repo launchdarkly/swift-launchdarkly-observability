@@ -2,8 +2,12 @@ import LaunchDarkly
 import Foundation
 import LaunchDarklyObservability
 import OSLog
+#if !LD_COCOAPODS
+    import Common
+#endif
 
 public final class SessionReplay: Plugin {
+    let sessionReplayHook = SessionReplayHook()
     let options: SessionReplayOptions
     var sessionReplayService: SessionReplayService?
     var observabilityContext: ObservabilityContext?
@@ -34,7 +38,7 @@ public final class SessionReplay: Plugin {
                                                                 metadata: metadata)
             LDReplay.shared.client = sessionReplayService
             self.sessionReplayService = sessionReplayService
-            
+            sessionReplayHook.delegate = sessionReplayService
             if options.isEnabled {
                 start()
             }
@@ -44,8 +48,7 @@ public final class SessionReplay: Plugin {
     }
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        LDReplay.shared.hookProxy = SessionReplayHookProxy(plugin: self)
-        return [SessionReplayHook(plugin: self)]
+        return [sessionReplayHook]
     }
     
     public func start() {
