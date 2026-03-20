@@ -22,15 +22,20 @@ final class EventSpanProcessor: SpanProcessor {
           return
         }
         
-        let spanData = span.toSpanData()
-        let sampledItems = sampler.sampleSpans(items: [spanData])
+        Task {
+            let spanData = span.toSpanData()
+            await send(spans: [spanData])
+        }
+    }
+        
+    func send(spans: [SpanData]) async {
+        let sampledItems = sampler.sampleSpans(items: spans)
         guard !sampledItems.isEmpty else {
             return
         }
-        
-        Task {
-            await eventQueue.send(SpanItem(spanData: spanData))
-        }
+
+        let items: [SpanItem] = sampledItems.map { SpanItem(spanData: $0) }
+        await eventQueue.send(items)
     }
     
     func shutdown(explicitTimeout: TimeInterval?) {

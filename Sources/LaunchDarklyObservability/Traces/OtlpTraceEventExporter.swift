@@ -1,17 +1,17 @@
 import OpenTelemetrySdk
 import Foundation
 #if !LD_COCOAPODS
-    import OpenTelemetryProtocolExporterCommon
-    import Common
+import OpenTelemetryProtocolExporterCommon
+import Common
 #endif
 
 final class OtlpTraceEventExporter: EventExporting {
     private let otlpHttpClient: OtlpHttpClient
     
     init(endpoint: URL,
-                config: OtlpConfiguration = OtlpConfiguration(),
-                useSession: URLSession? = nil,
-                envVarHeaders: [(String, String)]? = EnvVarHeaders.attributes) {
+         config: OtlpConfiguration = OtlpConfiguration(),
+         useSession: URLSession? = nil,
+         envVarHeaders: [(String, String)]? = EnvVarHeaders.attributes) {
         self.otlpHttpClient = OtlpHttpClient(endpoint: endpoint,
                                              config: config,
                                              useSession: useSession,
@@ -31,10 +31,10 @@ final class OtlpTraceEventExporter: EventExporting {
     private func export(spanDatas: [OpenTelemetrySdk.SpanData],
                         explicitTimeout: TimeInterval? = nil) async throws {
         let body =
-          Opentelemetry_Proto_Collector_Trace_V1_ExportTraceServiceRequest.with {
+        Opentelemetry_Proto_Collector_Trace_V1_ExportTraceServiceRequest.with {
             $0.resourceSpans = SpanAdapter.toProtoResourceSpans(
-              spanDataList: spanDatas)
-          }
+                spanDataList: spanDatas)
+        }
         
         try await otlpHttpClient.send(body: body, explicitTimeout: explicitTimeout)
     }

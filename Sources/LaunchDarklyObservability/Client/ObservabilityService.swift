@@ -26,7 +26,7 @@ final class ObservabilityService: InternalObserve {
     private let metricsClient: MetricsApi
     
     private let _traceClient: TraceClient
-    private let tracerDecorator: TracerDecorator
+    let tracerDecorator: TracerDecorator
     
     private var instruments = [AutoInstrumentation]()
     
