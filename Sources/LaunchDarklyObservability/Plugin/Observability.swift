@@ -57,10 +57,8 @@ public final class Observability: Plugin {
             observabilityService = service
             LDObserve.shared.client = service
             LDObserve.shared.context = service.context
-            LDObserve.shared.plugin = self
             
             observabilityHook.delegate = service.hookExporter
-            LDObserve.shared.hookProxy = ObservabilityHookProxy(exporter: service.hookExporter)
             
             if options.isEnabled {
                 service.start()
