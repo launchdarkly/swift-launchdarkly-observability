@@ -30,7 +30,6 @@ struct MainMenuView: View {
     @State private var isDialogsUIKitEnabled: Bool = false
     @State private var isDialogsSwiftUIEnabled: Bool = false
     @State private var isSessionReplayEnabled: Bool = true
-    
     var body: some View {
         NavigationStack(path: $path) {
             HStack {
@@ -263,12 +262,21 @@ struct MainMenuView: View {
                 .buttonStyle(.borderedProminent)
             }
 
-            Button {
-                viewModel.recordSpanAndVariation()
-            } label: {
-                Text("Span & Flag Eval")
+            HStack {
+                Button {
+                    viewModel.recordSpanAndVariation()
+                } label: {
+                    Text("Span & Flag Eval")
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button {
+                    viewModel.triggerNestedSpans()
+                } label: {
+                    Text("Nested Spans")
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
         }
     }
 
