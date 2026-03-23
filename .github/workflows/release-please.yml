@@ -7,6 +7,8 @@ on:
 jobs:
     release-package:
         runs-on: ubuntu-latest
+        outputs:
+            releases_created: ${{ steps.release.outputs.releases_created }}
         permissions:
             id-token: write
             contents: write # Contents and pull-requests are for release-please to make releases.
@@ -29,3 +31,21 @@ jobs:
               if: ${{ steps.release.outputs.releases_created == 'true' }}
               with:
                   fetch-depth: 0 # If you only need the current version keep this.
+
+    publish-pods:
+        needs: release-package
+        if: ${{ needs.release-package.outputs.releases_created == 'true' }}
+        runs-on: macos-15
+        permissions:
+            id-token: write
+            contents: read
+        steps:
+            - uses: actions/checkout@v4
+            - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+              name: 'Get CocoaPods token'
+              with:
+                  aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
+                  ssm_parameter_pairs: '/production/common/releasing/cocoapods/token = COCOAPODS_TRUNK_TOKEN'
+            - uses: ./.github/actions/publish
+              with:
+                  dry_run: 'false'
