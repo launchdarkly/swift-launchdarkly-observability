@@ -16,47 +16,24 @@ final class ObservabilityHookExporter {
     private let options: Options
     private let withSpans: Bool
     private let withValue: Bool
-    weak var plugin: Observability?
+    private let traceClient: TracesApi
+    private let logClient: LogsApi
 
-    init(plugin: Observability,
+    init(traceClient: TracesApi,
+         logClient: LogsApi,
          withSpans: Bool,
          withValue: Bool,
          options: Options,
          maxInFlightSpans: Int = 1024) {
-        self.plugin = plugin
+        self.traceClient = traceClient
+        self.logClient = logClient
         self.withSpans = withSpans
         self.withValue = withValue
         self.options = options
         self.spans = BoundedMap(capacity: maxInFlightSpans)
     }
 
-    // MARK: - Evaluation
-
-    func beforeEvaluation(evaluationId: String, flagKey: String, contextKey: String) {
-        guard withSpans else { return }
-        var attributes = options.resourceAttributes
-        attributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(flagKey)
-        attributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
-        attributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(contextKey)
-
-        guard let span = plugin?.observabilityService?.traceClient.startSpan(name: Self.FEATURE_FLAG_SPAN_NAME, attributes: attributes) else { return }
-
-        if let (_, evictedSpan) = spans.setValue(span, forKey: evaluationId) {
-            evictedSpan.end()
-        }
-    }
-
-    func afterEvaluation(evaluationId: String, flagKey: String, contextKey: String,
-                         value: LDValue, variationIndex: Int?, reason: [String: LDValue]?) {
-        sendAfterEvaluation(
-            evaluationId: evaluationId,
-            flagKey: flagKey,
-            contextKey: contextKey,
-            value: value,
-            variationIndex: variationIndex,
-            inExperiment: inExperiment(from: reason)
-        )
-    }
+    // MARK: - Evaluation (Foundation overload for ObservabilityHookProxy)
 
     func afterEvaluation(evaluationId: String, flagKey: String, contextKey: String,
                          value: NSObject, variationIndex: Int, reason: NSDictionary?) {
@@ -69,6 +46,8 @@ final class ObservabilityHookExporter {
             inExperiment: inExperiment(fromFoundationReason: reason)
         )
     }
+
+    // MARK: - Private helpers
 
     private func sendAfterEvaluation(evaluationId: String, flagKey: String, contextKey: String,
                                      value: LDValue, variationIndex: Int?, inExperiment: Bool?) {
@@ -115,8 +94,37 @@ final class ObservabilityHookExporter {
         let reasonValues = [String: LDValue].fromFoundation(reason)
         return inExperiment(from: reasonValues)
     }
+}
 
-    // MARK: - Identify
+// MARK: - ObservabilityHookExporting conformance
+
+extension ObservabilityHookExporter: ObservabilityHookExporting {
+
+    func beforeEvaluation(evaluationId: String, flagKey: String, contextKey: String) {
+        guard withSpans else { return }
+        var attributes = options.resourceAttributes
+        attributes[Self.SEMCONV_FEATURE_FLAG_KEY] = .string(flagKey)
+        attributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
+        attributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(contextKey)
+
+        let span = traceClient.startSpan(name: Self.FEATURE_FLAG_SPAN_NAME, attributes: attributes)
+
+        if let (_, evictedSpan) = spans.setValue(span, forKey: evaluationId) {
+            evictedSpan.end()
+        }
+    }
+
+    func afterEvaluation(evaluationId: String, flagKey: String, contextKey: String,
+                         value: LDValue, variationIndex: Int?, reason: [String: LDValue]?) {
+        sendAfterEvaluation(
+            evaluationId: evaluationId,
+            flagKey: flagKey,
+            contextKey: contextKey,
+            value: value,
+            variationIndex: variationIndex,
+            inExperiment: inExperiment(from: reason)
+        )
+    }
 
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool) {
         guard completed else { return }
@@ -129,7 +137,7 @@ final class ObservabilityHookExporter {
         attributes["canonicalKey"] = .string(canonicalKey)
         attributes[Self.IDENTIFY_RESULT_STATUS] = .string("completed")
 
-        plugin?.observabilityService?.logClient.recordLog(
+        logClient.recordLog(
             message: "LD.identify",
             severity: .info,
             attributes: attributes

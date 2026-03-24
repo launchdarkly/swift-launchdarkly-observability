@@ -10,6 +10,7 @@ import UIKit
 
 public final class Observability: Plugin {
     private let options: Options
+    let observabilityHook = ObservabilityHook()
     var observabilityService: InternalObserve?
     
     public init(options: Options) {
@@ -56,7 +57,8 @@ public final class Observability: Plugin {
             observabilityService = service
             LDObserve.shared.client = service
             LDObserve.shared.context = service.context
-            LDObserve.shared.plugin = self
+            
+            observabilityHook.delegate = service.hookExporter
             
             if options.isEnabled {
                 service.start()
@@ -67,14 +69,7 @@ public final class Observability: Plugin {
     }
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        let exporter = ObservabilityHookExporter(
-            plugin: self,
-            withSpans: true,
-            withValue: true,
-            options: options
-        )
-        LDObserve.shared.hookProxy = ObservabilityHookProxy(exporter: exporter)
-        return [ObservabilityHook(exporter: exporter)]
+        return [observabilityHook]
     }
 }
 

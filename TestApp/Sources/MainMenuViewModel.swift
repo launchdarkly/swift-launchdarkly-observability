@@ -26,6 +26,32 @@ final class MainMenuViewModel: ObservableObject {
         
 		span.end()
 	}
+
+	func triggerNestedSpans() {
+		Task {
+			let span0 = LDObserve.shared.startSpan(name: "NestedSpan", attributes: ["test-true": .bool(true),
+                                                                                    "test-double": .double(3.14)])
+			await OpenTelemetry.instance.contextProvider.withActiveSpan(span0) {
+				let span1 = LDObserve.shared.startSpan(name: "NestedSpan1", attributes: [:])
+				await OpenTelemetry.instance.contextProvider.withActiveSpan(span1) {
+					let span2 = LDObserve.shared.startSpan(name: "NestedSpan2", attributes: [:])
+					await OpenTelemetry.instance.contextProvider.withActiveSpan(span2) {
+						await Self.fetchURLsForNestedSpanDemo()
+						span2.end()
+					}
+					span1.end()
+				}
+				span0.end()
+			}
+		}
+	}
+
+	private static func fetchURLsForNestedSpanDemo() async {
+		guard let google = URL(string: "https://www.google.com"),
+		      let android = URL(string: "https://www.android.com/") else { return }
+		_ = try? await URLSession.shared.data(from: google)
+		_ = try? await URLSession.shared.data(from: android)
+	}
 	
 	func recordMetric() {
 		LDObserve.shared.recordMetric(
@@ -61,7 +87,15 @@ final class MainMenuViewModel: ObservableObject {
 		LDObserve.shared.recordLog(
 			message: "logs-button-pressed",
 			severity: .info,
-            attributes: ["test-log": .string("ios"), "nested": .set(.init(labels: ["a": .array(.init(values: [.int(1)]))]))]
+			attributes: [
+				"test-string": .string("maui"),
+				"test-true": .bool(true),
+				"test-false": .bool(false),
+				"test-integer": .int(42),
+				"test-double": .double(3.14),
+				"test-array": .array(.init(values: [.double(3.14)])),
+				"test-nested": .set(.init(labels: ["array": .array(.init(values: [.int(1)]))]))
+			]
 		)
 	}
 	

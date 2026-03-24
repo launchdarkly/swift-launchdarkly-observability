@@ -26,12 +26,14 @@ final class ObservabilityService: InternalObserve {
     private let metricsClient: MetricsApi
     
     private let _traceClient: TraceClient
-    private let tracerDecorator: TracerDecorator
+    let tracerDecorator: TracerDecorator
     
     private var instruments = [AutoInstrumentation]()
     
     private let userInteractionManager: UserInteractionManager
     private var crashReporting: CrashReporting?
+    
+    let hookExporter: ObservabilityHookExporter
     
     private let startQueue = DispatchQueue(label: "com.launchdarkly.observability.service.start")
     private var task: Task<Void, Never>?
@@ -181,6 +183,14 @@ final class ObservabilityService: InternalObserve {
             sessionAttributes: sessionAttributes
         )
         self.context = context
+        
+        self.hookExporter = ObservabilityHookExporter(
+            traceClient: traceClient,
+            logClient: loggerClient,
+            withSpans: true,
+            withValue: true,
+            options: options
+        )
     }
 }
 

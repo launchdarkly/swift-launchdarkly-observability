@@ -17,8 +17,6 @@ public final class LDObserve  {
     }
     public static let shared = LDObserve()
     public var context: ObservabilityContext?
-    public var hookProxy: ObservabilityHookProxy?
-    var plugin: Observability?
 
     init(client: Observe = NoOpObservabilityService.shared) {
         self._client = client

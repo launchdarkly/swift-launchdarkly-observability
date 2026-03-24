@@ -4,6 +4,18 @@ import OpenTelemetryApi
 @objc(LDObserveBridge)
 public final class ObjcLDObserveBridge: NSObject {
 
+    @objc(getObservabilityHookProxy)
+    public static func getObservabilityHookProxy() -> ObservabilityHookProxy? {
+        guard let service = LDObserve.shared.client as? ObservabilityService else { return nil }
+        return ObservabilityHookProxy(exporter: service.hookExporter)
+    }
+
+    @objc(getObjcTracer)
+    public static func getObjcTracer() -> ObjcTracer? {
+        guard let service = LDObserve.shared.client as? ObservabilityService else { return nil }
+        return ObjcTracer(tracer: service.tracerDecorator)
+    }
+
     /// Obj-C friendly entry-point that MAUI can bind to.
     /// - Parameters:
     ///   - message: log message
