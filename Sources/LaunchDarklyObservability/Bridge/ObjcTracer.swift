@@ -1,6 +1,11 @@
 import Foundation
 import OpenTelemetryApi
 
+/// Attribute key used to carry the bridge-supplied span ID through the
+/// OTel pipeline so ``EventSpanProcessor`` can override the auto-generated
+/// ID before export.
+let bridgeSpanIdAttributeKey = "__bridge.span_id"
+
 /// @objc adapter that wraps the SDK's ``Tracer`` for the C# / MAUI bridge.
 ///
 /// Returns ``ObjcSpanBuilder`` instances that hold a live span.
@@ -21,12 +26,14 @@ public final class ObjcTracer: NSObject {
     ///   - name:         Operation / display name.
     ///   - startTime:    Span start as epoch seconds.
     ///   - traceId:      32-char hex trace identifier from the .NET Activity.
+    ///   - spanId:       16-char hex span identifier from the .NET Activity.
     ///   - parentSpanId: 16-char hex parent span identifier (empty string for root spans).
     /// - Returns: An ``ObjcSpanBuilder`` wrapping the live span.
-    @objc(spanBuilderWithName:startTime:traceId:parentSpanId:)
+    @objc(spanBuilderWithName:startTime:traceId:spanId:parentSpanId:)
     public func spanBuilder(name: String,
                             startTime: Double,
                             traceId: String,
+                            spanId: String,
                             parentSpanId: String) -> ObjcSpanBuilder {
 
         let builder = tracer.spanBuilder(spanName: name)
@@ -42,7 +49,11 @@ public final class ObjcTracer: NSObject {
             builder.setParent(parentContext)
         }
 
+        if !spanId.isEmpty {
+            builder.setAttribute(key: bridgeSpanIdAttributeKey, value: spanId)
+        }
+
         let span = builder.startSpan()
-        return ObjcSpanBuilder(span: span)
+        return ObjcSpanBuilder(span: span, bridgeSpanId: spanId)
     }
 }

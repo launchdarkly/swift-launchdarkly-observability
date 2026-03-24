@@ -9,9 +9,11 @@ import OpenTelemetryApi
 @objc(ObjcSpanBuilder)
 public final class ObjcSpanBuilder: NSObject {
     private let span: any Span
+    private let bridgeSpanId: String?
 
-    init(span: any Span) {
+    init(span: any Span, bridgeSpanId: String? = nil) {
         self.span = span
+        self.bridgeSpanId = bridgeSpanId?.isEmpty == true ? nil : bridgeSpanId
         super.init()
     }
 
@@ -22,7 +24,7 @@ public final class ObjcSpanBuilder: NSObject {
     }
 
     @objc public var spanId: String {
-        span.context.spanId.hexString
+        bridgeSpanId ?? span.context.spanId.hexString
     }
 
     /// SpanKind as int: 0 = internal, 1 = server, 2 = client, 3 = producer, 4 = consumer

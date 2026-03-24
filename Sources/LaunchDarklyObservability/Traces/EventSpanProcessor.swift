@@ -23,9 +23,24 @@ final class EventSpanProcessor: SpanProcessor {
         }
         
         Task {
-            let spanData = span.toSpanData()
+            var spanData = span.toSpanData()
+            spanData = Self.applyBridgeSpanIdOverride(spanData)
             await send(spans: [spanData])
         }
+    }
+
+    /// If the span carries a bridge-supplied span ID (set by ``ObjcTracer``),
+    /// replace the auto-generated ID with it and strip the internal attribute.
+    private static func applyBridgeSpanIdOverride(_ data: SpanData) -> SpanData {
+        guard case let .string(hex) = data.attributes[bridgeSpanIdAttributeKey] else {
+            return data
+        }
+        var result = data
+        result.settingSpanId(SpanId(fromHexString: hex))
+        var attrs = result.attributes
+        attrs.removeValue(forKey: bridgeSpanIdAttributeKey)
+        result.settingAttributes(attrs)
+        return result
     }
         
     func send(spans: [SpanData]) async {
