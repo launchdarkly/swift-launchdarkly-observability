@@ -257,7 +257,7 @@ struct MainMenuView: View {
                 Button {
                     viewModel.recordLogs()
                 } label: {
-                    Text("Logs")
+                    Text("Log")
                 }
                 .buttonStyle(.borderedProminent)
             }
