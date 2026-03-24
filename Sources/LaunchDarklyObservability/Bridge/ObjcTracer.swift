@@ -1,9 +1,10 @@
 import Foundation
 import OpenTelemetryApi
 
-/// Attribute key used to carry the bridge-supplied span ID through the
-/// OTel pipeline so ``EventSpanProcessor`` can override the auto-generated
-/// ID before export.
+/// Attribute keys used to carry bridge-supplied IDs through the OTel
+/// pipeline so ``EventSpanProcessor`` can override the auto-generated
+/// IDs before export.
+let bridgeTraceIdAttributeKey = "__bridge.trace_id"
 let bridgeSpanIdAttributeKey = "__bridge.span_id"
 
 /// @objc adapter that wraps the SDK's ``Tracer`` for the C# / MAUI bridge.
@@ -49,6 +50,9 @@ public final class ObjcTracer: NSObject {
             builder.setParent(parentContext)
         }
 
+        if !traceId.isEmpty {
+            builder.setAttribute(key: bridgeTraceIdAttributeKey, value: traceId)
+        }
         if !spanId.isEmpty {
             builder.setAttribute(key: bridgeSpanIdAttributeKey, value: spanId)
         }

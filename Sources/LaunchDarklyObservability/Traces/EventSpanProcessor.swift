@@ -24,20 +24,27 @@ final class EventSpanProcessor: SpanProcessor {
         
         Task {
             var spanData = span.toSpanData()
-            spanData = Self.applyBridgeSpanIdOverride(spanData)
+            spanData = Self.applyBridgeIdOverrides(spanData)
             await send(spans: [spanData])
         }
     }
 
-    /// If the span carries a bridge-supplied span ID (set by ``ObjcTracer``),
-    /// replace the auto-generated ID with it and strip the internal attribute.
-    private static func applyBridgeSpanIdOverride(_ data: SpanData) -> SpanData {
-        guard case let .string(hex) = data.attributes[bridgeSpanIdAttributeKey] else {
-            return data
-        }
+    /// If the span carries bridge-supplied IDs (set by ``ObjcTracer``),
+    /// replace the auto-generated IDs with them and strip the internal attributes.
+    private static func applyBridgeIdOverrides(_ data: SpanData) -> SpanData {
+        let hasTraceId = data.attributes[bridgeTraceIdAttributeKey] != nil
+        let hasSpanId = data.attributes[bridgeSpanIdAttributeKey] != nil
+        guard hasTraceId || hasSpanId else { return data }
+
         var result = data
-        result.settingSpanId(SpanId(fromHexString: hex))
+        if case let .string(hex) = data.attributes[bridgeTraceIdAttributeKey] {
+            result.settingTraceId(TraceId(fromHexString: hex))
+        }
+        if case let .string(hex) = data.attributes[bridgeSpanIdAttributeKey] {
+            result.settingSpanId(SpanId(fromHexString: hex))
+        }
         var attrs = result.attributes
+        attrs.removeValue(forKey: bridgeTraceIdAttributeKey)
         attrs.removeValue(forKey: bridgeSpanIdAttributeKey)
         result.settingAttributes(attrs)
         return result
