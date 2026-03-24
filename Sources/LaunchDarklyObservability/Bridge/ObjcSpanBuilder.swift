@@ -43,7 +43,7 @@ public final class ObjcSpanBuilder: NSObject {
 
     @objc(setAttributeWithKey:value:)
     public func setAttribute(key: String, value: NSObject) {
-        span.setAttribute(key: key, value: convertToAttributeValue(value))
+        span.setAttribute(key: key, value: AttributeConverter.convertValue(value))
     }
 
     @objc(setAttributes:)
@@ -110,20 +110,4 @@ public final class ObjcSpanBuilder: NSObject {
         span.end(time: Date(timeIntervalSince1970: time))
     }
 
-    // MARK: - Helpers
-
-    private func convertToAttributeValue(_ value: NSObject) -> AttributeValue {
-        switch value {
-        case let s as NSString:
-            return .string(s as String)
-        case let n as NSNumber:
-            switch String(cString: n.objCType) {
-            case "c", "B": return .bool(n.boolValue)
-            case "d", "f": return .double(n.doubleValue)
-            default:        return .int(n.intValue)
-            }
-        default:
-            return .string(String(describing: value))
-        }
-    }
 }
