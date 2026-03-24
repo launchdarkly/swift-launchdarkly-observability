@@ -40,16 +40,6 @@ public final class ObjcTracer: NSObject {
         let builder = tracer.spanBuilder(spanName: name)
         builder.setStartTime(time: Date(timeIntervalSince1970: startTime))
 
-        if !parentSpanId.isEmpty {
-            let parentContext = SpanContext.createFromRemoteParent(
-                traceId: TraceId(fromHexString: traceId),
-                spanId: SpanId(fromHexString: parentSpanId),
-                traceFlags: TraceFlags().settingIsSampled(true),
-                traceState: TraceState()
-            )
-            builder.setParent(parentContext)
-        }
-
         if !traceId.isEmpty {
             builder.setAttribute(key: bridgeTraceIdAttributeKey, value: traceId)
         }
