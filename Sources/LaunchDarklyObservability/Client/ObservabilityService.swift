@@ -272,18 +272,20 @@ extension ObservabilityService {
             crashReporting = try KSCrashReportService(logsApi: logClient, log: options.log)
             crashReporting.logPendingCrashReports()
         } else if options.crashReporting.source == .metricKit {
-            if #available(iOS 15.0, tvOS 15.0, *) {
+            #if os(iOS)
+            if #available(iOS 15.0, *) {
                 let reporter = MetricKitCrashReporter(logsApi: logClient, logger: options.log)
                 crashReporting = reporter
                 crashReporting.logPendingCrashReports()
                 instruments.append(reporter)
             } else {
-                /// since MetricKit is only fully available for iOS 15+
-                /// we cannot do assumptions on user wants KSCrash as fallback, so
-                /// the safe is to disable crash reporting
                 crashReporting = NoOpCrashReport()
                 os_log("Crash reporting is disabled, MetricKit is not available on this platform version.", log: options.log, type: .info)
             }
+            #else
+            crashReporting = NoOpCrashReport()
+            os_log("Crash reporting is disabled, MetricKit is not available on this platform.", log: options.log, type: .info)
+            #endif
         } else {
             crashReporting = NoOpCrashReport()
         }

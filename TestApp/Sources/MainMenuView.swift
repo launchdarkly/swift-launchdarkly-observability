@@ -43,17 +43,22 @@ struct MainMenuView: View {
                 benchmarkSection
             }
             .environment(\.defaultMinListRowHeight, 0)
+            #if !os(tvOS)
             .listRowSpacing(0)
+            #endif
             .background(Color.clear)
             .navigationDestination(for: String.self) { value in
                 switch value {
+                #if os(iOS)
                 case "fruta":
                     FrutaAppView()
+                #endif
                 default:
                     EmptyView()
                 }
             }
         }
+        #if os(iOS)
         .onChange(of: path) { newValue in
             if !newValue.contains("fruta") {
                 if AppTabNavigation.pullPushLoop > 0 {
@@ -63,6 +68,7 @@ struct MainMenuView: View {
                 }
             }
         }
+        #endif
         .sheet(isPresented: $isMaskingUIKitOneFieldEnabled) {
             MaskingElementsSimpleUIKitView()
         }
