@@ -1,4 +1,4 @@
-#if os(iOS) || os(tvOS)
+#if os(iOS)
 import Foundation
 import MetricKit
 import CryptoKit
@@ -120,7 +120,7 @@ fileprivate let formatter: ISO8601DateFormatter = {
     return formatter
 }()
 
-@available(iOS 15.0, tvOS 15.0, *)
+@available(iOS 15.0, *)
 final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashReporting, AutoInstrumentation {
     private let logsApi: LogsApi
     private let log: OSLog
