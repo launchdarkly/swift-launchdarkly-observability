@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.27.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.26.2...0.27.0) (2026-03-25)
+
+
+### Features
+
+* Traces bridge for MAUI ([#167](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/167)) ([9d7f561](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/9d7f561ffa1069e7b22d9cd0a31193db98e84425))
+
+
+### Bug Fixes
+
+* remove metrickit usage for tvOS target ([#168](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/168)) ([1813049](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/18130490805631ed643d6ffd92247a8830c6446d))
+* remove orphaned submodule registration for benchmark app ([#164](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/164)) ([01fe5e7](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/01fe5e74dab6d3444f5c0f89980917f62192f799))
+
 ## [0.26.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.26.1...0.26.2) (2026-03-19)
 
 
