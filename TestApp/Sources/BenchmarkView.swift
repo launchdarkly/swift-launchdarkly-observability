@@ -66,7 +66,9 @@ struct BenchmarkView: View {
                 }
             }
         }
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .sheet(isPresented: $showResults) {
             BenchmarkResultsSheet(results: results)
         }
@@ -164,7 +166,9 @@ private struct BenchmarkResultsSheet: View {
                 .font(.subheadline)
             }
             .navigationTitle("Results")
+            #if !os(tvOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
