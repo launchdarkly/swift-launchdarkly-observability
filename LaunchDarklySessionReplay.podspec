@@ -21,10 +21,9 @@ Pod::Spec.new do |s|
 
   s.user_target_xcconfig = { 'ENABLE_USER_SCRIPT_SANDBOXING' => 'NO' }
 
-  # SessionReplayC — C target with public headers under include/
+  # SessionReplayC — pre-built XCFramework
   s.subspec "SessionReplayC" do |ss|
-    ss.source_files        = "Sources/SessionReplayC/**/*.{c,h}"
-    ss.public_header_files = "Sources/SessionReplayC/include/**/*.h"
+    ss.vendored_frameworks = "Frameworks/SessionReplayC.xcframework"
   end
 
   # LaunchDarklySessionReplay — Swift target
