@@ -1,7 +1,5 @@
 import UIKit
-#if !LD_COCOAPODS
 import SessionReplayC
-#endif
 
 final class TileSignatureManager {
     private var cBuffer: UnsafeMutablePointer<TileHashResult>?

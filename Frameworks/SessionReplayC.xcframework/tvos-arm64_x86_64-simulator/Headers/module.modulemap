@@ -1,0 +1,4 @@
+module SessionReplayC {
+    header "tile_hash.h"
+    export *
+}
