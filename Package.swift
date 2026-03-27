@@ -27,9 +27,9 @@ let package = Package(
             name: "ObjCBridge",
             publicHeadersPath: "."
         ),
-        .target(
+        .binaryTarget(
             name: "SessionReplayC",
-            publicHeadersPath: "include"
+            path: "Frameworks/SessionReplayC.xcframework"
         ),
         .target(name: "Common",
                 dependencies: [.product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))]),
