@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.28.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.27.0...0.28.0) (2026-03-27)
+
+
+### Features
+
+* Optimize Image Diff 4x for DEBUG build, 2x for release build ([#169](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/169)) ([4baea20](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/4baea20a1e0512e84d0ff3ffb6f55dfdefc08440))
+
 ## [0.27.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.26.2...0.27.0) (2026-03-25)
 
 
