@@ -1,4 +1,5 @@
 import Foundation
+import OpenTelemetryApi
 import OpenTelemetrySdk
 
 final class MemoryPressureMonitor: AutoInstrumentation {
@@ -29,8 +30,10 @@ final class MemoryPressureMonitor: AutoInstrumentation {
         )
         let localYield = yield
         source?.setEventHandler { [weak self] in
+            guard let self else { return }
+            let spanContext = OpenTelemetry.instance.contextProvider.activeSpan?.context
             Task {
-                guard let self, let event = self.source?.data else { return }
+                guard let event = self.source?.data else { return }
                 /// Report only if memory pressure is warning or critical
                 guard [DispatchSource.MemoryPressureEvent.warning, .critical].contains(event) else {
                     return
@@ -38,7 +41,8 @@ final class MemoryPressureMonitor: AutoInstrumentation {
                 
                 guard let log = self.appLogBuilder.buildLog(message: "applicationDidReceiveMemoryWarning",
                                                             severity: .warn,
-                                                            attributes: [SemanticConvention.systemMemoryWarning: .string(event.name)]) else {
+                                                            attributes: [SemanticConvention.systemMemoryWarning: .string(event.name)],
+                                                            spanContext: spanContext) else {
                     return
                 }
                 

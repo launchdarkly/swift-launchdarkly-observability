@@ -5,7 +5,6 @@ import OpenTelemetrySdk
 final class LDLogRecordBuilder {
     private var limits: LogLimits
     private var instrumentationScope: InstrumentationScopeInfo
-    private var includeSpanContext: Bool
     private var timestamp: Date?
     private var observedTimestamp: Date?
     private var body: OpenTelemetryApi.AttributeValue?
@@ -19,14 +18,12 @@ final class LDLogRecordBuilder {
     init(sampler: ExportSampler,
          resource: Resource,
          clock: Clock,
-         instrumentationScope: InstrumentationScopeInfo,
-         includeSpanContext: Bool) {
+         instrumentationScope: InstrumentationScopeInfo) {
         self.sampler = sampler
         self.resource = resource
         self.clock = clock
         let logLimits = LogLimits()
         self.limits = logLimits
-        self.includeSpanContext = includeSpanContext
         self.instrumentationScope = instrumentationScope
         self.attributes = AttributesDictionary(capacity: logLimits.maxAttributeCount,
                                                valueLengthLimit: logLimits.maxAttributeLength)
@@ -34,10 +31,6 @@ final class LDLogRecordBuilder {
     }
     
     public func readableLogRecord() -> ReadableLogRecord? {
-        if spanContext == nil, includeSpanContext {
-            spanContext = OpenTelemetry.instance.contextProvider.activeSpan?.context
-        }
-        
         let attrs = attributes.reduce(into: [String: OpenTelemetryApi.AttributeValue]()) { result, element in
             result[element.0] = element.1
         }
