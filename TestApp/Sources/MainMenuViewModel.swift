@@ -36,8 +36,10 @@ final class MainMenuViewModel: ObservableObject {
 				await OpenTelemetry.instance.contextProvider.withActiveSpan(span1) {
 					let span2 = LDObserve.shared.startSpan(name: "NestedSpan2", attributes: [:])
 					await OpenTelemetry.instance.contextProvider.withActiveSpan(span2) {
+                        LDObserve.shared.recordCount(metric: .init(name: "NestedCounter", value: 10.0))
+                        LDObserve.shared.recordLog(message: "NestedLog", severity: .info, attributes: [:])
 						await Self.fetchURLsForNestedSpanDemo()
-						span2.end()
+                        span2.end()
 					}
 					span1.end()
 				}

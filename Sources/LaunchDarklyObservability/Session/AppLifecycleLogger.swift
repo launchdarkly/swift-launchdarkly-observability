@@ -58,10 +58,13 @@ final class AppLifecycleLogger: AppLifecycleLogging {
             .publisher()
             .compactMap { AppLifeCycleLogState(appLifecycleEvent: $0) }
             .compactMap { [weak self] state in
-                self?.appLogBuilder.buildLog(
+                guard let self else { return nil }
+                let spanContext = OpenTelemetry.instance.contextProvider.activeSpan?.context
+                return self.appLogBuilder.buildLog(
                     message: AppLifeCycleLogState.eventName,
                     severity: .info,
-                    attributes: state.attributes
+                    attributes: state.attributes,
+                    spanContext: spanContext
                 )
             }
             .sink { [weak self] log in

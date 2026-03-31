@@ -1,4 +1,5 @@
 import Foundation
+import OpenTelemetryApi
 import OpenTelemetrySdk
 
 final class AppLogBuilder {
@@ -18,7 +19,8 @@ final class AppLogBuilder {
     
     public func buildLog(message: String,
                          severity: Severity,
-                         attributes: [String: AttributeValue]) -> ReadableLogRecord? {
+                         attributes: [String: AttributeValue],
+                         spanContext: SpanContext? = nil) -> ReadableLogRecord? {
         var attributes = attributes
         let sessionId = sessionManager.sessionInfo.id
         if !sessionId.isEmpty {
@@ -29,15 +31,17 @@ final class AppLogBuilder {
             sampler: sampler,
             resource: Resource(attributes: options.resourceAttributes),
             clock: MillisClock(),
-            instrumentationScope: .init(name: options.serviceName),
-            includeSpanContext: true)
+            instrumentationScope: .init(name: options.serviceName))
 
-        return logBuilder
+        var recordBuilder = logBuilder
             .setBody(.string(message))
             .setTimestamp(Date())
             .setSeverity(severity)
             .setAttributes(attributes)
-            .readableLogRecord()
+        if let spanContext {
+            recordBuilder = recordBuilder.setSpanContext(spanContext)
+        }
+        return recordBuilder.readableLogRecord()
     }
 }
 
@@ -57,10 +61,12 @@ extension LogClient: LogsApi {
         severity: Severity,
         attributes: [String: AttributeValue]
     ) {
+        let spanContext = OpenTelemetry.instance.contextProvider.activeSpan?.context
         Task {
             guard let log = appLogBuilder.buildLog(message: message,
                                                    severity: severity,
-                                                   attributes: attributes) else {
+                                                   attributes: attributes,
+                                                   spanContext: spanContext) else {
                 return
             }
             
