@@ -3,7 +3,7 @@ import UIKit
 
 enum InteractionCaptureItem: Sendable {
     case touch(TouchSample)
-    case nonCoordinatePress(NonCoordinatePressSample)
+    case press(PressSample)
 }
 
 public struct TouchSample: Sendable {
@@ -37,16 +37,15 @@ public struct TouchSample: Sendable {
 }
 
 public typealias TouchInteractionYield = @Sendable (TouchInteraction) -> Void
-public typealias NonCoordinatePressYield = @Sendable (NonCoordinatePressSample) -> Void
+public typealias PressInteractionYield = @Sendable (PressSample) -> Void
 
-final class TouchCaptureCoordinator {
+final class InputCaptureCoordinator {
     private let source: UIEventSource
     private let targetResolver: TargetResolving
     private let touchInterpreter: TouchInterpreter
     private let receiverChecker: UIEventReceiverChecker
-    var yield: TouchInteractionYield?
-    /// Button-like presses without spatial coordinates (e.g. Menu, D-pad, keyboard). Optional until transport consumes them.
-    var onNonCoordinatePress: NonCoordinatePressYield?
+    var onTouch: TouchInteractionYield?
+    var onPress: PressInteractionYield?
     
     init(targetResolver: TargetResolving = TargetResolver(),
          receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker()) {
@@ -69,7 +68,7 @@ final class TouchCaptureCoordinator {
                     if trackWindow {
                         processTouches(event: event, window: window, continuation: continuation)
                     } else {
-                        processTouchesAsNonCoordinate(event: event, window: window, continuation: continuation)
+                        processTouchesAsPress(event: event, window: window, continuation: continuation)
                     }
                 case .presses:
                     processPresses(event: event, window: window, continuation: continuation)
@@ -84,20 +83,20 @@ final class TouchCaptureCoordinator {
         }
         
         Task.detached(priority: .background) { [weak self] in
-            guard let self, let yield else { return }
+            guard let self, let onTouch else { return }
             // Bg thread part of work
             for await item in captureStream {
                 switch item {
                 case .touch(let touchSample):
-                    touchInterpreter.process(touchSample: touchSample, yield: yield)
-                case .nonCoordinatePress(let sample):
-                    onNonCoordinatePress?(sample)
+                    touchInterpreter.process(touchSample: touchSample, yield: onTouch)
+                case .press(let sample):
+                    onPress?(sample)
                 }
             }
         }
     }
     
-    private func processTouchesAsNonCoordinate(
+    private func processTouchesAsPress(
         event: UIEvent,
         window: UIWindow,
         continuation: AsyncStream<InteractionCaptureItem>.Continuation
@@ -106,8 +105,8 @@ final class TouchCaptureCoordinator {
         for touch in touches {
             guard touch.phase == .began || touch.phase == .ended else { continue }
             let target = targetResolver.resolve(view: touch.view, window: window, event: event)
-            let sample = NonCoordinatePressSample(touch: touch, target: target)
-            continuation.yield(.nonCoordinatePress(sample))
+            let sample = PressSample(touch: touch, target: target)
+            continuation.yield(.press(sample))
         }
     }
     
@@ -139,8 +138,8 @@ final class TouchCaptureCoordinator {
         for press in pressesEvent.allPresses {
             guard press.phase == .began || press.phase == .ended else { continue }
             let target = targetResolver.resolve(press: press, window: window)
-            let sample = NonCoordinatePressSample(press: press, target: target)
-            continuation.yield(.nonCoordinatePress(sample))
+            let sample = PressSample(press: press, target: target)
+            continuation.yield(.press(sample))
         }
     }
 }

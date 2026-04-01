@@ -22,7 +22,7 @@ public enum RemotePressKind: Sendable, Equatable {
 
 /// A `UIPress` that is not mapped through the spatial `TouchSample` → `TouchInteraction` path (e.g. Menu, D-pad, hardware keyboard),
 /// or a touch on a filtered window encoded for replay without pointer coordinates.
-public struct NonCoordinatePressSample: Sendable {
+public struct PressSample: Sendable {
     public enum Phase: Sendable {
         case began
         case changed
