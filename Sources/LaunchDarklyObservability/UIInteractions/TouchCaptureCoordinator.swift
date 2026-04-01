@@ -72,12 +72,12 @@ final class TouchCaptureCoordinator {
                         processTouchesAsNonCoordinate(event: event, window: window, continuation: continuation)
                     }
                 case .presses:
-                    processPresses(event: event, window: window, forceNonCoordinate: !trackWindow, continuation: continuation)
+                    processPresses(event: event, window: window, continuation: continuation)
                 default:
                     // `UIPhysicalKeyboardEvent` and other `UIPressesEvent` subclasses can use a `type`
                     // not exposed on `UIEvent.EventType` yet, so they fall through here instead of `.presses`.
                     if event is UIPressesEvent {
-                        processPresses(event: event, window: window, forceNonCoordinate: !trackWindow, continuation: continuation)
+                        processPresses(event: event, window: window, continuation: continuation)
                     }
                 }
             }
@@ -133,40 +133,14 @@ final class TouchCaptureCoordinator {
     private func processPresses(
         event: UIEvent,
         window: UIWindow,
-        forceNonCoordinate: Bool,
         continuation: AsyncStream<InteractionCaptureItem>.Continuation
     ) {
         guard let pressesEvent = event as? UIPressesEvent else { return }
-        let presses = pressesEvent.allPresses
-        for press in presses {
+        for press in pressesEvent.allPresses {
             guard press.phase == .began || press.phase == .ended else { continue }
-
-            if !forceNonCoordinate, press.usesSpatialCoordinatesForReplay {
-                let target = targetResolver.resolve(press: press, window: window, usesPressLocationForHitTest: true)
-                let touchSample = TouchSample(press: press, window: window, target: target)
-                continuation.yield(.touch(touchSample))
-            } else {
-                let target = targetResolver.resolve(press: press, window: window, usesPressLocationForHitTest: false)
-                let sample = NonCoordinatePressSample(press: press, target: target)
-                continuation.yield(.nonCoordinatePress(sample))
-            }
-        }
-    }
-}
-
-extension TouchSample {
-    init(press: UIPress, window: UIWindow, target: TouchTarget?) {
-        self.id = ObjectIdentifier(press)
-        self.location = PressWindowGeometry.windowPoint(for: press, in: window)
-        self.timestamp = press.timestamp
-        self.target = target
-        self.phase = switch press.phase {
-        case .began: .began
-        case .changed: .moved
-        case .ended: .ended
-        case .cancelled: .cancelled
-        case .stationary: .moved
-        @unknown default: .moved
+            let target = targetResolver.resolve(press: press, window: window)
+            let sample = NonCoordinatePressSample(press: press, target: target)
+            continuation.yield(.nonCoordinatePress(sample))
         }
     }
 }

@@ -99,29 +99,4 @@ extension RemotePressKind {
     }
 }
 
-extension UIPress {
-    /// Maps through `TouchSample` / `TouchInteraction` when we can attribute a window point (tvOS Siri Remote touch surface uses `.select`).
-    /// Public UIKit does not expose `UIPress.location(in:)` in Swift; spatial samples use the responder view center instead.
-    /// On iOS, physical/game-controller/keyboard presses use `NonCoordinatePressSample` only.
-    var usesSpatialCoordinatesForReplay: Bool {
-        #if os(tvOS)
-        if key != nil { return false }
-        return type == .select
-        #else
-        return false
-        #endif
-    }
-}
-
-/// Window-space point for press hit testing / touch replay when `UIPress.location(in:)` is not available to Swift.
-enum PressWindowGeometry {
-    static func windowPoint(for press: UIPress, in window: UIWindow) -> CGPoint {
-        if let view = press.responder as? UIView {
-            let center = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
-            return view.convert(center, to: window)
-        }
-        return CGPoint(x: window.bounds.midX, y: window.bounds.midY)
-    }
-}
-
 #endif

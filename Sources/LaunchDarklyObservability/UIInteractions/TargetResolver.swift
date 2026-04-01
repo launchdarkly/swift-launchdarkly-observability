@@ -24,7 +24,7 @@ public struct TouchTarget: Sendable {
 
 protocol TargetResolving {
     func resolve(view: UIView?, window: UIWindow, event: UIEvent) -> TouchTarget?
-    func resolve(press: UIPress, window: UIWindow, usesPressLocationForHitTest: Bool) -> TouchTarget?
+    func resolve(press: UIPress, window: UIWindow) -> TouchTarget?
 }
 
 final class TargetResolver: TargetResolving {
@@ -45,15 +45,8 @@ final class TargetResolver: TargetResolving {
         return touchTarget(for: nearestSemanticView(view: hitView), window: window)
     }
 
-    func resolve(press: UIPress, window: UIWindow, usesPressLocationForHitTest: Bool) -> TouchTarget? {
-        let hitView: UIView?
-        if usesPressLocationForHitTest {
-            let point = PressWindowGeometry.windowPoint(for: press, in: window)
-            hitView = window.hitTest(point, with: nil)
-        } else {
-            hitView = press.responder as? UIView
-        }
-        guard let hitView else { return nil }
+    func resolve(press: UIPress, window: UIWindow) -> TouchTarget? {
+        guard let hitView = press.responder as? UIView else { return nil }
         return touchTarget(for: nearestSemanticView(view: hitView), window: window)
     }
     
