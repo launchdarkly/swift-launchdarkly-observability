@@ -53,19 +53,16 @@ final class TouchCaptureCoordinator {
             source.start { [weak self] event, window in
                 // Main thread part of work
                 guard let self else { return }
-                guard let touches = event.allTouches else { return }
+                
                 guard receiverChecker.shouldTrack(window) else { return }
                 
-                for touch in touches {
-                    let target: TouchTarget?
-                    if touch.phase == .began || touch.phase == .ended {
-                        target = targetResolver.resolve(view: touch.view, window: window, event: event)
-                    } else {
-                        target = nil
-                    }
-                    
-                    let touchSample = TouchSample(touch: touch, window: window, target: target)
-                    continuation.yield(touchSample)
+                switch event.type {
+                case .touches:
+                    processTouches(event: event, window: window, continuation: continuation)
+                case .presses:
+                    processPresses(event: event, window: window, continuation: continuation)
+                default:
+                    break
                 }
             }
         }
@@ -77,5 +74,32 @@ final class TouchCaptureCoordinator {
                 touchIntepreter.process(touchSample: touchSample, yield: yield)
             }
         }
+    }
+    
+    private func processTouches(
+        event: UIEvent,
+        window: UIWindow,
+        continuation: AsyncStream<TouchSample>.Continuation
+    ) {
+        guard let touches = event.allTouches else { return }
+        for touch in touches {
+            let target: TouchTarget?
+            if touch.phase == .began || touch.phase == .ended {
+                target = targetResolver.resolve(view: touch.view, window: window, event: event)
+            } else {
+                target = nil
+            }
+            
+            let touchSample = TouchSample(touch: touch, window: window, target: target)
+            continuation.yield(touchSample)
+        }
+    }
+    
+    private func processPresses(
+        event _: UIEvent,
+        window _: UIWindow,
+        continuation _: AsyncStream<TouchSample>.Continuation
+    ) {
+        
     }
 }
