@@ -142,21 +142,11 @@ final class TouchCaptureCoordinator {
             guard press.phase == .began || press.phase == .ended else { continue }
 
             if !forceNonCoordinate, press.usesSpatialCoordinatesForReplay {
-                let target: TouchTarget?
-                if press.phase == .began || press.phase == .ended {
-                    target = targetResolver.resolve(press: press, window: window, usesPressLocationForHitTest: true)
-                } else {
-                    target = nil
-                }
+                let target = targetResolver.resolve(press: press, window: window, usesPressLocationForHitTest: true)
                 let touchSample = TouchSample(press: press, window: window, target: target)
                 continuation.yield(.touch(touchSample))
             } else {
-                let target: TouchTarget?
-                if press.phase == .began || press.phase == .ended {
-                    target = targetResolver.resolve(press: press, window: window, usesPressLocationForHitTest: false)
-                } else {
-                    target = nil
-                }
+                let target = targetResolver.resolve(press: press, window: window, usesPressLocationForHitTest: false)
                 let sample = NonCoordinatePressSample(press: press, target: target)
                 continuation.yield(.nonCoordinatePress(sample))
             }
