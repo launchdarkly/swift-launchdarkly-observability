@@ -42,7 +42,7 @@ public typealias NonCoordinatePressYield = @Sendable (NonCoordinatePressSample) 
 final class TouchCaptureCoordinator {
     private let source: UIEventSource
     private let targetResolver: TargetResolving
-    private let touchIntepreter: TouchIntepreter
+    private let touchInterpreter: TouchInterpreter
     private let receiverChecker: UIEventReceiverChecker
     var yield: TouchInteractionYield?
     /// Button-like presses without spatial coordinates (e.g. Menu, D-pad, keyboard). Optional until transport consumes them.
@@ -51,7 +51,7 @@ final class TouchCaptureCoordinator {
     init(targetResolver: TargetResolving = TargetResolver(),
          receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker()) {
         self.targetResolver = targetResolver
-        self.touchIntepreter = TouchIntepreter()
+        self.touchInterpreter = TouchInterpreter()
         self.source = UIWindowSwizzleSource()
         self.receiverChecker = receiverChecker
     }
@@ -89,7 +89,7 @@ final class TouchCaptureCoordinator {
             for await item in captureStream {
                 switch item {
                 case .touch(let touchSample):
-                    touchIntepreter.process(touchSample: touchSample, yield: yield)
+                    touchInterpreter.process(touchSample: touchSample, yield: yield)
                 case .nonCoordinatePress(let sample):
                     onNonCoordinatePress?(sample)
                 }

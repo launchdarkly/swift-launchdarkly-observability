@@ -7,7 +7,7 @@ private enum TouchConstants {
     static let touchPathDuration: TimeInterval = 0.18 // found through testing
 }
 
-final class TouchIntepreter {
+final class TouchInterpreter {
     struct Track {
         var start: TimeInterval
         var end: TimeInterval
