@@ -16,9 +16,12 @@ public enum RemotePressKind: Sendable, Equatable {
     case tvRemoteFourColors
     /// Press types introduced after this SDK (see `UIPress.PressType.rawValue`).
     case other(rawValue: Int)
+    /// `UITouch` on a window skipped by `UIEventReceiverChecker` (e.g. keyboard chrome), recorded without coordinates.
+    case untrackedWindowTouch
 }
 
-/// A `UIPress` that is not mapped through the spatial `TouchSample` → `TouchInteraction` path (e.g. Menu, D-pad, hardware keyboard).
+/// A `UIPress` that is not mapped through the spatial `TouchSample` → `TouchInteraction` path (e.g. Menu, D-pad, hardware keyboard),
+/// or a touch on a filtered window encoded for replay without pointer coordinates.
 public struct NonCoordinatePressSample: Sendable {
     public enum Phase: Sendable {
         case began
@@ -41,6 +44,25 @@ public struct NonCoordinatePressSample: Sendable {
         self.timestamp = press.timestamp
         self.target = target
         self.isKeyboardOriginated = press.key != nil
+    }
+
+    init(touch: UITouch, target: TouchTarget?) {
+        self.phase = Self.phase(forTouch: touch.phase)
+        self.kind = .untrackedWindowTouch
+        self.timestamp = touch.timestamp
+        self.target = target
+        self.isKeyboardOriginated = false
+    }
+
+    private static func phase(forTouch touchPhase: UITouch.Phase) -> Phase {
+        switch touchPhase {
+        case .began: return .began
+        case .moved: return .changed
+        case .ended: return .ended
+        case .cancelled: return .cancelled
+        case .stationary: return .stationary
+        @unknown default: return .changed
+        }
     }
 
     private static func phase(for pressPhase: UIPress.Phase) -> Phase {

@@ -62,18 +62,22 @@ final class TouchCaptureCoordinator {
                 // Main thread part of work
                 guard let self else { return }
                 
-                guard let captureWindow = windowForSessionReplay(event: event, sendEventWindow: window) else { return }
+                let trackWindow = receiverChecker.shouldTrack(window)
                 
                 switch event.type {
                 case .touches:
-                    processTouches(event: event, window: captureWindow, continuation: continuation)
+                    if trackWindow {
+                        processTouches(event: event, window: window, continuation: continuation)
+                    } else {
+                        processTouchesAsNonCoordinate(event: event, window: window, continuation: continuation)
+                    }
                 case .presses:
-                    processPresses(event: event, window: captureWindow, continuation: continuation)
+                    processPresses(event: event, window: window, forceNonCoordinate: !trackWindow, continuation: continuation)
                 default:
                     // `UIPhysicalKeyboardEvent` and other `UIPressesEvent` subclasses can use a `type`
                     // not exposed on `UIEvent.EventType` yet, so they fall through here instead of `.presses`.
                     if event is UIPressesEvent {
-                        processPresses(event: event, window: captureWindow, continuation: continuation)
+                        processPresses(event: event, window: window, forceNonCoordinate: !trackWindow, continuation: continuation)
                     }
                 }
             }
@@ -87,34 +91,29 @@ final class TouchCaptureCoordinator {
                 case .touch(let touchSample):
                     touchIntepreter.process(touchSample: touchSample, yield: yield)
                 case .nonCoordinatePress(let sample):
+                    print("sample.phase:", sample.phase)
                     onNonCoordinatePress?(sample)
                 }
             }
         }
     }
     
-    /// `sendEvent` is swizzled on every `UIWindow`; we skip `UIRemoteKeyboardWindow` / `UITextEffectsWindow` for touches
-    /// so we do not record the keyboard UI. Software keyboard still delivers `UIPressesEvent` on those windows — for
-    /// presses we attribute to the scene key window so `NonCoordinatePressSample` targets map to app UI.
-    private func windowForSessionReplay(event: UIEvent, sendEventWindow: UIWindow) -> UIWindow? {
-        if receiverChecker.shouldTrack(sendEventWindow) {
-            return sendEventWindow
+    private func processTouchesAsNonCoordinate(
+        event: UIEvent,
+        window: UIWindow,
+        continuation: AsyncStream<InteractionCaptureItem>.Continuation
+    ) {
+        guard let touches = event.allTouches else { return }
+        for touch in touches {
+            let target: TouchTarget?
+            if touch.phase == .began || touch.phase == .ended {
+                target = targetResolver.resolve(view: touch.view, window: window, event: event)
+            } else {
+                target = nil
+            }
+            let sample = NonCoordinatePressSample(touch: touch, target: target)
+            continuation.yield(.nonCoordinatePress(sample))
         }
-        if event is UIPressesEvent {
-            return Self.keyWindowForPressAttribution(in: sendEventWindow.windowScene) ?? sendEventWindow
-        }
-        return nil
-    }
-    
-    private static func keyWindowForPressAttribution(in scene: UIWindowScene?) -> UIWindow? {
-        if let scene {
-            return scene.windows.first { $0.isKeyWindow }
-        }
-        return UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first { $0.activationState == .foregroundActive }?
-            .windows
-            .first { $0.isKeyWindow }
     }
     
     private func processTouches(
@@ -139,16 +138,20 @@ final class TouchCaptureCoordinator {
     private func processPresses(
         event: UIEvent,
         window: UIWindow,
+        forceNonCoordinate: Bool,
         continuation: AsyncStream<InteractionCaptureItem>.Continuation
     ) {
         guard let pressesEvent = event as? UIPressesEvent else { return }
         let presses = pressesEvent.allPresses
         for press in presses {
-            if press.phase == .stationary {
+            switch press.phase {
+            case .stationary, .changed:
                 continue
+            default:
+                break
             }
 
-            if press.usesSpatialCoordinatesForReplay {
+            if !forceNonCoordinate, press.usesSpatialCoordinatesForReplay {
                 let target: TouchTarget?
                 if press.phase == .began || press.phase == .ended {
                     target = targetResolver.resolve(press: press, window: window, usesPressLocationForHitTest: true)
