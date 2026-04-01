@@ -91,7 +91,6 @@ final class TouchCaptureCoordinator {
                 case .touch(let touchSample):
                     touchIntepreter.process(touchSample: touchSample, yield: yield)
                 case .nonCoordinatePress(let sample):
-                    print("sample.phase:", sample.phase)
                     onNonCoordinatePress?(sample)
                 }
             }
@@ -105,12 +104,8 @@ final class TouchCaptureCoordinator {
     ) {
         guard let touches = event.allTouches else { return }
         for touch in touches {
-            let target: TouchTarget?
-            if touch.phase == .began || touch.phase == .ended {
-                target = targetResolver.resolve(view: touch.view, window: window, event: event)
-            } else {
-                target = nil
-            }
+            guard touch.phase == .began || touch.phase == .ended else { continue }
+            let target = targetResolver.resolve(view: touch.view, window: window, event: event)
             let sample = NonCoordinatePressSample(touch: touch, target: target)
             continuation.yield(.nonCoordinatePress(sample))
         }
@@ -144,12 +139,7 @@ final class TouchCaptureCoordinator {
         guard let pressesEvent = event as? UIPressesEvent else { return }
         let presses = pressesEvent.allPresses
         for press in presses {
-            switch press.phase {
-            case .stationary, .changed:
-                continue
-            default:
-                break
-            }
+            guard press.phase == .began || press.phase == .ended else { continue }
 
             if !forceNonCoordinate, press.usesSpatialCoordinatesForReplay {
                 let target: TouchTarget?
