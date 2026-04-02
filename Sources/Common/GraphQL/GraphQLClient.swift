@@ -11,11 +11,7 @@ public final class GraphQLClient {
     public init(endpoint: URL,
                 network: HttpServicing = HttpService(),
                 decoder: JSONDecoder = JSONDecoder(),
-                defaultHeaders: [String: String] = [
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "User-Agent": "iOS"
-                ]) {
+                defaultHeaders: [String: String]) {
         self.endpoint = endpoint
         self.network = network
         self.decoder = decoder
@@ -39,14 +35,16 @@ public final class GraphQLClient {
         request.httpMethod = "POST"
         
         let rawData = try gqlRequest.httpBody()
-         
+        
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if isCompressed, let compressedData = rawData.ld_gzip() {
           request.httpBody = compressedData
           request.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
         } else {
           request.httpBody = rawData
         }
-        
+
         let combinedHeaders = defaultHeaders.merging(headers) { _, new in new }
         combinedHeaders.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
 
