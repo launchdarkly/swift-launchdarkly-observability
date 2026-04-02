@@ -5,7 +5,7 @@ import Combine
 #endif
 
 public final class UserInteractionManager {
-    private var touchCaptureCoordinator: TouchCaptureCoordinator
+    private var inputCaptureCoordinator: InputCaptureCoordinator
     private let subject = PassthroughSubject<TouchInteraction, Never>()
     
     public var publisher: AnyPublisher<TouchInteraction, Never> {
@@ -14,15 +14,15 @@ public final class UserInteractionManager {
     
     init(options: Options, yield: @escaping TouchInteractionYield) {
         let targetResolver = TargetResolver()
-        self.touchCaptureCoordinator = TouchCaptureCoordinator(targetResolver: targetResolver)
-        self.touchCaptureCoordinator.yield = { [subject] interaction in
+        self.inputCaptureCoordinator = InputCaptureCoordinator(targetResolver: targetResolver)
+        self.inputCaptureCoordinator.onTouch = { [subject] interaction in
             yield(interaction)
             subject.send(interaction)
         }
     }
         
     func start() {
-        touchCaptureCoordinator.start()
+        inputCaptureCoordinator.start()
     }
     
     func stop() {

@@ -24,6 +24,7 @@ public struct TouchTarget: Sendable {
 
 protocol TargetResolving {
     func resolve(view: UIView?, window: UIWindow, event: UIEvent) -> TouchTarget?
+    func resolve(press: UIPress, window: UIWindow) -> TouchTarget?
 }
 
 final class TargetResolver: TargetResolving {
@@ -41,16 +42,23 @@ final class TargetResolver: TargetResolving {
             return nil
         }
         
-        let semanticView = nearestSemanticView(view: hitView)
+        return touchTarget(for: nearestSemanticView(view: hitView), window: window)
+    }
+
+    func resolve(press: UIPress, window: UIWindow) -> TouchTarget? {
+        guard let hitView = press.responder as? UIView else { return nil }
+        return touchTarget(for: nearestSemanticView(view: hitView), window: window)
+    }
+    
+    private func touchTarget(for semanticView: UIView, window: UIWindow) -> TouchTarget {
         let rectWin = semanticView.convert(semanticView.bounds, to: window)
-        let target = TouchTarget(className: String(describing: type(of: semanticView)),
-                                 accessibilityIdentifier: semanticView.accessibilityIdentifier,
-                                 isAccessibilityElement: semanticView.isAccessibilityElement,
-                                 rectInWindow: rectWin,
-                                 rectOnScreen: window.convert(rectWin, to: nil),
-                                 rowIndex: nil,
-                                 sceneId: window.windowScene?.session.persistentIdentifier)
-        return target
+        return TouchTarget(className: String(describing: type(of: semanticView)),
+                           accessibilityIdentifier: semanticView.accessibilityIdentifier,
+                           isAccessibilityElement: semanticView.isAccessibilityElement,
+                           rectInWindow: rectWin,
+                           rectOnScreen: window.convert(rectWin, to: nil),
+                           rowIndex: nil,
+                           sceneId: window.windowScene?.session.persistentIdentifier)
     }
     
     private func nearestSemanticView(view: UIView) -> UIView {
