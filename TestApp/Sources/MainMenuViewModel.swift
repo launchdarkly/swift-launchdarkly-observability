@@ -12,8 +12,6 @@ final class MainMenuViewModel: ObservableObject {
 		)
 	}
 	
-    
-
 	func recordSpanAndVariation() {
 		let span = LDObserve.shared.startSpan(
 			name: "button-pressed",

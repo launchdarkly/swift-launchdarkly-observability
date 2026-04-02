@@ -6,22 +6,24 @@ enum InteractionCaptureItem: Sendable {
     case press(PressSample)
 }
 
-public struct TouchSample: Sendable {
-    public enum Phase : Sendable {
+struct TouchSample: Sendable {
+    enum Phase : Sendable {
         case began
         case moved
         case ended
         case cancelled
+        case unknown
     }
     
-    public let phase: Phase
-    public let id: ObjectIdentifier
-    public let location: CGPoint
-    public let timestamp: TimeInterval
-    public let target: TouchTarget?
+    let phase: Phase
+    let id: ObjectIdentifier
+    let location: CGPoint
+    // relative to system startup time
+    let timestamp: TimeInterval
+    let target: TouchTarget?
 
     
-    public init(touch: UITouch, window: UIWindow, target: TouchTarget?) {
+    init(touch: UITouch, window: UIWindow, target: TouchTarget?) {
         self.id = ObjectIdentifier(touch)
         self.location = touch.location(in: window)
         self.timestamp = touch.timestamp
@@ -31,13 +33,14 @@ public struct TouchSample: Sendable {
         case .moved: .moved
         case .ended: .ended
         case .cancelled: .cancelled
-        default : .moved
+        @unknown
+        default : .unknown
         }
     }
 }
 
 public typealias TouchInteractionYield = @Sendable (TouchInteraction) -> Void
-public typealias PressInteractionYield = @Sendable (PressSample) -> Void
+public typealias PressSampleYield = @Sendable (PressSample) -> Void
 
 final class InputCaptureCoordinator {
     private let source: UIEventSource
@@ -45,7 +48,7 @@ final class InputCaptureCoordinator {
     private let touchInterpreter: TouchInterpreter
     private let receiverChecker: UIEventReceiverChecker
     var onTouch: TouchInteractionYield?
-    var onPress: PressInteractionYield?
+    var onPress: PressSampleYield?
     
     init(targetResolver: TargetResolving = TargetResolver(),
          receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker()) {
@@ -106,6 +109,8 @@ final class InputCaptureCoordinator {
             guard touch.phase == .began || touch.phase == .ended else { continue }
             let target = targetResolver.resolve(view: touch.view, window: window, event: event)
             let sample = PressSample(touch: touch, target: target)
+            if case let .other = sample.kind { continue }
+            
             continuation.yield(.press(sample))
         }
     }
@@ -139,6 +144,8 @@ final class InputCaptureCoordinator {
             guard press.phase == .began || press.phase == .ended else { continue }
             let target = targetResolver.resolve(press: press, window: window)
             let sample = PressSample(press: press, target: target)
+            if case let .other = sample.kind { continue }
+            
             continuation.yield(.press(sample))
         }
     }

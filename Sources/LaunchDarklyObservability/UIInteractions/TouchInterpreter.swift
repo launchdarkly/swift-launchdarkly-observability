@@ -102,6 +102,8 @@ final class TouchInterpreter {
                                                 timestamp: touchSample.timestamp + uptimeDifference,
                                                 target: touchSample.target)
             yield(moveInteraction)
+        case .unknown:
+            () //NOOP
         }
     }
     
