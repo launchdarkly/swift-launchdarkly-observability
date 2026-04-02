@@ -142,7 +142,7 @@ final class SessionReplayService: SessionReplayServicing {
                     case .touch(let interaction):
                         await transportService.eventQueue.send(interaction)
                     case .press(let pressInteraction):
-                        await transportService.eventQueue.send(TVPressInteractionPayload(pressInteraction: pressInteraction))
+                        await transportService.eventQueue.send(PressInteractionPayload(pressInteraction: pressInteraction))
                     }
                 }
             }

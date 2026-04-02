@@ -133,8 +133,8 @@ actor RRWebEventGenerator {
                 events.append(event)
             }
             
-        case let tvPressItem as TVPressInteractionPayload:
-            appendTVPressInteraction(payload: tvPressItem, events: &events)
+        case let pressItem as PressInteractionPayload:
+            appendPressInteraction(payload: pressItem, events: &events)
             
         default:
             break // Item wasn't needed for SessionReplay
@@ -185,25 +185,25 @@ actor RRWebEventGenerator {
         }
     }
     
-    private func appendTVPressInteraction(payload: TVPressInteractionPayload, events: inout [Event]) {
-        let pressInteraction = payload.pressInteraction
-        if pressInteraction.isKeyboardOriginated {
-            let keyboardPayload = KeyboardPressPayload(phase: pressInteraction.phase.sessionReplayWirePhase)
+    private func appendPressInteraction(payload: PressInteractionPayload, events: inout [Event]) {
+        let press = payload.pressInteraction
+        if press.isKeyboardOriginated {
+            let keyboardPayload = KeyboardPressPayload(phase: press.phase.sessionReplayWirePhase)
             let eventData = CustomEventData(tag: .keyboardPress, payload: keyboardPayload)
             events.append(Event(type: .Custom,
                                  data: AnyEventData(eventData),
-                                 timestamp: pressInteraction.timestamp,
+                                 timestamp: press.timestamp,
                                  _sid: nextSid))
         } else {
             let remotePayload = RemoteControlPayload(
-                phase: pressInteraction.phase.sessionReplayWirePhase,
-                pressType: pressInteraction.kind.sessionReplayWirePressType,
-                pressTypeSystemRaw: pressInteraction.kind.sessionReplayUIPressTypeRawIfOther
+                phase: press.phase.sessionReplayWirePhase,
+                pressType: press.kind.sessionReplayWirePressType,
+                pressTypeSystemRaw: press.kind.sessionReplayUIPressTypeRawIfOther
             )
             let eventData = CustomEventData(tag: .remoteControl, payload: remotePayload)
             events.append(Event(type: .Custom,
                                  data: AnyEventData(eventData),
-                                 timestamp: pressInteraction.timestamp,
+                                 timestamp: press.timestamp,
                                  _sid: nextSid))
         }
     }

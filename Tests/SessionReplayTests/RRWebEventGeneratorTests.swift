@@ -150,7 +150,7 @@ struct RRWebEventGeneratorTests {
             target: nil,
             isKeyboardOriginated: false
         )
-        let items: [EventQueueItem] = [EventQueueItem(payload: TVPressInteractionPayload(pressInteraction: pressInteraction))]
+        let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
         let events = await generator.generateEvents(items: items)
         #expect(events.count == 1)
         #expect(events[0].type == .Custom)
@@ -178,7 +178,7 @@ struct RRWebEventGeneratorTests {
             target: nil,
             isKeyboardOriginated: true
         )
-        let items: [EventQueueItem] = [EventQueueItem(payload: TVPressInteractionPayload(pressInteraction: pressInteraction))]
+        let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
         let events = await generator.generateEvents(items: items)
         #expect(events.count == 1)
         #expect(events[0].type == .Custom)
@@ -188,6 +188,32 @@ struct RRWebEventGeneratorTests {
         #expect(data?["tag"] as? String == "Keyboard")
         let payload = data?["payload"] as? [String: Any]
         #expect(payload?["phase"] as? String == "ended")
+    }
+    
+    @Test("Appends Keyboard custom event for untracked window touch")
+    func appendsKeyboardEventForUntrackedWindowTouch() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let pressInteraction = PressInteraction(
+            phase: .began,
+            kind: .untrackedWindowTouch,
+            timestamp: 50.0,
+            target: nil,
+            isKeyboardOriginated: true
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
+        let events = await generator.generateEvents(items: items)
+        #expect(events.count == 1)
+        #expect(events[0].type == .Custom)
+        let encoded = try JSONEncoder().encode(events[0])
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Keyboard")
+        let payload = data?["payload"] as? [String: Any]
+        #expect(payload?["phase"] as? String == "began")
     }
     
     @Test("RemoteControl custom event decodes via AnyEventData")

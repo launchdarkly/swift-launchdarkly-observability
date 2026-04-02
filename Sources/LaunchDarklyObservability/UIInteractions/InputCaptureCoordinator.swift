@@ -108,7 +108,12 @@ final class InputCaptureCoordinator {
         for touch in touches {
             guard touch.phase == .began || touch.phase == .ended else { continue }
             let target = targetResolver.resolve(view: touch.view, window: window, event: event)
-            let interaction = PressInteraction(touch: touch, target: target)
+            let interaction = PressInteraction(
+                phase: PressInteraction.phase(forTouch: touch.phase),
+                timestamp: touch.timestamp,
+                target: target,
+                isKeyboardOriginated: true
+            )
             if case let .other = interaction.kind { continue }
             
             continuation.yield(.press(interaction))

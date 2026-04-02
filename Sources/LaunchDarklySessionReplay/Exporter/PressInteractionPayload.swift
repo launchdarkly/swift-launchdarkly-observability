@@ -1,9 +1,9 @@
 import Foundation
 import LaunchDarklyObservability
 
-/// Queue item for non-spatial `PressInteraction` values (tvOS remote, filtered-window touches, keyboard-sourced presses).
+/// Queue item for non-spatial `PressInteraction` values (remote control, filtered-window touches, keyboard-sourced presses).
 /// Encoded as RRWeb custom events (`RemoteControl`, `Keyboard`) by `RRWebEventGenerator`.
-struct TVPressInteractionPayload: EventQueueItemPayload {
+struct PressInteractionPayload: EventQueueItemPayload {
     let pressInteraction: PressInteraction
 
     var timestamp: TimeInterval { pressInteraction.timestamp }

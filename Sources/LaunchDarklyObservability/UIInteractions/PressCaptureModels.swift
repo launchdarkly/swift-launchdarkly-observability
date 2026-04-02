@@ -46,7 +46,7 @@ public struct PressInteraction: Sendable {
         self.isKeyboardOriginated = press.key != nil
     }
 
-    init(phase: Phase, kind: RemotePressKind, timestamp: TimeInterval, target: TouchTarget?, isKeyboardOriginated: Bool) {
+    init(phase: Phase, kind: RemotePressKind = .untrackedWindowTouch, timestamp: TimeInterval, target: TouchTarget?, isKeyboardOriginated: Bool = false) {
         self.phase = phase
         self.kind = kind
         self.timestamp = timestamp
@@ -54,15 +54,7 @@ public struct PressInteraction: Sendable {
         self.isKeyboardOriginated = isKeyboardOriginated
     }
 
-    init(touch: UITouch, target: TouchTarget?) {
-        self.phase = Self.phase(forTouch: touch.phase)
-        self.kind = .untrackedWindowTouch
-        self.timestamp = touch.timestamp
-        self.target = target
-        self.isKeyboardOriginated = false
-    }
-
-    private static func phase(forTouch touchPhase: UITouch.Phase) -> Phase {
+    static func phase(forTouch touchPhase: UITouch.Phase) -> Phase {
         switch touchPhase {
         case .began: return .began
         case .moved: return .changed
