@@ -50,7 +50,7 @@ final class ObservabilityService: InternalObserve {
         guard let url = URL(string: options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
-        let graphQLClient = GraphQLClient(endpoint: url)
+        let graphQLClient = GraphQLClient(endpoint: url, defaultHeaders: ["User-Agent": ObservabilitySDKInfo.userAgent()])
         
         Task {
             do {
