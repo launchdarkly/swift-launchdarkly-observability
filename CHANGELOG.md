@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.29.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.28.0...0.29.0) (2026-04-02)
+
+
+### Features
+
+* Capture press events ([#172](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/172)) ([0244683](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/02446835c0b79f153c8f208c7cad0b02e562878c))
+
+
+### Bug Fixes
+
+* userAgent header for tvOS ([#174](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/174)) ([80b8ecf](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/80b8ecf954da63c11f5078e05122aa6b85bc9daa))
+
 ## [0.28.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.27.0...0.28.0) (2026-03-31)
 
 
