@@ -22,7 +22,7 @@ public enum RemotePressKind: Sendable, Equatable {
 
 /// A `UIPress` that is not mapped through the spatial `TouchSample` → `TouchInteraction` path (e.g. Menu, D-pad, hardware keyboard),
 /// or a touch on a filtered window encoded for replay without pointer coordinates.
-public struct PressSample: Sendable {
+public struct PressInteraction: Sendable {
     public enum Phase: Sendable {
         case began
         case changed
@@ -44,6 +44,14 @@ public struct PressSample: Sendable {
         self.timestamp = press.timestamp
         self.target = target
         self.isKeyboardOriginated = press.key != nil
+    }
+
+    init(phase: Phase, kind: RemotePressKind, timestamp: TimeInterval, target: TouchTarget?, isKeyboardOriginated: Bool) {
+        self.phase = phase
+        self.kind = kind
+        self.timestamp = timestamp
+        self.target = target
+        self.isKeyboardOriginated = isKeyboardOriginated
     }
 
     init(touch: UITouch, target: TouchTarget?) {
@@ -97,6 +105,12 @@ extension RemotePressKind {
             self = .other(rawValue: pressType.rawValue)
         }
     }
+}
+
+/// Touch and press interactions forwarded in order for session replay export.
+public enum InteractionEvent: Sendable {
+    case touch(TouchInteraction)
+    case press(PressInteraction)
 }
 
 #endif

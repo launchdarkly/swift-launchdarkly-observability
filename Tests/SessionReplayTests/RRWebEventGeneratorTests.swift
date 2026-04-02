@@ -1,8 +1,9 @@
 import Testing
 @testable import LaunchDarklySessionReplay
-import LaunchDarklyObservability
+@testable import LaunchDarklyObservability
 import OSLog
 import CoreGraphics
+import Foundation
 
 struct RRWebEventGeneratorTests {
     
@@ -133,6 +134,76 @@ struct RRWebEventGeneratorTests {
         #expect(events[1].type == .FullSnapshot)
         #expect(events[2].type == .Custom)
         #expect(events[3].type == .IncrementalSnapshot)
+    }
+    
+    @Test("Appends RemoteControl custom event for non-keyboard press interaction")
+    func appendsRemoteControlCustomEvent() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let pressInteraction = PressInteraction(
+            phase: .began,
+            kind: .select,
+            timestamp: 99.0,
+            target: nil,
+            isKeyboardOriginated: false
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: TVPressInteractionPayload(pressInteraction: pressInteraction))]
+        let events = await generator.generateEvents(items: items)
+        #expect(events.count == 1)
+        #expect(events[0].type == .Custom)
+        let encoded = try JSONEncoder().encode(events[0])
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "RemoteControl")
+        let payload = data?["payload"] as? [String: Any]
+        #expect(payload?["phase"] as? String == "began")
+        #expect(payload?["pressType"] as? String == "select")
+        #expect(payload?["pressTypeSystemRaw"] == nil)
+    }
+    
+    @Test("Appends Keyboard custom event when press is keyboard-originated")
+    func appendsKeyboardPressCustomEvent() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let pressInteraction = PressInteraction(
+            phase: .ended,
+            kind: .select,
+            timestamp: 12.0,
+            target: nil,
+            isKeyboardOriginated: true
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: TVPressInteractionPayload(pressInteraction: pressInteraction))]
+        let events = await generator.generateEvents(items: items)
+        #expect(events.count == 1)
+        #expect(events[0].type == .Custom)
+        let encoded = try JSONEncoder().encode(events[0])
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Keyboard")
+        let payload = data?["payload"] as? [String: Any]
+        #expect(payload?["phase"] as? String == "ended")
+    }
+    
+    @Test("RemoteControl custom event decodes via AnyEventData")
+    func remoteControlEventDecodesRoundTrip() throws {
+        let payload = RemoteControlPayload(phase: "began", pressType: "other", pressTypeSystemRaw: 77)
+        let custom = CustomEventData(tag: .remoteControl, payload: payload)
+        let event = Event(type: .Custom, data: AnyEventData(custom), timestamp: 10.0, _sid: 1)
+        let encoded = try JSONEncoder().encode(event)
+        let decoded = try JSONDecoder().decode(Event.self, from: encoded)
+        #expect(decoded.type == .Custom)
+        let roundTrip = try JSONEncoder().encode(decoded)
+        let json = try JSONSerialization.jsonObject(with: roundTrip) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "RemoteControl")
+        let p = data?["payload"] as? [String: Any]
+        #expect(p?["pressTypeSystemRaw"] as? Int == 77)
     }
 }
 

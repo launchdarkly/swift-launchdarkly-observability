@@ -135,10 +135,15 @@ final class SessionReplayService: SessionReplayServicing {
     
     @MainActor
     private func internalStart() {
-        userInteractionManager.publisher
-            .sink { [transportService] interaction in
+        userInteractionManager.interactionEvents
+            .sink { [transportService] event in
                 Task {
-                    await transportService.eventQueue.send(interaction)
+                    switch event {
+                    case .touch(let interaction):
+                        await transportService.eventQueue.send(interaction)
+                    case .press(let pressInteraction):
+                        await transportService.eventQueue.send(TVPressInteractionPayload(pressInteraction: pressInteraction))
+                    }
                 }
             }
             .store(in: &cancellables)

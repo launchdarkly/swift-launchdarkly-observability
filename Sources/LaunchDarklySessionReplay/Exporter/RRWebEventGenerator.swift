@@ -133,6 +133,9 @@ actor RRWebEventGenerator {
                 events.append(event)
             }
             
+        case let tvPressItem as TVPressInteractionPayload:
+            appendTVPressInteraction(payload: tvPressItem, events: &events)
+            
         default:
             break // Item wasn't needed for SessionReplay
         }
@@ -179,6 +182,29 @@ actor RRWebEventGenerator {
         
         if let clickEvent = clickEvent(interaction: interaction) {
             events.append(clickEvent)
+        }
+    }
+    
+    private func appendTVPressInteraction(payload: TVPressInteractionPayload, events: inout [Event]) {
+        let pressInteraction = payload.pressInteraction
+        if pressInteraction.isKeyboardOriginated {
+            let keyboardPayload = KeyboardPressPayload(phase: pressInteraction.phase.sessionReplayWirePhase)
+            let eventData = CustomEventData(tag: .keyboardPress, payload: keyboardPayload)
+            events.append(Event(type: .Custom,
+                                 data: AnyEventData(eventData),
+                                 timestamp: pressInteraction.timestamp,
+                                 _sid: nextSid))
+        } else {
+            let remotePayload = RemoteControlPayload(
+                phase: pressInteraction.phase.sessionReplayWirePhase,
+                pressType: pressInteraction.kind.sessionReplayWirePressType,
+                pressTypeSystemRaw: pressInteraction.kind.sessionReplayUIPressTypeRawIfOther
+            )
+            let eventData = CustomEventData(tag: .remoteControl, payload: remotePayload)
+            events.append(Event(type: .Custom,
+                                 data: AnyEventData(eventData),
+                                 timestamp: pressInteraction.timestamp,
+                                 _sid: nextSid))
         }
     }
     

@@ -3,7 +3,7 @@ import UIKit
 
 enum InteractionCaptureItem: Sendable {
     case touch(TouchSample)
-    case press(PressSample)
+    case press(PressInteraction)
 }
 
 struct TouchSample: Sendable {
@@ -40,7 +40,7 @@ struct TouchSample: Sendable {
 }
 
 public typealias TouchInteractionYield = @Sendable (TouchInteraction) -> Void
-public typealias PressSampleYield = @Sendable (PressSample) -> Void
+public typealias PressInteractionYield = @Sendable (PressInteraction) -> Void
 
 final class InputCaptureCoordinator {
     private let source: UIEventSource
@@ -48,7 +48,7 @@ final class InputCaptureCoordinator {
     private let touchInterpreter: TouchInterpreter
     private let receiverChecker: UIEventReceiverChecker
     var onTouch: TouchInteractionYield?
-    var onPress: PressSampleYield?
+    var onPress: PressInteractionYield?
     
     init(targetResolver: TargetResolving = TargetResolver(),
          receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker()) {
@@ -108,10 +108,10 @@ final class InputCaptureCoordinator {
         for touch in touches {
             guard touch.phase == .began || touch.phase == .ended else { continue }
             let target = targetResolver.resolve(view: touch.view, window: window, event: event)
-            let sample = PressSample(touch: touch, target: target)
-            if case let .other = sample.kind { continue }
+            let interaction = PressInteraction(touch: touch, target: target)
+            if case let .other = interaction.kind { continue }
             
-            continuation.yield(.press(sample))
+            continuation.yield(.press(interaction))
         }
     }
     
@@ -143,10 +143,10 @@ final class InputCaptureCoordinator {
         for press in pressesEvent.allPresses {
             guard press.phase == .began || press.phase == .ended else { continue }
             let target = targetResolver.resolve(press: press, window: window)
-            let sample = PressSample(press: press, target: target)
-            if case let .other = sample.kind { continue }
+            let interaction = PressInteraction(press: press, target: target)
+            if case let .other = interaction.kind { continue }
             
-            continuation.yield(.press(sample))
+            continuation.yield(.press(interaction))
         }
     }
 }

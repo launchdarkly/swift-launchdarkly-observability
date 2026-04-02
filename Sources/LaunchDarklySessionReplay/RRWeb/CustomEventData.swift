@@ -20,3 +20,16 @@ struct ClickPayload: Codable {
     var clickTextContent: String
     var clickSelector: String
 }
+
+/// Wire payload when the custom event tag is `RemoteControl` (`CustomDataTag.remoteControl.rawValue`).
+/// Backend / player: allowlist this tag if ingestion filters; optional `pressTypeSystemRaw` is only set for unmapped `UIPress.PressType` (`pressType` == `other`).
+struct RemoteControlPayload: Codable, Equatable {
+    var phase: String
+    var pressType: String
+    var pressTypeSystemRaw: Int?
+}
+
+/// Wire payload when the custom event tag is `Keyboard` (`CustomDataTag.keyboardPress.rawValue`). Phase only — never key identifiers or typed text.
+struct KeyboardPressPayload: Codable, Equatable {
+    var phase: String
+}

@@ -6,18 +6,22 @@ import Combine
 
 public final class UserInteractionManager {
     private var inputCaptureCoordinator: InputCaptureCoordinator
-    private let subject = PassthroughSubject<TouchInteraction, Never>()
+    private let interactionEventSubject = PassthroughSubject<InteractionEvent, Never>()
     
-    public var publisher: AnyPublisher<TouchInteraction, Never> {
-        subject.eraseToAnyPublisher()
+    /// Ordered stream of touches (``TouchInteraction``) and non-spatial ``PressInteraction``.
+    public var interactionEvents: AnyPublisher<InteractionEvent, Never> {
+        interactionEventSubject.eraseToAnyPublisher()
     }
     
     init(options: ObservabilityOptions, yield: @escaping TouchInteractionYield) {
         let targetResolver = TargetResolver()
         self.inputCaptureCoordinator = InputCaptureCoordinator(targetResolver: targetResolver)
-        self.inputCaptureCoordinator.onTouch = { [subject] interaction in
+        self.inputCaptureCoordinator.onTouch = { [interactionEventSubject] interaction in
             yield(interaction)
-            subject.send(interaction)
+            interactionEventSubject.send(.touch(interaction))
+        }
+        self.inputCaptureCoordinator.onPress = { [interactionEventSubject] pressInteraction in
+            interactionEventSubject.send(.press(pressInteraction))
         }
     }
         

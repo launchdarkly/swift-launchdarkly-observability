@@ -53,10 +53,20 @@ enum MouseInteractions: Int, Codable {
          touchCancel = 10
 }
 
+/// Custom event `tag` strings on RRWeb `EventType.custom` payloads.
+///
+/// **Player / backend contract**
+/// - Tags and JSON payload shapes below are the integration surface for the session replay web player and GraphQL ingestion.
+/// - Ingestion that allowlists `tag` must include any tag you rely on; unknown tags should be stored opaquely or ignored per product policy.
+/// - The RRWeb replayer ignores unknown custom tags unless extended on the web side.
 enum CustomDataTag: String, Codable {
     case click = "Click"
     case focus = "Focus"
     case viewport = "Viewport"
     case reload = "Reload"
     case identify = "Identify"
+    /// Siri Remote, game controller, D-pad, or filtered-window touch without coordinates. Payload: `RemoteControlPayload`.
+    case remoteControl = "RemoteControl"
+    /// Hardware keyboard (`UIPress.key`); presses that are not emitted with the `RemoteControl` tag use this tag. Payload: `KeyboardPressPayload` (phase only).
+    case keyboardPress = "Keyboard"
 }
