@@ -1,7 +1,7 @@
 #if canImport(UIKit)
 import UIKit
 
-/// Normalized remote / hardware button identity for presses that do not use window coordinates in replay.
+/// Normalized identity for presses that do not use window coordinates in replay.
 public enum RemotePressKind: Sendable, Equatable {
     case upArrow
     case downArrow
@@ -14,10 +14,12 @@ public enum RemotePressKind: Sendable, Equatable {
     case pageDown
     case tvRemoteOneTwoThree
     case tvRemoteFourColors
-    /// Press types introduced after this SDK (see `UIPress.PressType.rawValue`).
-    case other(rawValue: Int)
+    /// Hardware keyboard key press (`UIPress.key != nil`). No key code or text is stored (privacy).
+    case keyboard
     /// `UITouch` on a window skipped by `UIEventReceiverChecker` (e.g. keyboard chrome), recorded without coordinates.
     case untrackedWindowTouch
+    /// Press types introduced after this SDK that are not keyboard-originated (see `UIPress.PressType.rawValue`).
+    case other(rawValue: Int)
 }
 
 /// A `UIPress` that is not mapped through the spatial `TouchSample` → `TouchInteraction` path (e.g. Menu, D-pad, hardware keyboard),
@@ -35,23 +37,23 @@ public struct PressInteraction: Sendable {
     public let kind: RemotePressKind
     public let timestamp: TimeInterval
     public let target: TouchTarget?
-    /// `true` when the press came from a hardware keyboard (`UIPress.key`); does not expose key contents.
-    public let isKeyboardOriginated: Bool
+
+    public var isKeyboard: Bool {
+        kind == .keyboard || kind == .untrackedWindowTouch
+    }
 
     init(press: UIPress, target: TouchTarget?) {
         self.phase = Self.phase(for: press.phase)
-        self.kind = RemotePressKind(pressType: press.type)
+        self.kind = press.key != nil ? .keyboard : RemotePressKind(pressType: press.type)
         self.timestamp = press.timestamp
         self.target = target
-        self.isKeyboardOriginated = press.key != nil
     }
 
-    init(phase: Phase, kind: RemotePressKind = .untrackedWindowTouch, timestamp: TimeInterval, target: TouchTarget?, isKeyboardOriginated: Bool = false) {
+    init(phase: Phase, kind: RemotePressKind = .untrackedWindowTouch, timestamp: TimeInterval, target: TouchTarget?) {
         self.phase = phase
         self.kind = kind
         self.timestamp = timestamp
         self.target = target
-        self.isKeyboardOriginated = isKeyboardOriginated
     }
 
     static func phase(forTouch touchPhase: UITouch.Phase) -> Phase {

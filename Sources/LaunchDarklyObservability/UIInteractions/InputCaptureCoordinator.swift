@@ -46,6 +46,7 @@ final class InputCaptureCoordinator {
     private let source: UIEventSource
     private let targetResolver: TargetResolving
     private let touchInterpreter: TouchInterpreter
+    private let pressInterpreter: PressInterpreter
     private let receiverChecker: UIEventReceiverChecker
     var onTouch: TouchInteractionYield?
     var onPress: PressInteractionYield?
@@ -54,6 +55,7 @@ final class InputCaptureCoordinator {
          receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker()) {
         self.targetResolver = targetResolver
         self.touchInterpreter = TouchInterpreter()
+        self.pressInterpreter = PressInterpreter()
         self.source = UIWindowSwizzleSource()
         self.receiverChecker = receiverChecker
     }
@@ -93,7 +95,9 @@ final class InputCaptureCoordinator {
                 case .touch(let touchSample):
                     touchInterpreter.process(touchSample: touchSample, yield: onTouch)
                 case .press(let sample):
-                    onPress?(sample)
+                    if let onPress {
+                        pressInterpreter.process(pressInteraction: sample, yield: onPress)
+                    }
                 }
             }
         }
@@ -106,16 +110,14 @@ final class InputCaptureCoordinator {
     ) {
         guard let touches = event.allTouches else { return }
         for touch in touches {
-            guard touch.phase == .began || touch.phase == .ended else { continue }
+            guard touch.phase == .began else { continue }
             let target = targetResolver.resolve(view: touch.view, window: window, event: event)
             let interaction = PressInteraction(
                 phase: PressInteraction.phase(forTouch: touch.phase),
+                kind: .untrackedWindowTouch,
                 timestamp: touch.timestamp,
-                target: target,
-                isKeyboardOriginated: true
+                target: target
             )
-            if case let .other = interaction.kind { continue }
-            
             continuation.yield(.press(interaction))
         }
     }
@@ -146,10 +148,10 @@ final class InputCaptureCoordinator {
     ) {
         guard let pressesEvent = event as? UIPressesEvent else { return }
         for press in pressesEvent.allPresses {
-            guard press.phase == .began || press.phase == .ended else { continue }
+            guard press.phase == .began else { continue }
             let target = targetResolver.resolve(press: press, window: window)
             let interaction = PressInteraction(press: press, target: target)
-            if case let .other = interaction.kind { continue }
+            if case .other = interaction.kind { continue }
             
             continuation.yield(.press(interaction))
         }

@@ -187,25 +187,25 @@ actor RRWebEventGenerator {
     
     private func appendPressInteraction(payload: PressInteractionPayload, events: inout [Event]) {
         let press = payload.pressInteraction
-        if press.isKeyboardOriginated {
-            let keyboardPayload = KeyboardPressPayload(phase: press.phase.sessionReplayWirePhase)
-            let eventData = CustomEventData(tag: .keyboardPress, payload: keyboardPayload)
-            events.append(Event(type: .Custom,
-                                 data: AnyEventData(eventData),
-                                 timestamp: press.timestamp,
-                                 _sid: nextSid))
+        let event: Event
+        if press.isKeyboard {
+            let eventData = CustomEventData(tag: .keyboardPress, payload: KeyboardPressPayload())
+            event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: press.timestamp,
+                          _sid: nextSid)
         } else {
             let remotePayload = RemoteControlPayload(
-                phase: press.phase.sessionReplayWirePhase,
                 pressType: press.kind.sessionReplayWirePressType,
                 pressTypeSystemRaw: press.kind.sessionReplayUIPressTypeRawIfOther
             )
             let eventData = CustomEventData(tag: .remoteControl, payload: remotePayload)
-            events.append(Event(type: .Custom,
-                                 data: AnyEventData(eventData),
-                                 timestamp: press.timestamp,
-                                 _sid: nextSid))
+            event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: press.timestamp,
+                          _sid: nextSid)
         }
+        events.append(event)
     }
     
     func clickEvent(interaction: TouchInteraction) -> Event? {

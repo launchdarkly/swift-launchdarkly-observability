@@ -1,18 +1,6 @@
 import Foundation
 import LaunchDarklyObservability
 
-extension PressInteraction.Phase {
-    var sessionReplayWirePhase: String {
-        switch self {
-        case .began: return "began"
-        case .changed: return "changed"
-        case .ended: return "ended"
-        case .cancelled: return "cancelled"
-        case .stationary: return "stationary"
-        }
-    }
-}
-
 extension RemotePressKind {
     var sessionReplayWirePressType: String {
         switch self {
@@ -27,8 +15,9 @@ extension RemotePressKind {
         case .pageDown: return "pageDown"
         case .tvRemoteOneTwoThree: return "tvRemoteOneTwoThree"
         case .tvRemoteFourColors: return "tvRemoteFourColors"
-        case .other: return "other"
+        case .keyboard: return "keyboard"
         case .untrackedWindowTouch: return "untrackedWindowTouch"
+        case .other: return "other"
         }
     }
 

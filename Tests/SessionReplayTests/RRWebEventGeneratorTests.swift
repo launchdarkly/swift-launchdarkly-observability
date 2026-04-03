@@ -147,8 +147,7 @@ struct RRWebEventGeneratorTests {
             phase: .began,
             kind: .select,
             timestamp: 99.0,
-            target: nil,
-            isKeyboardOriginated: false
+            target: nil
         )
         let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
         let events = await generator.generateEvents(items: items)
@@ -159,12 +158,11 @@ struct RRWebEventGeneratorTests {
         let data = json?["data"] as? [String: Any]
         #expect(data?["tag"] as? String == "RemoteControl")
         let payload = data?["payload"] as? [String: Any]
-        #expect(payload?["phase"] as? String == "began")
         #expect(payload?["pressType"] as? String == "select")
         #expect(payload?["pressTypeSystemRaw"] == nil)
     }
     
-    @Test("Appends Keyboard custom event when press is keyboard-originated")
+    @Test("Appends Keyboard custom event for keyboard kind")
     func appendsKeyboardPressCustomEvent() async throws {
         let generator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
@@ -173,10 +171,9 @@ struct RRWebEventGeneratorTests {
         )
         let pressInteraction = PressInteraction(
             phase: .ended,
-            kind: .select,
+            kind: .keyboard,
             timestamp: 12.0,
-            target: nil,
-            isKeyboardOriginated: true
+            target: nil
         )
         let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
         let events = await generator.generateEvents(items: items)
@@ -186,8 +183,6 @@ struct RRWebEventGeneratorTests {
         let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
         let data = json?["data"] as? [String: Any]
         #expect(data?["tag"] as? String == "Keyboard")
-        let payload = data?["payload"] as? [String: Any]
-        #expect(payload?["phase"] as? String == "ended")
     }
     
     @Test("Appends Keyboard custom event for untracked window touch")
@@ -201,8 +196,7 @@ struct RRWebEventGeneratorTests {
             phase: .began,
             kind: .untrackedWindowTouch,
             timestamp: 50.0,
-            target: nil,
-            isKeyboardOriginated: true
+            target: nil
         )
         let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
         let events = await generator.generateEvents(items: items)
@@ -212,13 +206,11 @@ struct RRWebEventGeneratorTests {
         let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
         let data = json?["data"] as? [String: Any]
         #expect(data?["tag"] as? String == "Keyboard")
-        let payload = data?["payload"] as? [String: Any]
-        #expect(payload?["phase"] as? String == "began")
     }
     
     @Test("RemoteControl custom event decodes via AnyEventData")
     func remoteControlEventDecodesRoundTrip() throws {
-        let payload = RemoteControlPayload(phase: "began", pressType: "other", pressTypeSystemRaw: 77)
+        let payload = RemoteControlPayload(pressType: "other", pressTypeSystemRaw: 77)
         let custom = CustomEventData(tag: .remoteControl, payload: payload)
         let event = Event(type: .Custom, data: AnyEventData(custom), timestamp: 10.0, _sid: 1)
         let encoded = try JSONEncoder().encode(event)
