@@ -90,24 +90,13 @@ extension Observability {
         if let deviceModelIdentifier = deviceDataSource.model {
             sessionAttributes[SemanticConvention.deviceModelIdentifier] = .string(deviceModelIdentifier)
         }
-        sessionAttributes[SemanticConvention.deviceManufacturer] = .string("Apple")
-
-        // OS attributes
-        let osDataSource = OperatingSystemDataSource()
-        sessionAttributes[SemanticConvention.osName] = .string(osDataSource.name)
-        sessionAttributes[SemanticConvention.osType] = .string(osDataSource.type)
-        sessionAttributes[SemanticConvention.osVersion] = .string(osDataSource.version)
-        sessionAttributes[SemanticConvention.osDescription] = .string(osDataSource.description)
-        
         return sessionAttributes
     }
     
     func add(metadata: EnvironmentMetadata, into resourceAttributes: inout [String: AttributeValue]) {
         resourceAttributes[SemanticConvention.launchdarklySdkVersion] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
         resourceAttributes[SemanticConvention.highlightProjectId] = .string(metadata.credential)
-        resourceAttributes[SemanticConvention.serviceName] = .string(options.serviceName)
-        resourceAttributes[SemanticConvention.serviceVersion] = .string(options.serviceVersion)
-        resourceAttributes[SemanticConvention.telemetrySdkName] = .string(Observability.SDK_NAME)
+        resourceAttributes[SemanticConvention.telemetrySdkName] = .string("opentelemetry")
         for (key, value) in distroAttributes {
             resourceAttributes[key] = .string(value)
         }
