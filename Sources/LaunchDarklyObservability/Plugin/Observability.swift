@@ -9,9 +9,15 @@ import UIKit
 #endif
 
 public final class Observability: Plugin {
+    static let SDK_NAME = "swift-launchdarkly-observability"
+
     private let options: Options
     let observabilityHook = ObservabilityHook()
     var observabilityService: InternalObserve?
+    public var distroAttributes: [String: String] = [
+        SemanticConvention.telemetryDistroName: Observability.SDK_NAME,
+        SemanticConvention.telemetryDistroVersion: sdkVersion
+    ]
     
     public init(options: Options) {
         self.options = options
@@ -101,7 +107,9 @@ extension Observability {
         resourceAttributes[SemanticConvention.highlightProjectId] = .string(metadata.credential)
         resourceAttributes[SemanticConvention.serviceName] = .string(options.serviceName)
         resourceAttributes[SemanticConvention.serviceVersion] = .string(options.serviceVersion)
-        resourceAttributes[SemanticConvention.telemetryDistroName] = .string("swift-launchdarkly-observability")
-        resourceAttributes[SemanticConvention.telemetryDistroVersion] = .string(sdkVersion)
+        resourceAttributes[SemanticConvention.telemetrySdkName] = .string(Observability.SDK_NAME)
+        for (key, value) in distroAttributes {
+            resourceAttributes[key] = .string(value)
+        }
     }
 }

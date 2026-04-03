@@ -3,6 +3,7 @@ public enum SemanticConvention {
     public static let attributeSamplingRatio = "launchdarkly.sampling.ratio"
     public static let launchdarklySdkVersion = "launchdarkly.sdk.version"
     public static let highlightProjectId = "highlight.project_id"
+    public static let telemetrySdkName = "telemetry.sdk.name"
     public static let telemetryDistroName = "telemetry.distro.name"
     public static let telemetryDistroVersion = "telemetry.distro.version"
     public static let serviceName = "service.name"
