@@ -31,6 +31,7 @@ public struct PressInteraction: Sendable {
         case ended
         case cancelled
         case stationary
+        case unknown
     }
 
     public let phase: Phase
@@ -63,7 +64,10 @@ public struct PressInteraction: Sendable {
         case .ended: return .ended
         case .cancelled: return .cancelled
         case .stationary: return .stationary
-        @unknown default: return .changed
+        case .regionEntered: return .unknown
+        case .regionMoved: return .unknown
+        case .regionExited: return .unknown
+        @unknown default: return .unknown
         }
     }
 
@@ -74,7 +78,7 @@ public struct PressInteraction: Sendable {
         case .ended: return .ended
         case .cancelled: return .cancelled
         case .stationary: return .stationary
-        @unknown default: return .changed
+        @unknown default: return .unknown
         }
     }
 }
