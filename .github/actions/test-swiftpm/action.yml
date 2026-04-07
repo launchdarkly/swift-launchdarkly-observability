@@ -4,10 +4,30 @@ description: 'Build and test using Swift Package Manager on iOS Simulator.'
 runs:
   using: composite
   steps:
-    - name: Build & Test
+    - name: List available schemes
+      shell: bash
+      run: xcodebuild -list 2>&1 || true
+
+    - name: Build & Test (ObservabilityTests)
       shell: bash
       run: |
         xcodebuild test \
-          -scheme swift-launchdarkly-observability \
+          -scheme ObservabilityTests \
+          -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+          | xcpretty && exit ${PIPESTATUS[0]}
+
+    - name: Build & Test (CommonTests)
+      shell: bash
+      run: |
+        xcodebuild test \
+          -scheme CommonTests \
+          -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+          | xcpretty && exit ${PIPESTATUS[0]}
+
+    - name: Build & Test (SessionReplayTests)
+      shell: bash
+      run: |
+        xcodebuild test \
+          -scheme SessionReplayTests \
           -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
           | xcpretty && exit ${PIPESTATUS[0]}
