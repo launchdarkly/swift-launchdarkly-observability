@@ -1,4 +1,4 @@
 protocol InternalObserve: Observe {
-    var logClient: LogsApi { get }
+    var logClient: InternalLogsApi { get }
     var traceClient: TracesApi { get }
 }

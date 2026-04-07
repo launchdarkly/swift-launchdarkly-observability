@@ -14,11 +14,11 @@ public protocol CrashReporting {
 }
 
 final class KSCrashReportService {
-    private let logsApi: LogsApi
+    private let logsApi: InternalLogsApi
     private let log: OSLog
     private let reportStore: CrashReportStore
     
-    init(logsApi: LogsApi, log: OSLog) throws {        
+    init(logsApi: InternalLogsApi, log: OSLog) throws {
         let reporter = KSCrash.shared
         
         guard let reportStore = reporter.reportStore else {

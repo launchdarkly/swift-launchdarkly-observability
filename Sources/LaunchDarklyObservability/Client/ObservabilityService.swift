@@ -6,7 +6,8 @@ import OSLog
 #endif
 
 final class ObservabilityService: InternalObserve {
-    var logClient: LogsApi { loggerClient }
+    var logClient: InternalLogsApi { loggerClient }
+    var customerLogClient: LogsApi { logger }
     var traceClient: TracesApi { _traceClient }
     private let logger: LogsApi
     private let meter: MetricsApi
@@ -324,9 +325,10 @@ extension ObservabilityService: Observe {
     func recordLog(
         message: String,
         severity: Severity,
-        attributes: [String: AttributeValue]
+        attributes: [String: AttributeValue],
+        spanContext: SpanContext?
     ) {
-        logger.recordLog(message: message, severity: severity, attributes: attributes)
+        logger.recordLog(message: message, severity: severity, attributes: attributes, spanContext: spanContext)
     }
 
     func recordMetric(metric: Metric) {

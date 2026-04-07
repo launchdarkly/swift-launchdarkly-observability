@@ -16,18 +16,10 @@ public final class ObjcLDObserveBridge: NSObject {
         return ObjcTracer(tracer: service.tracerDecorator)
     }
 
-    /// Obj-C friendly entry-point that MAUI can bind to.
-    /// - Parameters:
-    ///   - message: log message
-    ///   - severity: numeric severity (maps to your Swift `Severity(rawValue:)`)
-    ///   - attributes: Foundation types only (String, Bool, Int, Double, NSDictionary, NSArray)
-    @objc(recordLogWithMessage:severity:attributes:)
-    public static func recordLog(message: String,
-                                 severity: Int,
-                                 attributes: [String: Any] = [:]) {
-        let sev = Severity(rawValue: severity) ?? .info
-        let attrs = AttributeConverter.convert(attributes)
-        LDObserve.shared.recordLog(message: message, severity: sev, attributes: attrs)
+    @objc(getObjcLogger)
+    public static func getObjcLogger() -> ObjcLogger? {
+        guard let service = LDObserve.shared.client as? ObservabilityService else { return nil }
+        return ObjcLogger(internalLogger: service.logClient, customerLogger: service.customerLogClient)
     }
 
     @objc(recordErrorWithMessage:cause:)

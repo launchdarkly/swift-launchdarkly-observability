@@ -131,7 +131,7 @@ final class LogsApiSpy: LogsApi {
         table[level] = 0
         return table
     }
-    func recordLog(message: String, severity: OpenTelemetryApi.Severity, attributes: [String : OpenTelemetryApi.AttributeValue]) {
+    func recordLog(message: String, severity: OpenTelemetryApi.Severity, attributes: [String : OpenTelemetryApi.AttributeValue], spanContext: SpanContext?) {
         invokeCount += 1
         guard let level = Options.LogLevel(rawValue: severity.rawValue) else { return }
         invokeCountByLevel[level]? += 1
