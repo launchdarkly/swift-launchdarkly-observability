@@ -266,6 +266,13 @@ struct MainMenuView: View {
                     Text("Log")
                 }
                 .buttonStyle(.borderedProminent)
+
+                Button {
+                    viewModel.recordLogWithContext()
+                } label: {
+                    Text("Log with Context")
+                }
+                .buttonStyle(.borderedProminent)
             }
 
             HStack {
