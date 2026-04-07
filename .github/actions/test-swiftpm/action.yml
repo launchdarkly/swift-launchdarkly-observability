@@ -1,33 +1,26 @@
 name: Test SwiftPM
 description: 'Build and test using Swift Package Manager on iOS Simulator.'
+inputs:
+  ios-sim:
+    description: 'iOS Simulator to use for testing'
+    required: true
 
 runs:
   using: composite
   steps:
-    - name: List available schemes
+    # Workaround for intermittent macos-15 runner issue where simulator
+    # runtimes aren't loaded. Listing devices forces the simulator service
+    # to initialize. See https://github.com/actions/runner-images/issues/12948
+    - name: Prepare iOS Simulator runtime
       shell: bash
-      run: xcodebuild -list 2>&1 || true
+      run: xcrun simctl list devices available
 
-    - name: Build & Test (ObservabilityTests)
+    - name: Build & Test on iOS Simulator
       shell: bash
       run: |
         xcodebuild test \
-          -scheme ObservabilityTests \
-          -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
-          | xcpretty && exit ${PIPESTATUS[0]}
-
-    - name: Build & Test (CommonTests)
-      shell: bash
-      run: |
-        xcodebuild test \
-          -scheme CommonTests \
-          -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
-          | xcpretty && exit ${PIPESTATUS[0]}
-
-    - name: Build & Test (SessionReplayTests)
-      shell: bash
-      run: |
-        xcodebuild test \
-          -scheme SessionReplayTests \
-          -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+          -scheme swift-launchdarkly-observability-Package \
+          -sdk iphonesimulator \
+          -destination '${{ inputs.ios-sim }}' \
+          CODE_SIGN_IDENTITY= \
           | xcpretty && exit ${PIPESTATUS[0]}
