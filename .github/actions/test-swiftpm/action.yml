@@ -1,0 +1,13 @@
+name: Test SwiftPM
+description: 'Build and test using Swift Package Manager on iOS Simulator.'
+
+runs:
+  using: composite
+  steps:
+    - name: Build & Test
+      shell: bash
+      run: |
+        xcodebuild test \
+          -scheme swift-launchdarkly-observability \
+          -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+          | xcpretty && exit ${PIPESTATUS[0]}

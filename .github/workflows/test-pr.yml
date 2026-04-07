@@ -1,0 +1,14 @@
+name: Test PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Unit Tests (iOS Simulator)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/test-swiftpm
