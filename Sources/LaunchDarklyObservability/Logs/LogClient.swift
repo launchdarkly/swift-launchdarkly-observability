@@ -2,6 +2,23 @@ import Foundation
 import OpenTelemetryApi
 import OpenTelemetrySdk
 
+protocol InternalLogsApi {
+    func recordLog(message: String,
+                   severity: OpenTelemetryApi.Severity,
+                   attributes: [String : OpenTelemetryApi.AttributeValue],
+                   spanContext: SpanContext?)
+}
+
+extension InternalLogsApi {
+    public func recordLog(
+        message: String,
+        severity: Severity,
+        attributes: [String: AttributeValue],
+    ) {
+        recordLog(message: message, severity: severity, attributes: attributes, spanContext: nil)
+    }
+}
+
 final class AppLogBuilder {
     private let options: Options
     private let sessionManager: SessionManager
@@ -45,7 +62,7 @@ final class AppLogBuilder {
     }
 }
 
-final class LogClient {
+final class LogClient: InternalLogsApi {
     private let eventQueue: EventQueue
     private let appLogBuilder: AppLogBuilder
     
@@ -53,15 +70,15 @@ final class LogClient {
         self.eventQueue = eventQueue
         self.appLogBuilder = appLogBuilder
     }
-}
-
-extension LogClient: LogsApi {
-    public func recordLog(
+    
+    func recordLog(
         message: String,
         severity: Severity,
-        attributes: [String: AttributeValue]
+        attributes: [String: AttributeValue],
+        spanContext: SpanContext?
     ) {
-        let spanContext = OpenTelemetry.instance.contextProvider.activeSpan?.context
+        // must be taken in the current thread
+        let spanContext = spanContext ?? OpenTelemetry.instance.contextProvider.activeSpan?.context
         Task {
             guard let log = appLogBuilder.buildLog(message: message,
                                                    severity: severity,

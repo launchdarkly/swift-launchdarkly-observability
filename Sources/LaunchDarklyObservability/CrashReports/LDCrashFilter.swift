@@ -20,10 +20,10 @@ final class LDCrashFilter: NSObject, CrashReportFilter {
         case flushFailed
         case underlyingError(Error)
     }
-    private let logsApi: LogsApi
+    private let logsApi: InternalLogsApi
     
     init(
-        logsApi: LogsApi
+        logsApi: InternalLogsApi
     ) {
         self.logsApi = logsApi
     }
