@@ -39,6 +39,10 @@ extension LogsApi {
     public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue]) {
         recordLog(message: message, severity: severity, attributes: attributes, spanContext: nil)
     }
+
+    public func recordLog(message: String, severity: Severity, spanContext: SpanContext? = nil) {
+        recordLog(message: message, severity: severity, attributes: [:], spanContext: spanContext)
+    }
 }
 
 public protocol TracesApi {
@@ -50,4 +54,14 @@ public protocol TracesApi {
     /// - name The name of the span
     /// - attributes The attributes to record with the span
     func startSpan(name: String, attributes: [String : AttributeValue]) -> Span
+}
+
+extension TracesApi {
+    public func recordError(error: any Error) {
+        recordError(error: error, attributes: [:])
+    }
+
+    public func startSpan(name: String) -> Span {
+        startSpan(name: name, attributes: [:])
+    }
 }
