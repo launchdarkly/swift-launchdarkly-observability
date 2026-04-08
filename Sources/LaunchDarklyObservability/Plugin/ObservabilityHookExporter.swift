@@ -13,7 +13,7 @@ import Common
 final class ObservabilityHookExporter {
 
     private let spans: BoundedMap<String, any Span>
-    private let options: Options
+    private let options: ObservabilityOptions
     private let withSpans: Bool
     private let withValue: Bool
     private let traceClient: TracesApi
@@ -23,7 +23,7 @@ final class ObservabilityHookExporter {
          logClient: InternalLogsApi,
          withSpans: Bool,
          withValue: Bool,
-         options: Options,
+         options: ObservabilityOptions,
          maxInFlightSpans: Int = 1024) {
         self.traceClient = traceClient
         self.logClient = logClient

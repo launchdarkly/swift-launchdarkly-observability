@@ -18,12 +18,12 @@ extension IdentifyItemPayload {
     /// Builds the final attribute dictionary from resource/session attributes,
     /// context keys, canonical key, and the optional friendly-name override.
     private static func buildAttributes(
-        options: Options,
+        options: ObservabilityOptions,
         sessionAttributes: [String: AttributeValue]?,
         contextKeys: [String: String],
         canonicalKey: String
     ) -> [String: String] {
-        // Keep the existing value from Options if duplicate key is found;
+        // Keep the existing value from ObservabilityOptions if duplicate key is found;
         // client has precedence over session attribute.
         var attributes: [String: String] = options.resourceAttributes
             .merging(sessionAttributes ?? [:], uniquingKeysWith: { (current, _) in current })
@@ -57,7 +57,7 @@ extension IdentifyItemPayload {
     }
 
     @MainActor
-    init(options: Options, sessionAttributes: [String: AttributeValue]?, ldContext: LDContext? = nil, timestamp: TimeInterval) {
+    init(options: ObservabilityOptions, sessionAttributes: [String: AttributeValue]?, ldContext: LDContext? = nil, timestamp: TimeInterval) {
         let canonicalKey = ldContext?.fullyQualifiedKey() ?? "unknown"
         let contextKeys = ldContext?.contextKeys() ?? [:]
 
@@ -72,7 +72,7 @@ extension IdentifyItemPayload {
 
     /// Proxy-friendly initialiser that accepts pre-extracted context keys
     /// instead of LDContext, so the MAUI bridge can call it with simple types.
-    init(options: Options, sessionAttributes: [String: AttributeValue]?, contextKeys: [String: String], canonicalKey: String, timestamp: TimeInterval) {
+    init(options: ObservabilityOptions, sessionAttributes: [String: AttributeValue]?, contextKeys: [String: String], canonicalKey: String, timestamp: TimeInterval) {
         self.attributes = Self.buildAttributes(
             options: options,
             sessionAttributes: sessionAttributes,

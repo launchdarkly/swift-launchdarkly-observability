@@ -12,7 +12,7 @@ public final class UserInteractionManager {
         subject.eraseToAnyPublisher()
     }
     
-    init(options: Options, yield: @escaping TouchInteractionYield) {
+    init(options: ObservabilityOptions, yield: @escaping TouchInteractionYield) {
         let targetResolver = TargetResolver()
         self.inputCaptureCoordinator = InputCaptureCoordinator(targetResolver: targetResolver)
         self.inputCaptureCoordinator.onTouch = { [subject] interaction in

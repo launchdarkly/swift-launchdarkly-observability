@@ -6,7 +6,7 @@ struct AppMetricsClientTests {
     @Test("Metrics API disabled")
     func metricsDisabled() throws {
         let apiSpy = MetricsApiSpy()
-        var options = Options()
+        var options = ObservabilityOptions()
         
         let metric = Metric(name: "test", value: 0.0, attributes: [:])
         options.metricsApi = .disabled
@@ -29,7 +29,7 @@ struct AppMetricsClientTests {
     @Test("Metrics API enabled")
     func metricsEnabled() throws {
         let apiSpy = MetricsApiSpy()
-        var options = Options()
+        var options = ObservabilityOptions()
         
         let metric = Metric(name: "test", value: 0.0, attributes: [:])
         options.metricsApi = .enabled

@@ -6,7 +6,7 @@ struct AppTracingClientTests {
     @Test("Tracing API disabled")
     func tracingDisabled() throws {
         let apiSpy = TracingApiSpy()
-        var options = Options()
+        var options = ObservabilityOptions()
         options.tracesApi = .disabled
         let sut = AppTraceClient(
             options: options.tracesApi,
@@ -23,7 +23,7 @@ struct AppTracingClientTests {
     @Test("not include errors, include spans")
     func includeErrorsDisabledIncludeSpansEnabled() throws {
         let apiSpy = TracingApiSpy()
-        var options = Options()
+        var options = ObservabilityOptions()
         options.tracesApi = .init(includeErrors: false, includeSpans: true)
         let sut = AppTraceClient(
             options: options.tracesApi,
@@ -40,7 +40,7 @@ struct AppTracingClientTests {
     @Test("include include errors, not include spans")
     func includeErrorsDontIncludeSpans() throws {
         let apiSpy = TracingApiSpy()
-        var options = Options()
+        var options = ObservabilityOptions()
         options.tracesApi = .init(includeErrors: true, includeSpans: false)
         let sut = AppTraceClient(
             options: options.tracesApi,
@@ -57,7 +57,7 @@ struct AppTracingClientTests {
     @Test("Tracing API enabled")
     func tracingEnabled() throws {
         let apiSpy = TracingApiSpy()
-        var options = Options()
+        var options = ObservabilityOptions()
         options.tracesApi = .enabled
         let sut = AppTraceClient(
             options: options.tracesApi,

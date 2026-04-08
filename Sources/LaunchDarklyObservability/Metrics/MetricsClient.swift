@@ -4,7 +4,7 @@ import OpenTelemetryApi
 #endif
 
 final class MetricsClient {
-    private let options: Options
+    private let options: ObservabilityOptions
     private let meter: any Meter
     private let flushMetrics: () -> Bool
     private var cachedGauges = AtomicDictionary<String, DoubleGauge>()
@@ -13,7 +13,7 @@ final class MetricsClient {
     private var cachedHistograms = AtomicDictionary<String, DoubleHistogram>()
     private var cachedUpDownCounters = AtomicDictionary<String, DoubleUpDownCounter>()
     
-    init(options: Options, meter: any Meter, flush: @escaping () -> Bool) {
+    init(options: ObservabilityOptions, meter: any Meter, flush: @escaping () -> Bool) {
         self.options = options
         self.meter = meter
         self.flushMetrics = flush

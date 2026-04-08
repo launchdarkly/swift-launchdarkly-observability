@@ -19,7 +19,7 @@ import OSLog
 ///   - loggerName The name of the logger to use. Defaults to "LaunchDarklyObservabilityPlugin".
 ///
 
-public struct Options {
+public struct ObservabilityOptions {
     public enum Defaults {
         public static let otlpEndpoint = "https://otel.observability.app.launchdarkly.com:4318"
         public static let backendUrl = "https://pub.observability.app.launchdarkly.com"
@@ -163,7 +163,7 @@ public struct Options {
         case disabled
     }
     public struct Instrumentation {
-        let urlSession: FeatureFlag
+        let networkRequests: FeatureFlag
         let userTaps: FeatureFlag
         let memory: FeatureFlag
         let memoryWarnings: FeatureFlag
@@ -171,14 +171,14 @@ public struct Options {
         let launchTimes: FeatureFlag
         
         public init(
-            urlSession: FeatureFlag = .disabled,
+            networkRequests: FeatureFlag = .disabled,
             userTaps: FeatureFlag = .disabled,
             memory: FeatureFlag = .disabled,
             memoryWarnings: FeatureFlag = .disabled,
             cpu: FeatureFlag = .disabled,
             launchTimes: FeatureFlag = .disabled
         ) {
-            self.urlSession = urlSession
+            self.networkRequests = networkRequests
             self.userTaps = userTaps
             self.memory = memory
             self.memoryWarnings = memoryWarnings

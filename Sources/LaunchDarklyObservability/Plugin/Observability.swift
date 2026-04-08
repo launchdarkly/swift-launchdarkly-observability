@@ -11,7 +11,7 @@ import UIKit
 public final class Observability: Plugin {
     static let SDK_NAME = "swift-launchdarkly-observability"
 
-    private let options: Options
+    private let options: ObservabilityOptions
     let observabilityHook = ObservabilityHook()
     var observabilityService: InternalObserve?
     public var distroAttributes: [String: String] = [
@@ -19,7 +19,7 @@ public final class Observability: Plugin {
         SemanticConvention.telemetryDistroVersion: sdkVersion
     ]
     
-    public init(options: Options) {
+    public init(options: ObservabilityOptions) {
         self.options = options
         if options.crashReporting.source == .KSCrash {
             /// Very first thing to do, if crash reporting is enabled and it is KSCrash

@@ -10,7 +10,7 @@ final class NetworkInstrumentationManager: AutoInstrumentation {
     func start() {}
     func stop() {}
     
-    init(options: Options, tracer: Tracer, session: SessionManaging) {
+    init(options: ObservabilityOptions, tracer: Tracer, session: SessionManaging) {
         let defaults = ConfigurationDefaults(options: options, session: session)
         let configuration = URLSessionInstrumentationConfiguration(
             shouldInstrument: defaults.shouldInstrument(urlRequest:),
@@ -25,10 +25,10 @@ final class NetworkInstrumentationManager: AutoInstrumentation {
 }
 
 fileprivate struct ConfigurationDefaults {
-    private let options: Options
+    private let options: ObservabilityOptions
     private let session: SessionManaging
     
-    init(options: Options,  session: SessionManaging) {
+    init(options: ObservabilityOptions,  session: SessionManaging) {
         self.options = options
         self.session = session
     }

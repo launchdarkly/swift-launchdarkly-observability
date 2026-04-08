@@ -2,13 +2,13 @@ import Foundation
 import OpenTelemetrySdk
 
 final class TracerDecorator: Tracer {
-    private let options: Options
+    private let options: ObservabilityOptions
     private let sessionManager: SessionManaging
     private let tracerProvider: any TracerProvider
     private let tracer: any Tracer
     private var activeSpan: Span?
     
-    init(options: Options, sessionManager: SessionManaging, sampler: ExportSampler, eventQueue: EventQueue) {
+    init(options: ObservabilityOptions, sessionManager: SessionManaging, sampler: ExportSampler, eventQueue: EventQueue) {
         self.options = options
         self.sessionManager = sessionManager
         let processor = EventSpanProcessor(eventQueue: eventQueue, sampler: sampler)
