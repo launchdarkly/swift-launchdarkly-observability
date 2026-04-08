@@ -59,10 +59,7 @@ final class AppLifecycleManager: AppLifecycleManaging {
     }
 
     func send(_ event: AppLifeCycleEvent) {
-        Task(priority: .background) { [weak self] in
-            guard let self else { return }
-            self.subject.send(event)
-        }
+        subject.send(event)
     }
     
     private func didFinishLaunching() {
