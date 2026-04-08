@@ -22,5 +22,6 @@ runs:
           -scheme swift-launchdarkly-observability-Package \
           -sdk iphonesimulator \
           -destination '${{ inputs.ios-sim }}' \
+          -skipPackagePluginValidation \
           CODE_SIGN_IDENTITY= \
           | xcpretty && exit ${PIPESTATUS[0]}
