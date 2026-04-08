@@ -13,7 +13,7 @@ struct AppTracingClientTests {
             tracingApiClient: apiSpy
         )
         
-        sut.recordError(error: URLError(.badServerResponse), attributes: [:])
+        sut.recordError(URLError(.badServerResponse), attributes: [:])
         _ = sut.startSpan(name: "span-name", attributes: [:])
         
         #expect(apiSpy.recordErrorInvokeCount == 0)
@@ -30,7 +30,7 @@ struct AppTracingClientTests {
             tracingApiClient: apiSpy
         )
         
-        sut.recordError(error: URLError(.badServerResponse), attributes: [:])
+        sut.recordError(URLError(.badServerResponse), attributes: [:])
         _ = sut.startSpan(name: "span-name", attributes: [:])
         
         #expect(apiSpy.recordErrorInvokeCount == 0)
@@ -47,7 +47,7 @@ struct AppTracingClientTests {
             tracingApiClient: apiSpy
         )
         
-        sut.recordError(error: URLError(.badServerResponse), attributes: [:])
+        sut.recordError(URLError(.badServerResponse), attributes: [:])
         _ = sut.startSpan(name: "span-name", attributes: [:])
         
         #expect(apiSpy.recordErrorInvokeCount == 1)
@@ -64,7 +64,7 @@ struct AppTracingClientTests {
             tracingApiClient: apiSpy
         )
         
-        sut.recordError(error: URLError(.badServerResponse), attributes: [:])
+        sut.recordError(URLError(.badServerResponse), attributes: [:])
         _ = sut.startSpan(name: "span-name", attributes: [:])
         
         #expect(apiSpy.recordErrorInvokeCount == 1)
@@ -75,7 +75,7 @@ struct AppTracingClientTests {
 final class TracingApiSpy: TracesApi {
     var recordErrorInvokeCount = 0
     var startSpanInvokeCount = 0
-    func recordError(error: any Error, attributes: [String : OpenTelemetryApi.AttributeValue]) {
+    func recordError(_ error: any Error, attributes: [String : OpenTelemetryApi.AttributeValue]) {
         recordErrorInvokeCount += 1
     }
     

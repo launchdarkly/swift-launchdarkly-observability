@@ -9,7 +9,7 @@ final class TraceClient: TracesApi {
         self.tracer = tracer
     }
     
-    func recordError(error: any Error, attributes: [String : AttributeValue]) {
+    func recordError(_ error: any Error, attributes: [String : AttributeValue]) {
         let builder = tracer.spanBuilder(spanName: "highlight.error")
     
         attributes.forEach {

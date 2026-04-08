@@ -49,7 +49,7 @@ public protocol TracesApi {
     /// Record an error.
     /// - error The error to record
     /// - attributes The attributes to record with the error
-    func recordError(error: any Error, attributes: [String : AttributeValue])
+    func recordError(_ error: any Error, attributes: [String : AttributeValue])
     /// Start a span.
     /// - name The name of the span
     /// - attributes The attributes to record with the span
@@ -57,8 +57,8 @@ public protocol TracesApi {
 }
 
 extension TracesApi {
-    public func recordError(error: any Error) {
-        recordError(error: error, attributes: [:])
+    public func recordError(_ error: any Error) {
+        recordError(error, attributes: [:])
     }
 
     public func startSpan(name: String) -> Span {

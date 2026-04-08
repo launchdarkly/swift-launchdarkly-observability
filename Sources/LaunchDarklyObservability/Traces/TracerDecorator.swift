@@ -42,7 +42,7 @@ final class TracerDecorator: Tracer {
 }
 
 extension TracerDecorator: TracesApi {
-    func recordError(error: any Error, attributes: [String : AttributeValue]) {
+    func recordError(_ error: any Error, attributes: [String : AttributeValue]) {
         let builder = spanBuilder(spanName: "highlight.error")
     
         attributes.forEach {

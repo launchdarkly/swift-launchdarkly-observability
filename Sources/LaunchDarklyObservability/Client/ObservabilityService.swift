@@ -352,10 +352,10 @@ extension ObservabilityService: Observe {
     }
 
     func recordError(
-        error: any Error,
+        _ error: any Error,
         attributes: [String: AttributeValue]
     ) {
-        tracer.recordError(error: error, attributes: attributes)
+        tracer.recordError(error, attributes: attributes)
     }
 
     func startSpan(

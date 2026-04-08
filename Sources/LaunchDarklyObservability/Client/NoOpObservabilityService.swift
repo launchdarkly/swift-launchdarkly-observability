@@ -14,7 +14,7 @@ final class NoOpObservabilityService: Observe {
     func recordHistogram(metric: Metric) { }
     func recordUpDownCounter(metric: Metric) { }
 
-    func recordError(error: any Error, attributes: [String: AttributeValue]) {}
+    func recordError(_ error: any Error, attributes: [String: AttributeValue]) {}
 
     func startSpan(name: String, attributes: [String: AttributeValue]) -> any Span {
         NoOpTracer().startSpan(name: name, attributes: attributes)

@@ -10,9 +10,9 @@ final class AppTraceClient: TracesApi {
         self.tracingApiClient = tracingApiClient
     }
     
-    func recordError(error: Error, attributes: [String : OpenTelemetryApi.AttributeValue]) {
+    func recordError(_ error: Error, attributes: [String : OpenTelemetryApi.AttributeValue]) {
         guard options.includeErrors else { return }
-        tracingApiClient.recordError(error: error, attributes: attributes)
+        tracingApiClient.recordError(error, attributes: attributes)
     }
     
     func startSpan(name: String, attributes: [String : OpenTelemetryApi.AttributeValue]) -> any OpenTelemetryApi.Span {
