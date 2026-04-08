@@ -55,8 +55,8 @@ extension LDObserve: Observe {
         client.recordUpDownCounter(metric: metric)
     }
     
-    public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue]) {
-        client.recordLog(message: message, severity: severity, attributes: attributes)
+    public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue], spanContext: SpanContext?) {
+        client.recordLog(message: message, severity: severity, attributes: attributes, spanContext: spanContext)
     }
     
     public func recordError(error: any Error, attributes: [String : AttributeValue]) {

@@ -31,11 +31,14 @@ public protocol MetricsApi {
 }
 
 public protocol LogsApi {
-    /// Record a log message.
-    /// - message The log message to record
-    /// - severity The severity of the log message
-    /// - attributes The attributes to record with the log message
-    func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue])
+    /// Record a log message with optional span context for trace-log correlation.
+    func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue], spanContext: SpanContext?)
+}
+
+extension LogsApi {
+    public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue]) {
+        recordLog(message: message, severity: severity, attributes: attributes, spanContext: nil)
+    }
 }
 
 public protocol TracesApi {

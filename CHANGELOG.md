@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.30.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.29.0...0.30.0) (2026-04-07)
+
+
+### Features
+
+* Allow attach custom span context to logs ([#178](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/178)) ([60e15bf](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/60e15bfc6d6e3eb77394f7480db6b21c8de4b585))
+* Distro vs Sdk OpenTelemetry naming ([#176](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/176)) ([f98dff0](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/f98dff024679e39384eb3740aeaa56c820d17111))
+
 ## [0.29.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.28.0...0.29.0) (2026-04-02)
 
 

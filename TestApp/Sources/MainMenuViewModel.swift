@@ -83,6 +83,25 @@ final class MainMenuViewModel: ObservableObject {
 		)
 	}
 	
+	func recordLogWithContext() {
+		let span = LDObserve.shared.startSpan(
+			name: "log-context-demo",
+			attributes: ["demo": .string("log-with-context")]
+		)
+		let capturedContext = span.context
+		span.end()
+
+		// Simulate a detached task where OTel context is lost automatically.
+		DispatchQueue.global(qos: .background).async {
+			LDObserve.shared.recordLog(
+				message: "Log with span context",
+				severity: .warn,
+				attributes: ["source": .string("detached-queue-demo")],
+				spanContext: capturedContext
+			)
+		}
+	}
+
 	func recordLogs() {
 		LDObserve.shared.recordLog(
 			message: "logs-button-pressed",

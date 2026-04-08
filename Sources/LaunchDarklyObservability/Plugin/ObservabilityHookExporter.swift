@@ -17,10 +17,10 @@ final class ObservabilityHookExporter {
     private let withSpans: Bool
     private let withValue: Bool
     private let traceClient: TracesApi
-    private let logClient: LogsApi
+    private let logClient: InternalLogsApi
 
     init(traceClient: TracesApi,
-         logClient: LogsApi,
+         logClient: InternalLogsApi,
          withSpans: Bool,
          withValue: Bool,
          options: Options,

@@ -6,7 +6,7 @@ final class NoOpObservabilityService: Observe {
     func start(sessionId: String) {}
     func start() {}
 
-    func recordLog(message: String, severity: Severity, attributes: [String: AttributeValue]) {}
+    func recordLog(message: String, severity: Severity, attributes: [String: AttributeValue], spanContext: SpanContext?) {}
     
     func recordMetric(metric: Metric) { }
     func recordCount(metric: Metric) { }

@@ -122,12 +122,12 @@ fileprivate let formatter: ISO8601DateFormatter = {
 
 @available(iOS 15.0, *)
 final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashReporting, AutoInstrumentation {
-    private let logsApi: LogsApi
+    private let logsApi: InternalLogsApi
     private let log: OSLog
     private var _isStarted: Bool = false
     private let isStartedQueue = DispatchQueue(label: "com.launchdarkly.swift.MetricKitCrashReporter.isStartedQueue")
     
-    init(logsApi: LogsApi, logger log: OSLog) {
+    init(logsApi: InternalLogsApi, logger log: OSLog) {
         self.logsApi = logsApi
         self.log = log
         super.init()
