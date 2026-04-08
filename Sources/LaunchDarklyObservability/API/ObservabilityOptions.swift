@@ -163,7 +163,7 @@ public struct ObservabilityOptions {
         case disabled
     }
     public struct Instrumentation {
-        let networkRequests: FeatureFlag
+        let urlSession: FeatureFlag
         let userTaps: FeatureFlag
         let memory: FeatureFlag
         let memoryWarnings: FeatureFlag
@@ -171,14 +171,14 @@ public struct ObservabilityOptions {
         let launchTimes: FeatureFlag
         
         public init(
-            networkRequests: FeatureFlag = .disabled,
+            urlSession: FeatureFlag = .disabled,
             userTaps: FeatureFlag = .disabled,
             memory: FeatureFlag = .disabled,
             memoryWarnings: FeatureFlag = .disabled,
             cpu: FeatureFlag = .disabled,
             launchTimes: FeatureFlag = .disabled
         ) {
-            self.networkRequests = networkRequests
+            self.urlSession = urlSession
             self.userTaps = userTaps
             self.memory = memory
             self.memoryWarnings = memoryWarnings

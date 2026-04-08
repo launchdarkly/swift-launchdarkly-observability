@@ -20,7 +20,7 @@ struct Client {
                     metricsApi: .enabled,
                     crashReporting: .enabled,
                     instrumentation: .init(
-                        networkRequests: .enabled,
+                        urlSession: .enabled,
                         userTaps: .enabled,
                         memory: .enabled,
                         memoryWarnings: .enabled,

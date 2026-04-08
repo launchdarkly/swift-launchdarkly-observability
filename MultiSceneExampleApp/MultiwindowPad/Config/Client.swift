@@ -17,9 +17,9 @@ struct Client {
                     tracesApi: .enabled,
                     metricsApi: .enabled,
                     crashReporting: .disabled,
-                    autoInstrumentation: [.networkRequests, .userTaps, .memory, .cpu, .memoryWarnings],
+                    autoInstrumentation: [.urlSession, .userTaps, .memory, .cpu, .memoryWarnings],
                     instrumentation: .init(
-                        networkRequests: .enabled,
+                        urlSession: .enabled,
                         userTaps: .enabled,
                         memory: .enabled,
                         memoryWarnings: .enabled,

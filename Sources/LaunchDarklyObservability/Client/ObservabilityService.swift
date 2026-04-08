@@ -215,7 +215,7 @@ extension ObservabilityService {
                 )
         }
         
-        if options.instrumentation.networkRequests.isEnabled {
+        if options.instrumentation.urlSession.isEnabled {
             instruments.append(
                 NetworkInstrumentationManager(
                     options: options,
