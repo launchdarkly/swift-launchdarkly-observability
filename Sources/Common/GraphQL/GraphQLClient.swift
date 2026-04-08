@@ -11,7 +11,7 @@ public final class GraphQLClient {
     public init(endpoint: URL,
                 network: HttpServicing = HttpService(),
                 decoder: JSONDecoder = JSONDecoder(),
-                defaultHeaders: [String: String]) {
+                defaultHeaders: [String: String] = [:]) {
         self.endpoint = endpoint
         self.network = network
         self.decoder = decoder
