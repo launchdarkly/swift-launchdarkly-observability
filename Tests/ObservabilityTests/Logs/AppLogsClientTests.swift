@@ -123,7 +123,7 @@ fileprivate let OTelSeverities = [
     .fatal3,
     .fatal4
 ]
-final class LogsApiSpy: LogsApi {
+final class LogsApiSpy: InternalLogsApi {
     var invokeCount = 0
     var invokeCountByLevel = Options.LogLevel.allCases.reduce([Options.LogLevel: Int]()) { table, level in
         guard level != .none else { return table }
