@@ -6,7 +6,7 @@ import LaunchDarkly
     import Common
 #endif
 
-public final class OtlpHttpClient {
+public final class OtlpHttpClient: @unchecked Sendable {
     public enum Constants {
       public enum OTLP {
         public static let version = "0.20.0"
