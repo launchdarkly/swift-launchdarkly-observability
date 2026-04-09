@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.31.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.30.0...0.31.0) (2026-04-09)
+
+
+### Features
+
+* Default empty attributes for Observability API ([#180](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/180)) ([5acfd84](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/5acfd847e171dff29af38d69d069cbe686ddd99e))
+
 ## [0.30.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.29.0...0.30.0) (2026-04-07)
 
 
