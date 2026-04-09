@@ -97,6 +97,7 @@ extension Observability {
         resourceAttributes[SemanticConvention.launchdarklySdkVersion] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
         resourceAttributes[SemanticConvention.highlightProjectId] = .string(metadata.credential)
         resourceAttributes[SemanticConvention.telemetrySdkName] = .string("opentelemetry")
+        resourceAttributes[SemanticConvention.telemetrySdkLanguage] = .string("swift")
         for (key, value) in distroAttributes {
             resourceAttributes[key] = .string(value)
         }
