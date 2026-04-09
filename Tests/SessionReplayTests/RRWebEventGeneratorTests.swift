@@ -160,6 +160,9 @@ struct RRWebEventGeneratorTests {
         let payload = data?["payload"] as? [String: Any]
         #expect(payload?["pressType"] as? String == "select")
         #expect(payload?["pressTypeSystemRaw"] == nil)
+        #expect(payload?["target"] as? String == "")
+        #expect(payload?["textContent"] as? String == "")
+        #expect(payload?["inputDevice"] as? String == "siriRemote")
     }
     
     @Test("Appends Keyboard custom event for keyboard kind")
@@ -183,6 +186,8 @@ struct RRWebEventGeneratorTests {
         let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
         let data = json?["data"] as? [String: Any]
         #expect(data?["tag"] as? String == "Keyboard")
+        let payload = data?["payload"] as? [String: Any]
+        #expect(payload?["target"] as? String == "")
     }
     
     @Test("Appends Keyboard custom event for untracked window touch")
@@ -206,6 +211,8 @@ struct RRWebEventGeneratorTests {
         let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
         let data = json?["data"] as? [String: Any]
         #expect(data?["tag"] as? String == "Keyboard")
+        let payload = data?["payload"] as? [String: Any]
+        #expect(payload?["target"] as? String == "")
     }
     
     @Test("RemoteControl custom event decodes via AnyEventData")
@@ -222,6 +229,9 @@ struct RRWebEventGeneratorTests {
         #expect(data?["tag"] as? String == "RemoteControl")
         let p = data?["payload"] as? [String: Any]
         #expect(p?["pressTypeSystemRaw"] as? Int == 77)
+        #expect(p?["target"] as? String == "")
+        #expect(p?["textContent"] as? String == "")
+        #expect(p?["inputDevice"] as? String == "")
     }
 }
 

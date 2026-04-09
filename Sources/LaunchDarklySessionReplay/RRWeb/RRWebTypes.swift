@@ -67,6 +67,6 @@ enum CustomDataTag: String, Codable {
     case identify = "Identify"
     /// Siri Remote, game controller, D-pad, or filtered-window touch without coordinates. Payload: `RemoteControlPayload`.
     case remoteControl = "RemoteControl"
-    /// Hardware keyboard (`UIPress.key`); presses that are not emitted with the `RemoteControl` tag use this tag. Payload: `KeyboardPressPayload` (phase only).
+    /// Hardware keyboard (`UIPress.key`); presses that are not emitted with the `RemoteControl` tag use this tag. Payload: `KeyboardPressPayload`.
     case keyboardPress = "Keyboard"
 }

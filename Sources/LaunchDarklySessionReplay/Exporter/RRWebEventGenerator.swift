@@ -189,7 +189,10 @@ actor RRWebEventGenerator {
         let press = payload.pressInteraction
         let event: Event
         if press.isKeyboard {
-            let eventData = CustomEventData(tag: .keyboardPress, payload: KeyboardPressPayload())
+            let keyboardPayload = KeyboardPressPayload(
+                target: press.target?.className ?? ""
+            )
+            let eventData = CustomEventData(tag: .keyboardPress, payload: keyboardPayload)
             event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: press.timestamp,
@@ -197,7 +200,10 @@ actor RRWebEventGenerator {
         } else {
             let remotePayload = RemoteControlPayload(
                 pressType: press.kind.sessionReplayWirePressType,
-                pressTypeSystemRaw: press.kind.sessionReplayUIPressTypeRawIfOther
+                pressTypeSystemRaw: press.kind.sessionReplayUIPressTypeRawIfOther,
+                target: press.target?.className ?? "",
+                textContent: press.target?.accessibilityIdentifier ?? "",
+                inputDevice: press.kind.sessionReplayInputDevice
             )
             let eventData = CustomEventData(tag: .remoteControl, payload: remotePayload)
             event = Event(type: .Custom,

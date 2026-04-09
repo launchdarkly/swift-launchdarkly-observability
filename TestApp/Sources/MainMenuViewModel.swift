@@ -6,10 +6,7 @@ final class MainMenuViewModel: ObservableObject {
 	@Published var isNetworkInProgress: Bool = false
 	
 	func recordError() {
-		LDObserve.shared.recordError(
-			error: Failure.crash,
-			attributes: [:]
-		)
+		LDObserve.shared.recordError(Failure.crash, attributes: [:])
 	}
 	
 	func recordSpanAndVariation() {
