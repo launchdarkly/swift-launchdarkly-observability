@@ -29,7 +29,13 @@ struct FlushableWorkerTests {
         }
         
         await worker.start()
-        try await Task.sleep(nanoseconds: NSEC_PER_SEC * 2) // 2 sec
+        
+        // Wait until at least 1 tick is observed, with a generous timeout
+        let deadline = Date().addingTimeInterval(5)
+        while await recorder.tickCount < 1 && Date() < deadline {
+            try await Task.sleep(nanoseconds: 10_000_000) // 10ms poll
+        }
+        
         await worker.stop()
         
         let ticks = await recorder.tickCount
