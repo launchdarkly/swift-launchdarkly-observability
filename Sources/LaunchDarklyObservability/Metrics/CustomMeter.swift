@@ -16,7 +16,7 @@ final class CustomMeter: Meter {
     private var cachedHistograms = AtomicDictionary<String, DoubleHistogram>()
     private var cachedUpDownCounters = AtomicDictionary<String, DoubleUpDownCounter>()
     
-    init(options: Options, reader: MetricReader) {
+    init(options: ObservabilityOptions, reader: MetricReader) {
         self.meterReader = reader
         
         let provider = MeterProviderSdk.builder()

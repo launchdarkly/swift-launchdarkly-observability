@@ -39,15 +39,29 @@ extension LogsApi {
     public func recordLog(message: String, severity: Severity, attributes: [String : AttributeValue]) {
         recordLog(message: message, severity: severity, attributes: attributes, spanContext: nil)
     }
+
+    public func recordLog(message: String, severity: Severity, spanContext: SpanContext? = nil) {
+        recordLog(message: message, severity: severity, attributes: [:], spanContext: spanContext)
+    }
 }
 
 public protocol TracesApi {
     /// Record an error.
     /// - error The error to record
     /// - attributes The attributes to record with the error
-    func recordError(error: any Error, attributes: [String : AttributeValue])
+    func recordError(_ error: any Error, attributes: [String : AttributeValue])
     /// Start a span.
     /// - name The name of the span
     /// - attributes The attributes to record with the span
     func startSpan(name: String, attributes: [String : AttributeValue]) -> Span
+}
+
+extension TracesApi {
+    public func recordError(_ error: any Error) {
+        recordError(error, attributes: [:])
+    }
+
+    public func startSpan(name: String) -> Span {
+        startSpan(name: name, attributes: [:])
+    }
 }

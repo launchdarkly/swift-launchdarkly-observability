@@ -19,7 +19,7 @@ import OSLog
 ///   - loggerName The name of the logger to use. Defaults to "LaunchDarklyObservabilityPlugin".
 ///
 
-public struct Options {
+public struct ObservabilityOptions {
     public enum Defaults {
         public static let otlpEndpoint = "https://otel.observability.app.launchdarkly.com:4318"
         public static let backendUrl = "https://pub.observability.app.launchdarkly.com"

@@ -7,7 +7,7 @@ import OpenTelemetrySdk
 /** Shared info between plugins */
 public class ObservabilityContext {
     public let sdkKey: String
-    public let options: Options
+    public let options: ObservabilityOptions
     public let sessionManager: SessionManaging
     public let transportService: TransportServicing
     public let appLifecycleManager: AppLifecycleManaging
@@ -16,7 +16,7 @@ public class ObservabilityContext {
     
     public init(
         sdkKey: String,
-        options: Options,
+        options: ObservabilityOptions,
         appLifecycleManager: AppLifecycleManaging,
         sessionManager: SessionManaging,
         transportService: TransportServicing,

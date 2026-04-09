@@ -1,18 +1,18 @@
 final class AppTraceClient: TracesApi {
-    private let options: Options.AppTracing
+    private let options: ObservabilityOptions.AppTracing
     private let tracingApiClient: TracesApi
     
     init(
-        options: Options.AppTracing,
+        options: ObservabilityOptions.AppTracing,
         tracingApiClient: TracesApi
     ) {
         self.options = options
         self.tracingApiClient = tracingApiClient
     }
     
-    func recordError(error: Error, attributes: [String : OpenTelemetryApi.AttributeValue]) {
+    func recordError(_ error: Error, attributes: [String : OpenTelemetryApi.AttributeValue]) {
         guard options.includeErrors else { return }
-        tracingApiClient.recordError(error: error, attributes: attributes)
+        tracingApiClient.recordError(error, attributes: attributes)
     }
     
     func startSpan(name: String, attributes: [String : OpenTelemetryApi.AttributeValue]) -> any OpenTelemetryApi.Span {

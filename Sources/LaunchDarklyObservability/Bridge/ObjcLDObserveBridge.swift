@@ -32,7 +32,7 @@ public final class ObjcLDObserveBridge: NSObject {
                 "cause": cause ?? ""
             ]
         )
-        LDObserve.shared.recordError(error: error, attributes: [:])
+        LDObserve.shared.recordError(error, attributes: [:])
     }
 
     @objc(recordMetricWithName:value:)

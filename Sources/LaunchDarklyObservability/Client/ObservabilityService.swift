@@ -12,7 +12,7 @@ final class ObservabilityService: InternalObserve {
     private let logger: LogsApi
     private let meter: MetricsApi
     private let tracer: TracesApi
-    private let options: Options
+    private let options: ObservabilityOptions
     public var context: ObservabilityContext?
     
     private let autoInstrumentationSamplingInterval: TimeInterval = 5.0
@@ -40,7 +40,7 @@ final class ObservabilityService: InternalObserve {
     private var task: Task<Void, Never>?
     
     init(
-        options: Options,
+        options: ObservabilityOptions,
         mobileKey: String,
         sessionAttributes: [String: AttributeValue]
     ) throws {
@@ -352,10 +352,10 @@ extension ObservabilityService: Observe {
     }
 
     func recordError(
-        error: any Error,
+        _ error: any Error,
         attributes: [String: AttributeValue]
     ) {
-        tracer.recordError(error: error, attributes: attributes)
+        tracer.recordError(error, attributes: attributes)
     }
 
     func startSpan(

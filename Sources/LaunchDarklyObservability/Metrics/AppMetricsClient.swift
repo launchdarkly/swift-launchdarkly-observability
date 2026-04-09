@@ -1,10 +1,10 @@
 import OpenTelemetryApi
 
 final class AppMetricsClient: MetricsApi {
-    private let options: Options.AppMetrics
+    private let options: ObservabilityOptions.AppMetrics
     private let metricsApiClient: MetricsApi
     
-    init(options: Options.AppMetrics, metricsApiClient: MetricsApi) {
+    init(options: ObservabilityOptions.AppMetrics, metricsApiClient: MetricsApi) {
         self.options = options
         self.metricsApiClient = metricsApiClient
     }

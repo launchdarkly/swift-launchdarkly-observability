@@ -2,10 +2,10 @@ import Foundation
 import OpenTelemetrySdk
 
 final class AppLogClient: LogsApi {
-    private let logLevel: Options.LogLevel
+    private let logLevel: ObservabilityOptions.LogLevel
     private let logsApiClient: InternalLogsApi
     
-    init(logLevel: Options.LogLevel, logger: InternalLogsApi) {
+    init(logLevel: ObservabilityOptions.LogLevel, logger: InternalLogsApi) {
         self.logLevel = logLevel
         self.logsApiClient = logger
     }

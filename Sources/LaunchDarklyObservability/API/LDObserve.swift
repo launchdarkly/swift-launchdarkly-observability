@@ -59,8 +59,8 @@ extension LDObserve: Observe {
         client.recordLog(message: message, severity: severity, attributes: attributes, spanContext: spanContext)
     }
     
-    public func recordError(error: any Error, attributes: [String : AttributeValue]) {
-        client.recordError(error: error, attributes: attributes)
+    public func recordError(_ error: any Error, attributes: [String : AttributeValue]) {
+        client.recordError(error, attributes: attributes)
     }
     
     public func startSpan(name: String, attributes: [String : AttributeValue]) -> any Span {

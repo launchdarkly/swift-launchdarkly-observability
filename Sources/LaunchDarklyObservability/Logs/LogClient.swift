@@ -20,12 +20,12 @@ extension InternalLogsApi {
 }
 
 final class AppLogBuilder {
-    private let options: Options
+    private let options: ObservabilityOptions
     private let sessionManager: SessionManager
     private let sampler: ExportSampler
     
     init(
-        options: Options,
+        options: ObservabilityOptions,
         sessionManager: SessionManager,
         sampler: ExportSampler
     ) {

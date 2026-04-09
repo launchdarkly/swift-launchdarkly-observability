@@ -3,12 +3,12 @@ import OpenTelemetryApi
 import OpenTelemetrySdk
 
 final class MemoryPressureMonitor: AutoInstrumentation {
-    private let options: Options
+    private let options: ObservabilityOptions
     private let appLogBuilder: AppLogBuilder
     private let yield: (ReadableLogRecord) async -> Void
     private var source: DispatchSourceMemoryPressure?
     
-    init(options: Options, appLogBuilder: AppLogBuilder, yield: @escaping (ReadableLogRecord) async -> Void) {
+    init(options: ObservabilityOptions, appLogBuilder: AppLogBuilder, yield: @escaping (ReadableLogRecord) async -> Void) {
         self.options = options
         self.appLogBuilder = appLogBuilder
         self.yield = yield
