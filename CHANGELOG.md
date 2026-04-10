@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.32.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.31.0...0.32.0) (2026-04-10)
+
+
+### Features
+
+* RRWeb events for Keyboard press and RemoteControl press ([#175](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/175)) ([69595a2](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/69595a2702ecd89168c75dfe6065b4d440e363da))
+* verbatim session for external session id ([#182](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/182)) ([2a8ab35](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2a8ab35f792ac451dddf5ea254952207ce549cb9))
+
 ## [0.31.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.30.0...0.31.0) (2026-04-09)
 
 
