@@ -133,6 +133,9 @@ actor RRWebEventGenerator {
                 events.append(event)
             }
             
+        case let pressItem as PressInteractionPayload:
+            appendPressInteraction(payload: pressItem, events: &events)
+            
         default:
             break // Item wasn't needed for SessionReplay
         }
@@ -180,6 +183,33 @@ actor RRWebEventGenerator {
         if let clickEvent = clickEvent(interaction: interaction) {
             events.append(clickEvent)
         }
+    }
+    
+    private func appendPressInteraction(payload: PressInteractionPayload, events: inout [Event]) {
+        let press = payload.pressInteraction
+        let source: String
+        var pressType: String? = nil
+        var pressTypeSystemRaw: Int? = nil
+
+        switch press.kind {
+        case .keyboard:
+            source = "physical-keyboard"
+        case .untrackedWindowTouch:
+            source = "software-keyboard"
+        default:
+            source = "remote"
+            pressType = press.kind.sessionReplayWirePressType
+            pressTypeSystemRaw = press.kind.sessionReplayUIPressTypeRawIfOther
+        }
+
+        let target = press.target?.className
+        let pressPayload = PressPayload(source: source, pressType: pressType, pressTypeSystemRaw: pressTypeSystemRaw, target: target)
+        let eventData = CustomEventData(tag: .press, payload: pressPayload)
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: press.timestamp,
+                          _sid: nextSid)
+        events.append(event)
     }
     
     func clickEvent(interaction: TouchInteraction) -> Event? {

@@ -1,8 +1,9 @@
 import Testing
 @testable import LaunchDarklySessionReplay
-import LaunchDarklyObservability
+@testable import LaunchDarklyObservability
 import OSLog
 import CoreGraphics
+import Foundation
 
 struct RRWebEventGeneratorTests {
     
@@ -133,6 +134,103 @@ struct RRWebEventGeneratorTests {
         #expect(events[1].type == .FullSnapshot)
         #expect(events[2].type == .Custom)
         #expect(events[3].type == .IncrementalSnapshot)
+    }
+    
+    @Test("Appends Press event with source remote for remote press interaction")
+    func appendsPressRemoteEvent() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let pressInteraction = PressInteraction(
+            phase: .began,
+            kind: .select,
+            timestamp: 99.0,
+            target: nil
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
+        let events = await generator.generateEvents(items: items)
+        #expect(events.count == 1)
+        #expect(events[0].type == .Custom)
+        let encoded = try JSONEncoder().encode(events[0])
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Press")
+        let payload = data?["payload"] as? [String: Any]
+        #expect(payload?["source"] as? String == "remote")
+        #expect(payload?["pressType"] as? String == "select")
+        #expect(payload?["pressTypeSystemRaw"] == nil)
+    }
+
+    @Test("Appends Press event with source physical-keyboard for keyboard kind")
+    func appendsPressPhysicalKeyboardEvent() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let pressInteraction = PressInteraction(
+            phase: .began,
+            kind: .keyboard,
+            timestamp: 12.0,
+            target: nil
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
+        let events = await generator.generateEvents(items: items)
+        #expect(events.count == 1)
+        #expect(events[0].type == .Custom)
+        let encoded = try JSONEncoder().encode(events[0])
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Press")
+        let payload = data?["payload"] as? [String: Any]
+        #expect(payload?["source"] as? String == "physical-keyboard")
+        #expect(payload?["pressType"] == nil)
+    }
+
+    @Test("Appends Press event with source software-keyboard for untracked window touch")
+    func appendsPressSoftwareKeyboardEvent() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let pressInteraction = PressInteraction(
+            phase: .began,
+            kind: .untrackedWindowTouch,
+            timestamp: 50.0,
+            target: nil
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
+        let events = await generator.generateEvents(items: items)
+        #expect(events.count == 1)
+        #expect(events[0].type == .Custom)
+        let encoded = try JSONEncoder().encode(events[0])
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Press")
+        let payload = data?["payload"] as? [String: Any]
+        #expect(payload?["source"] as? String == "software-keyboard")
+        #expect(payload?["pressType"] == nil)
+    }
+
+    @Test("Press custom event decodes via AnyEventData round-trip")
+    func pressEventDecodesRoundTrip() throws {
+        let payload = PressPayload(source: "remote", pressType: "other", pressTypeSystemRaw: 77)
+        let custom = CustomEventData(tag: .press, payload: payload)
+        let event = Event(type: .Custom, data: AnyEventData(custom), timestamp: 10.0, _sid: 1)
+        let encoded = try JSONEncoder().encode(event)
+        let decoded = try JSONDecoder().decode(Event.self, from: encoded)
+        #expect(decoded.type == .Custom)
+        let roundTrip = try JSONEncoder().encode(decoded)
+        let json = try JSONSerialization.jsonObject(with: roundTrip) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Press")
+        let p = data?["payload"] as? [String: Any]
+        #expect(p?["source"] as? String == "remote")
+        #expect(p?["pressType"] as? String == "other")
+        #expect(p?["pressTypeSystemRaw"] as? Int == 77)
     }
 }
 
