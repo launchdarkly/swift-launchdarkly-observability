@@ -300,6 +300,14 @@ extension ObservabilityService {
 
 extension ObservabilityService {
     func start(sessionId: String) {
+        startSession(sessionId: sessionId, isCustomSession: true)
+    }
+
+    func start() {
+        startSession(sessionId: SecureIDGenerator.generateSecureID(), isCustomSession: false)
+    }
+
+    private func startSession(sessionId: String, isCustomSession: Bool) {
         startQueue.sync {
             guard task == nil else { return }
             task = Task { [weak self] in
@@ -307,17 +315,13 @@ extension ObservabilityService {
                 let id = SessionIdResolver.resolve(sessionId: sessionId, log: options.log)
 
                 do {
-                    self.context?.sessionManager.start(sessionId: id)
+                    self.context?.sessionManager.start(sessionId: id, isCustomSession: isCustomSession)
                     try await self.start()
                 } catch {
                     os_log("%{public}@", log: options.log, type: .error, "Failure starting Observability Service: \(error)")
                 }
             }
         }
-    }
-
-    func start() {
-        start(sessionId: SecureIDGenerator.generateSecureID())
     }
 }
 

@@ -51,7 +51,7 @@ struct TraceView: View {
             VStack(spacing: 16.0) {
                 Button {
                     LDObserve.shared.recordError(
-                        error: SampleError.error1,
+                        SampleError.error1,
                         attributes: [:]
                     )
                 } label: {
@@ -61,7 +61,7 @@ struct TraceView: View {
                 .buttonStyle(.borderedProminent)
                 Button {
                     LDObserve.shared.recordError(
-                        error: SampleError.error2,
+                        SampleError.error2,
                         attributes: [:]
                     )
                 } label: {
