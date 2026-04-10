@@ -8,8 +8,14 @@ import OSLog
 
 public protocol SessionManaging {
     func publisher() -> AnyPublisher<SessionInfo, Never>
-    func start(sessionId: String)
+    func start(sessionId: String, isCustomSession: Bool)
     var sessionInfo: SessionInfo { get }
+}
+
+extension SessionManaging {
+    func start(sessionId: String) {
+        start(sessionId: sessionId, isCustomSession: false)
+    }
 }
 
 final class SessionManager: SessionManaging {
@@ -17,6 +23,7 @@ final class SessionManager: SessionManaging {
     private let options: SessionOptions
     private let subject = PassthroughSubject<SessionInfo, Never>()
     private var _sessionInfo = SessionInfo()
+    private var _isCustomSession: Bool = false
     private var backgroundTime: DispatchTime?
     private var cancellables = Set<AnyCancellable>()
     private let cancellablesQueue = DispatchQueue(label: "com.launchdarkly.observability.cancellables")
@@ -64,6 +71,7 @@ final class SessionManager: SessionManaging {
     private func handleActiveState() {
         stateQueue.sync(flags: .barrier) { [weak self] in
             guard let self else { return }
+            guard !self._isCustomSession else { return }
 
             guard let backgroundTime = self.backgroundTime else { return }
             let timeInBackground = Double(DispatchTime.now().uptimeNanoseconds - backgroundTime.uptimeNanoseconds) / Double(NSEC_PER_SEC)
@@ -101,7 +109,7 @@ final class SessionManager: SessionManaging {
         }
     }
     
-    func start(sessionId: String = SecureIDGenerator.generateSecureID()) {
+    func start(sessionId: String, isCustomSession: Bool) {
         cancellablesQueue.sync {
             cancellables.removeAll()
             appLifecycleManager
@@ -115,6 +123,7 @@ final class SessionManager: SessionManaging {
         let newSessionInfo = SessionInfo(id: sessionId, startTime: Date())
         stateQueue.sync(flags: .barrier) { [weak self] in
             self?._sessionInfo = newSessionInfo
+            self?._isCustomSession = isCustomSession
             self?.backgroundTime = nil
         }
 
