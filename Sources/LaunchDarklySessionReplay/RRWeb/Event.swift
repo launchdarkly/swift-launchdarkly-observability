@@ -48,10 +48,8 @@ struct AnyEventData: Codable {
                 try CustomEventData<ViewportPayload>(from: decoder)
             case .reload:
                 try CustomEventData<String>(from: decoder)
-            case .remoteControl:
-                try CustomEventData<RemoteControlPayload>(from: decoder)
-            case .keyboardPress:
-                try CustomEventData<KeyboardPressPayload>(from: decoder)
+            case .press:
+                try CustomEventData<PressPayload>(from: decoder)
             }
         } else {
             throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Unexpected EventData"))

@@ -187,30 +187,28 @@ actor RRWebEventGenerator {
     
     private func appendPressInteraction(payload: PressInteractionPayload, events: inout [Event]) {
         let press = payload.pressInteraction
-        let event: Event
-        if press.isKeyboard {
-            let keyboardPayload = KeyboardPressPayload(
-                target: press.target?.className ?? ""
-            )
-            let eventData = CustomEventData(tag: .keyboardPress, payload: keyboardPayload)
-            event = Event(type: .Custom,
-                          data: AnyEventData(eventData),
-                          timestamp: press.timestamp,
-                          _sid: nextSid)
-        } else {
-            let remotePayload = RemoteControlPayload(
-                pressType: press.kind.sessionReplayWirePressType,
-                pressTypeSystemRaw: press.kind.sessionReplayUIPressTypeRawIfOther,
-                target: press.target?.className ?? "",
-                textContent: press.target?.accessibilityIdentifier ?? "",
-                inputDevice: press.kind.sessionReplayInputDevice
-            )
-            let eventData = CustomEventData(tag: .remoteControl, payload: remotePayload)
-            event = Event(type: .Custom,
-                          data: AnyEventData(eventData),
-                          timestamp: press.timestamp,
-                          _sid: nextSid)
+        let source: String
+        var pressType: String? = nil
+        var pressTypeSystemRaw: Int? = nil
+
+        switch press.kind {
+        case .keyboard:
+            source = "physical-keyboard"
+        case .untrackedWindowTouch:
+            source = "software-keyboard"
+        default:
+            source = "remote"
+            pressType = press.kind.sessionReplayWirePressType
+            pressTypeSystemRaw = press.kind.sessionReplayUIPressTypeRawIfOther
         }
+
+        let target = press.target?.className
+        let pressPayload = PressPayload(source: source, pressType: pressType, pressTypeSystemRaw: pressTypeSystemRaw, target: target)
+        let eventData = CustomEventData(tag: .press, payload: pressPayload)
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: press.timestamp,
+                          _sid: nextSid)
         events.append(event)
     }
     

@@ -25,16 +25,4 @@ extension RemotePressKind {
         if case .other(let raw) = self { return raw }
         return nil
     }
-
-    /// Coarse device category for `RemoteControl` payloads (no hardware identifiers). Not used for ``KeyboardPressPayload``.
-    var sessionReplayInputDevice: String {
-        switch self {
-        case .other:
-            return "unknown"
-        case .keyboard, .untrackedWindowTouch:
-            return "unknown"
-        default:
-            return "siriRemote"
-        }
-    }
 }
