@@ -14,7 +14,7 @@ public protocol SessionManaging {
 
 extension SessionManaging {
     func start(sessionId: String) {
-        start(sessionId: sessionId, isCustomSession: false)
+        start(sessionId: sessionId, isCustomSession: true)
     }
 }
 
