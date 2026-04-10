@@ -1,7 +1,7 @@
 #if canImport(UIKit)
 import UIKit
 
-/// Normalized remote / hardware button identity for presses that do not use window coordinates in replay.
+/// Normalized identity for presses that do not use window coordinates in replay.
 public enum RemotePressKind: Sendable, Equatable {
     case upArrow
     case downArrow
@@ -14,54 +14,60 @@ public enum RemotePressKind: Sendable, Equatable {
     case pageDown
     case tvRemoteOneTwoThree
     case tvRemoteFourColors
-    /// Press types introduced after this SDK (see `UIPress.PressType.rawValue`).
-    case other(rawValue: Int)
+    /// Hardware keyboard key press (`UIPress.key != nil`). No key code or text is stored (privacy).
+    case keyboard
     /// `UITouch` on a window skipped by `UIEventReceiverChecker` (e.g. keyboard chrome), recorded without coordinates.
     case untrackedWindowTouch
+    /// Press types introduced after this SDK that are not keyboard-originated (see `UIPress.PressType.rawValue`).
+    case other(rawValue: Int)
 }
 
 /// A `UIPress` that is not mapped through the spatial `TouchSample` → `TouchInteraction` path (e.g. Menu, D-pad, hardware keyboard),
 /// or a touch on a filtered window encoded for replay without pointer coordinates.
-public struct PressSample: Sendable {
+public struct PressInteraction: Sendable {
     public enum Phase: Sendable {
         case began
         case changed
         case ended
         case cancelled
         case stationary
+        case unknown
     }
 
     public let phase: Phase
     public let kind: RemotePressKind
     public let timestamp: TimeInterval
     public let target: TouchTarget?
-    /// `true` when the press came from a hardware keyboard (`UIPress.key`); does not expose key contents.
-    public let isKeyboardOriginated: Bool
+
+    public var isKeyboard: Bool {
+        kind == .keyboard || kind == .untrackedWindowTouch
+    }
 
     init(press: UIPress, target: TouchTarget?) {
         self.phase = Self.phase(for: press.phase)
-        self.kind = RemotePressKind(pressType: press.type)
+        self.kind = press.key != nil ? .keyboard : RemotePressKind(pressType: press.type)
         self.timestamp = press.timestamp
         self.target = target
-        self.isKeyboardOriginated = press.key != nil
     }
 
-    init(touch: UITouch, target: TouchTarget?) {
-        self.phase = Self.phase(forTouch: touch.phase)
-        self.kind = .untrackedWindowTouch
-        self.timestamp = touch.timestamp
+    init(phase: Phase, kind: RemotePressKind = .untrackedWindowTouch, timestamp: TimeInterval, target: TouchTarget?) {
+        self.phase = phase
+        self.kind = kind
+        self.timestamp = timestamp
         self.target = target
-        self.isKeyboardOriginated = false
     }
 
-    private static func phase(forTouch touchPhase: UITouch.Phase) -> Phase {
+    static func phase(forTouch touchPhase: UITouch.Phase) -> Phase {
         switch touchPhase {
         case .began: return .began
         case .moved: return .changed
         case .ended: return .ended
         case .cancelled: return .cancelled
         case .stationary: return .stationary
-        @unknown default: return .changed
+        case .regionEntered: return .unknown
+        case .regionMoved: return .unknown
+        case .regionExited: return .unknown
+        @unknown default: return .unknown
         }
     }
 
@@ -72,7 +78,7 @@ public struct PressSample: Sendable {
         case .ended: return .ended
         case .cancelled: return .cancelled
         case .stationary: return .stationary
-        @unknown default: return .changed
+        @unknown default: return .unknown
         }
     }
 }
@@ -97,6 +103,12 @@ extension RemotePressKind {
             self = .other(rawValue: pressType.rawValue)
         }
     }
+}
+
+/// Touch and press interactions forwarded in order for session replay export.
+public enum InteractionEvent: Sendable {
+    case touch(TouchInteraction)
+    case press(PressInteraction)
 }
 
 #endif
