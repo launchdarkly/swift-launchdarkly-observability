@@ -313,9 +313,11 @@ extension ObservabilityService {
             task = Task { [weak self] in
                 guard let self else { return }
                 let id = SessionIdResolver.resolve(sessionId: sessionId, log: options.log)
+                // Invalid IDs are replaced with a generated value; only keep "custom" when we actually use the caller's ID.
+                let effectiveIsCustomSession = isCustomSession && (id == sessionId)
 
                 do {
-                    self.context?.sessionManager.start(sessionId: id, isCustomSession: isCustomSession)
+                    self.context?.sessionManager.start(sessionId: id, isCustomSession: effectiveIsCustomSession)
                     try await self.start()
                 } catch {
                     os_log("%{public}@", log: options.log, type: .error, "Failure starting Observability Service: \(error)")
