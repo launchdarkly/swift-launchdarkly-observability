@@ -107,7 +107,12 @@ struct BenchmarkView: View {
                 let r = try executor.signatureBenchmark(framesDirectory: Self.framesDirectory)
                 let mbString = String(format: "%.1f MB", Double(r.totalBytes) / (1024 * 1024))
                 let timeString = String(format: "%.3fs", r.elapsedTime)
-                let result = "\(timeString) — \(mbString) (\(r.frameCount) frames)"
+                let result = """
+                    \(timeString) — \(mbString)
+                    \(r.frameCount) frames
+                    Fast: \(r.signatureCount) img / \(r.tileSignaturesCount) tiles
+                    SHA-256: \(r.strongSignatureCount) img / \(r.strongTileSignaturesCount) tiles
+                    """
                 await MainActor.run {
                     signatureResult = result
                     isRunning = false
