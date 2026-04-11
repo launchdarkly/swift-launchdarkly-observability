@@ -34,7 +34,36 @@ public final class BenchmarkExecutor {
 
     public func signatureBenchmark(framesDirectory: URL) throws -> SignatureResult {
         let reader = try RawFrameReader(directory: framesDirectory)
-        let frames = Array(reader)
+        return signatureBenchmark(frames: Array(reader))
+    }
+
+    public func signatureBenchmark(benchmarkDirectory: URL) throws -> SignatureResult {
+        let fm = FileManager.default
+        let contents = try fm.contentsOfDirectory(
+            at: benchmarkDirectory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        )
+        let subdirs = contents.filter { url in
+            (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
+        }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+
+        var allFrames = [RawFrame]()
+        for subdir in subdirs {
+            let csvURL = subdir.appendingPathComponent("frames.csv")
+            guard fm.fileExists(atPath: csvURL.path) else { continue }
+            let reader = try RawFrameReader(directory: subdir)
+            allFrames.append(contentsOf: reader)
+        }
+        guard !allFrames.isEmpty else {
+            return SignatureResult(elapsedTime: 0, totalBytes: 0, frameCount: 0,
+                                  signatureCount: 0, tileSignaturesCount: 0,
+                                  strongSignatureCount: 0, strongTileSignaturesCount: 0)
+        }
+        return signatureBenchmark(frames: allFrames)
+    }
+
+    private func signatureBenchmark(frames: [RawFrame]) -> SignatureResult {
         let manager = TileSignatureManager()
         let easyManager = EasyTileSignatureManager()
         var totalBytes = 0

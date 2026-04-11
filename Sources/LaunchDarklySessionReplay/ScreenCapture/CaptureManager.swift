@@ -17,7 +17,7 @@ final class CaptureManager: EventSource {
     private var isEventQueueAvailable: Bool = true
     private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
     private var cancellables = Set<AnyCancellable>()
-    private let debugFrameWriter = false
+    private let debugFrameWriter = true
     private let rawFrameWriter: RawFrameWriter?
     
     @MainActor
