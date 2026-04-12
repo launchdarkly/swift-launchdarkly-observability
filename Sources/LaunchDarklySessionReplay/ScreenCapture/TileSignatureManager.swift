@@ -1,12 +1,31 @@
 import UIKit
 import SessionReplayC
 
-final class TileSignatureManager {
+public final class TileSignatureManager {
+    public struct UniqueCounts {
+        public var uniqueImages: Int
+        public var uniqueTiles: Int
+    }
+
     private var cBuffer: UnsafeMutablePointer<TileHashResult>?
     private var cBufferCapacity = 0
 
     deinit {
         cBuffer?.deallocate()
+    }
+
+    public init() {}
+
+    public func computeUniqueCounts(images: [UIImage]) -> UniqueCounts {
+        var imageSet = Set<ImageSignature>()
+        var tileSet = Set<TileSignature>()
+        for image in images {
+            if let sig = compute(image: image) {
+                imageSet.insert(sig)
+                tileSet.formUnion(sig.tileSignatures)
+            }
+        }
+        return UniqueCounts(uniqueImages: imageSet.count, uniqueTiles: tileSet.count)
     }
 
     func compute(image: UIImage) -> ImageSignature? {
