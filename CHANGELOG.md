@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.33.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.32.0...0.33.0) (2026-04-13)
+
+
+### Features
+
+* Support 8 byte colors + non-linearity in hash ([#185](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/185)) ([71e9066](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/71e90668bebfc848f6bec9741bff6ca61bb2d4f3))
+
 ## [0.32.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.31.0...0.32.0) (2026-04-10)
 
 
