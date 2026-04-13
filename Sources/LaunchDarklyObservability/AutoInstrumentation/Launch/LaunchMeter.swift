@@ -6,12 +6,13 @@ import UIKit
 #endif
 
 enum LaunchType {
-    case cold, warm
-    
+    case cold, warm, sceneCreation
+
     var description: String {
         switch self {
         case .cold: return "cold"
         case .warm: return "warm"
+        case .sceneCreation: return "sceneCreation"
         }
     }
 }
