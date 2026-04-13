@@ -34,13 +34,12 @@ struct MainMenuView: View {
         NavigationStack(path: $path) {
             HStack {
                 Image("Logo")
-                Text("LaunchDarkly Observability")
+                Text("LaunchDarkly Observability \(Date().formatted(.dateTime.hour().minute().second()))")
             }
             
             List {
                 sessionReplaySection
                 observabilitySection
-                benchmarkSection
             }
             .environment(\.defaultMinListRowHeight, 0)
             #if !os(tvOS)
@@ -293,15 +292,6 @@ struct MainMenuView: View {
         }
     }
 
-    // MARK: - Benchmark
-
-    private var benchmarkSection: some View {
-        Section("Benchmark") {
-            NavigationLink(destination: BenchmarkView()) {
-                Text("Benchmark")
-            }
-        }
-    }
 }
 
 enum Colors {

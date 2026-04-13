@@ -16,14 +16,13 @@ final class ExportDiffManager {
         self.tileDiffManager = TileDiffManager(compression: compression, scale: scale)
     }
 
-    func exportFrame(from frame: RawFrame, onTiledFrameComputed: (() -> Void)? = nil) -> ExportFrame? {
+    func exportFrame(from frame: RawFrame) -> ExportFrame? {
         lock.lock()
         defer { lock.unlock() }
         
         guard let capturedFrame = tileDiffManager.computeTiledFrame(frame: frame) else {
             return nil
         }
-        onTiledFrameComputed?()
         return exportTiledFrame(capturedFrame)
     }
 
@@ -38,8 +37,8 @@ final class ExportDiffManager {
             keyFrameId += 1
         }
         
-        if let signature = tiledFrame.imageSignature,
-           case .overlayTiles(_, true) = compression,
+        if case .overlayTiles(_, true) = compression,
+           let signature = tiledFrame.imageSignature,
            let lastKeyNodeIdx = currentImagesIndex[signature],
            lastKeyNodeIdx < currentImages.count {
             removes = Array(currentImages[(lastKeyNodeIdx + 1)...])

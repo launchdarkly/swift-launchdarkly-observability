@@ -4,11 +4,18 @@ import UIKit
 import Darwin
 import Foundation
 
-struct RawFrame {
-    let image: UIImage
-    let timestamp: TimeInterval
-    let orientation: Int
-    let areas: [OffsettedArea]
+public struct RawFrame {
+    public let image: UIImage
+    public let timestamp: TimeInterval
+    public let orientation: Int
+    public let areas: [OffsettedArea]
+
+    public init(image: UIImage, timestamp: TimeInterval, orientation: Int, areas: [OffsettedArea]) {
+        self.image = image
+        self.timestamp = timestamp
+        self.orientation = orientation
+        self.areas = areas
+    }
 }
 
 public final class ImageCaptureService {

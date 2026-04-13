@@ -20,16 +20,27 @@ typedef struct {
 TileHashResult tile_hash(const void *data,
                          int startX, int startY,
                          int endX,   int endY,
-                         int bytesPerRow);
+                         int bytesPerRow,
+                         int imageWidth);
 
 /// Always-scalar variant of tile_hash_w64, for parity testing.
 TileHashResult tile_hash_w64_scalar(const unsigned char *rowPtr,
                                      int rows,
                                      int bytesPerRow);
 
+/// Always-scalar variant of tile_hash_w64_bpp8, for parity testing.
+TileHashResult tile_hash_w64_bpp8_scalar(const unsigned char *rowPtr,
+                                     int rows,
+                                     int bytesPerRow);
+
 #if defined(__ARM_NEON)
 /// Always-NEON variant of tile_hash_w64, for parity testing.
 TileHashResult tile_hash_w64_neon(const unsigned char *rowPtr,
+                                   int rows,
+                                   int bytesPerRow);
+
+/// Always-NEON variant of tile_hash_w64_bpp8, for parity testing.
+TileHashResult tile_hash_w64_bpp8_neon(const unsigned char *rowPtr,
                                    int rows,
                                    int bytesPerRow);
 #endif

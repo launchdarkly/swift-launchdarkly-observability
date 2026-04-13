@@ -64,6 +64,7 @@ struct TileSignature: Hashable {
 }
 
 extension ImageSignature {
+    // returns null for equal images
     func diffRectangle(other: ImageSignature?) -> CGRect? {
         guard let other else {
             return CGRect(x: 0,
