@@ -53,13 +53,17 @@ final class TileDiffManager {
         }
         previousSignature = imageSignature
 
-        let needWholeScreen = (diffRect.size.width >= frame.image.size.width && diffRect.size.height >= frame.image.size.height)
         let isKeyframe: Bool
         if case .overlayTiles(let layers, _) = compression, layers > 0 {
             incrementalSnapshots = (incrementalSnapshots + 1) % layers
-            isKeyframe = needWholeScreen || incrementalSnapshots == 0
-            if needWholeScreen {
-                incrementalSnapshots = 0
+            if incrementalSnapshots == 0 {
+                isKeyframe = true
+            } else {
+                let needWholeScreen = (diffRect.size.width >= frame.image.size.width && diffRect.size.height >= frame.image.size.height)
+                if needWholeScreen && diffRect.minX > 0 {
+                    print("computeTiledFrame: diffRect.minX:", diffRect.minX)
+                }
+                isKeyframe = needWholeScreen
             }
         } else {
             isKeyframe = true

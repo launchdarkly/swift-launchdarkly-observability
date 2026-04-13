@@ -34,7 +34,7 @@ struct MainMenuView: View {
         NavigationStack(path: $path) {
             HStack {
                 Image("Logo")
-                Text("LaunchDarkly Observability")
+                Text("LaunchDarkly Observability \(Date().formatted(.dateTime.hour().minute().second()))")
             }
             
             List {
