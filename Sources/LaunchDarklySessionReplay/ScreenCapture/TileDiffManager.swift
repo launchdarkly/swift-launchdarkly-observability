@@ -60,9 +60,6 @@ final class TileDiffManager {
                 isKeyframe = true
             } else {
                 let needWholeScreen = (diffRect.size.width >= frame.image.size.width && diffRect.size.height >= frame.image.size.height)
-                if needWholeScreen && diffRect.minX > 0 {
-                    print("computeTiledFrame: diffRect.minX:", diffRect.minX)
-                }
                 isKeyframe = needWholeScreen
             }
         } else {
