@@ -16,16 +16,7 @@ struct Client {
                     logsApiLevel: .info,
                     tracesApi: .enabled,
                     metricsApi: .enabled,
-                    crashReporting: .disabled,
-                    autoInstrumentation: [.urlSession, .userTaps, .memory, .cpu, .memoryWarnings],
-                    instrumentation: .init(
-                        urlSession: .enabled,
-                        userTaps: .enabled,
-                        memory: .enabled,
-                        memoryWarnings: .enabled,
-                        cpu: .disabled,
-                        launchTimes: .enabled
-                    )
+                    instrumentation: .init(launchTimes: .enabled)
                 )
             )
         ]
