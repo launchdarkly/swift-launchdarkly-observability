@@ -60,6 +60,7 @@ final class TileDiffManager {
                 isKeyframe = true
             } else {
                 let needWholeScreen = (diffRect.size.width >= frame.image.size.width && diffRect.size.height >= frame.image.size.height)
+                incrementalSnapshots = 0
                 isKeyframe = needWholeScreen
             }
         } else {
