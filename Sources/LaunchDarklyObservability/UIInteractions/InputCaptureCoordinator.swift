@@ -22,7 +22,6 @@ struct TouchSample: Sendable {
     let timestamp: TimeInterval
     let target: TouchTarget?
 
-    
     init(touch: UITouch, window: UIWindow, target: TouchTarget?) {
         self.id = ObjectIdentifier(touch)
         self.location = touch.location(in: window)
