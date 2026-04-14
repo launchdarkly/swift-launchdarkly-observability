@@ -12,9 +12,14 @@ import Common
 
 typealias PrivacySettings = SessionReplayOptions.PrivacyOptions
 
-struct OffsettedArea {
-    var rect: CGRect
-    var offset: CGPoint
+public struct OffsettedArea {
+    public var rect: CGRect
+    public var offset: CGPoint
+
+    public init(rect: CGRect, offset: CGPoint) {
+        self.rect = rect
+        self.offset = offset
+    }
 }
 
 final class MaskCollector {
