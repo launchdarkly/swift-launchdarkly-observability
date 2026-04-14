@@ -32,7 +32,8 @@ final class WindowCaptureManager {
                      afterScreenUpdates: Bool) {
         context.saveGState()
 #if os(tvOS)
-        context.setFillColor(UIColor.black.cgColor)
+        let isDarkMode = windows.first?.traitCollection.userInterfaceStyle == .dark
+        context.setFillColor(isDarkMode ? UIColor.black.cgColor : UIColor.white.cgColor)
 #else
         context.setFillColor(UIColor.clear.cgColor)
 #endif
