@@ -19,7 +19,8 @@ final class CaptureManager: EventSource {
     private var cancellables = Set<AnyCancellable>()
     private let debugFrameWriter = false
     private let rawFrameWriter: RawFrameWriter?
-    
+    private let sessionIdProvider: @Sendable () -> String
+
     @MainActor
     var isEnabled: Bool = false {
         didSet {
@@ -35,12 +36,14 @@ final class CaptureManager: EventSource {
     init(captureService: ImageCaptureService,
          compression: SessionReplayOptions.CompressionMethod,
          appLifecycleManager: AppLifecycleManaging,
-         eventQueue: EventQueue) {
+         eventQueue: EventQueue,
+         sessionIdProvider: @Sendable @escaping () -> String) {
         self.captureService = captureService
         self.exportDiffManager = ExportDiffManager(compression: compression, scale: 1.0)
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
         self.rawFrameWriter = debugFrameWriter ? (try? RawFrameWriter()) : nil
+        self.sessionIdProvider = sessionIdProvider
         
         let sessionExporterId = self.sessionExporterId
         Task { @MainActor in
@@ -133,7 +136,7 @@ final class CaptureManager: EventSource {
                 return
             }
             
-            await self.eventQueue.send(ImageItemPayload(exportFrame: exportFrame))
+            await self.eventQueue.send(ImageItemPayload(exportFrame: exportFrame, sessionId: self.sessionIdProvider()))
         }
     }
 }

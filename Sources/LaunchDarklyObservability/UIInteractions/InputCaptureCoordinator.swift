@@ -48,16 +48,19 @@ final class InputCaptureCoordinator {
     private let touchInterpreter: TouchInterpreter
     private let pressInterpreter: PressInterpreter
     private let receiverChecker: UIEventReceiverChecker
+    private let sessionIdProvider: @Sendable () -> String
     var onTouch: TouchInteractionYield?
     var onPress: PressInteractionYield?
-    
+
     init(targetResolver: TargetResolving = TargetResolver(),
-         receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker()) {
+         receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker(),
+         sessionIdProvider: @Sendable @escaping () -> String) {
         self.targetResolver = targetResolver
         self.touchInterpreter = TouchInterpreter()
         self.pressInterpreter = PressInterpreter()
         self.source = UIWindowSwizzleSource()
         self.receiverChecker = receiverChecker
+        self.sessionIdProvider = sessionIdProvider
     }
     
     func start() {
@@ -93,7 +96,8 @@ final class InputCaptureCoordinator {
             for await item in captureStream {
                 switch item {
                 case .touch(let touchSample):
-                    touchInterpreter.process(touchSample: touchSample, yield: onTouch)
+                    let sessionId = sessionIdProvider()
+                    touchInterpreter.process(touchSample: touchSample, sessionId: sessionId, yield: onTouch)
                 case .press(let sample):
                     if let onPress {
                         pressInterpreter.process(pressInteraction: sample, yield: onPress)
@@ -116,7 +120,8 @@ final class InputCaptureCoordinator {
                 phase: PressInteraction.phase(forTouch: touch.phase),
                 kind: .untrackedWindowTouch,
                 timestamp: touch.timestamp,
-                target: target
+                target: target,
+                sessionId: sessionIdProvider()
             )
             continuation.yield(.press(interaction))
         }
@@ -150,7 +155,7 @@ final class InputCaptureCoordinator {
         for press in pressesEvent.allPresses {
             guard press.phase == .began else { continue }
             let target = targetResolver.resolve(press: press, window: window)
-            let interaction = PressInteraction(press: press, target: target)
+            let interaction = PressInteraction(press: press, target: target, sessionId: sessionIdProvider())
             if case .other = interaction.kind { continue }
             
             continuation.yield(.press(interaction))
