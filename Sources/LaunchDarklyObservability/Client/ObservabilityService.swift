@@ -169,7 +169,7 @@ final class ObservabilityService: InternalObserve {
         )
         self.tracer = appTraceClient
         
-        let userInteractionManager = UserInteractionManager(options: options) { interaction in
+        let userInteractionManager = UserInteractionManager(options: options, sessionManaging: sessionManager) { interaction in
             interaction.startEndSpan(tracer: tracerDecorator)
         }
         self.userInteractionManager = userInteractionManager

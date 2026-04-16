@@ -13,9 +13,12 @@ public final class UserInteractionManager {
         interactionEventSubject.eraseToAnyPublisher()
     }
     
-    init(options: ObservabilityOptions, yield: @escaping TouchInteractionYield) {
+    init(options: ObservabilityOptions, sessionManaging: SessionManaging, yield: @escaping TouchInteractionYield) {
         let targetResolver = TargetResolver()
-        self.inputCaptureCoordinator = InputCaptureCoordinator(targetResolver: targetResolver)
+        self.inputCaptureCoordinator = InputCaptureCoordinator(
+            targetResolver: targetResolver,
+            sessionIdProvider: { sessionManaging.sessionInfo.id }
+        )
         self.inputCaptureCoordinator.onTouch = { [interactionEventSubject] interaction in
             yield(interaction)
             interactionEventSubject.send(.touch(interaction))

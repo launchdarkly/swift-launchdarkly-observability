@@ -27,7 +27,7 @@ public final class CompressionBenchmarkRunner {
                 continue
             }
 
-            let item = EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame))
+            let item = EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame, sessionId: ""))
             let events = await eventGenerator.generateEvents(items: [item])
 
             if let data = try? encoder.encode(events) {

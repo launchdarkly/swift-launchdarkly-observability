@@ -38,23 +38,26 @@ public struct PressInteraction: Sendable {
     public let kind: RemotePressKind
     public let timestamp: TimeInterval
     public let target: TouchTarget?
+    public let sessionId: String
 
     public var isKeyboard: Bool {
         kind == .keyboard || kind == .untrackedWindowTouch
     }
 
-    init(press: UIPress, target: TouchTarget?) {
+    init(press: UIPress, target: TouchTarget?, sessionId: String) {
         self.phase = Self.phase(for: press.phase)
         self.kind = press.key != nil ? .keyboard : RemotePressKind(pressType: press.type)
         self.timestamp = press.timestamp
         self.target = target
+        self.sessionId = sessionId
     }
 
-    init(phase: Phase, kind: RemotePressKind = .untrackedWindowTouch, timestamp: TimeInterval, target: TouchTarget?) {
+    init(phase: Phase, kind: RemotePressKind = .untrackedWindowTouch, timestamp: TimeInterval, target: TouchTarget?, sessionId: String) {
         self.phase = phase
         self.kind = kind
         self.timestamp = timestamp
         self.target = target
+        self.sessionId = sessionId
     }
 
     static func phase(forTouch touchPhase: UITouch.Phase) -> Phase {

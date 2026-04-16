@@ -4,11 +4,12 @@ import LaunchDarklyObservability
 struct IdentifyItemPayload: EventQueueItemPayload {
     let attributes: [String: String]
     var timestamp: TimeInterval
+    let sessionId: String
 
     var exporterClass: AnyClass {
         SessionReplayExporter.self
     }
-    
+
     func cost() -> Int {
         attributes.count * 100
     }
@@ -57,7 +58,7 @@ extension IdentifyItemPayload {
     }
 
     @MainActor
-    init(options: ObservabilityOptions, sessionAttributes: [String: AttributeValue]?, ldContext: LDContext? = nil, timestamp: TimeInterval) {
+    init(options: ObservabilityOptions, sessionAttributes: [String: AttributeValue]?, ldContext: LDContext? = nil, timestamp: TimeInterval, sessionId: String) {
         let canonicalKey = ldContext?.fullyQualifiedKey() ?? "unknown"
         let contextKeys = ldContext?.contextKeys() ?? [:]
 
@@ -68,11 +69,12 @@ extension IdentifyItemPayload {
             canonicalKey: canonicalKey
         )
         self.timestamp = timestamp
+        self.sessionId = sessionId
     }
 
     /// Proxy-friendly initialiser that accepts pre-extracted context keys
     /// instead of LDContext, so the MAUI bridge can call it with simple types.
-    init(options: ObservabilityOptions, sessionAttributes: [String: AttributeValue]?, contextKeys: [String: String], canonicalKey: String, timestamp: TimeInterval) {
+    init(options: ObservabilityOptions, sessionAttributes: [String: AttributeValue]?, contextKeys: [String: String], canonicalKey: String, timestamp: TimeInterval, sessionId: String) {
         self.attributes = Self.buildAttributes(
             options: options,
             sessionAttributes: sessionAttributes,
@@ -80,6 +82,7 @@ extension IdentifyItemPayload {
             canonicalKey: canonicalKey
         )
         self.timestamp = timestamp
+        self.sessionId = sessionId
     }
 }
 
