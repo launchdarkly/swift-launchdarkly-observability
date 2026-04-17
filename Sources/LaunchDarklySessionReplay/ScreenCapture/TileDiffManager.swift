@@ -20,6 +20,7 @@ struct TiledFrame {
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = false
+        format.preferredRange = .standard
         let renderer = UIGraphicsImageRenderer(size: originalSize, format: format)
         return renderer.image { _ in
             for capturedImage in tiles {

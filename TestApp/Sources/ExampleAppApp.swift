@@ -6,7 +6,11 @@ struct ExampleAppApp: App {
     
     var body: some Scene {
         WindowGroup {
+            #if os(tvOS)
+            TVMainMenuView()
+            #else
             MainMenuView()
+            #endif
         }
     }
 }
