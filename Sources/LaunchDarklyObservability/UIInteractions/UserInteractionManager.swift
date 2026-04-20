@@ -17,7 +17,7 @@ public final class UserInteractionManager {
         let targetResolver = TargetResolver()
         self.inputCaptureCoordinator = InputCaptureCoordinator(
             targetResolver: targetResolver,
-            sessionIdProvider: { sessionManaging.sessionInfo.id }
+            sessionIdProvider: sessionManaging.sessionIdProvider
         )
         self.inputCaptureCoordinator.onTouch = { [interactionEventSubject] interaction in
             yield(interaction)

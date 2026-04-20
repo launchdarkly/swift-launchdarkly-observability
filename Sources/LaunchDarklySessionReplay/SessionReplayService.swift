@@ -81,7 +81,7 @@ final class SessionReplayService: SessionReplayServicing {
                                              compression: sessonReplayOptions.compression,
                                              appLifecycleManager: observabilityContext.appLifecycleManager,
                                              eventQueue: transportService.eventQueue,
-                                             sessionIdProvider: { observabilityContext.sessionManager.sessionInfo.id })
+                                             sessionIdProvider: observabilityContext.sessionManager.sessionIdProvider)
         self.userInteractionManager = observabilityContext.userInteractionManager
         
         let sessionReplayContext = SessionReplayContext(
