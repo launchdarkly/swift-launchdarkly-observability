@@ -24,7 +24,8 @@ final class TouchInterpreter {
         return id
     }
     
-    func process(touchSample: TouchSample, sessionId: String, yield: TouchInteractionYield) {
+    func process(touchSample: TouchSample, yield: TouchInteractionYield) {
+        let sessionId = touchSample.sessionId
         // UITouch and UIEvent use time based on systemUptime getting and we needed adjustment for proper time
         let uptimeDifference = Date().timeIntervalSince1970 - ProcessInfo.processInfo.systemUptime
         switch touchSample.phase {
@@ -111,7 +112,7 @@ final class TouchInterpreter {
         }
     }
 
-    func flushMovements(touchSample: TouchSample, uptimeDifference: TimeInterval, startTimestamp: TimeInterval, sessionId: String, yield: TouchInteractionYield) {
+    func flushMovements(touchSample: TouchSample, uptimeDifference: TimeInterval, startTimestamp: TimeInterval, yield: TouchInteractionYield) {
         guard var track = tracks[touchSample.id], track.points.isNotEmpty else { return }
 
         let moveInteraction = TouchInteraction(id: incrementingId,
@@ -119,7 +120,7 @@ final class TouchInterpreter {
                                                startTimestamp: startTimestamp + uptimeDifference,
                                                timestamp: touchSample.timestamp + uptimeDifference,
                                                target: touchSample.target,
-                                               sessionId: sessionId)
+                                               sessionId: touchSample.sessionId)
         if let lastPoint = track.points.last {
             track.points.removeAll()
             track.start = lastPoint.timestamp - uptimeDifference

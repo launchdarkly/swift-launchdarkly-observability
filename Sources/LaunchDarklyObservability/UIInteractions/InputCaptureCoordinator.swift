@@ -21,13 +21,15 @@ struct TouchSample: Sendable {
     // relative to system startup time
     let timestamp: TimeInterval
     let target: TouchTarget?
+    /// Session id fixed at main-thread capture time (with location/target).
+    let sessionId: String
 
-    
-    init(touch: UITouch, window: UIWindow, target: TouchTarget?) {
+    init(touch: UITouch, window: UIWindow, target: TouchTarget?, sessionId: String) {
         self.id = ObjectIdentifier(touch)
         self.location = touch.location(in: window)
         self.timestamp = touch.timestamp
         self.target = target
+        self.sessionId = sessionId
         self.phase = switch touch.phase {
         case .began: .began
         case .moved: .moved
@@ -96,8 +98,7 @@ final class InputCaptureCoordinator {
             for await item in captureStream {
                 switch item {
                 case .touch(let touchSample):
-                    let sessionId = sessionIdProvider()
-                    touchInterpreter.process(touchSample: touchSample, sessionId: sessionId, yield: onTouch)
+                    touchInterpreter.process(touchSample: touchSample, yield: onTouch)
                 case .press(let sample):
                     if let onPress {
                         pressInterpreter.process(pressInteraction: sample, yield: onPress)
@@ -141,7 +142,12 @@ final class InputCaptureCoordinator {
                 target = nil
             }
             
-            let touchSample = TouchSample(touch: touch, window: window, target: target)
+            let touchSample = TouchSample(
+                touch: touch,
+                window: window,
+                target: target,
+                sessionId: sessionIdProvider()
+            )
             continuation.yield(.touch(touchSample))
         }
     }
