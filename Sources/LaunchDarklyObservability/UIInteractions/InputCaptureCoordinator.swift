@@ -152,10 +152,11 @@ final class InputCaptureCoordinator {
         continuation: AsyncStream<InteractionCaptureItem>.Continuation
     ) {
         guard let pressesEvent = event as? UIPressesEvent else { return }
+        let sessionId = sessionIdProvider()
         for press in pressesEvent.allPresses {
             guard press.phase == .began else { continue }
             let target = targetResolver.resolve(press: press, window: window)
-            let interaction = PressInteraction(press: press, target: target, sessionId: sessionIdProvider())
+            let interaction = PressInteraction(press: press, target: target, sessionId: sessionId)
             if case .other = interaction.kind { continue }
             
             continuation.yield(.press(interaction))
