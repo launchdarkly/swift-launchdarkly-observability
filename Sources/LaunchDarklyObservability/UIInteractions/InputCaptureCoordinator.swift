@@ -114,6 +114,7 @@ final class InputCaptureCoordinator {
         continuation: AsyncStream<InteractionCaptureItem>.Continuation
     ) {
         guard let touches = event.allTouches else { return }
+        let sessionId = sessionIdProvider()
         for touch in touches {
             guard touch.phase == .began else { continue }
             let target = targetResolver.resolve(view: touch.view, window: window, event: event)
@@ -122,7 +123,7 @@ final class InputCaptureCoordinator {
                 kind: .untrackedWindowTouch,
                 timestamp: touch.timestamp,
                 target: target,
-                sessionId: sessionIdProvider()
+                sessionId: sessionId
             )
             continuation.yield(.press(interaction))
         }
