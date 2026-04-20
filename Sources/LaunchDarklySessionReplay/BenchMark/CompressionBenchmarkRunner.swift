@@ -18,6 +18,7 @@ public final class CompressionBenchmarkRunner {
         var captureTime: TimeInterval = 0
 
         let start = CFAbsoluteTimeGetCurrent()
+        let sessionId = SessionInfo().id
 
         for frame in frames {
             let captureStart = CFAbsoluteTimeGetCurrent()
@@ -27,7 +28,7 @@ public final class CompressionBenchmarkRunner {
                 continue
             }
 
-            let item = EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame, sessionId: ""))
+            let item = EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame, sessionId: sessionId))
             let events = await eventGenerator.generateEvents(items: [item])
 
             if let data = try? encoder.encode(events) {
