@@ -6,6 +6,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     let client = Client()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        LDObserve.shared.start()
         return true
     }
 
