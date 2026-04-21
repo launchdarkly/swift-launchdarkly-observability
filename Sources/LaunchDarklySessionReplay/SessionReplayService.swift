@@ -80,7 +80,8 @@ final class SessionReplayService: SessionReplayServicing {
         self.captureManager = CaptureManager(captureService: captureService,
                                              compression: sessonReplayOptions.compression,
                                              appLifecycleManager: observabilityContext.appLifecycleManager,
-                                             eventQueue: transportService.eventQueue)
+                                             eventQueue: transportService.eventQueue,
+                                             sessionIdProvider: observabilityContext.sessionManager.sessionIdProvider)
         self.userInteractionManager = observabilityContext.userInteractionManager
         
         let sessionReplayContext = SessionReplayContext(
@@ -107,13 +108,15 @@ final class SessionReplayService: SessionReplayServicing {
     
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool) {
         guard completed else { return }
+        let sessionId = observabilityContext.sessionManager.sessionInfo.id
         Task {
             let identifyPayload = IdentifyItemPayload(
                 options: observabilityContext.options,
                 sessionAttributes: observabilityContext.sessionAttributes,
                 contextKeys: contextKeys,
                 canonicalKey: canonicalKey,
-                timestamp: Date().timeIntervalSince1970
+                timestamp: Date().timeIntervalSince1970,
+                sessionId: sessionId
             )
             await scheduleIdentifySession(identifyPayload: identifyPayload)
         }

@@ -45,8 +45,8 @@ struct RRWebEventGeneratorTests {
         let secondImage = makeExportFrame(dataSize: 256, width: 320, height: 480, timestamp: 2.0)
         
         let items: [EventQueueItem] = [
-            EventQueueItem(payload: ImageItemPayload(exportFrame: firstImage)),
-            EventQueueItem(payload: ImageItemPayload(exportFrame: secondImage))
+            EventQueueItem(payload: ImageItemPayload(exportFrame: firstImage, sessionId: "test-session")),
+            EventQueueItem(payload: ImageItemPayload(exportFrame: secondImage, sessionId: "test-session"))
         ]
         
         // Act
@@ -75,8 +75,8 @@ struct RRWebEventGeneratorTests {
         let secondImageSameSize = makeExportFrame(dataSize: 256, width: 320, height: 480, timestamp: 2.0)
         
         let items: [EventQueueItem] = [
-            EventQueueItem(payload: ImageItemPayload(exportFrame: largeFirstImage)),
-            EventQueueItem(payload: ImageItemPayload(exportFrame: secondImageSameSize))
+            EventQueueItem(payload: ImageItemPayload(exportFrame: largeFirstImage, sessionId: "test-session")),
+            EventQueueItem(payload: ImageItemPayload(exportFrame: secondImageSameSize, sessionId: "test-session"))
         ]
         
         // Act
@@ -121,8 +121,8 @@ struct RRWebEventGeneratorTests {
         )
         
         let items: [EventQueueItem] = [
-            EventQueueItem(payload: ImageItemPayload(exportFrame: keyframeImage)),
-            EventQueueItem(payload: ImageItemPayload(exportFrame: nonKeyframeImage))
+            EventQueueItem(payload: ImageItemPayload(exportFrame: keyframeImage, sessionId: "test-session")),
+            EventQueueItem(payload: ImageItemPayload(exportFrame: nonKeyframeImage, sessionId: "test-session"))
         ]
         
         // Act
@@ -147,7 +147,8 @@ struct RRWebEventGeneratorTests {
             phase: .began,
             kind: .select,
             timestamp: 99.0,
-            target: nil
+            target: nil,
+            sessionId: "test-session"
         )
         let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
         let events = await generator.generateEvents(items: items)
@@ -174,7 +175,8 @@ struct RRWebEventGeneratorTests {
             phase: .began,
             kind: .keyboard,
             timestamp: 12.0,
-            target: nil
+            target: nil,
+            sessionId: "test-session"
         )
         let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
         let events = await generator.generateEvents(items: items)
@@ -200,7 +202,8 @@ struct RRWebEventGeneratorTests {
             phase: .began,
             kind: .untrackedWindowTouch,
             timestamp: 50.0,
-            target: nil
+            target: nil,
+            sessionId: "test-session"
         )
         let items: [EventQueueItem] = [EventQueueItem(payload: PressInteractionPayload(pressInteraction: pressInteraction))]
         let events = await generator.generateEvents(items: items)

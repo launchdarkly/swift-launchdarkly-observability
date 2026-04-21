@@ -35,7 +35,7 @@ struct RawFramesRRWebEventGeneratorTests {
             }
 
             // Mirrors BenchmarkExecutor flow: exportFrame -> EventQueueItem -> generateEvents.
-            let item = EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame))
+            let item = EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame, sessionId: "test-session"))
             let events = await eventGenerator.generateEvents(items: [item])
             extractedColors.append(contentsOf: extractEventImageColors(events: events))
             extractedSizes.append(contentsOf: extractEventImageSizes(events: events))
@@ -70,19 +70,19 @@ struct RawFramesRRWebEventGeneratorTests {
             #expect(Bool(false), "Expected export frame for base frame")
             return
         }
-        let events1 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame1))])
+        let events1 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame1, sessionId: "test-session"))])
 
         guard let exportFrame2 = exportDiffManager.exportFrame(from: navBarFrame) else {
             #expect(Bool(false), "Expected export frame for nav bar frame")
             return
         }
-        let events2 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame2))])
+        let events2 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame2, sessionId: "test-session"))])
 
         guard let exportFrame3 = exportDiffManager.exportFrame(from: rollbackFrame) else {
             #expect(Bool(false), "Expected export frame for rollback frame")
             return
         }
-        let events3 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame3))])
+        let events3 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame3, sessionId: "test-session"))])
 
         let firstSize = firstAddedImageSize(events: events1)
         let secondSize = firstAddedImageSize(events: events2)
@@ -122,31 +122,31 @@ struct RawFramesRRWebEventGeneratorTests {
             #expect(Bool(false), "Expected export frame for frame 1")
             return
         }
-        let events1 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame1))])
+        let events1 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame1, sessionId: "test-session"))])
 
         guard let exportFrame2 = exportDiffManager.exportFrame(from: frame2) else {
             #expect(Bool(false), "Expected export frame for frame 2")
             return
         }
-        let events2 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame2))])
+        let events2 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame2, sessionId: "test-session"))])
 
         guard let exportFrame3 = exportDiffManager.exportFrame(from: frame3) else {
             #expect(Bool(false), "Expected export frame for frame 3")
             return
         }
-        let events3 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame3))])
+        let events3 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame3, sessionId: "test-session"))])
 
         guard let exportFrame4 = exportDiffManager.exportFrame(from: frame4) else {
             #expect(Bool(false), "Expected export frame for frame 4")
             return
         }
-        let events4 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame4))])
+        let events4 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame4, sessionId: "test-session"))])
 
         guard let exportFrame5 = exportDiffManager.exportFrame(from: frame5) else {
             #expect(Bool(false), "Expected export frame for frame 5")
             return
         }
-        let events5 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame5))])
+        let events5 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame5, sessionId: "test-session"))])
 
         let firstSize = firstAddedImageSize(events: events1)
         let secondSize = firstAddedImageSize(events: events2)
@@ -202,21 +202,21 @@ struct RawFramesRRWebEventGeneratorTests {
             #expect(Bool(false), "Expected export frame for frame 1")
             return
         }
-        let events1 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame1))])
+        let events1 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame1, sessionId: "test-session"))])
         trackedNodeIds.formUnion(addedNodeIds(events: events1))
 
         guard let exportFrame2 = exportDiffManager.exportFrame(from: frame2) else {
             #expect(Bool(false), "Expected export frame for frame 2")
             return
         }
-        let events2 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame2))])
+        let events2 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame2, sessionId: "test-session"))])
         trackedNodeIds.formUnion(addedNodeIds(events: events2))
 
         guard let exportFrame3 = exportDiffManager.exportFrame(from: frame3) else {
             #expect(Bool(false), "Expected export frame for frame 3")
             return
         }
-        let events3 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame3))])
+        let events3 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame3, sessionId: "test-session"))])
         trackedNodeIds.formUnion(addedNodeIds(events: events3))
         #expect(trackedNodeIds.count == 3)
 
@@ -225,7 +225,7 @@ struct RawFramesRRWebEventGeneratorTests {
             return
         }
         #expect(exportFrame4.isKeyframe, "Frame 4 should be a keyframe with layers: 3")
-        let events4 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame4))])
+        let events4 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame4, sessionId: "test-session"))])
 
         guard let fourthMutation = firstMutationData(events: events4) else {
             #expect(Bool(false), "Expected mutation event for frame 4")
@@ -244,7 +244,7 @@ struct RawFramesRRWebEventGeneratorTests {
             #expect(Bool(false), "Expected export frame for frame 5")
             return
         }
-        let events5 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame5))])
+        let events5 = await eventGenerator.generateEvents(items: [EventQueueItem(payload: ImageItemPayload(exportFrame: exportFrame5, sessionId: "test-session"))])
         
         guard let fifthMutation = firstMutationData(events: events5) else {
             #expect(Bool(false), "Expected mutation event for frame 5")

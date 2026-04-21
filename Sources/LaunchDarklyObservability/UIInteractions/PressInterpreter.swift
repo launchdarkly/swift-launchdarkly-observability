@@ -7,7 +7,8 @@ final class PressInterpreter {
             phase: pressInteraction.phase,
             kind: pressInteraction.kind,
             timestamp: pressInteraction.timestamp + uptimeDifference,
-            target: pressInteraction.target
+            target: pressInteraction.target,
+            sessionId: pressInteraction.sessionId
         )
         yield(corrected)
     }
