@@ -88,7 +88,8 @@ final class LaunchTracker {
             state.pendingSceneStarts.removeValue(forKey: id)
 
         case .launchInfoItemsWereTraced(let items):
-            state.buffer = Array(Set(state.buffer).subtracting(items))
+            let traced = Set(items)
+            state.buffer.removeAll { traced.contains($0) }
         }
     }
 
