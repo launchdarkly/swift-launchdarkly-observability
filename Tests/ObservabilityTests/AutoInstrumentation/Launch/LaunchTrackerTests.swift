@@ -13,18 +13,19 @@ struct LaunchTrackerReducerTests {
     func testColdLaunch() throws {
         var state = LaunchTracker.State()
 
-        let startUptime: TimeInterval = 1.0
-        let endUptime: TimeInterval = 2.0
+        let processStart = AppStartTime.stats.startTime
+        let foregroundUptime = processStart + 0.5
+        let endUptime = processStart + 1.5
         let sceneID = "ABC"
 
-        // First willEnterForeground on a fresh state → cold
+        // First willEnterForeground on a fresh state → cold (start time comes from AppStartTime, not sceneData)
         LaunchTracker.reduce(
             state: &state,
-            action: .sceneWillEnterForeground(.init(sceneID: sceneID, systemUptime: startUptime))
+            action: .sceneWillEnterForeground(.init(sceneID: sceneID, systemUptime: foregroundUptime))
         )
 
         #expect(state.pendingSceneStarts[sceneID]?.type == .cold)
-        #expect(state.pendingSceneStarts[sceneID]?.startTime == startUptime)
+        #expect(state.pendingSceneStarts[sceneID]?.startTime == processStart)
         #expect(state.hasRecordedColdLaunch)
         #expect(state.seenSceneIDs.contains(sceneID))
 
@@ -37,7 +38,7 @@ struct LaunchTrackerReducerTests {
 
         let launch = try #require(state.buffer.first)
         #expect(launch.type == .cold)
-        #expect(launch.start == startUptime)
+        #expect(launch.start == processStart)
         #expect(launch.end == endUptime)
 
         // Pending entry must be cleared after activation
@@ -186,12 +187,14 @@ struct LaunchTrackerReducerTests {
     func testColdThenWarmForSameScene() throws {
         var state = LaunchTracker.State()
         let sceneID = "SCENE"
+        let processStart = AppStartTime.stats.startTime
 
         // Cold launch
-        LaunchTracker.reduce(state: &state, action: .sceneWillEnterForeground(.init(sceneID: sceneID, systemUptime: 1.0)))
-        LaunchTracker.reduce(state: &state, action: .sceneDidBecomeActive(.init(sceneID: sceneID, systemUptime: 2.0)))
+        LaunchTracker.reduce(state: &state, action: .sceneWillEnterForeground(.init(sceneID: sceneID, systemUptime: processStart + 0.1)))
+        LaunchTracker.reduce(state: &state, action: .sceneDidBecomeActive(.init(sceneID: sceneID, systemUptime: processStart + 1.0)))
 
         #expect(state.buffer.first?.type == .cold)
+        #expect(state.buffer.first?.start == processStart)
 
         // Scene goes background → foreground again
         LaunchTracker.reduce(state: &state, action: .sceneWillEnterForeground(.init(sceneID: sceneID, systemUptime: 100.0)))
