@@ -6,6 +6,7 @@ final class WindowCaptureManager {
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = false
+        format.preferredRange = .standard
         return UIGraphicsImageRenderer(size: size, format: format)
     }
 
@@ -30,7 +31,12 @@ final class WindowCaptureManager {
                      bounds: CGRect,
                      afterScreenUpdates: Bool) {
         context.saveGState()
+#if os(tvOS)
+        let isDarkMode = windows.first?.traitCollection.userInterfaceStyle == .dark
+        context.setFillColor(isDarkMode ? UIColor.black.cgColor : UIColor.white.cgColor)
+#else
         context.setFillColor(UIColor.clear.cgColor)
+#endif
         context.fill(bounds)
         context.restoreGState()
 

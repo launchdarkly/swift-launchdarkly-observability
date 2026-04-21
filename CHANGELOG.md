@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.33.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.33.0...0.33.1) (2026-04-17)
+
+
+### Bug Fixes
+
+* tvOS detect background color ([#188](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/188)) ([2be36a5](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2be36a5a135cd66cfbda4ca7456754d3647a2625))
+
 ## [0.33.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.32.0...0.33.0) (2026-04-13)
 
 
