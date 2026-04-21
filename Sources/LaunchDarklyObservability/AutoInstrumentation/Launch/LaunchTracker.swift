@@ -64,7 +64,11 @@ final class LaunchTracker {
                 state.seenSceneIDs.insert(id)
                 if !state.hasRecordedColdLaunch {
                     state.hasRecordedColdLaunch = true
-                    state.pendingSceneStarts[id] = PendingLaunch(startTime: sceneData.systemUptime, type: .cold)
+                    // Process-start uptime so duration spans from process creation, not foreground notification time.
+                    state.pendingSceneStarts[id] = PendingLaunch(
+                        startTime: AppStartTime.stats.startTime,
+                        type: .cold
+                    )
                 } else {
                     state.pendingSceneStarts[id] = PendingLaunch(startTime: sceneData.systemUptime, type: .sceneCreation)
                 }
@@ -138,15 +142,10 @@ extension LaunchTracker {
             .receive(on: RunLoop.main)
             .sink { notification in
                 guard let scene = notification.object as? UIScene else { return }
-                let id = scene.session.persistentIdentifier
-                // Substitute the process-start uptime for cold launches so the measured
-                // duration covers the full time from when the process was created.
-                let isFirstTime = !store.state.seenSceneIDs.contains(id)
-                let isColdLaunch = isFirstTime && !store.state.hasRecordedColdLaunch
-                let systemUptime = isColdLaunch
-                    ? AppStartTime.stats.startTime
-                    : ProcessInfo.processInfo.systemUptime
-                let sceneData = SceneData(sceneID: id, systemUptime: systemUptime)
+                let sceneData = SceneData(
+                    sceneID: scene.session.persistentIdentifier,
+                    systemUptime: ProcessInfo.processInfo.systemUptime
+                )
                 store.dispatch(.sceneWillEnterForeground(sceneData))
             }
             .store(in: &cancellables)
