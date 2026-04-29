@@ -262,7 +262,7 @@ class CreditCardViewController: UIViewController {
 
 When deciding whether a specific view should be masked in a Session Replay, the SDK evaluates rules in a strict order of precedence. It checks these conditions from top to bottom and stops at the first one that applies:
 
-1. **Explicit Masking (Highest Priority)**: Is the view, or *any* of its parent views, explicitly masked (e.g., using `.ldMask()`)?
+1. **Explicit Masking (Highest Priority)**: Is the view, or *any* of its parent views, explicitly masked (e.g., using `.ldMask()` or matching `maskAccessibilityIdentifiers`)?
    * **Yes**: The view is **masked**. This overrides all other rules.
 2. **Explicit Unmasking**: Is the view itself explicitly unmasked (e.g., using `.ldUnmask()`)?
    * **Yes**: The view is **unmasked**.
