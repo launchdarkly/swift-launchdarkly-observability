@@ -9,9 +9,6 @@ import OpenTelemetrySdk
 
 /// Adapter that converts `SpanData` instances into the OTLP/JSON wire-format
 /// types declared in `OtlpJsonTraceModels.swift`.
-///
-/// JSON-encoded counterpart of `SpanAdapter`, which produces SwiftProtobuf
-/// message types instead.
 public enum JsonSpanAdapter {
     public static func toJsonRequest(spanDataList: [SpanData]) -> OtlpJsonExportTraceServiceRequest {
         return OtlpJsonExportTraceServiceRequest(resourceSpans: toResourceSpans(spanDataList: spanDataList))

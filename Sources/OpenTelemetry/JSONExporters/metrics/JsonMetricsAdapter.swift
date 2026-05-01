@@ -9,9 +9,6 @@ import OpenTelemetrySdk
 
 /// Adapter that converts `MetricData` instances into the OTLP/JSON
 /// wire-format types declared in `OtlpJsonMetricModels.swift`.
-///
-/// JSON-encoded counterpart of `MetricsAdapter`, which produces
-/// SwiftProtobuf message types instead.
 public enum JsonMetricsAdapter {
     public static func toJsonRequest(metricData: [MetricData]) -> OtlpJsonExportMetricsServiceRequest {
         return OtlpJsonExportMetricsServiceRequest(resourceMetrics: toResourceMetrics(metricData: metricData))

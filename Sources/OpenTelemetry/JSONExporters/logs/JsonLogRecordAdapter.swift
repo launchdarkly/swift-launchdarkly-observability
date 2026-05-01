@@ -9,9 +9,6 @@ import OpenTelemetrySdk
 
 /// Adapter that converts `ReadableLogRecord` instances into the OTLP/JSON
 /// wire-format types declared in `OtlpJsonLogModels.swift`.
-///
-/// JSON-encoded counterpart of `LogRecordAdapter`, which produces
-/// SwiftProtobuf message types instead.
 public enum JsonLogRecordAdapter {
     public static func toJsonRequest(logRecordList: [ReadableLogRecord]) -> OtlpJsonExportLogsServiceRequest {
         return OtlpJsonExportLogsServiceRequest(resourceLogs: toResourceLogs(logRecordList: logRecordList))

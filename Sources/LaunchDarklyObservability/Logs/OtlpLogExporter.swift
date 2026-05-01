@@ -2,7 +2,6 @@ import OpenTelemetrySdk
 import Foundation
 
 #if !LD_COCOAPODS
-    import OpenTelemetryProtocolExporterCommon
     import JSONExporters
     import Common
 #endif

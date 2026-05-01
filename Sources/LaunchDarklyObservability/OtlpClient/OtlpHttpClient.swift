@@ -1,8 +1,6 @@
 import Foundation
-import SwiftProtobuf
 import LaunchDarkly
 #if !LD_COCOAPODS
-    import OpenTelemetryProtocolExporterCommon
     import Common
 #endif
 
@@ -49,22 +47,6 @@ public final class OtlpHttpClient: @unchecked Sendable {
         }
     }
     
-    func createRequest(body: Message, explicitTimeout: TimeInterval? = nil) throws -> URLRequest {
-        do {
-            let rawData = try body.serializedData()
-            return makeRequest(rawData: rawData,
-                               contentType: "application/x-protobuf",
-                               explicitTimeout: explicitTimeout)
-        } catch {
-            throw NetworkError.invalidRequest(cause: error)
-        }
-    }
-    
-    public func send(body: Message, explicitTimeout: TimeInterval? = nil) async throws  {
-        let request = try createRequest(body: body, explicitTimeout: explicitTimeout)
-        try await httpService.send(request)
-    }
-
     /// Creates an OTLP/JSON request from any `Encodable` payload.
     func createRequest<T: Encodable>(jsonBody: T,
                                      explicitTimeout: TimeInterval? = nil) throws -> URLRequest {

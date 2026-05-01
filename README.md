@@ -40,7 +40,7 @@ pod 'LaunchDarklyObservability'
 pod 'LaunchDarklySessionReplay'   # optional, only if using Session Replay
 ```
 
-Some transitive dependencies (SwiftProtobuf, LDSwiftEventSource) still declare an iOS 11.0 deployment target, which is below the minimum required by recent Xcode SDKs. Add the following `post_install` hook to your `Podfile` to raise their deployment target automatically:
+Some transitive dependencies (e.g. LDSwiftEventSource) still declare an iOS 11.0 deployment target, which is below the minimum required by recent Xcode SDKs. Add the following `post_install` hook to your `Podfile` to raise their deployment target automatically:
 
 ```ruby
 post_install do |installer|
