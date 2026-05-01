@@ -31,11 +31,7 @@ public final class OtlpLogExporter: EventExporting {
     
     private func export(logRecords: [OpenTelemetrySdk.ReadableLogRecord],
                         explicitTimeout: TimeInterval? = nil) async throws {
-        let body =
-        Opentelemetry_Proto_Collector_Logs_V1_ExportLogsServiceRequest.with { request in
-            request.resourceLogs = LogRecordAdapter.toProtoResourceRecordLog(logRecordList: logRecords)
-        }
-        
-        try await otlpHttpClient.send(body: body, explicitTimeout: explicitTimeout)
+        let body = JsonLogRecordAdapter.toJsonRequest(logRecordList: logRecords)
+        try await otlpHttpClient.send(jsonBody: body, explicitTimeout: explicitTimeout)
     }
 }

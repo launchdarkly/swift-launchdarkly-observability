@@ -49,7 +49,8 @@ let package = Package(
         .testTarget(
             name: "ObservabilityTests",
             dependencies: [
-                "LaunchDarklyObservability"
+                "LaunchDarklyObservability",
+                "OpenTelemetryProtocolExporterCommon"
             ]
         ),
         .target(
