@@ -40,6 +40,7 @@ let package = Package(
                 "ObjCBridge",
                 "URLSessionInstrumentation",
                 "OpenTelemetryProtocolExporterCommon",
+                "JSONExporters",
                 "SDKResourceExtension",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
@@ -50,7 +51,7 @@ let package = Package(
             name: "ObservabilityTests",
             dependencies: [
                 "LaunchDarklyObservability",
-                "OpenTelemetryProtocolExporterCommon"
+                "JSONExporters"
             ]
         ),
         .target(
@@ -68,6 +69,14 @@ let package = Package(
             .product(name: "SwiftProtobuf", package: "swift-protobuf")
           ],
           path: "Sources/OpenTelemetry/OpenTelemetryProtocolExporterCommon"
+        ),
+        .target(
+          name: "JSONExporters",
+          dependencies: [
+            .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core"),
+            .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core"),
+          ],
+          path: "Sources/OpenTelemetry/JSONExporters"
         ),
         .target(
               name: "URLSessionInstrumentation",

@@ -3,61 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// OTLP/JSON wire-format types for the logs signal.
+// Wire-format types shared by every OTLP/JSON signal (logs, traces, metrics).
 //
-// These types follow the canonical Protobuf to JSON mapping
+// These follow the canonical Protobuf-to-JSON mapping
 // (https://protobuf.dev/programming-guides/json/) with the OTLP-specific
 // deviations called out in the OpenTelemetry specification:
 //
 // - 64-bit integers (e.g. `timeUnixNano`, `intValue`) are serialized as
-//   JSON strings of decimal digits.
-// - `traceId` and `spanId` are serialized as lowercase hexadecimal
-//   strings (16 / 32 hex chars respectively), NOT base64.
+//   JSON strings of decimal digits (see `OtlpJsonInt64`).
+// - `traceId` / `spanId` are serialized as lowercase hexadecimal strings
+//   (32 / 16 hex chars), NOT base64. Each signal handles that locally.
 //
-// Field names use the standard proto JSON `lowerCamelCase` form so
-// any compliant OTLP/HTTP receiver can decode the payload.
+// Field names use the standard proto-JSON `lowerCamelCase` form so any
+// compliant OTLP/HTTP receiver can decode the payload.
 
 import Foundation
 
-// MARK: - Top-level export request
-
-public struct OtlpJsonExportLogsServiceRequest: Encodable {
-    public var resourceLogs: [OtlpJsonResourceLogs]
-
-    public init(resourceLogs: [OtlpJsonResourceLogs]) {
-        self.resourceLogs = resourceLogs
-    }
-}
-
-public struct OtlpJsonResourceLogs: Encodable {
-    public var resource: OtlpJsonResource?
-    public var scopeLogs: [OtlpJsonScopeLogs]
-    public var schemaUrl: String?
-
-    public init(resource: OtlpJsonResource?,
-                scopeLogs: [OtlpJsonScopeLogs],
-                schemaUrl: String? = nil) {
-        self.resource = resource
-        self.scopeLogs = scopeLogs
-        self.schemaUrl = schemaUrl
-    }
-}
-
-public struct OtlpJsonScopeLogs: Encodable {
-    public var scope: OtlpJsonInstrumentationScope?
-    public var logRecords: [OtlpJsonLogRecord]
-    public var schemaUrl: String?
-
-    public init(scope: OtlpJsonInstrumentationScope?,
-                logRecords: [OtlpJsonLogRecord],
-                schemaUrl: String? = nil) {
-        self.scope = scope
-        self.logRecords = logRecords
-        self.schemaUrl = schemaUrl
-    }
-}
-
-// MARK: - Resource & scope
+// MARK: - Resource & instrumentation scope
 
 public struct OtlpJsonResource: Encodable {
     public var attributes: [OtlpJsonKeyValue]
@@ -87,25 +49,7 @@ public struct OtlpJsonInstrumentationScope: Encodable {
     }
 }
 
-// MARK: - Log record
-
-public struct OtlpJsonLogRecord: Encodable {
-    public var timeUnixNano: OtlpJsonInt64?
-    public var observedTimeUnixNano: OtlpJsonInt64?
-    public var severityNumber: Int32?
-    public var severityText: String?
-    public var body: OtlpJsonAnyValue?
-    public var attributes: [OtlpJsonKeyValue]?
-    public var droppedAttributesCount: UInt32?
-    public var flags: UInt32?
-    /// Lowercase hex string (32 chars), per OTLP/JSON spec deviation.
-    public var traceId: String?
-    /// Lowercase hex string (16 chars), per OTLP/JSON spec deviation.
-    public var spanId: String?
-    public var eventName: String?
-}
-
-// MARK: - Common AnyValue / KeyValue
+// MARK: - AnyValue / KeyValue
 
 public struct OtlpJsonKeyValue: Encodable {
     public var key: String

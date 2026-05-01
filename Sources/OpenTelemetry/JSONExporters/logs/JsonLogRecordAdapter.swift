@@ -10,7 +10,7 @@ import OpenTelemetrySdk
 /// Adapter that converts `ReadableLogRecord` instances into the OTLP/JSON
 /// wire-format types declared in `OtlpJsonLogModels.swift`.
 ///
-/// This is the JSON-encoded counterpart of `LogRecordAdapter`, which produces
+/// JSON-encoded counterpart of `LogRecordAdapter`, which produces
 /// SwiftProtobuf message types instead.
 public enum JsonLogRecordAdapter {
     public static func toJsonRequest(logRecordList: [ReadableLogRecord]) -> OtlpJsonExportLogsServiceRequest {
@@ -22,13 +22,13 @@ public enum JsonLogRecordAdapter {
         return grouped.map { resource, scopes in
             let scopeLogs: [OtlpJsonScopeLogs] = scopes.map { scopeInfo, records in
                 OtlpJsonScopeLogs(
-                    scope: toJsonInstrumentationScope(scopeInfo),
+                    scope: JsonCommonAdapter.toJsonInstrumentationScope(scopeInfo),
                     logRecords: records,
                     schemaUrl: scopeInfo.schemaUrl
                 )
             }
             return OtlpJsonResourceLogs(
-                resource: toJsonResource(resource),
+                resource: JsonCommonAdapter.toJsonResource(resource),
                 scopeLogs: scopeLogs
             )
         }
@@ -60,7 +60,7 @@ public enum JsonLogRecordAdapter {
         }
 
         if let body = logRecord.body {
-            json.body = toJsonAnyValue(body)
+            json.body = JsonCommonAdapter.toJsonAnyValue(body)
         }
 
         if let severity = logRecord.severity {
@@ -79,58 +79,9 @@ public enum JsonLogRecordAdapter {
         }
 
         if !logRecord.attributes.isEmpty {
-            json.attributes = logRecord.attributes.map {
-                toJsonKeyValue(key: $0.key, value: $0.value)
-            }
+            json.attributes = JsonCommonAdapter.toJsonAttributes(logRecord.attributes)
         }
 
         return json
-    }
-
-    // MARK: - Resource & scope
-
-    static func toJsonResource(_ resource: Resource) -> OtlpJsonResource {
-        OtlpJsonResource(
-            attributes: resource.attributes.map { toJsonKeyValue(key: $0.key, value: $0.value) }
-        )
-    }
-
-    static func toJsonInstrumentationScope(_ scope: InstrumentationScopeInfo) -> OtlpJsonInstrumentationScope {
-        OtlpJsonInstrumentationScope(
-            name: scope.name,
-            version: scope.version,
-            attributes: scope.attributes?.map { toJsonKeyValue(key: $0.key, value: $0.value) }
-        )
-    }
-
-    // MARK: - AnyValue / KeyValue
-
-    static func toJsonKeyValue(key: String, value: AttributeValue) -> OtlpJsonKeyValue {
-        OtlpJsonKeyValue(key: key, value: toJsonAnyValue(value))
-    }
-
-    static func toJsonAnyValue(_ value: AttributeValue) -> OtlpJsonAnyValue {
-        switch value {
-        case let .string(value):
-            return .string(value)
-        case let .bool(value):
-            return .bool(value)
-        case let .int(value):
-            return .int(Int64(value))
-        case let .double(value):
-            return .double(value)
-        case let .stringArray(values):
-            return .array(values.map { .string($0) })
-        case let .boolArray(values):
-            return .array(values.map { .bool($0) })
-        case let .intArray(values):
-            return .array(values.map { .int(Int64($0)) })
-        case let .doubleArray(values):
-            return .array(values.map { .double($0) })
-        case let .array(array):
-            return .array(array.values.map(toJsonAnyValue))
-        case let .set(set):
-            return .kvlist(set.labels.map { toJsonKeyValue(key: $0.key, value: $0.value) })
-        }
     }
 }

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import OpenTelemetryApi
 @testable import OpenTelemetrySdk
-@testable import OpenTelemetryProtocolExporterCommon
+@testable import JSONExporters
 
 struct JsonLogRecordAdapterTests {
     @Test("Encodes log records as OTLP/JSON with proper field naming")
@@ -136,28 +136,19 @@ struct JsonLogRecordAdapterTests {
     // MARK: - Helpers
 
     private func encodeJson<T: Encodable>(_ value: T) throws -> [String: Any] {
-        let data = try JSONEncoder().encode(value)
-        let object = try JSONSerialization.jsonObject(with: data)
-        return try cast(object, as: [String: Any].self)
+        try JsonTestHelpers.encodeJson(value)
     }
 
     private func drillToLogRecord(_ json: [String: Any]) throws -> [String: Any] {
-        let resourceLogs = try cast(json["resourceLogs"], as: [Any].self)
-        let resourceLog = try cast(resourceLogs[0], as: [String: Any].self)
-        let scopeLogs = try cast(resourceLog["scopeLogs"], as: [Any].self)
-        let scopeLog = try cast(scopeLogs[0], as: [String: Any].self)
-        let logRecords = try cast(scopeLog["logRecords"], as: [Any].self)
-        return try cast(logRecords[0], as: [String: Any].self)
+        let resourceLogs = try JsonTestHelpers.cast(json["resourceLogs"], as: [Any].self)
+        let resourceLog = try JsonTestHelpers.cast(resourceLogs[0], as: [String: Any].self)
+        let scopeLogs = try JsonTestHelpers.cast(resourceLog["scopeLogs"], as: [Any].self)
+        let scopeLog = try JsonTestHelpers.cast(scopeLogs[0], as: [String: Any].self)
+        let logRecords = try JsonTestHelpers.cast(scopeLog["logRecords"], as: [Any].self)
+        return try JsonTestHelpers.cast(logRecords[0], as: [String: Any].self)
     }
 
-    private func cast<T>(_ value: Any?, as _: T.Type) throws -> T {
-        guard let typed = value as? T else {
-            throw CastError(description: "Could not cast \(String(describing: value)) to \(T.self)")
-        }
-        return typed
+    private func cast<T>(_ value: Any?, as type: T.Type) throws -> T {
+        try JsonTestHelpers.cast(value, as: type)
     }
-}
-
-private struct CastError: Error, CustomStringConvertible {
-    let description: String
 }
