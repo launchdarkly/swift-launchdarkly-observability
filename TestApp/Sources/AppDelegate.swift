@@ -35,7 +35,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     privacy: .init(
                         maskTextInputs: true,
                         maskWebViews: false,
-                        maskLabels: true,
+                        maskLabels: false,
                         maskImages: false,
                         maskAccessibilityIdentifiers: ["email-field", "password-field", "card-brand-chip", "10"],
                     )
