@@ -61,29 +61,28 @@ final class MaskCollector {
             self.ignoreAccessibilityIdentifiers = Set(privacySettings.ignoreAccessibilityIdentifiers)
         }
         
-        func shouldIgnore(_ view: UIView) -> Bool {
-            let viewType = type(of: view)
+        func shouldIgnore(_ view: UIView, viewType: AnyClass) -> Bool {
             if SessionReplayAssociatedObjects.shouldIgnoreUIView(view) == true {
                 return true
             }
-            
+
             if ignoreUIViews.contains(ObjectIdentifier(viewType)) {
                 return true
             }
-            
+
             if let accessibilityIdentifier = view.accessibilityIdentifier,
                ignoreAccessibilityIdentifiers.contains(accessibilityIdentifier) {
                 return true
             }
-            
+
             return false
         }
-        
-        func isExplicitlyMasked(_ view: UIView) -> Bool {
+
+        func isExplicitlyMasked(_ view: UIView, viewType: AnyClass) -> Bool {
             if SessionReplayAssociatedObjects.shouldMaskUIView(view) == true {
                 return true
             }
-            if maskUIViews.contains(ObjectIdentifier(type(of: view))) {
+            if maskUIViews.contains(ObjectIdentifier(viewType)) {
                 return true
             }
             if let accessibilityIdentifier = view.accessibilityIdentifier,
@@ -93,11 +92,11 @@ final class MaskCollector {
             return false
         }
 
-        func isExplicitlyUnmasked(_ view: UIView) -> Bool {
+        func isExplicitlyUnmasked(_ view: UIView, viewType: AnyClass) -> Bool {
             if SessionReplayAssociatedObjects.shouldMaskUIView(view) == false {
                 return true
             }
-            if unmaskUIViews.contains(ObjectIdentifier(type(of: view))) {
+            if unmaskUIViews.contains(ObjectIdentifier(viewType)) {
                 return true
             }
             if let accessibilityIdentifier = view.accessibilityIdentifier,
@@ -107,8 +106,8 @@ final class MaskCollector {
             return false
         }
 
-        func shouldMaskFromGlobalConfig(_ view: UIView) -> Bool {
-            let stringViewType = String(describing: type(of: view))
+        func shouldMaskFromGlobalConfig(_ view: UIView, viewType: AnyClass) -> Bool {
+            let stringViewType = String(describing: viewType)
 
             if maskiOS26ViewTypes.contains(stringViewType) {
                 return true
@@ -151,11 +150,11 @@ final class MaskCollector {
         /// Returns the explicit mask state of `view` itself, ignoring ancestors:
         /// `true` = explicitly masked, `false` = explicitly unmasked, `nil` = no explicit rule.
         /// Mask wins over unmask when both apply to the same view.
-        func explicitMaskState(_ view: UIView) -> Bool? {
-            if isExplicitlyMasked(view) {
+        func explicitMaskState(_ view: UIView, viewType: AnyClass) -> Bool? {
+            if isExplicitlyMasked(view, viewType: viewType) {
                 return true
             }
-            if isExplicitlyUnmasked(view) {
+            if isExplicitlyUnmasked(view, viewType: viewType) {
                 return false
             }
             return nil
@@ -163,14 +162,14 @@ final class MaskCollector {
 
         /// Combines the inherited explicit state from ancestors with `view`'s own explicit state.
         /// Short-circuits when an ancestor is already masked: mask propagation wins outright.
-        func resolveExplicitMask(_ view: UIView, inheritedExplicitMask: Bool?) -> Bool? {
+        func resolveExplicitMask(_ view: UIView, viewType: AnyClass, inheritedExplicitMask: Bool?) -> Bool? {
             if inheritedExplicitMask == true { return true }
-            return explicitMaskState(view) ?? inheritedExplicitMask
+            return explicitMaskState(view, viewType: viewType) ?? inheritedExplicitMask
         }
 
         /// Final precedence: an explicit (resolved) state wins; otherwise fall back to global config.
-        func shouldMask(_ view: UIView, resolvedExplicitMask: Bool?) -> Bool {
-            return resolvedExplicitMask ?? shouldMaskFromGlobalConfig(view)
+        func shouldMask(_ view: UIView, viewType: AnyClass, resolvedExplicitMask: Bool?) -> Bool {
+            return resolvedExplicitMask ?? shouldMaskFromGlobalConfig(view, viewType: viewType)
         }
     }
     
@@ -193,12 +192,14 @@ final class MaskCollector {
                   view.window != nil,
                   layer.opacity >= settings.minimumAlpha else { return }
 
-            guard !settings.shouldIgnore(view) else { return }
+            let viewType: AnyClass = type(of: view)
+
+            guard !settings.shouldIgnore(view, viewType: viewType) else { return }
 
             let effectiveFrame = rPresenation.convert(layer.frame, from: layer.superlayer)
 
-            let resolvedExplicitMask = settings.resolveExplicitMask(view, inheritedExplicitMask: inheritedExplicitMask)
-            let shouldMask = settings.shouldMask(view, resolvedExplicitMask: resolvedExplicitMask)
+            let resolvedExplicitMask = settings.resolveExplicitMask(view, viewType: viewType, inheritedExplicitMask: inheritedExplicitMask)
+            let shouldMask = settings.shouldMask(view, viewType: viewType, resolvedExplicitMask: resolvedExplicitMask)
             if shouldMask, let mask = createMask(rPresenation, layer: layer, scale: scale) {
                 var operation = MaskOperation(mask: mask, kind: .fill, effectiveFrame: effectiveFrame)
 #if DEBUG

@@ -15,14 +15,15 @@ struct MaskCollectorPrecedenceTests {
 
     @Test("explicitMaskState is nil when the view has no rule")
     func explicitMaskStateNoRule() {
-        #expect(makeSettings().explicitMaskState(UIView()) == nil)
+        let view = UIView()
+        #expect(makeSettings().explicitMaskState(view, viewType: type(of: view)) == nil)
     }
 
     @Test("explicitMaskState is true after .ldMask()")
     func explicitMaskStateLdMask() {
         let view = UIView()
         view.ldMask()
-        #expect(makeSettings().explicitMaskState(view) == true)
+        #expect(makeSettings().explicitMaskState(view, viewType: type(of: view)) == true)
     }
 
     @Test("explicitMaskState is true when accessibilityIdentifier matches maskAccessibilityIdentifiers")
@@ -30,20 +31,21 @@ struct MaskCollectorPrecedenceTests {
         let settings = makeSettings(.init(maskTextInputs: false, maskAccessibilityIdentifiers: ["secret"]))
         let view = UIView()
         view.accessibilityIdentifier = "secret"
-        #expect(settings.explicitMaskState(view) == true)
+        #expect(settings.explicitMaskState(view, viewType: type(of: view)) == true)
     }
 
     @Test("explicitMaskState is true when the view class is in maskUIViews")
     func explicitMaskStateClassMask() {
         let settings = makeSettings(.init(maskTextInputs: false, maskUIViews: [UILabel.self]))
-        #expect(settings.explicitMaskState(UILabel()) == true)
+        let view = UILabel()
+        #expect(settings.explicitMaskState(view, viewType: type(of: view)) == true)
     }
 
     @Test("explicitMaskState is false after .ldUnmask()")
     func explicitMaskStateLdUnmask() {
         let view = UIView()
         view.ldUnmask()
-        #expect(makeSettings().explicitMaskState(view) == false)
+        #expect(makeSettings().explicitMaskState(view, viewType: type(of: view)) == false)
     }
 
     @Test("explicitMaskState is false when accessibilityIdentifier matches unmaskAccessibilityIdentifiers")
@@ -51,13 +53,14 @@ struct MaskCollectorPrecedenceTests {
         let settings = makeSettings(.init(maskTextInputs: false, unmaskAccessibilityIdentifiers: ["public"]))
         let view = UIView()
         view.accessibilityIdentifier = "public"
-        #expect(settings.explicitMaskState(view) == false)
+        #expect(settings.explicitMaskState(view, viewType: type(of: view)) == false)
     }
 
     @Test("explicitMaskState is false when the view class is in unmaskUIViews")
     func explicitMaskStateClassUnmask() {
         let settings = makeSettings(.init(maskTextInputs: false, unmaskUIViews: [UILabel.self]))
-        #expect(settings.explicitMaskState(UILabel()) == false)
+        let view = UILabel()
+        #expect(settings.explicitMaskState(view, viewType: type(of: view)) == false)
     }
 
     @Test("explicitMaskState: mask wins over unmask when both apply via different channels")
@@ -66,7 +69,7 @@ struct MaskCollectorPrecedenceTests {
         let view = UIView()
         view.accessibilityIdentifier = "conflict"
         view.ldMask()
-        #expect(settings.explicitMaskState(view) == true)
+        #expect(settings.explicitMaskState(view, viewType: type(of: view)) == true)
     }
 
     // MARK: - resolveExplicitMask (combines ancestor state with per-view state)
@@ -75,37 +78,41 @@ struct MaskCollectorPrecedenceTests {
     func resolveAncestorMaskedWins() {
         let view = UIView()
         view.ldUnmask()
-        #expect(makeSettings().resolveExplicitMask(view, inheritedExplicitMask: true) == true)
+        #expect(makeSettings().resolveExplicitMask(view, viewType: type(of: view), inheritedExplicitMask: true) == true)
     }
 
     @Test("resolveExplicitMask: own mask overrides inherited unmask")
     func resolveOwnMaskOverridesInheritedUnmask() {
         let view = UIView()
         view.ldMask()
-        #expect(makeSettings().resolveExplicitMask(view, inheritedExplicitMask: false) == true)
+        #expect(makeSettings().resolveExplicitMask(view, viewType: type(of: view), inheritedExplicitMask: false) == true)
     }
 
     @Test("resolveExplicitMask: inherited unmask propagates when the view has no own rule")
     func resolveInheritedUnmaskPropagates() {
-        #expect(makeSettings().resolveExplicitMask(UIView(), inheritedExplicitMask: false) == false)
+        let view = UIView()
+        #expect(makeSettings().resolveExplicitMask(view, viewType: type(of: view), inheritedExplicitMask: false) == false)
     }
 
     // MARK: - shouldMask (final precedence: explicit wins, fall back to global config)
 
     @Test("shouldMask returns true when the resolved explicit state is true")
     func shouldMaskExplicitMaskWins() {
-        #expect(makeSettings().shouldMask(UIView(), resolvedExplicitMask: true) == true)
+        let view = UIView()
+        #expect(makeSettings().shouldMask(view, viewType: type(of: view), resolvedExplicitMask: true) == true)
     }
 
     @Test("shouldMask: resolved unmask overrides a global rule that would otherwise mask")
     func shouldMaskExplicitUnmaskOverridesGlobal() {
         let settings = makeSettings(.init(maskLabels: true))
-        #expect(settings.shouldMask(UILabel(), resolvedExplicitMask: false) == false)
+        let view = UILabel()
+        #expect(settings.shouldMask(view, viewType: type(of: view), resolvedExplicitMask: false) == false)
     }
 
     @Test("shouldMask: with no explicit rule, the global config decides")
     func shouldMaskGlobalFallback() {
         let settings = makeSettings(.init(maskLabels: true))
-        #expect(settings.shouldMask(UILabel(), resolvedExplicitMask: nil) == true)
+        let view = UILabel()
+        #expect(settings.shouldMask(view, viewType: type(of: view), resolvedExplicitMask: nil) == true)
     }
 }
