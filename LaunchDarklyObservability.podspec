@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklyObservability"
-  s.version          = "0.33.1" # x-release-please-version
+  s.version          = "0.34.0" # x-release-please-version
   s.summary          = "iOS Observability Plugin for LaunchDarkly."
   s.description      = <<-DESC
                         LaunchDarkly is the feature management platform that software teams use to build better software, faster.
@@ -33,7 +33,7 @@ Pod::Spec.new do |s|
     ]
     ss.public_header_files = "Sources/ObjCBridge/*.h"
     ss.dependency "LaunchDarklyObservability/Common"
-    ss.dependency "LaunchDarklyObservability/OpenTelemetryProtocolExporterCommon"
+    ss.dependency "LaunchDarklyObservability/JSONExporters"
     ss.dependency "LaunchDarklyObservability/URLSessionInstrumentation"
     ss.dependency "LaunchDarklyObservability/SDKResourceExtension"
     ss.dependency "LaunchDarklyObservability/OpenTelemetry"
@@ -46,11 +46,11 @@ Pod::Spec.new do |s|
     ss.dependency 'LaunchDarkly', '~> 11.1.0'
   end
 
-  # OpenTelemetryProtocolExporterCommon subspec
-  s.subspec "OpenTelemetryProtocolExporterCommon" do |ss|
-    ss.source_files = "Sources/OpenTelemetry/OpenTelemetryProtocolExporterCommon/**/*.{swift,h,m}"
+  # JSONExporters subspec — OTLP/JSON wire-format models and adapters
+  s.subspec "JSONExporters" do |ss|
+    ss.source_files = "Sources/OpenTelemetry/JSONExporters/**/*.{swift,h,m}"
+    ss.dependency 'OpenTelemetry-Swift-Api', '~> 2.3.0'
     ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.3.0'
-    ss.dependency 'SwiftProtobuf'
   end
 
   # NetworkStatus subspec

@@ -1,7 +1,7 @@
 import OpenTelemetrySdk
 import Foundation
 #if !LD_COCOAPODS
-    import OpenTelemetryProtocolExporterCommon
+    import JSONExporters
     import Common
 #endif
 
@@ -31,11 +31,7 @@ final class OtlpMetricEventExporter: EventExporting {
     
     private func export(metricDatas: [MetricData],
                         explicitTimeout: TimeInterval? = nil) async throws {
-        let body = Opentelemetry_Proto_Collector_Metrics_V1_ExportMetricsServiceRequest.with { request in
-            request.resourceMetrics = MetricsAdapter.toProtoResourceMetrics(
-                metricData: metricDatas)
-        }
-        
-        try await otlpHttpClient.send(body: body, explicitTimeout: explicitTimeout)
+        let body = JsonMetricsAdapter.toJsonRequest(metricData: metricDatas)
+        try await otlpHttpClient.send(jsonBody: body, explicitTimeout: explicitTimeout)
     }
 }
