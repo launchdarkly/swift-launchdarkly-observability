@@ -23,6 +23,8 @@ struct MainMenuView: View {
     @State private var isMaskingUIKitOneFieldEnabled: Bool = false
     @State private var isMaskingUIKitCreditCardEnabled: Bool = false
     @State private var isMaskingSwiftUICreditCardEnabled: Bool = false
+    @State private var isMaskPropagationEnabled: Bool = false
+    @State private var isMaskPropagationUIKitEnabled: Bool = false
     @State private var isNumberPadEnabled: Bool = false
     @State private var isNotebookEnabled: Bool = false
     @State private var isStoryboardEnabled: Bool = false
@@ -71,6 +73,12 @@ struct MainMenuView: View {
         .sheet(isPresented: $isMaskingUIKitOneFieldEnabled) {
             MaskingElementsSimpleUIKitView()
         }
+        .sheet(isPresented: $isMaskPropagationEnabled) {
+            NestedMaskingPropagationView()
+        }
+        .sheet(isPresented: $isMaskPropagationUIKitEnabled) {
+            NestedMaskingPropagationUIKitView()
+        }
 #if os(iOS)
         .sheet(isPresented: $isMaskingUIKitCreditCardEnabled) {
             MaskingCreditCardUIKitView()
@@ -116,6 +124,11 @@ struct MainMenuView: View {
             }
             MaskingGridRow(title: "Number Pad", uikitAction: nil) {
                 isNumberPadEnabled = true
+            }
+            MaskingGridRow(title: "Mask Propagation", uikitAction: {
+                isMaskPropagationUIKitEnabled = true
+            }) {
+                isMaskPropagationEnabled = true
             }
             MaskingGridRow(title: "Dialogs", uikitAction: {
                 isDialogsUIKitEnabled = true
