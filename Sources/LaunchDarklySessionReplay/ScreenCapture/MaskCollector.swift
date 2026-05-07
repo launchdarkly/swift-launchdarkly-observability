@@ -79,29 +79,41 @@ final class MaskCollector {
             return false
         }
         
-        func shouldMask(_ view: UIView) -> Bool {
-            if let shouldUnmask = SessionReplayAssociatedObjects.shouldMaskUIView(view),
-               !shouldUnmask {
-                return false
+        func isExplicitlyMasked(_ view: UIView) -> Bool {
+            if SessionReplayAssociatedObjects.shouldMaskUIView(view) == true {
+                return true
             }
-            
+            if maskUIViews.contains(ObjectIdentifier(type(of: view))) {
+                return true
+            }
+            if let accessibilityIdentifier = view.accessibilityIdentifier,
+               maskAccessibilityIdentifiers.contains(accessibilityIdentifier) {
+                return true
+            }
+            return false
+        }
+
+        func isExplicitlyUnmasked(_ view: UIView) -> Bool {
+            if SessionReplayAssociatedObjects.shouldMaskUIView(view) == false {
+                return true
+            }
+            if unmaskUIViews.contains(ObjectIdentifier(type(of: view))) {
+                return true
+            }
             if let accessibilityIdentifier = view.accessibilityIdentifier,
                unmaskAccessibilityIdentifiers.contains(accessibilityIdentifier) {
-                return false
+                return true
             }
-            
-            let viewType = type(of: view)
-            let viewIdentifier = ObjectIdentifier(viewType)
-            if unmaskUIViews.contains(viewIdentifier) {
-                return false
-            }
-            
-            let stringViewType = String(describing: viewType)
-            
+            return false
+        }
+
+        func shouldMaskFromGlobalConfig(_ view: UIView) -> Bool {
+            let stringViewType = String(describing: type(of: view))
+
             if maskiOS26ViewTypes.contains(stringViewType) {
                 return true
             }
-            
+
             if maskWebViews {
 #if canImport(WebKit)
                 if view is WKWebView {
@@ -109,8 +121,8 @@ final class MaskCollector {
                 }
 #endif
             }
-            
-            if maskTextInputs  {
+
+            if maskTextInputs {
                 if view is UITextInput {
 #if canImport(WebKit)
                     if stringViewType != "WKContentView" {
@@ -124,25 +136,41 @@ final class MaskCollector {
                     return true
                 }
             }
-            
-            if maskLabels, let _ = view as? UILabel {
+
+            if maskLabels && view is UILabel {
                 return true
             }
-            
-            if maskImages, view is UIImageView {
+
+            if maskImages && view is UIImageView {
                 return true
             }
-            
-            if maskUIViews.contains(viewIdentifier) {
+
+            return false
+        }
+
+        /// Returns the explicit mask state of `view` itself, ignoring ancestors:
+        /// `true` = explicitly masked, `false` = explicitly unmasked, `nil` = no explicit rule.
+        /// Mask wins over unmask when both apply to the same view.
+        func explicitMaskState(_ view: UIView) -> Bool? {
+            if isExplicitlyMasked(view) {
                 return true
             }
-            
-            if let accessibilityIdentifier = view.accessibilityIdentifier,
-               maskAccessibilityIdentifiers.contains(accessibilityIdentifier) {
-                return true
+            if isExplicitlyUnmasked(view) {
+                return false
             }
-            
-            return SessionReplayAssociatedObjects.shouldMaskUIView(view) == true
+            return nil
+        }
+
+        /// Combines the inherited explicit state from ancestors with `view`'s own explicit state.
+        /// Short-circuits when an ancestor is already masked: mask propagation wins outright.
+        func resolveExplicitMask(_ view: UIView, inheritedExplicitMask: Bool?) -> Bool? {
+            if inheritedExplicitMask == true { return true }
+            return explicitMaskState(view) ?? inheritedExplicitMask
+        }
+
+        /// Final precedence: an explicit (resolved) state wins; otherwise fall back to global config.
+        func shouldMask(_ view: UIView, resolvedExplicitMask: Bool?) -> Bool {
+            return resolvedExplicitMask ?? shouldMaskFromGlobalConfig(view)
         }
     }
     
@@ -159,17 +187,18 @@ final class MaskCollector {
         let root = rootView.layer
         let rPresenation = root.presentation() ?? root
         
-        func visit(layer: CALayer) {
+        func visit(layer: CALayer, inheritedExplicitMask: Bool?) {
             guard let view = layer.delegate as? UIView else { return }
             guard !view.isHidden,
                   view.window != nil,
                   layer.opacity >= settings.minimumAlpha else { return }
-            
+
             guard !settings.shouldIgnore(view) else { return }
-            
+
             let effectiveFrame = rPresenation.convert(layer.frame, from: layer.superlayer)
-            
-            let shouldMask = settings.shouldMask(view)
+
+            let resolvedExplicitMask = settings.resolveExplicitMask(view, inheritedExplicitMask: inheritedExplicitMask)
+            let shouldMask = settings.shouldMask(view, resolvedExplicitMask: resolvedExplicitMask)
             if shouldMask, let mask = createMask(rPresenation, layer: layer, scale: scale) {
                 var operation = MaskOperation(mask: mask, kind: .fill, effectiveFrame: effectiveFrame)
 #if DEBUG
@@ -178,26 +207,26 @@ final class MaskCollector {
                 operations.append(operation)
                 return
             }
-            
+
             if let scrollView = view as? UIScrollView {
                 let offset = scrollView.contentOffset
                 if offset.x != 0 || offset.y != 0 {
                     offsetRects.append(OffsettedArea(rect: effectiveFrame, offset: offset))
                 }
             }
-            
+
             if operations.isNotEmpty, !isSystem(view: view, pLayer: layer), !isTransparent(view: view, pLayer: layer) {
                 operations.removeAll {
                     effectiveFrame.contains($0.effectiveFrame)
                 }
             }
-            
+
             if let sublayers = layer.sublayers?.sorted(by: { $0.zPosition < $1.zPosition }) {
-                sublayers.forEach(visit)
+                sublayers.forEach { visit(layer: $0, inheritedExplicitMask: resolvedExplicitMask) }
             }
         }
-        
-        rPresenation.sublayers?.sorted { $0.zPosition < $1.zPosition }.forEach(visit)
+
+        rPresenation.sublayers?.sorted { $0.zPosition < $1.zPosition }.forEach { visit(layer: $0, inheritedExplicitMask: nil) }
         
         return (operations, offsetRects)
     }
