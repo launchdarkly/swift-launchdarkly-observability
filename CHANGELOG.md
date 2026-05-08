@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.34.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.34.1...0.34.2) (2026-05-08)
+
+
+### Bug Fixes
+
+* iOS26 SwiftUI masking cases ([#195](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/195)) ([386d0ad](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/386d0ad4e0629c1a6dc876f3caf7d056e0c337ad))
+
 ## [0.34.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.34.0...0.34.1) (2026-05-07)
 
 
