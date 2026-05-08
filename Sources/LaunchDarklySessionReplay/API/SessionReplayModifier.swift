@@ -24,6 +24,17 @@ struct SessionReplayViewRepresentable: UIViewRepresentable {
         self.isIgnored = isIgnored
     }
 
+    /// Marker view inserted by `.ldMask()` / `.ldUnmask()` / `.ldIgnore()` /
+    /// `.ldPrivate(...)` SwiftUI modifiers.
+    ///
+    /// Because `SessionReplayModifier` attaches itself via `.overlay()`, this
+    /// view ends up as a *sibling* of the modified content in the UIKit
+    /// hierarchy — not an ancestor. The view itself carries the explicit
+    /// mask/ignore state via associated objects; `MaskCollector` then detects
+    /// these markers at collection time, walks up to the lowest common
+    /// ancestor of the overlay branch and the content branch, and propagates
+    /// the explicit state to that ancestor so it reaches the modified
+    /// content.
     class MaskView: UIView {
         override func didMoveToSuperview() {
             super.didMoveToSuperview()
