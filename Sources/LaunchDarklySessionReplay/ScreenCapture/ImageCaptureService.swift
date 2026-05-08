@@ -21,6 +21,7 @@ public struct RawFrame {
 public final class ImageCaptureService {
     private let maskingService = MaskApplier()
     private let maskCollector: MaskCollector
+    private let maskStabilizer = MaskStabilizer()
     private let windowCaptureManager = WindowCaptureManager()
     @MainActor
     private var shouldCapture = false
@@ -76,7 +77,7 @@ public final class ImageCaptureService {
                 var applyOperations = [[MaskOperation]]()
                 var areas = [OffsettedArea]()
                 for (before, after) in zip(maskOperationsBefore, maskOperationsAfter) {
-                    if let newOperations = maskCollector.duplicateUnsimilar(before: before.maskOperations, after: after.maskOperations) {
+                    if let newOperations = self.maskStabilizer.duplicateUnsimilar(before: before.maskOperations, after: after.maskOperations) {
                         areas.append(contentsOf: before.offsetRects)
                         applyOperations.append(newOperations)
                     } else {

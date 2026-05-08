@@ -47,13 +47,12 @@ struct SessionReplayModifierPropagationTests {
 
     // MARK: - computeMarkerAreas
 
-    @Test("computeMarkerAreasAndOverlayBranches projects each marker into root-layer coordinates with the developer's explicit state")
+    @Test("MarkerScanner.scan projects each marker into root-layer coordinates with the developer's explicit state")
     func computeMarkerAreasProjectsToRoot() {
         let (window, _, mask) = makeOverlayHierarchy()
         SessionReplayAssociatedObjects.maskUIView(mask, isEnabled: false)
 
-        let collector = MaskCollector(privacySettings: .init(maskTextInputs: false))
-        let (areas, overlayBranchViews) = collector.computeMarkerAreasAndOverlayBranches(in: window, rPresentation: window.layer)
+        let (areas, overlayBranchViews) = MarkerScanner().scan(in: window, rPresentation: window.layer)
         #expect(areas.count == 1)
         #expect(areas.first?.mask == false)
         #expect(areas.first?.ignore == nil)
@@ -63,18 +62,17 @@ struct SessionReplayModifierPropagationTests {
         #expect(overlayBranchViews.contains(ObjectIdentifier(mask)))
     }
 
-    @Test("computeMarkerAreasAndOverlayBranches records ignore=true for an .ldIgnore() marker")
+    @Test("MarkerScanner.scan records ignore=true for an .ldIgnore() marker")
     func computeMarkerAreasIgnore() {
         let (window, _, mask) = makeOverlayHierarchy()
         SessionReplayAssociatedObjects.ignoreUIView(mask, isEnabled: true)
 
-        let collector = MaskCollector(privacySettings: .init(maskTextInputs: false))
-        let (areas, _) = collector.computeMarkerAreasAndOverlayBranches(in: window, rPresentation: window.layer)
+        let (areas, _) = MarkerScanner().scan(in: window, rPresentation: window.layer)
         #expect(areas.count == 1)
         #expect(areas.first?.ignore == true)
     }
 
-    @Test("computeMarkerAreasAndOverlayBranches skips MaskView instances that are detached from the window")
+    @Test("MarkerScanner.scan skips MaskView instances that are detached from the window")
     func computeMarkerAreasSkipsDetached() {
         let detachedHost = UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
         let mask = MaskView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
@@ -87,12 +85,11 @@ struct SessionReplayModifierPropagationTests {
         window.isHidden = false
         window.layoutIfNeeded()
 
-        let collector = MaskCollector(privacySettings: .init(maskTextInputs: false))
-        let (areas, _) = collector.computeMarkerAreasAndOverlayBranches(in: window, rPresentation: window.layer)
+        let (areas, _) = MarkerScanner().scan(in: window, rPresentation: window.layer)
         #expect(areas.isEmpty)
     }
 
-    @Test("computeMarkerAreasAndOverlayBranches stops at a single-child host whose bounds exceed the marker's")
+    @Test("MarkerScanner.scan stops at a single-child host whose bounds exceed the marker's")
     func computeMarkerAreasStopsAtLargerSingleChildHost() {
         // Reproduces the live MainMenuView shape on iOS 26: the marker
         // wrappers end inside a `CellHostingView`-equivalent that has
@@ -128,8 +125,7 @@ struct SessionReplayModifierPropagationTests {
 
         SessionReplayAssociatedObjects.maskUIView(mask, isEnabled: true)
 
-        let collector = MaskCollector(privacySettings: .init(maskTextInputs: false))
-        let (_, overlayBranchViews) = collector.computeMarkerAreasAndOverlayBranches(in: window, rPresentation: window.layer)
+        let (_, overlayBranchViews) = MarkerScanner().scan(in: window, rPresentation: window.layer)
 
         // Overlay-branch chain stops at the marker wrapper because
         // `cellContent` is much larger than the marker.
@@ -186,7 +182,7 @@ struct SessionReplayModifierPropagationTests {
         #expect(result.maskOperations.count == 1)
     }
 
-    @Test("computeMarkerAreasAndOverlayBranches collects the single-child wrapper chain above each marker")
+    @Test("MarkerScanner.scan collects the single-child wrapper chain above each marker")
     func computeMarkerAreasCollectsOverlayChain() {
         // Wrappers with one child each above the MaskView form the
         // overlay branch and must be skipped during the visit pass to
@@ -209,8 +205,7 @@ struct SessionReplayModifierPropagationTests {
 
         SessionReplayAssociatedObjects.maskUIView(mask, isEnabled: true)
 
-        let collector = MaskCollector(privacySettings: .init(maskTextInputs: false))
-        let (_, overlayBranchViews) = collector.computeMarkerAreasAndOverlayBranches(in: window, rPresentation: window.layer)
+        let (_, overlayBranchViews) = MarkerScanner().scan(in: window, rPresentation: window.layer)
 
         #expect(overlayBranchViews.contains(ObjectIdentifier(mask)))
         #expect(overlayBranchViews.contains(ObjectIdentifier(innerWrapper)))
@@ -221,12 +216,12 @@ struct SessionReplayModifierPropagationTests {
 
     @Test("MarkerOverride.combine: mask=true beats mask=false on the same area")
     func combineMaskPrecedence() {
-        var override = MaskCollector.MarkerOverride()
+        var override = MarkerScanner.MarkerOverride()
         override.combine(mask: false, ignore: nil)
         override.combine(mask: true, ignore: nil)
         #expect(override.mask == true)
 
-        var override2 = MaskCollector.MarkerOverride()
+        var override2 = MarkerScanner.MarkerOverride()
         override2.combine(mask: true, ignore: nil)
         override2.combine(mask: false, ignore: nil)
         #expect(override2.mask == true)

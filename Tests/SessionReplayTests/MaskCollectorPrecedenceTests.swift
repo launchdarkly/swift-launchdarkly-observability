@@ -4,7 +4,7 @@ import UIKit
 
 @MainActor
 struct MaskCollectorPrecedenceTests {
-    typealias Settings = MaskCollector.Settings
+    typealias Settings = MaskingPolicy
     typealias PrivacyOptions = SessionReplayOptions.PrivacyOptions
 
     private func makeSettings(_ privacy: PrivacyOptions = PrivacyOptions(maskTextInputs: false)) -> Settings {
