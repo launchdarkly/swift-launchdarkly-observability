@@ -25,7 +25,7 @@ struct SmoothieRow: View {
                 .clipShape(imageClipShape)
                 .overlay(imageClipShape.strokeBorder(.quaternary, lineWidth: 0.5))
                 .accessibility(hidden: true)
-                .ldPrivate()
+                .ldMask()
 
             VStack(alignment: .leading) {
                 Text(smoothie.title)
@@ -45,7 +45,6 @@ struct SmoothieRow: View {
         }
         .font(.subheadline)
         .accessibilityElement(children: .combine)
-        .ldIgnore()
     }
     
     var listedIngredients: String {

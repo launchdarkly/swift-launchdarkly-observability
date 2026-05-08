@@ -1,24 +1,11 @@
 import Foundation
 import OSLog
 @_exported import OpenTelemetryApi
-///
-/// Configuration options for the Observability plugin.
-///
-///   - serviceName The service name for the application. Defaults to the app package name if not set.
-///   - serviceVersion The version of the service. Defaults to the app version if not set.
-///   - otlpEndpoint The OTLP exporter endpoint. Defaults to LaunchDarkly endpoint.
-///   - backendUrl The backend URL for non-OTLP operations. Defaults to LaunchDarkly url.
-///   - resourceAttributes Additional resource attributes to include in telemetry data.
-///   - customHeaders Custom headers to include with OTLP exports.
-///   - sessionBackgroundTimeout Session timeout if app is backgrounded. Defaults to 15 minutes. 15 * 60
-///   - isDebug Enables verbose telemetry logging if true as well as other debug functionality. Defaults to false.
-///   - disableLogs Disables logs if true. Defaults to false.
-///   - disableTraces Disables traces if true. Defaults to false.
-///   - disableMetrics Disables metrics if true. Defaults to false.
-///   - logAdapter The log adapter to use. Defaults to using the LaunchDarkly SDK's LDTimberLogging.adapter(). ///Use LDAndroidLogging.adapter() to use the Android logging adapter.
-///   - loggerName The name of the logger to use. Defaults to "LaunchDarklyObservabilityPlugin".
-///
 
+/// Configuration options for the LaunchDarkly Observability plugin.
+///
+/// Pass an instance to the plugin at initialisation to control the OTLP exporter
+/// endpoint, telemetry levels, automatic instrumentation, and crash reporting.
 public struct ObservabilityOptions {
     public enum Defaults {
         public static let otlpEndpoint = "https://otel.observability.app.launchdarkly.com:4318"
@@ -205,6 +192,45 @@ public struct ObservabilityOptions {
     public var crashReporting: CrashReporting
     public var instrumentation: Instrumentation
     
+    /// Creates a configuration for the Observability plugin.
+    ///
+    /// - Parameters:
+    ///   - isEnabled: Whether the plugin emits telemetry. When `false` the plugin is installed
+    ///     but no logs, traces, or metrics are exported. Defaults to `true`.
+    ///   - serviceName: The OpenTelemetry `service.name` attribute reported with every signal.
+    ///     Defaults to `"observability-swift"`.
+    ///   - serviceVersion: The OpenTelemetry `service.version` attribute reported with every
+    ///     signal. Defaults to `"0.1.0"`.
+    ///   - otlpEndpoint: The OTLP/HTTP exporter endpoint. `nil` or an empty string falls back
+    ///     to ``Defaults/otlpEndpoint``.
+    ///   - backendUrl: The backend URL used for non-OTLP operations (e.g. session metadata).
+    ///     `nil` or an empty string falls back to ``Defaults/backendUrl``.
+    ///   - contextFriendlyName: An optional human-readable name attached to the LaunchDarkly
+    ///     context for this session. Defaults to `nil`.
+    ///   - resourceAttributes: Additional OpenTelemetry resource attributes merged into every
+    ///     signal. Defaults to an empty dictionary.
+    ///   - customHeaders: Extra HTTP headers added to OTLP exports (e.g. for proxies or auth).
+    ///     Defaults to an empty dictionary.
+    ///   - tracingOrigins: Which outgoing request origins should propagate distributed tracing
+    ///     headers. Defaults to ``TracingOriginsOption/disabled``.
+    ///   - urlBlocklist: URL patterns to exclude from automatic URLSession instrumentation.
+    ///     Defaults to an empty array.
+    ///   - sessionBackgroundTimeout: How long the app may stay in the background before the
+    ///     current session is ended. Defaults to 15 minutes.
+    ///   - isDebug: Enables verbose internal logging and other debug behaviour. Defaults to
+    ///     `false`.
+    ///   - logsApiLevel: Minimum severity of logs forwarded to the OpenTelemetry logs pipeline.
+    ///     Use ``LogLevel/none`` to disable logs entirely. Defaults to ``LogLevel/info``.
+    ///   - tracesApi: Controls automatic trace generation (errors and spans). Use
+    ///     ``AppTracing/disabled`` to turn tracing off. Defaults to ``AppTracing/enabled``.
+    ///   - metricsApi: Controls metric export. Use ``AppMetrics/disabled`` to turn metrics
+    ///     off. Defaults to ``AppMetrics/enabled``.
+    ///   - log: The `OSLog` used for the plugin's own diagnostic output. Defaults to a logger
+    ///     under subsystem `"com.launchdarkly"` and category `"LaunchDarklyObservabilityPlugin"`.
+    ///   - crashReporting: Crash-reporting configuration, including which provider to use
+    ///     (KSCrash or MetricKit). Defaults to ``CrashReporting/enabled`` (KSCrash).
+    ///   - instrumentation: Per-feature toggles for automatic instrumentation (URLSession,
+    ///     user taps, memory, CPU, launch times, …). Defaults to all features disabled.
     public init(
         isEnabled: Bool = true,
         serviceName: String = "observability-swift",

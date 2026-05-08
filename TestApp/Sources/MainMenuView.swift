@@ -329,7 +329,7 @@ private struct MaskingGridRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(title)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading).ldMask()
             Button("UIKit") { uikitAction?() }
                 .disabled(uikitAction == nil)
                 .frame(maxWidth: .infinity)
