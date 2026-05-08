@@ -149,23 +149,26 @@ final class MaskingPolicy {
         // string allocation for the vast majority of views (the
         // protocol conformance is implemented in cached witness
         // tables on a small set of UIKit classes).
+        //
+        // The remaining checks all key off the type's name, so once
+        // we've allocated the string for the `WKContentView`
+        // discrimination we keep reusing it instead of recomputing.
 #if canImport(WebKit)
+        let stringViewType: String
         if maskTextInputs, view is UITextInput {
-            let stringViewType = String(describing: viewType)
+            stringViewType = String(describing: viewType)
             if stringViewType != "WKContentView" {
                 return true
             }
+        } else {
+            stringViewType = String(describing: viewType)
         }
 #else
         if maskTextInputs, view is UITextInput {
             return true
         }
-#endif
-
-        // The remaining checks all key off the type's name. Compute
-        // it once for whichever fallthrough branch is still
-        // reachable.
         let stringViewType = String(describing: viewType)
+#endif
 
         if Constants.maskiOS26ViewTypes.contains(stringViewType) {
             return true
