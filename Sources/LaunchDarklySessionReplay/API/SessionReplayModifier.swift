@@ -36,6 +36,37 @@ struct SessionReplayViewRepresentable: UIViewRepresentable {
     /// the explicit state to that ancestor so it reaches the modified
     /// content.
     class MaskView: UIView {
+        // Tracks how many markers are currently attached to a window so
+        // `MaskCollector` can skip its per-frame UIView walk entirely
+        // when the running app uses no `.ldMask()` / `.ldUnmask()` /
+        // `.ldIgnore()` modifiers.
+        //
+        // Mutated only on the main thread in `didMoveToWindow`. Reads
+        // happen on the screen-capture queue; a stale read at worst
+        // costs one frame of skipped/extra work, which is acceptable
+        // because the next capture will see the corrected value.
+        private static let liveMarkerLock = NSLock()
+        private static var liveMarkerCount: Int = 0
+        private var isCounted: Bool = false
+
+        static var hasLiveMarkers: Bool {
+            liveMarkerLock.lock()
+            defer { liveMarkerLock.unlock() }
+            return liveMarkerCount > 0
+        }
+
+        private static func incrementLiveMarkers() {
+            liveMarkerLock.lock()
+            liveMarkerCount += 1
+            liveMarkerLock.unlock()
+        }
+
+        private static func decrementLiveMarkers() {
+            liveMarkerLock.lock()
+            liveMarkerCount = max(0, liveMarkerCount - 1)
+            liveMarkerLock.unlock()
+        }
+
         override func didMoveToSuperview() {
             super.didMoveToSuperview()
             // We want to make sure the wrapper view created by SwiftUI also doesn't intercept touches
@@ -45,6 +76,21 @@ struct SessionReplayViewRepresentable: UIViewRepresentable {
         override func didMoveToWindow() {
             super.didMoveToWindow()
             superview?.isUserInteractionEnabled = false
+
+            let isAttached = window != nil
+            if isAttached, !isCounted {
+                isCounted = true
+                Self.incrementLiveMarkers()
+            } else if !isAttached, isCounted {
+                isCounted = false
+                Self.decrementLiveMarkers()
+            }
+        }
+
+        deinit {
+            if isCounted {
+                Self.decrementLiveMarkers()
+            }
         }
 
         override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
