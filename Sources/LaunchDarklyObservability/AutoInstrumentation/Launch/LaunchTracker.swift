@@ -10,102 +10,125 @@ final class LaunchTracker {
         let sceneID: String?
         let systemUptime: TimeInterval
     }
+
     struct LaunchInfo: Hashable {
         let sceneID: String?
         let start: TimeInterval
         let end: TimeInterval
         let type: LaunchType
     }
+
+    struct PendingLaunch {
+        let startTime: TimeInterval
+        let type: LaunchType
+    }
+
     struct State {
-        var sceneStartTimes: [String: TimeInterval]
-        var hasRecordedColdLaunch = false
+        /// Scenes that have a start time recorded but haven't activated yet.
+        var pendingSceneStarts: [String: PendingLaunch]
+        /// Scene IDs we have seen at least once (used to distinguish first-time vs returning scenes).
+        var seenSceneIDs: Set<String>
+        var hasRecordedColdLaunch: Bool
         var buffer: [LaunchInfo]
-        
+
         init(
-            sceneStartTimes: [String : TimeInterval] = [:],
+            pendingSceneStarts: [String: PendingLaunch] = [:],
+            seenSceneIDs: Set<String> = [],
             hasRecordedColdLaunch: Bool = false,
             buffer: [LaunchInfo] = []
         ) {
-            self.sceneStartTimes = sceneStartTimes
+            self.pendingSceneStarts = pendingSceneStarts
+            self.seenSceneIDs = seenSceneIDs
             self.hasRecordedColdLaunch = hasRecordedColdLaunch
             self.buffer = buffer
         }
     }
+
     enum Action: Equatable {
-        case sceneDidBecomeActive(SceneData)
+        /// Fires when a scene enters the foreground. For a brand-new scene this also determines
+        /// whether the launch is cold or sceneCreation; for a returning scene it is warm.
         case sceneWillEnterForeground(SceneData)
+        /// Fires when a scene becomes interactive — marks the end of the launch window.
+        case sceneDidBecomeActive(SceneData)
+        /// Called after buffered items have been sent to the tracing backend.
         case launchInfoItemsWereTraced([LaunchInfo])
     }
-    
+
     static func reduce(state: inout State, action: Action) {
         switch action {
-        case .sceneDidBecomeActive(let sceneData):
-            guard let id = sceneData.sceneID, let startUptime = state.sceneStartTimes[id] else {
-                return
-            }
-            let endUptime = sceneData.systemUptime
-            let launchType: LaunchType = state.hasRecordedColdLaunch ? .warm : .cold
-            // Mark cold launch recorded once
-            if !state.hasRecordedColdLaunch {
-                state.hasRecordedColdLaunch = true
-            }
-            let launchInfo = LaunchInfo(sceneID: id, start: startUptime, end: endUptime, type: launchType)
-            state.buffer.append(launchInfo)
         case .sceneWillEnterForeground(let sceneData):
-            guard let id = sceneData.sceneID else {
-                return
+            guard let id = sceneData.sceneID else { return }
+
+            if !state.seenSceneIDs.contains(id) {
+                // First time we see this scene — cold or sceneCreation.
+                state.seenSceneIDs.insert(id)
+                if !state.hasRecordedColdLaunch {
+                    state.hasRecordedColdLaunch = true
+                    // Process-start uptime so duration spans from process creation, not foreground notification time.
+                    state.pendingSceneStarts[id] = PendingLaunch(
+                        startTime: AppStartTime.stats.startTime,
+                        type: .cold
+                    )
+                } else {
+                    state.pendingSceneStarts[id] = PendingLaunch(startTime: sceneData.systemUptime, type: .sceneCreation)
+                }
+            } else {
+                // Scene has been active before — warm launch.
+                // Guard against duplicate events while a measurement is already in progress.
+                guard state.pendingSceneStarts[id] == nil else { return }
+                state.pendingSceneStarts[id] = PendingLaunch(startTime: sceneData.systemUptime, type: .warm)
             }
-            state.sceneStartTimes[id] = sceneData.systemUptime
+
+        case .sceneDidBecomeActive(let sceneData):
+            guard let id = sceneData.sceneID,
+                  let pending = state.pendingSceneStarts[id] else { return }
+            let launchInfo = LaunchInfo(
+                sceneID: id,
+                start: pending.startTime,
+                end: sceneData.systemUptime,
+                type: pending.type
+            )
+            state.buffer.append(launchInfo)
+            state.pendingSceneStarts.removeValue(forKey: id)
+
         case .launchInfoItemsWereTraced(let items):
-            state.buffer.removeAll(where: { items.contains($0) })
+            let traced = Set(items)
+            state.buffer.removeAll { traced.contains($0) }
         }
-        
     }
-    
+
     private var cancellables = Set<AnyCancellable>()
     private let store: Store<State, Action>
-    
+
     var state: State {
         store.state
     }
-    
+
     init(initialState: State = .init()) {
         let store = Store<State, Action>(state: initialState, reducer: LaunchTracker.reduce(state:action:))
-        
         self.store = store
-        
         self.subscribeToSceneNotifications(usingStore: store)
     }
 }
 
 extension LaunchTracker {
-    func trace(
-        using tracingApi: TraceClient
-    ) async {
+    func trace(using tracingApi: TraceClient) async {
         await MainActor.run { [weak self] in
             guard let self else { return }
             let bufferedItems = store.state.buffer
+            let currentUptime = ProcessInfo.processInfo.systemUptime
+            let now = Date()
             bufferedItems.forEach { item in
                 tracingApi
                     .startSpan(
                         name: "AppStart",
                         attributes: [
-                            "start.type": .string(
-                                item.type.description
-                            ),
-                            "duration": .double(
-                                item.end - item.start
-                            )
+                            "start.type": .string(item.type.description),
+                            "duration": .double(item.end - item.start)
                         ],
-                        startTime: Date(
-                            timeIntervalSinceNow: -item.start
-                        )
+                        startTime: now.addingTimeInterval(item.start - currentUptime)
                     )
-                    .end(
-                        time: Date(
-                            timeIntervalSinceNow: -item.end
-                        )
-                    )
+                    .end(time: now.addingTimeInterval(item.end - currentUptime))
             }
             store.dispatch(.launchInfoItemsWereTraced(bufferedItems))
         }
@@ -114,6 +137,19 @@ extension LaunchTracker {
 
 extension LaunchTracker {
     func subscribeToSceneNotifications(usingStore store: Store<State, Action>) {
+        NotificationCenter.default.publisher(for: UIScene.willEnterForegroundNotification)
+            .subscribe(on: RunLoop.main)
+            .receive(on: RunLoop.main)
+            .sink { notification in
+                guard let scene = notification.object as? UIScene else { return }
+                let sceneData = SceneData(
+                    sceneID: scene.session.persistentIdentifier,
+                    systemUptime: ProcessInfo.processInfo.systemUptime
+                )
+                store.dispatch(.sceneWillEnterForeground(sceneData))
+            }
+            .store(in: &cancellables)
+
         NotificationCenter.default.publisher(for: UIScene.didActivateNotification)
             .subscribe(on: RunLoop.main)
             .receive(on: RunLoop.main)
@@ -126,21 +162,5 @@ extension LaunchTracker {
                 store.dispatch(.sceneDidBecomeActive(sceneData))
             }
             .store(in: &cancellables)
-        
-        NotificationCenter.default.publisher(for: UIScene.willEnterForegroundNotification)
-            .subscribe(on: RunLoop.main)
-            .receive(on: RunLoop.main)
-            .sink { notification in
-                guard let scene = notification.object as? UIScene else { return }
-                
-                let systemUptime = store.state.hasRecordedColdLaunch ? ProcessInfo.processInfo.systemUptime : AppStartTime.stats.startTime
-                let sceneData = SceneData(
-                    sceneID: scene.session.persistentIdentifier,
-                    systemUptime: systemUptime
-                )
-                store.dispatch(.sceneWillEnterForeground(sceneData))
-            }
-            .store(in: &cancellables)
     }
 }
-
