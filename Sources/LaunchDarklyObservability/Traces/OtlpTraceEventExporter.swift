@@ -1,7 +1,7 @@
 import OpenTelemetrySdk
 import Foundation
 #if !LD_COCOAPODS
-import OpenTelemetryProtocolExporterCommon
+import JSONExporters
 import Common
 #endif
 
@@ -30,12 +30,7 @@ final class OtlpTraceEventExporter: EventExporting {
     
     private func export(spanDatas: [OpenTelemetrySdk.SpanData],
                         explicitTimeout: TimeInterval? = nil) async throws {
-        let body =
-        Opentelemetry_Proto_Collector_Trace_V1_ExportTraceServiceRequest.with {
-            $0.resourceSpans = SpanAdapter.toProtoResourceSpans(
-                spanDataList: spanDatas)
-        }
-        
-        try await otlpHttpClient.send(body: body, explicitTimeout: explicitTimeout)
+        let body = JsonSpanAdapter.toJsonRequest(spanDataList: spanDatas)
+        try await otlpHttpClient.send(jsonBody: body, explicitTimeout: explicitTimeout)
     }
 }

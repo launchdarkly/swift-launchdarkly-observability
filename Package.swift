@@ -19,7 +19,6 @@ let package = Package(
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", exact: "2.3.0"),
         .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "11.1.1"),
         .package(url: "https://github.com/kstenerud/KSCrash.git", from: "2.3.0"),
-        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.32.0"),
     ],
     targets: [
         // C target (no Swift files here)
@@ -39,7 +38,7 @@ let package = Package(
                 "Common",
                 "ObjCBridge",
                 "URLSessionInstrumentation",
-                "OpenTelemetryProtocolExporterCommon",
+                "JSONExporters",
                 "SDKResourceExtension",
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
@@ -49,7 +48,8 @@ let package = Package(
         .testTarget(
             name: "ObservabilityTests",
             dependencies: [
-                "LaunchDarklyObservability"
+                "LaunchDarklyObservability",
+                "JSONExporters"
             ]
         ),
         .target(
@@ -61,12 +61,12 @@ let package = Package(
             ],
         ),
         .target(
-          name: "OpenTelemetryProtocolExporterCommon",
+          name: "JSONExporters",
           dependencies: [
+            .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core"),
             .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core"),
-            .product(name: "SwiftProtobuf", package: "swift-protobuf")
           ],
-          path: "Sources/OpenTelemetry/OpenTelemetryProtocolExporterCommon"
+          path: "Sources/OpenTelemetry/JSONExporters"
         ),
         .target(
               name: "URLSessionInstrumentation",
