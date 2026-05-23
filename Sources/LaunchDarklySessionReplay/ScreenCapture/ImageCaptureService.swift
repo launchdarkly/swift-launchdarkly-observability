@@ -54,7 +54,6 @@ public final class ImageCaptureService {
         let enclosingBounds = windowCaptureManager.minimalBoundsEnclosingWindows(windows)
         let renderer = windowCaptureManager.makeRenderer(size: enclosingBounds.size, scale: scale)
         
-        CATransaction.flush()
         let maskOperationsBefore = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
         let image = renderer.image { ctx in
             windowCaptureManager.drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false)
@@ -64,8 +63,12 @@ public final class ImageCaptureService {
         DispatchQueue.main.async { [weak self, weak maskCollector] in
             // Move collecting masks after to the next tick
             guard let self, let maskCollector, shouldCapture else { return }
+           
+            let hasMasks = maskOperationsBefore.contains(where: { !$0.maskOperations.isEmpty })
+            if (hasMasks) {
+                CATransaction.flush()
+            }
             
-            CATransaction.flush()
             let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: self.scale)  }
             
             Task {

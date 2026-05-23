@@ -115,7 +115,8 @@ struct MainMenuView: View {
         Section {
             MaskingGridRow(title: "One TextField", uikitAction: {
                 isMaskingUIKitOneFieldEnabled = true
-            }, swiftUIAction: nil)
+            }, swiftUIAction: nil).ldMask()
+
 #if os(iOS)
             MaskingGridRow(title: "Credit Card", uikitAction: {
                 isMaskingUIKitCreditCardEnabled = true
@@ -146,6 +147,7 @@ struct MainMenuView: View {
                     isNotebookEnabled = true
                 }
                 .buttonStyle(.borderedProminent)
+
                 Button("Storyboard") {
                     isStoryboardEnabled = true
                 }
