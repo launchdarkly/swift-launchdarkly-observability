@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.35.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.34.1...0.35.0) (2026-05-23)
+
+
+### Features
+
+* use only one animation flush and and only in case of existing masks ([#191](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/191)) ([2a09883](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2a098836d54b3d468bdc37d277be71560ce01fd9))
+
+
+### Bug Fixes
+
+* iOS26 SwiftUI masking cases ([#195](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/195)) ([386d0ad](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/386d0ad4e0629c1a6dc876f3caf7d056e0c337ad))
+
 ## [0.34.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.34.0...0.34.1) (2026-05-07)
 
 
