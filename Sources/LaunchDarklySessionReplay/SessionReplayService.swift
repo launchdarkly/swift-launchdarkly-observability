@@ -149,6 +149,7 @@ final class SessionReplayService: SessionReplayServicing {
     
     @MainActor
     func start(ignoreSampling: Bool = false) -> SessionReplayStartResult {
+        _isEnabled = true
         guard !_isRunning else { return .alreadyStarted }
         guard ignoreSampling || SessionReplaySampling.shouldSample(sampleRate: sampleRate) else {
             os_log("LaunchDarkly Session Replay skipped by sampling.", log: log, type: .info)
@@ -156,7 +157,6 @@ final class SessionReplayService: SessionReplayServicing {
         }
 
         _isRunning = true
-        _isEnabled = true
         internalStart()
         return .started
     }

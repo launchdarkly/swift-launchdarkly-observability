@@ -41,7 +41,7 @@ public final class SessionReplay: Plugin {
             sessionReplayHook.delegate = sessionReplayService
             if options.isEnabled {
                 Task { @MainActor in
-                    self.start()
+                    sessionReplayService.isEnabled = true
                 }
             }
         } catch {
