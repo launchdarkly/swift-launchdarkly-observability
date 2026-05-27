@@ -40,7 +40,9 @@ public final class SessionReplay: Plugin {
             self.sessionReplayService = sessionReplayService
             sessionReplayHook.delegate = sessionReplayService
             if options.isEnabled {
-                start()
+                Task { @MainActor in
+                    self.start()
+                }
             }
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service initialization failed with error: \(error)")
@@ -51,16 +53,16 @@ public final class SessionReplay: Plugin {
         return [sessionReplayHook]
     }
     
-    public func start() {
-        Task { @MainActor in
-            sessionReplayService?.start()
-        }
+    /// Starts Session Replay. Set `ignoreSampling` to `true` to force start for debugging.
+    @MainActor
+    @discardableResult
+    public func start(ignoreSampling: Bool = false) -> SessionReplayStartResult {
+        sessionReplayService?.start(ignoreSampling: ignoreSampling) ?? .unavailable
     }
     
+    @MainActor
     public func stop() {
-        Task { @MainActor in
-            sessionReplayService?.stop()
-        }
+        sessionReplayService?.stop()
     }
 }
 
