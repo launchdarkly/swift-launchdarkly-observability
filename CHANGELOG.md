@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.35.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.34.1...0.35.0) (2026-05-23)
+
+
+### Features
+
+* use only one animation flush and and only in case of existing masks ([#191](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/191)) ([2a09883](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2a098836d54b3d468bdc37d277be71560ce01fd9))
+
+
+### Bug Fixes
+
+* iOS26 SwiftUI masking cases ([#195](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/195)) ([386d0ad](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/386d0ad4e0629c1a6dc876f3caf7d056e0c337ad))
+
+## [0.34.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.34.0...0.34.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* **replay:** propagate explicit mask/unmask state through view hierarchy ([#196](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/196)) ([95c8885](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/95c88858fb6772d8bab6da8c390786e15e270c22))
+
+## [0.34.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.33.1...0.34.0) (2026-05-01)
+
+
+### Features
+
+* Remove SwiftProtoBuf dependency ([#193](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/193)) ([e90d0ff](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/e90d0ff009f12710f849fcd9a7820a0c5ece218a))
+
 ## [0.33.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.33.0...0.33.1) (2026-04-17)
 
 

@@ -40,7 +40,7 @@ pod 'LaunchDarklyObservability'
 pod 'LaunchDarklySessionReplay'   # optional, only if using Session Replay
 ```
 
-Some transitive dependencies (SwiftProtobuf, LDSwiftEventSource) still declare an iOS 11.0 deployment target, which is below the minimum required by recent Xcode SDKs. Add the following `post_install` hook to your `Podfile` to raise their deployment target automatically:
+Some transitive dependencies (e.g. LDSwiftEventSource) still declare an iOS 11.0 deployment target, which is below the minimum required by recent Xcode SDKs. Add the following `post_install` hook to your `Podfile` to raise their deployment target automatically:
 
 ```ruby
 post_install do |installer|
@@ -257,6 +257,19 @@ class CreditCardViewController: UIViewController {
     }
 }
 ```
+
+#### How the SDK Determines What to Mask
+
+When deciding whether a specific view should be masked in a Session Replay, the SDK evaluates rules in a strict order of precedence. It checks these conditions from top to bottom and stops at the first one that applies:
+
+1. **Explicit Masking (Highest Priority)**: Is the view, or *any* of its parent views, explicitly masked (e.g., using `.ldMask()` or matching `maskAccessibilityIdentifiers`)?
+   * **Yes**: The view is **masked**. This overrides all other rules.
+2. **Explicit Unmasking**: Is the view, or *any* of its parent views, explicitly unmasked (e.g., using `.ldUnmask()`)?
+   * **Yes**: The view is **unmasked**.
+3. **Global Configuration**: Does your global privacy configuration (like `maskTextInputs`, `maskImages`, etc.) apply to this view?
+   * **Yes**: The view follows the global configuration.
+
+*Note: If multiple rules conflict at the same level, masking wins over unmasking.*
 
 ### Advanced Configuration
 

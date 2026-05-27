@@ -23,6 +23,8 @@ struct MainMenuView: View {
     @State private var isMaskingUIKitOneFieldEnabled: Bool = false
     @State private var isMaskingUIKitCreditCardEnabled: Bool = false
     @State private var isMaskingSwiftUICreditCardEnabled: Bool = false
+    @State private var isMaskPropagationEnabled: Bool = false
+    @State private var isMaskPropagationUIKitEnabled: Bool = false
     @State private var isNumberPadEnabled: Bool = false
     @State private var isNotebookEnabled: Bool = false
     @State private var isStoryboardEnabled: Bool = false
@@ -71,6 +73,12 @@ struct MainMenuView: View {
         .sheet(isPresented: $isMaskingUIKitOneFieldEnabled) {
             MaskingElementsSimpleUIKitView()
         }
+        .sheet(isPresented: $isMaskPropagationEnabled) {
+            NestedMaskingPropagationView()
+        }
+        .sheet(isPresented: $isMaskPropagationUIKitEnabled) {
+            NestedMaskingPropagationUIKitView()
+        }
 #if os(iOS)
         .sheet(isPresented: $isMaskingUIKitCreditCardEnabled) {
             MaskingCreditCardUIKitView()
@@ -107,7 +115,8 @@ struct MainMenuView: View {
         Section {
             MaskingGridRow(title: "One TextField", uikitAction: {
                 isMaskingUIKitOneFieldEnabled = true
-            }, swiftUIAction: nil)
+            }, swiftUIAction: nil).ldMask()
+
 #if os(iOS)
             MaskingGridRow(title: "Credit Card", uikitAction: {
                 isMaskingUIKitCreditCardEnabled = true
@@ -116,6 +125,11 @@ struct MainMenuView: View {
             }
             MaskingGridRow(title: "Number Pad", uikitAction: nil) {
                 isNumberPadEnabled = true
+            }
+            MaskingGridRow(title: "Mask Propagation", uikitAction: {
+                isMaskPropagationUIKitEnabled = true
+            }) {
+                isMaskPropagationEnabled = true
             }
             MaskingGridRow(title: "Dialogs", uikitAction: {
                 isDialogsUIKitEnabled = true
@@ -133,6 +147,7 @@ struct MainMenuView: View {
                     isNotebookEnabled = true
                 }
                 .buttonStyle(.borderedProminent)
+
                 Button("Storyboard") {
                     isStoryboardEnabled = true
                 }
@@ -316,7 +331,7 @@ private struct MaskingGridRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(title)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading).ldMask()
             Button("UIKit") { uikitAction?() }
                 .disabled(uikitAction == nil)
                 .frame(maxWidth: .infinity)
