@@ -18,11 +18,20 @@ public struct RawFrame {
     }
 }
 
-public final class ImageCaptureService {
+public protocol ImageCaptureServicing: AnyObject {
+    @MainActor
+    func captureRawFrame(yield: @escaping (RawFrame?) async -> Void)
+
+    @MainActor
+    func interuptCapture()
+}
+
+public final class ImageCaptureService: ImageCaptureServicing {
     private let maskingService = MaskApplier()
     private let maskCollector: MaskCollector
     private let maskStabilizer = MaskStabilizer()
     private let windowCaptureManager = WindowCaptureManager()
+    private let renderStrategy: SessionReplayOptions.RenderStrategy
     @MainActor
     private var shouldCapture = false
     
@@ -30,6 +39,7 @@ public final class ImageCaptureService {
     
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
+        renderStrategy = options.renderStrategy
     }
     
     // MARK: - Capture
@@ -43,7 +53,7 @@ public final class ImageCaptureService {
     
     /// Capture as masked frame (must be on main thread).
     @MainActor
-    func captureRawFrame(yield: @escaping (RawFrame?) async -> Void) {
+    public func captureRawFrame(yield: @escaping (RawFrame?) async -> Void) {
 #if os(iOS)
         let orientation = UIDevice.current.orientation.isLandscape ? 1 : 0
 #else
@@ -56,7 +66,7 @@ public final class ImageCaptureService {
         
         let maskOperationsBefore = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
         let image = renderer.image { ctx in
-            windowCaptureManager.drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false)
+            windowCaptureManager.drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, renderStrategy: renderStrategy)
         }
       
         shouldCapture = true // can be set to false from external class to stop capturing work early
@@ -101,11 +111,12 @@ public final class ImageCaptureService {
     }
 
     @MainActor
-    func interuptCapture() {
+    public func interuptCapture() {
         shouldCapture = false
     }
 }
 
+#if DEBUG
 // MARK: - Thread CPU Time
 private extension ImageCaptureService {
     /// Measure CPU and wall-clock time for work executed on the current thread.
@@ -141,5 +152,6 @@ private extension ImageCaptureService {
         return seconds + (microseconds / 1_000_000)
     }
 }
+#endif
 
 #endif

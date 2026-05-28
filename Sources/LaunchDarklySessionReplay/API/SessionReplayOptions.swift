@@ -49,11 +49,19 @@ public struct SessionReplayOptions {
         case overlayTiles(layers: Int = 10, backtracking: Bool = true)
     }
     
+    public enum RenderStrategy {
+        case drawHierarchy
+        case drawLayers
+    }
+    
     public var isEnabled: Bool
     /// Probability from `0.0` to `1.0` that Session Replay starts when enabled.
     /// Values less than or equal to zero never start; values greater than or equal to one always start.
     public var sampleRate: Double
     public var compression: CompressionMethod = .overlayTiles()
+    /// Target capture rate in frames per second.
+    public var frameRate: Double
+    public var renderStrategy: RenderStrategy
     public var serviceName: String
     public var privacy = PrivacyOptions()
     public var log: OSLog
@@ -63,12 +71,16 @@ public struct SessionReplayOptions {
                 serviceName: String = "sessionreplay-swift",
                 privacy: PrivacyOptions = PrivacyOptions(),
                 compression: CompressionMethod = .overlayTiles(),
+                frameRate: Double = 1.0,
+                renderStrategy: RenderStrategy = .drawHierarchy,
                 log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklySessionReplayPlugin")) {
         self.isEnabled = isEnabled
         self.sampleRate = sampleRate
         self.serviceName = serviceName
         self.privacy = privacy
         self.compression = compression
+        self.frameRate = frameRate
+        self.renderStrategy = renderStrategy
         self.log = log
     }
 }

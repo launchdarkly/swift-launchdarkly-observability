@@ -29,7 +29,8 @@ final class WindowCaptureManager {
     func drawWindows(_ windows: [UIWindow],
                      into context: CGContext,
                      bounds: CGRect,
-                     afterScreenUpdates: Bool) {
+                     afterScreenUpdates: Bool,
+                     renderStrategy: SessionReplayOptions.RenderStrategy) {
         context.saveGState()
 #if os(tvOS)
         let isDarkMode = windows.first?.traitCollection.userInterfaceStyle == .dark
@@ -49,7 +50,12 @@ final class WindowCaptureManager {
             context.translateBy(x: anchor.x, y: anchor.y)
             context.translateBy(x: -anchor.x, y: -anchor.y)
 
-            window.drawHierarchy(in: window.layer.frame, afterScreenUpdates: afterScreenUpdates)
+            switch renderStrategy {
+            case .drawHierarchy:
+                window.drawHierarchy(in: window.layer.frame, afterScreenUpdates: afterScreenUpdates)
+            case .drawLayers:
+                window.layer.render(in: context)
+            }
 
             context.restoreGState()
         }
