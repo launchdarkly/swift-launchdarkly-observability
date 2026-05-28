@@ -10,13 +10,16 @@ import Common
 
 protocol SessionReplayServicing: AnyObject {
     @MainActor
-    func start()
+    func start(ignoreSampling: Bool) -> SessionReplayStartResult
     
     @MainActor
     func stop()
     
     @MainActor
     var isEnabled: Bool { get set }
+
+    @MainActor
+    var isRunning: Bool { get }
     
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool)
 }
@@ -50,18 +53,37 @@ final class SessionReplayService: SessionReplayServicing {
     var sessionReplayExporter: SessionReplayExporter
     let userInteractionManager: UserInteractionManager
     let log: OSLog
+    let sampleRate: Double
     var observabilityContext: ObservabilityContext
     
     @MainActor
-    var isEnabled = false {
-        didSet {
-            guard oldValue != isEnabled else { return }
-            if isEnabled {
-                internalStart()
+    private var _isEnabled = false
+
+    @MainActor
+    private var _isRunning = false
+
+    @MainActor
+    private var samplingSession = SessionReplaySamplingSession()
+
+    @MainActor
+    var isEnabled: Bool {
+        get {
+            _isEnabled
+        }
+        set {
+            guard _isEnabled != newValue else { return }
+            _isEnabled = newValue
+            if newValue {
+                _ = start(ignoreSampling: false)
             } else {
-                internalStop()
+                stop()
             }
         }
+    }
+
+    @MainActor
+    var isRunning: Bool {
+        _isRunning
     }
     
     private var cancellables = Set<AnyCancellable>()
@@ -74,6 +96,7 @@ final class SessionReplayService: SessionReplayServicing {
         }
         self.observabilityContext = observabilityContext
         self.log = observabilityContext.options.log
+        self.sampleRate = sessonReplayOptions.sampleRate
         let graphQLClient = GraphQLClient(endpoint: url, defaultHeaders: ["User-Agent": ObservabilitySDKInfo.userAgent()])
         let captureService = ImageCaptureService(options: sessonReplayOptions)
         self.transportService = observabilityContext.transportService
@@ -132,8 +155,18 @@ final class SessionReplayService: SessionReplayServicing {
     }
     
     @MainActor
-    func start() {
-        isEnabled = true
+    func start(ignoreSampling: Bool = false) -> SessionReplayStartResult {
+        _isEnabled = true
+        guard !_isRunning else { return .alreadyStarted }
+
+        guard samplingSession.shouldStartCapture(ignoreSampling: ignoreSampling, sampleRate: sampleRate) else {
+            os_log("LaunchDarkly Session Replay skipped by sampling.", log: log, type: .info)
+            return .sampledOut
+        }
+
+        _isRunning = true
+        internalStart()
+        return .started
     }
     
     @MainActor
@@ -156,7 +189,11 @@ final class SessionReplayService: SessionReplayServicing {
     
     @MainActor
     func stop() {
-       isEnabled = false
+        _isEnabled = false
+        samplingSession.reset()
+        guard _isRunning else { return }
+        _isRunning = false
+        internalStop()
     }
     
     @MainActor
