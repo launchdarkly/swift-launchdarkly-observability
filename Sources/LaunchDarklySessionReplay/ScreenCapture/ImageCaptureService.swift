@@ -31,6 +31,7 @@ public final class ImageCaptureService: ImageCaptureServicing {
     private let maskCollector: MaskCollector
     private let maskStabilizer = MaskStabilizer()
     private let windowCaptureManager = WindowCaptureManager()
+    private let renderStrategy: SessionReplayOptions.RenderStrategy
     @MainActor
     private var shouldCapture = false
     
@@ -38,6 +39,7 @@ public final class ImageCaptureService: ImageCaptureServicing {
     
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
+        renderStrategy = options.renderStrategy
     }
     
     // MARK: - Capture
@@ -64,7 +66,7 @@ public final class ImageCaptureService: ImageCaptureServicing {
         
         let maskOperationsBefore = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
         let image = renderer.image { ctx in
-            windowCaptureManager.drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false)
+            windowCaptureManager.drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, renderStrategy: renderStrategy)
         }
       
         shouldCapture = true // can be set to false from external class to stop capturing work early
@@ -114,6 +116,7 @@ public final class ImageCaptureService: ImageCaptureServicing {
     }
 }
 
+#if DEBUG
 // MARK: - Thread CPU Time
 private extension ImageCaptureService {
     /// Measure CPU and wall-clock time for work executed on the current thread.
@@ -149,5 +152,6 @@ private extension ImageCaptureService {
         return seconds + (microseconds / 1_000_000)
     }
 }
+#endif
 
 #endif

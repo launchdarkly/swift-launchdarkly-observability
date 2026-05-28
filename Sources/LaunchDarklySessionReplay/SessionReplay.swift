@@ -9,11 +9,16 @@ import OSLog
 public final class SessionReplay: Plugin {
     let sessionReplayHook = SessionReplayHook()
     let options: SessionReplayOptions
+    let imageCaptureService: ImageCaptureServicing?
     var sessionReplayService: SessionReplayService?
     var observabilityContext: ObservabilityContext?
     
-    public init(options: SessionReplayOptions) {
+    public init(
+        options: SessionReplayOptions,
+        imageCaptureService: ImageCaptureServicing? = nil
+    ) {
         self.options = options
+        self.imageCaptureService = imageCaptureService
     }
     
     public func getMetadata() -> LaunchDarkly.PluginMetadata {
@@ -33,9 +38,12 @@ public final class SessionReplay: Plugin {
                 throw PluginError.sessionReplayInstanceAlreadyExist
             }
            
-            let sessionReplayService = try SessionReplayService(observabilityContext: context,
-                                                                sessonReplayOptions: options,
-                                                                metadata: metadata)
+            let sessionReplayService = try SessionReplayService(
+                observabilityContext: context,
+                sessonReplayOptions: options,
+                metadata: metadata,
+                imageCaptureService: imageCaptureService
+            )
             LDReplay.shared.client = sessionReplayService
             self.sessionReplayService = sessionReplayService
             sessionReplayHook.delegate = sessionReplayService

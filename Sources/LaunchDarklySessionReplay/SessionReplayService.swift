@@ -90,7 +90,8 @@ final class SessionReplayService: SessionReplayServicing {
     
     init(observabilityContext: ObservabilityContext,
          sessonReplayOptions: SessionReplayOptions,
-         metadata: LaunchDarkly.EnvironmentMetadata) throws {
+         metadata: LaunchDarkly.EnvironmentMetadata,
+         imageCaptureService: ImageCaptureServicing? = nil) throws {
         guard let url = URL(string: observabilityContext.options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
@@ -98,10 +99,12 @@ final class SessionReplayService: SessionReplayServicing {
         self.log = observabilityContext.options.log
         self.sampleRate = sessonReplayOptions.sampleRate
         let graphQLClient = GraphQLClient(endpoint: url, defaultHeaders: ["User-Agent": ObservabilitySDKInfo.userAgent()])
-        let captureService = ImageCaptureService(options: sessonReplayOptions)
+        let captureService = imageCaptureService
+            ?? ImageCaptureService(options: sessonReplayOptions)
         self.transportService = observabilityContext.transportService
         self.captureManager = CaptureManager(captureService: captureService,
                                              compression: sessonReplayOptions.compression,
+                                             frameRate: sessonReplayOptions.frameRate,
                                              appLifecycleManager: observabilityContext.appLifecycleManager,
                                              eventQueue: transportService.eventQueue,
                                              sessionIdProvider: observabilityContext.sessionManager.sessionIdProvider)

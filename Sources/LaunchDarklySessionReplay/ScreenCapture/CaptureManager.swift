@@ -12,7 +12,7 @@ final class CaptureManager: EventSource {
     private let eventQueue: EventQueue
     @MainActor
     private var lastFrameDispatchTime: DispatchTime?
-    private let frameInterval = 1.0
+    private let frameInterval: Double
     @MainActor
     private var isEventQueueAvailable: Bool = true
     private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
@@ -35,10 +35,12 @@ final class CaptureManager: EventSource {
     
     init(captureService: ImageCaptureServicing,
          compression: SessionReplayOptions.CompressionMethod,
+         frameRate: Double,
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue,
          sessionIdProvider: @Sendable @escaping () -> String) {
         self.captureService = captureService
+        self.frameInterval = frameRate > 0 ? 1.0 / frameRate : .infinity
         self.exportDiffManager = ExportDiffManager(compression: compression, scale: 1.0)
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager

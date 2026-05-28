@@ -33,13 +33,15 @@ struct SessionReplaySamplingTests {
         #expect(session.shouldStartCapture(ignoreSampling: false, sampleRate: 0.25, randomValue: { 0.99 }) == false)
         #expect(session.shouldStartCapture(ignoreSampling: false, sampleRate: 0.25, randomValue: { 0.0 }) == false)
         session.reset()
-        #expect(session.shouldStartCapture(ignoreSampling: false, sampleRate: 0.25, randomValue: { 0.0 }))
+        let startedAfterReset = session.shouldStartCapture(ignoreSampling: false, sampleRate: 0.25, randomValue: { 0.0 })
+        #expect(startedAfterReset)
     }
 
     @Test("ignoreSampling bypasses persisted sampled-out decision")
     func ignoreSamplingBypassesPersistedDecision() {
         var session = SessionReplaySamplingSession()
         #expect(session.shouldStartCapture(ignoreSampling: false, sampleRate: 0.25, randomValue: { 0.99 }) == false)
-        #expect(session.shouldStartCapture(ignoreSampling: true, sampleRate: 0.25, randomValue: { 0.99 }))
+        let startedIgnoringSampling = session.shouldStartCapture(ignoreSampling: true, sampleRate: 0.25, randomValue: { 0.99 })
+        #expect(startedIgnoringSampling)
     }
 }
