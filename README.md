@@ -134,6 +134,7 @@ let config = { () -> LDConfig in
             sessionBackgroundTimeout: 3)),
         SessionReplay(options: .init(
             isEnabled: true,
+            sampleRate: 1.0,
             privacy: .init(
                 maskTextInputs: true,
                 maskWebViews: false,
@@ -179,7 +180,17 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
 ### Manual Start
 
-By default, Session Replay starts recording as soon as the SDK is initialized if `isEnabled` is set to `true`. If you want to initialize Session Replay without activating recording immediately (e.g., to wait for user consent or a specific event), set `isEnabled` to `false` in the options:
+By default, Session Replay attempts to start recording as soon as the SDK is initialized if `isEnabled` is set to `true`. The `sampleRate` option controls whether that attempt actually starts recording. Use a value from `0.0` to `1.0`, where `0.0` never records and `1.0` always records.
+
+```swift
+SessionReplay(options: .init(
+    isEnabled: true,
+    sampleRate: 0.25,
+    // ... other options
+))
+```
+
+If you want to initialize Session Replay without activating recording immediately (e.g., to wait for user consent or a specific event), set `isEnabled` to `false` in the options:
 
 ```swift
 SessionReplay(options: .init(
@@ -188,10 +199,34 @@ SessionReplay(options: .init(
 ))
 ```
 
-You can then activate recording later by setting `LDReplay.shared.isEnabled` to `true`.
+You can then attempt to activate recording later by setting `LDReplay.shared.isEnabled` to `true`. This still applies sampling.
+
 ```swift
 // From a SwiftUI View or @MainActor isolated class
 LDReplay.shared.isEnabled = true
+```
+
+To inspect the outcome, use `start()` and check the returned `SessionReplayStartResult`, or read `LDReplay.shared.isRunning` to see whether Session Replay is actually recording:
+
+```swift
+let result = LDReplay.shared.start()
+
+switch result {
+case .started, .alreadyStarted:
+    // Session Replay is running.
+case .sampledOut:
+    // Session Replay is enabled, but this session was not selected by sampleRate.
+case .unavailable:
+    // Session Replay has not been registered.
+}
+
+let isRecording = LDReplay.shared.isRunning
+```
+
+For debugging, you can bypass sampling for a manual start:
+
+```swift
+LDReplay.shared.start(ignoreSampling: true)
 ```
 
 #### Privacy Options

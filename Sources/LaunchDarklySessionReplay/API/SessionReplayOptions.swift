@@ -50,17 +50,22 @@ public struct SessionReplayOptions {
     }
     
     public var isEnabled: Bool
+    /// Probability from `0.0` to `1.0` that Session Replay starts when enabled.
+    /// Values less than or equal to zero never start; values greater than or equal to one always start.
+    public var sampleRate: Double
     public var compression: CompressionMethod = .overlayTiles()
     public var serviceName: String
     public var privacy = PrivacyOptions()
     public var log: OSLog
     
     public init(isEnabled: Bool = true,
+                sampleRate: Double = 1.0,
                 serviceName: String = "sessionreplay-swift",
                 privacy: PrivacyOptions = PrivacyOptions(),
                 compression: CompressionMethod = .overlayTiles(),
                 log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklySessionReplayPlugin")) {
         self.isEnabled = isEnabled
+        self.sampleRate = sampleRate
         self.serviceName = serviceName
         self.privacy = privacy
         self.compression = compression

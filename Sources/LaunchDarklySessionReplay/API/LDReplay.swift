@@ -14,23 +14,30 @@ public final class LDReplay {
     private init() {
         // privacy for singleton
     }
-    
+
+    /// Starts or stops Session Replay. Setting this to `true` applies sampling.
     @MainActor
     public var isEnabled: Bool {
         get { client?.isEnabled ?? false }
         set { client?.isEnabled = newValue }
     }
-    
-    public func start() {
-        Task { @MainActor in
-            client?.start()
-        }
+
+    /// Whether Session Replay is currently running.
+    @MainActor
+    public var isRunning: Bool {
+        client?.isRunning ?? false
     }
     
+    /// Starts Session Replay. Set `ignoreSampling` to `true` to force start for debugging.
+    @MainActor
+    @discardableResult
+    public func start(ignoreSampling: Bool = false) -> SessionReplayStartResult {
+        client?.start(ignoreSampling: ignoreSampling) ?? .unavailable
+    }
+    
+    @MainActor
     public func stop() {
-        Task { @MainActor in
-            client?.stop()
-        }
+        client?.stop()
     }
 }
 
