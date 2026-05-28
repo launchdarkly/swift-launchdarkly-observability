@@ -29,6 +29,14 @@ enum SceneLaunchType: String {
     case warm = "Warm Launch"
     case sceneCreation = "Scene Created"
 
+    init(_ classification: SceneLaunchClassification) {
+        switch classification {
+        case .cold: self = .cold
+        case .warm: self = .warm
+        case .sceneCreation: self = .sceneCreation
+        }
+    }
+
     var color: UIColor {
         switch self {
         case .cold: return .systemBlue
@@ -50,14 +58,13 @@ extension Notification.Name {
 }
 
 /// Shared log that classifies scene lifecycle events into cold / warm / sceneCreation launches
-/// and stores them for display. Uses the same logic as the SDK's internal LaunchTracker.
+/// and stores them for display.
 final class SceneLaunchEventLog {
     static let shared = SceneLaunchEventLog()
     private init() {}
 
     private(set) var events: [SceneLaunchEvent] = []
-    private var seenSceneIDs: Set<String> = []
-    private var hasRecordedColdLaunch = false
+    private var classifier = SceneLaunchClassifier()
 
     /// Call from `sceneWillEnterForeground` and `sceneDidBecomeActive` to record one launch event.
     /// - Parameters:
@@ -65,28 +72,19 @@ final class SceneLaunchEventLog {
     ///   - foregroundUptime: `ProcessInfo.processInfo.systemUptime` captured in `sceneWillEnterForeground`.
     ///   - activateUptime: `ProcessInfo.processInfo.systemUptime` captured in `sceneDidBecomeActive`.
     func record(sceneID: String, foregroundUptime: TimeInterval, activateUptime: TimeInterval) {
-        let type: SceneLaunchType
-        let startUptime: TimeInterval
-
-        if !seenSceneIDs.contains(sceneID) {
-            seenSceneIDs.insert(sceneID)
-            if !hasRecordedColdLaunch {
-                hasRecordedColdLaunch = true
-                type = .cold
-                // For cold launch measure from the earliest captured process-start uptime.
-                startUptime = AppStartTime.stats.startTime
-            } else {
-                type = .sceneCreation
-                startUptime = foregroundUptime
-            }
-        } else {
-            type = .warm
-            startUptime = foregroundUptime
+        classifier.sceneWillEnterForeground(.init(sceneID: sceneID, systemUptime: foregroundUptime))
+        guard let launchInfo = classifier.sceneDidBecomeActive(.init(sceneID: sceneID, systemUptime: activateUptime)) else {
+            return
         }
 
-        let durationMs = max(activateUptime - startUptime, 0) * 1000
+        let durationMs = max(launchInfo.end - launchInfo.start, 0) * 1000
         let shortID = String(sceneID.prefix(8))
-        let event = SceneLaunchEvent(sceneID: shortID, type: type, durationMs: durationMs, date: Date())
+        let event = SceneLaunchEvent(
+            sceneID: shortID,
+            type: SceneLaunchType(launchInfo.type),
+            durationMs: durationMs,
+            date: Date()
+        )
         events.append(event)
         NotificationCenter.default.post(name: .sceneLaunchEventRecorded, object: event)
     }

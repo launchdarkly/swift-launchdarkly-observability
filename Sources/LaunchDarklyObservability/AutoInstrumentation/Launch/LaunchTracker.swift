@@ -6,22 +6,16 @@ import UIKit
 #endif
 
 final class LaunchTracker {
-    struct SceneData: Equatable {
-        let sceneID: String?
-        let systemUptime: TimeInterval
-    }
+    typealias SceneData = SceneLaunchClassifier.SceneData
 
     struct LaunchInfo: Hashable {
         let sceneID: String?
         let start: TimeInterval
         let end: TimeInterval
-        let type: LaunchType
+        let type: SceneLaunchClassification
     }
 
-    struct PendingLaunch {
-        let startTime: TimeInterval
-        let type: LaunchType
-    }
+    typealias PendingLaunch = SceneLaunchClassifier.PendingLaunch
 
     struct State {
         /// Scenes that have a start time recorded but haven't activated yet.
@@ -57,39 +51,35 @@ final class LaunchTracker {
     static func reduce(state: inout State, action: Action) {
         switch action {
         case .sceneWillEnterForeground(let sceneData):
-            guard let id = sceneData.sceneID else { return }
-
-            if !state.seenSceneIDs.contains(id) {
-                // First time we see this scene — cold or sceneCreation.
-                state.seenSceneIDs.insert(id)
-                if !state.hasRecordedColdLaunch {
-                    state.hasRecordedColdLaunch = true
-                    // Process-start uptime so duration spans from process creation, not foreground notification time.
-                    state.pendingSceneStarts[id] = PendingLaunch(
-                        startTime: AppStartTime.stats.startTime,
-                        type: .cold
-                    )
-                } else {
-                    state.pendingSceneStarts[id] = PendingLaunch(startTime: sceneData.systemUptime, type: .sceneCreation)
-                }
-            } else {
-                // Scene has been active before — warm launch.
-                // Guard against duplicate events while a measurement is already in progress.
-                guard state.pendingSceneStarts[id] == nil else { return }
-                state.pendingSceneStarts[id] = PendingLaunch(startTime: sceneData.systemUptime, type: .warm)
-            }
+            var classifierState = SceneLaunchClassifier.State(
+                pendingSceneStarts: state.pendingSceneStarts,
+                seenSceneIDs: state.seenSceneIDs,
+                hasRecordedColdLaunch: state.hasRecordedColdLaunch
+            )
+            _ = SceneLaunchClassifier.reduce(state: &classifierState, action: .sceneWillEnterForeground(sceneData))
+            state.pendingSceneStarts = classifierState.pendingSceneStarts
+            state.seenSceneIDs = classifierState.seenSceneIDs
+            state.hasRecordedColdLaunch = classifierState.hasRecordedColdLaunch
 
         case .sceneDidBecomeActive(let sceneData):
-            guard let id = sceneData.sceneID,
-                  let pending = state.pendingSceneStarts[id] else { return }
-            let launchInfo = LaunchInfo(
-                sceneID: id,
-                start: pending.startTime,
-                end: sceneData.systemUptime,
-                type: pending.type
+            var classifierState = SceneLaunchClassifier.State(
+                pendingSceneStarts: state.pendingSceneStarts,
+                seenSceneIDs: state.seenSceneIDs,
+                hasRecordedColdLaunch: state.hasRecordedColdLaunch
             )
-            state.buffer.append(launchInfo)
-            state.pendingSceneStarts.removeValue(forKey: id)
+            guard let launchInfo = SceneLaunchClassifier.reduce(
+                state: &classifierState,
+                action: .sceneDidBecomeActive(sceneData)
+            ) else { return }
+            state.pendingSceneStarts = classifierState.pendingSceneStarts
+            state.buffer.append(
+                LaunchInfo(
+                    sceneID: launchInfo.sceneID,
+                    start: launchInfo.start,
+                    end: launchInfo.end,
+                    type: launchInfo.type
+                )
+            )
 
         case .launchInfoItemsWereTraced(let items):
             let traced = Set(items)
