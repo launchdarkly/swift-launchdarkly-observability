@@ -26,6 +26,7 @@ public struct TouchInteraction: Sendable {
     public let startTimestamp: TimeInterval
     public let timestamp: TimeInterval
     public let target: TouchTarget?
+    public let sessionId: String
 }
 
 public enum SwipeDirection: Sendable {

@@ -16,6 +16,10 @@ extension SessionManaging {
     func start(sessionId: String) {
         start(sessionId: sessionId, isCustomSession: true)
     }
+    
+    public var sessionIdProvider: @Sendable () -> String {
+        { [self] in self.sessionInfo.id }
+    }
 }
 
 final class SessionManager: SessionManaging {

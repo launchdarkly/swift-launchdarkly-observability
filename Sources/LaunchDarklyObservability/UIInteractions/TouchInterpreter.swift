@@ -25,6 +25,7 @@ final class TouchInterpreter {
     }
     
     func process(touchSample: TouchSample, yield: TouchInteractionYield) {
+        let sessionId = touchSample.sessionId
         // UITouch and UIEvent use time based on systemUptime getting and we needed adjustment for proper time
         let uptimeDifference = Date().timeIntervalSince1970 - ProcessInfo.processInfo.systemUptime
         switch touchSample.phase {
@@ -35,29 +36,31 @@ final class TouchInterpreter {
                               points: [TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference)],
                               target: touchSample.target)
             tracks[touchSample.id] = track
-            
+
             let downInteraction = TouchInteraction(id: incrementingId,
                                                    kind: .touchDown(touchSample.location),
                                                    startTimestamp: touchSample.timestamp + uptimeDifference,
                                                    timestamp: touchSample.timestamp + uptimeDifference,
-                                                   target: touchSample.target)
+                                                   target: touchSample.target,
+                                                   sessionId: sessionId)
             yield(downInteraction)
-            
+
         case .moved:
             guard var track = tracks[touchSample.id] else { return }
-        
+
             let trackDuration = touchSample.timestamp - track.start
             guard trackDuration <= TouchConstants.touchPathDuration else {
                 // flush movements of long touch path do not have dead time in the replay player
                 let lastPoint = TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference)
                 track.points.append(lastPoint)
                 track.target = touchSample.target
-                
+
                 let moveInteraction = TouchInteraction(id: incrementingId,
                                                        kind: .touchPath(points: track.points),
                                                        startTimestamp: track.start + uptimeDifference,
                                                        timestamp: touchSample.timestamp + uptimeDifference,
-                                                       target: touchSample.target)
+                                                       target: touchSample.target,
+                                                       sessionId: sessionId)
                 track.points.removeAll()
                 track.start = lastPoint.timestamp - uptimeDifference
                 track.startPoint = touchSample.location
@@ -65,24 +68,24 @@ final class TouchInterpreter {
                 yield(moveInteraction)
                 return
             }
-            
+
             if let prevPoint = tracks[touchSample.id]?.points.last {
                 let duration = touchSample.timestamp + uptimeDifference - prevPoint.timestamp
                 guard duration >= TouchConstants.touchMoveThrottle else {
                     return
                 }
             }
-            
+
             let distance = squaredDistance(from: track.startPoint, to: touchSample.location)
             guard distance >= TouchConstants.tapMaxDistanceSquared else {
                 return
             }
-            
+
             track.end = touchSample.timestamp
             track.target = touchSample.target
             track.points.append(TouchPoint(position: touchSample.location, timestamp: touchSample.timestamp + uptimeDifference))
             tracks[touchSample.id] = track
-            
+
         case .ended, .cancelled:
             // touchUp
             let startTimestamp = tracks[touchSample.id]?.start ?? touchSample.timestamp
@@ -90,31 +93,34 @@ final class TouchInterpreter {
                                                  kind: .touchUp(touchSample.location),
                                                  startTimestamp: startTimestamp + uptimeDifference,
                                                  timestamp: touchSample.timestamp + uptimeDifference,
-                                                 target: touchSample.target)
+                                                 target: touchSample.target,
+                                                 sessionId: sessionId)
             yield(upInteraction)
-            
+
             // touchPath
             guard let track = tracks.removeValue(forKey: touchSample.id), track.points.isNotEmpty else { return }
-            
+
             let moveInteraction = TouchInteraction(id: incrementingId,
                                                 kind: .touchPath(points: track.points),
                                                 startTimestamp: startTimestamp + uptimeDifference,
                                                 timestamp: touchSample.timestamp + uptimeDifference,
-                                                target: touchSample.target)
+                                                target: touchSample.target,
+                                                sessionId: sessionId)
             yield(moveInteraction)
         case .unknown:
             () //NOOP
         }
     }
-    
+
     func flushMovements(touchSample: TouchSample, uptimeDifference: TimeInterval, startTimestamp: TimeInterval, yield: TouchInteractionYield) {
         guard var track = tracks[touchSample.id], track.points.isNotEmpty else { return }
-        
+
         let moveInteraction = TouchInteraction(id: incrementingId,
                                                kind: .touchPath(points: track.points),
                                                startTimestamp: startTimestamp + uptimeDifference,
                                                timestamp: touchSample.timestamp + uptimeDifference,
-                                               target: touchSample.target)
+                                               target: touchSample.target,
+                                               sessionId: touchSample.sessionId)
         if let lastPoint = track.points.last {
             track.points.removeAll()
             track.start = lastPoint.timestamp - uptimeDifference

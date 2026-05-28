@@ -21,12 +21,15 @@ struct TouchSample: Sendable {
     // relative to system startup time
     let timestamp: TimeInterval
     let target: TouchTarget?
+    /// Session id fixed at main-thread capture time (with location/target).
+    let sessionId: String
 
-    init(touch: UITouch, window: UIWindow, target: TouchTarget?) {
+    init(touch: UITouch, window: UIWindow, target: TouchTarget?, sessionId: String) {
         self.id = ObjectIdentifier(touch)
         self.location = touch.location(in: window)
         self.timestamp = touch.timestamp
         self.target = target
+        self.sessionId = sessionId
         self.phase = switch touch.phase {
         case .began: .began
         case .moved: .moved
@@ -47,16 +50,19 @@ final class InputCaptureCoordinator {
     private let touchInterpreter: TouchInterpreter
     private let pressInterpreter: PressInterpreter
     private let receiverChecker: UIEventReceiverChecker
+    private let sessionIdProvider: @Sendable () -> String
     var onTouch: TouchInteractionYield?
     var onPress: PressInteractionYield?
-    
+
     init(targetResolver: TargetResolving = TargetResolver(),
-         receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker()) {
+         receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker(),
+         sessionIdProvider: @Sendable @escaping () -> String) {
         self.targetResolver = targetResolver
         self.touchInterpreter = TouchInterpreter()
         self.pressInterpreter = PressInterpreter()
         self.source = UIWindowSwizzleSource()
         self.receiverChecker = receiverChecker
+        self.sessionIdProvider = sessionIdProvider
     }
     
     func start() {
@@ -108,6 +114,7 @@ final class InputCaptureCoordinator {
         continuation: AsyncStream<InteractionCaptureItem>.Continuation
     ) {
         guard let touches = event.allTouches else { return }
+        let sessionId = sessionIdProvider()
         for touch in touches {
             guard touch.phase == .began else { continue }
             let target = targetResolver.resolve(view: touch.view, window: window, event: event)
@@ -115,7 +122,8 @@ final class InputCaptureCoordinator {
                 phase: PressInteraction.phase(forTouch: touch.phase),
                 kind: .untrackedWindowTouch,
                 timestamp: touch.timestamp,
-                target: target
+                target: target,
+                sessionId: sessionId
             )
             continuation.yield(.press(interaction))
         }
@@ -127,6 +135,7 @@ final class InputCaptureCoordinator {
         continuation: AsyncStream<InteractionCaptureItem>.Continuation
     ) {
         guard let touches = event.allTouches else { return }
+        let sessionId = sessionIdProvider()
         for touch in touches {
             let target: TouchTarget?
             if touch.phase == .began || touch.phase == .ended {
@@ -135,7 +144,12 @@ final class InputCaptureCoordinator {
                 target = nil
             }
             
-            let touchSample = TouchSample(touch: touch, window: window, target: target)
+            let touchSample = TouchSample(
+                touch: touch,
+                window: window,
+                target: target,
+                sessionId: sessionId
+            )
             continuation.yield(.touch(touchSample))
         }
     }
@@ -146,10 +160,11 @@ final class InputCaptureCoordinator {
         continuation: AsyncStream<InteractionCaptureItem>.Continuation
     ) {
         guard let pressesEvent = event as? UIPressesEvent else { return }
+        let sessionId = sessionIdProvider()
         for press in pressesEvent.allPresses {
             guard press.phase == .began else { continue }
             let target = targetResolver.resolve(press: press, window: window)
-            let interaction = PressInteraction(press: press, target: target)
+            let interaction = PressInteraction(press: press, target: target, sessionId: sessionId)
             if case .other = interaction.kind { continue }
             
             continuation.yield(.press(interaction))
