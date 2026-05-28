@@ -63,11 +63,15 @@ final class SessionReplayService: SessionReplayServicing {
     private var _isRunning = false
 
     @MainActor
+    private var samplingSession = SessionReplaySamplingSession()
+
+    @MainActor
     var isEnabled: Bool {
         get {
             _isEnabled
         }
         set {
+            guard _isEnabled != newValue else { return }
             _isEnabled = newValue
             if newValue {
                 _ = start(ignoreSampling: false)
@@ -151,7 +155,8 @@ final class SessionReplayService: SessionReplayServicing {
     func start(ignoreSampling: Bool = false) -> SessionReplayStartResult {
         _isEnabled = true
         guard !_isRunning else { return .alreadyStarted }
-        guard ignoreSampling || SessionReplaySampling.shouldSample(sampleRate: sampleRate) else {
+
+        guard samplingSession.shouldStartCapture(ignoreSampling: ignoreSampling, sampleRate: sampleRate) else {
             os_log("LaunchDarkly Session Replay skipped by sampling.", log: log, type: .info)
             return .sampledOut
         }
@@ -182,6 +187,7 @@ final class SessionReplayService: SessionReplayServicing {
     @MainActor
     func stop() {
         _isEnabled = false
+        samplingSession.reset()
         guard _isRunning else { return }
         _isRunning = false
         internalStop()

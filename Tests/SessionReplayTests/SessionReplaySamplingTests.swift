@@ -26,4 +26,20 @@ struct SessionReplaySamplingTests {
         #expect(SessionReplayStartResult.sampledOut.isRunning == false)
         #expect(SessionReplayStartResult.unavailable.isRunning == false)
     }
+
+    @Test("sampling decision is not re-evaluated after sampled out")
+    func samplingDecisionIsPersistedUntilReset() {
+        var session = SessionReplaySamplingSession()
+        #expect(session.shouldStartCapture(ignoreSampling: false, sampleRate: 0.25, randomValue: { 0.99 }) == false)
+        #expect(session.shouldStartCapture(ignoreSampling: false, sampleRate: 0.25, randomValue: { 0.0 }) == false)
+        session.reset()
+        #expect(session.shouldStartCapture(ignoreSampling: false, sampleRate: 0.25, randomValue: { 0.0 }))
+    }
+
+    @Test("ignoreSampling bypasses persisted sampled-out decision")
+    func ignoreSamplingBypassesPersistedDecision() {
+        var session = SessionReplaySamplingSession()
+        #expect(session.shouldStartCapture(ignoreSampling: false, sampleRate: 0.25, randomValue: { 0.99 }) == false)
+        #expect(session.shouldStartCapture(ignoreSampling: true, sampleRate: 0.25, randomValue: { 0.99 }))
+    }
 }
