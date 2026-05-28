@@ -18,7 +18,15 @@ public struct RawFrame {
     }
 }
 
-public final class ImageCaptureService {
+public protocol ImageCaptureServicing: AnyObject {
+    @MainActor
+    func captureRawFrame(yield: @escaping (RawFrame?) async -> Void)
+
+    @MainActor
+    func interuptCapture()
+}
+
+public final class ImageCaptureService: ImageCaptureServicing {
     private let maskingService = MaskApplier()
     private let maskCollector: MaskCollector
     private let maskStabilizer = MaskStabilizer()
@@ -43,7 +51,7 @@ public final class ImageCaptureService {
     
     /// Capture as masked frame (must be on main thread).
     @MainActor
-    func captureRawFrame(yield: @escaping (RawFrame?) async -> Void) {
+    public func captureRawFrame(yield: @escaping (RawFrame?) async -> Void) {
 #if os(iOS)
         let orientation = UIDevice.current.orientation.isLandscape ? 1 : 0
 #else
@@ -101,7 +109,7 @@ public final class ImageCaptureService {
     }
 
     @MainActor
-    func interuptCapture() {
+    public func interuptCapture() {
         shouldCapture = false
     }
 }

@@ -4,7 +4,7 @@ import LaunchDarklyObservability
 import UIKit
 
 final class CaptureManager: EventSource {
-    private let captureService: ImageCaptureService
+    private let captureService: ImageCaptureServicing
     private let exportDiffManager: ExportDiffManager
     private let appLifecycleManager: AppLifecycleManaging
     @MainActor
@@ -33,7 +33,7 @@ final class CaptureManager: EventSource {
         }
     }
     
-    init(captureService: ImageCaptureService,
+    init(captureService: ImageCaptureServicing,
          compression: SessionReplayOptions.CompressionMethod,
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue,
