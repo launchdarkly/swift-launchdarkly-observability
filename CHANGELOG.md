@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.36.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.35.0...0.36.0) (2026-05-28)
+
+
+### Features
+
+* session replay control with sampling and state management ([#200](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/200)) ([0fc7e85](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/0fc7e85b6238f8a00aa810e28cd62cb2dc71abee))
+* **session-replay:** embed sessionId at creation time in push event payloads ([#189](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/189)) ([cafefbf](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/cafefbf083342daa0789223aefa5925492e89544))
+
 ## [0.35.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.34.1...0.35.0) (2026-05-23)
 
 
