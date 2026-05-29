@@ -16,7 +16,6 @@
 		65E170A423632ABD00F5FDA1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 65E170A223632ABD00F5FDA1 /* LaunchScreen.storyboard */; };
 		E7B1A2C32EC7E01300B157F3 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7B1A2C22EC7E01300B157F3 /* LaunchDarklyObservability */; };
 		E7B1A2C52EC7E01300B157F3 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = E7B1A2C42EC7E01300B157F3 /* LaunchDarklySessionReplay */; };
-		E7B1A2C92ECCB68500B157F3 /* Env.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B1A2C82ECCB68500B157F3 /* Env.swift */; };
 		E7B1A2CA2ECCB68500B157F3 /* Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B1A2C72ECCB68500B157F3 /* Client.swift */; };
 		E7B1A2CD2ECD2DD700B157F3 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7B1A2CC2ECD2DD700B157F3 /* LaunchDarklyObservability */; };
 		E7B1A2CF2ECD2DD700B157F3 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = E7B1A2CE2ECD2DD700B157F3 /* LaunchDarklySessionReplay */; };
@@ -32,8 +31,8 @@
 		65E1709D23632ABD00F5FDA1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		65E170A323632ABD00F5FDA1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		65E170A523632ABD00F5FDA1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA00000000000000000001 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ../TestAppShared/Secrets.xcconfig; sourceTree = "<group>"; };
 		E7B1A2C72ECCB68500B157F3 /* Client.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Client.swift; sourceTree = "<group>"; };
-		E7B1A2C82ECCB68500B157F3 /* Env.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Env.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +53,7 @@
 		65E1708B23632ABC00F5FDA1 = {
 			isa = PBXGroup;
 			children = (
+				AA00000000000000000001 /* Secrets.xcconfig */,
 				65E1709623632ABC00F5FDA1 /* MultiwindowPad */,
 				65E1709523632ABC00F5FDA1 /* Products */,
 			);
@@ -87,7 +87,6 @@
 			isa = PBXGroup;
 			children = (
 				E7B1A2C72ECCB68500B157F3 /* Client.swift */,
-				E7B1A2C82ECCB68500B157F3 /* Env.swift */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -168,7 +167,6 @@
 				65E1709823632ABC00F5FDA1 /* AppDelegate.swift in Sources */,
 				6564E23E2368955400E9AF7C /* CatsOverviewViewController.swift in Sources */,
 				6564E2422368978300E9AF7C /* CatDetailViewController.swift in Sources */,
-				E7B1A2C92ECCB68500B157F3 /* Env.swift in Sources */,
 				E7B1A2CA2ECCB68500B157F3 /* Client.swift in Sources */,
 				6564E2402368975400E9AF7C /* CatSceneDelegate.swift in Sources */,
 				65E1709A23632ABC00F5FDA1 /* SceneDelegate.swift in Sources */,
@@ -305,6 +303,7 @@
 		};
 		65E170A923632ABD00F5FDA1 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA00000000000000000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -325,6 +324,7 @@
 		};
 		65E170AA23632ABD00F5FDA1 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA00000000000000000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";

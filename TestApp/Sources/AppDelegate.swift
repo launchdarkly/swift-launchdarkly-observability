@@ -11,7 +11,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {        
         guard let secrets = Bundle.main.infoDictionary,
               let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
-            fatalError("Missing mobileKey in Info.plist. See Secrets.xcconfig.example.")
+            fatalError("Missing mobileKey in Info.plist. See TestAppShared/Secrets.xcconfig.example.")
         }
         let otlpEndpoint = secrets["otlpEndpoint"] as? String
         let backendUrl = secrets["backendUrl"] as? String

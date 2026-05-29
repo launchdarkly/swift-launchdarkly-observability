@@ -1,30 +1,46 @@
 import UIKit
 import LaunchDarklyObservability
+import LaunchDarklySessionReplay
 
 struct Client {
     let config = { () -> LDConfig in
+        guard let secrets = Bundle.main.infoDictionary,
+              let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
+            fatalError("Missing mobileKey in Info.plist. See TestAppShared/Secrets.xcconfig.example.")
+        }
+        let otlpEndpoint = secrets["otlpEndpoint"] as? String
+        let backendUrl = secrets["backendUrl"] as? String
+
         var config = LDConfig(
-            mobileKey: Env.mobileKey,
+            mobileKey: mobileKey,
             autoEnvAttributes: .enabled
         )
         config.plugins = [
             Observability(
                 options: .init(
-                    otlpEndpoint: Env.otelHost,
+                    otlpEndpoint: otlpEndpoint,
+                    backendUrl: backendUrl,
                     sessionBackgroundTimeout: 3,
                     isDebug: true,
                     logsApiLevel: .info,
                     tracesApi: .enabled,
                     metricsApi: .enabled,
-                    crashReporting: .disabled,
-                    autoInstrumentation: [.urlSession, .userTaps, .memory, .cpu, .memoryWarnings],
-                    instrumentation: .init(
-                        urlSession: .enabled,
-                        userTaps: .enabled,
-                        memory: .enabled,
-                        memoryWarnings: .enabled,
-                        cpu: .disabled,
-                        launchTimes: .enabled
+                    instrumentation: .init(launchTimes: .enabled)
+                )
+            ),
+            SessionReplay(
+                options: .init(
+                    isEnabled: true,
+                    privacy: .init(
+                        maskTextInputs: true,
+                        maskWebViews: false,
+                        maskImages: false,
+                        maskAccessibilityIdentifiers: [
+                            "email-field",
+                            "password-field",
+                            "card-brand-chip",
+                            "10"
+                        ],
                     )
                 )
             )

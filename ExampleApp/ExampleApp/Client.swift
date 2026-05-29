@@ -4,15 +4,23 @@ import LaunchDarklySessionReplay
 
 struct Client {
     let config = { () -> LDConfig in
+        guard let secrets = Bundle.main.infoDictionary,
+              let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
+            fatalError("Missing mobileKey in Info.plist. See TestAppShared/Secrets.xcconfig.example.")
+        }
+        let otlpEndpoint = secrets["otlpEndpoint"] as? String
+        let backendUrl = secrets["backendUrl"] as? String
+
         var config = LDConfig(
-            mobileKey: Env.mobileKey,
+            mobileKey: mobileKey,
             autoEnvAttributes: .enabled
         )
         config.plugins = [
             Observability(
                 options: .init(
                     isEnabled: false,
-                    otlpEndpoint: Env.otelHost,
+                    otlpEndpoint: otlpEndpoint,
+                    backendUrl: backendUrl,
                     sessionBackgroundTimeout: 3,
                     isDebug: true,
                     logsApiLevel: .info,

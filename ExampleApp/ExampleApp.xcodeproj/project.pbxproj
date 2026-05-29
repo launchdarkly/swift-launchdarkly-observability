@@ -12,6 +12,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AA00000000000000000001 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ../TestAppShared/Secrets.xcconfig; sourceTree = "<group>"; };
 		E7904AC42E6A523D00A15337 /* ExampleApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExampleApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -39,6 +40,7 @@
 		E7904ABB2E6A523D00A15337 = {
 			isa = PBXGroup;
 			children = (
+				AA00000000000000000001 /* Secrets.xcconfig */,
 				E7904AC62E6A523D00A15337 /* ExampleApp */,
 				E7E464C62F3A9DFF0080DEF9 /* Frameworks */,
 				E7904AC52E6A523D00A15337 /* Products */,
@@ -266,6 +268,7 @@
 		};
 		E7904AD02E6A523E00A15337 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA00000000000000000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -274,6 +277,9 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_backendUrl = "$(backendUrl)";
+				INFOPLIST_KEY_mobileKey = "$(mobileKey)";
+				INFOPLIST_KEY_otlpEndpoint = "$(otlpEndpoint)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -296,6 +302,7 @@
 		};
 		E7904AD12E6A523E00A15337 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA00000000000000000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -304,6 +311,9 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_backendUrl = "$(backendUrl)";
+				INFOPLIST_KEY_mobileKey = "$(mobileKey)";
+				INFOPLIST_KEY_otlpEndpoint = "$(otlpEndpoint)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
