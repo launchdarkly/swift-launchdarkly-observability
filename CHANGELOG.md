@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.37.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.36.0...0.37.0) (2026-05-29)
+
+
+### Features
+
+* Adds new Session Replay capture settings frameRate and renderStrategy ([#202](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/202)) ([69901aa](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/69901aaaf4677158b2fee19d5befba1fcfa2c7c0))
+
+
+### Bug Fixes
+
+* test app using config ([#204](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/204)) ([d7a5087](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/d7a50873a7db9c8771afdbe6e1c155d3219dd8e3))
+
 ## [0.36.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.35.0...0.36.0) (2026-05-28)
 
 
