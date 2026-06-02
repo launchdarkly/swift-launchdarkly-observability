@@ -333,13 +333,21 @@ let config = { () -> LDConfig in
                     ("X-Custom-Header", "custom-value")
                 ],
                 sessionBackgroundTimeout: 60,
-                isDebug: true
+                isDebug: true,
+                productAnalytics: .enabled
             )
         )
     ]
     return config
 }()
 ```
+
+`productAnalytics` controls product-analytics telemetry, emitted as OpenTelemetry spans:
+
+- `taps` (default `.disabled`): emit a `click` span for each tap. Session Replay capture is unaffected by this flag.
+- `trackEvents` (default `.enabled`): emit a `launchdarkly.track` span when a custom event is tracked, either automatically via the LaunchDarkly `afterTrack` hook (`LDClient.track(...)`) or manually via `LDObserve.shared.track(...)`.
+
+Use the `.enabled` / `.disabled` presets, or configure fields individually with `ProductAnalytics(taps:trackEvents:)`.
 
 ### Recording Observability Data
 
@@ -385,6 +393,16 @@ let span = LDObserve.shared.startSpan(
 )
 
 span.end()
+
+// Record a custom track event as a `launchdarkly.track` span.
+// (Calling LDClient.get()?.track(key:) records the same span automatically via the afterTrack hook.)
+LDObserve.shared.track(
+    name: "checkout_completed",
+    value: 42.0,
+    attributes: [
+        "currency": .string("USD")
+    ]
+)
 ```
 
 ## Contributing
