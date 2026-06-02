@@ -262,6 +262,16 @@ struct MainMenuView: View {
                     .buttonStyle(.borderedProminent)
             }
 
+            Text("Track")
+                .fontWeight(.bold)
+
+            HStack {
+                Button("Track (LDClient)") { viewModel.trackViaLDClient() }
+                    .buttonStyle(.borderedProminent)
+                Button("Track (LDObserve)") { viewModel.trackViaLDObserve() }
+                    .buttonStyle(.borderedProminent)
+            }
+
             Text("Customer API")
                 .fontWeight(.bold)
 

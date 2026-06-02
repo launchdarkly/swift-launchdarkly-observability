@@ -39,6 +39,13 @@ final class ObservabilityService: InternalObserve {
     private let startQueue = DispatchQueue(label: "com.launchdarkly.observability.service.start")
     private var task: Task<Void, Never>?
     
+    private let contextKeysQueue = DispatchQueue(label: "com.launchdarkly.observability.service.contextKeys")
+    private var _cachedContextKeyAttributes: [String: AttributeValue] = [:]
+    private var cachedContextKeyAttributes: [String: AttributeValue] {
+        get { contextKeysQueue.sync { _cachedContextKeyAttributes } }
+        set { contextKeysQueue.sync { _cachedContextKeyAttributes = newValue } }
+    }
+    
     init(
         options: ObservabilityOptions,
         mobileKey: String,
@@ -169,7 +176,10 @@ final class ObservabilityService: InternalObserve {
         )
         self.tracer = appTraceClient
         
+        let tapsEnabled = options.productAnalytics.taps.isEnabled
         let userInteractionManager = UserInteractionManager(options: options, sessionManaging: sessionManager) { interaction in
+            // Gate only the telemetry span; capture still flows to Session Replay.
+            guard tapsEnabled else { return }
             interaction.startEndSpan(tracer: tracerDecorator)
         }
         self.userInteractionManager = userInteractionManager
@@ -192,6 +202,9 @@ final class ObservabilityService: InternalObserve {
             withValue: true,
             options: options
         )
+        // Route the afterTrack hook and identify context keys back into this service,
+        // so it remains the single emitter of launchdarkly.track spans.
+        self.hookExporter.trackEmitter = self
     }
 }
 
@@ -367,5 +380,48 @@ extension ObservabilityService: Observe {
         attributes: [String: AttributeValue]
     ) -> any Span {
         tracer.startSpan(name: name, attributes: attributes)
+    }
+
+    func track(name: String, value: Double?, attributes: [String: AttributeValue]) {
+        track(name: name, value: value, attributes: attributes, contextKeyAttributes: nil)
+    }
+}
+
+extension ObservabilityService: TrackEmitting {
+    /// Single emitter for `launchdarkly.track` spans. Both the LD `afterTrack` hook and the
+    /// manual `LDObserve.track` path funnel through here.
+    func track(
+        name: String,
+        value: Double?,
+        attributes: [String: AttributeValue],
+        contextKeyAttributes: [String: AttributeValue]?
+    ) {
+        guard options.productAnalytics.trackEvents.isEnabled else { return }
+
+        // Apply in increasing precedence so event identity can never be clobbered: user-supplied
+        // track data first, then context keys, then the reserved key/value attributes last.
+        var spanAttributes: [String: AttributeValue] = [:]
+        for (k, v) in attributes {
+            spanAttributes[k] = v
+        }
+        // Fresh context keys from the hook take precedence; otherwise use the cached identify keys.
+        for (k, v) in (contextKeyAttributes ?? cachedContextKeyAttributes) {
+            spanAttributes[k] = v
+        }
+        spanAttributes["key"] = .string(name)
+        if let value {
+            spanAttributes["value"] = .double(value)
+        }
+
+        let span = tracer.startSpan(name: SemanticConvention.trackSpanName, attributes: spanAttributes)
+        span.end()
+    }
+
+    func updateCachedContextKeys(_ contextKeys: [String: String]) {
+        var attributes = [String: AttributeValue]()
+        for (k, v) in contextKeys {
+            attributes[k] = .string(v)
+        }
+        cachedContextKeyAttributes = attributes
     }
 }

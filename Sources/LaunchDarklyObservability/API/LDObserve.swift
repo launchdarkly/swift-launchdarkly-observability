@@ -66,4 +66,8 @@ extension LDObserve: Observe {
     public func startSpan(name: String, attributes: [String : AttributeValue]) -> any Span {
         client.startSpan(name: name, attributes: attributes)
     }
+
+    public func track(name: String, value: Double?, attributes: [String : AttributeValue]) {
+        client.track(name: name, value: value, attributes: attributes)
+    }
 }

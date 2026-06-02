@@ -19,6 +19,8 @@ final class NoOpObservabilityService: Observe {
     func startSpan(name: String, attributes: [String: AttributeValue]) -> any Span {
         NoOpTracer().startSpan(name: name, attributes: attributes)
     }
+
+    func track(name: String, value: Double?, attributes: [String: AttributeValue]) {}
 }
 
 extension NoOpObservabilityService {

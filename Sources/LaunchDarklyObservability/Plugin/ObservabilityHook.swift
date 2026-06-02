@@ -9,6 +9,8 @@ protocol ObservabilityHookExporting: AnyObject {
     func afterEvaluation(evaluationId: String, flagKey: String, contextKey: String,
                          value: LDValue, variationIndex: Int?, reason: [String: LDValue]?)
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool)
+    func afterTrack(eventKey: String, metricValue: Double?,
+                    attributes: [String: AttributeValue], contextKeys: [String: String])
 }
 
 /// Hook protocol adapter for native Swift SDK usage.
@@ -65,5 +67,29 @@ final class ObservabilityHook: Hook {
                                 canonicalKey: seriesContext.context.fullyQualifiedKey(),
                                 completed: true)
         return seriesData
+    }
+
+    public func afterTrack(seriesContext: TrackSeriesContext) {
+        var attributes = [String: AttributeValue]()
+        if case let .object(data) = seriesContext.data {
+            for (k, v) in data {
+                if let attr = Self.attributeValue(from: v) {
+                    attributes[k] = attr
+                }
+            }
+        }
+        delegate?.afterTrack(eventKey: seriesContext.key,
+                             metricValue: seriesContext.metricValue,
+                             attributes: attributes,
+                             contextKeys: seriesContext.context.contextKeys())
+    }
+
+    private static func attributeValue(from value: LDValue) -> AttributeValue? {
+        switch value {
+        case .bool(let b): return .bool(b)
+        case .number(let n): return .double(n)
+        case .string(let s): return .string(s)
+        case .null, .array, .object: return nil
+        }
     }
 }

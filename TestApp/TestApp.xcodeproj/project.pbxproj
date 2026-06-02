@@ -10,11 +10,12 @@
 		5006D6B52EEB4D460081FEA5 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B42EEB4D460081FEA5 /* LaunchDarklySessionReplay */; };
 		503DA8C82F31678400E7E47F /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B22EEB4D460081FEA5 /* LaunchDarklyObservability */; };
 		50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = 50C584C92EE23723006A0045 /* LaunchDarkly */; };
+		50FD5D662FCE26D7008B9E06 /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = 50FD5D652FCE26D7008B9E06 /* LaunchDarkly */; };
 		E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		AA00000000000000000001 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Secrets.xcconfig; path = "../TestAppShared/Secrets.xcconfig"; sourceTree = "<group>"; };
+		AA00000000000000000001 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Secrets.xcconfig; path = ../TestAppShared/Secrets.xcconfig; sourceTree = "<group>"; };
 		E7904AC42E6A523D00A15337 /* TestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -47,6 +48,7 @@
 				503DA8C82F31678400E7E47F /* LaunchDarklyObservability in Frameworks */,
 				5006D6B52EEB4D460081FEA5 /* LaunchDarklySessionReplay in Frameworks */,
 				E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */,
+				50FD5D662FCE26D7008B9E06 /* LaunchDarkly in Frameworks */,
 				50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -103,6 +105,7 @@
 				50C584C92EE23723006A0045 /* LaunchDarkly */,
 				5006D6B22EEB4D460081FEA5 /* LaunchDarklyObservability */,
 				5006D6B42EEB4D460081FEA5 /* LaunchDarklySessionReplay */,
+				50FD5D652FCE26D7008B9E06 /* LaunchDarkly */,
 			);
 			productName = ExampleApp;
 			productReference = E7904AC42E6A523D00A15337 /* TestApp.app */;
@@ -135,6 +138,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				5006D6B12EEB4D460081FEA5 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */,
+				50FD5D642FCE26D7008B9E06 /* XCLocalSwiftPackageReference "../../ios-client-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E7904AC52E6A523D00A15337 /* Products */;
@@ -383,6 +387,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../../swift-launchdarkly-observability";
 		};
+		50FD5D642FCE26D7008B9E06 /* XCLocalSwiftPackageReference "../../ios-client-sdk" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../ios-client-sdk";
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -395,6 +403,10 @@
 			productName = LaunchDarklySessionReplay;
 		};
 		50C584C92EE23723006A0045 /* LaunchDarkly */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LaunchDarkly;
+		};
+		50FD5D652FCE26D7008B9E06 /* LaunchDarkly */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LaunchDarkly;
 		};

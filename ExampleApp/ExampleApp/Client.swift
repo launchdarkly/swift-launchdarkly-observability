@@ -21,12 +21,12 @@ struct Client {
                     crashReporting: .enabled,
                     instrumentation: .init(
                         urlSession: .enabled,
-                        userTaps: .enabled,
                         memory: .enabled,
                         memoryWarnings: .enabled,
                         cpu: .disabled,
                         launchTimes: .enabled
-                    )
+                    ),
+                    productAnalytics: .enabled
                 )
             ),
             SessionReplay(

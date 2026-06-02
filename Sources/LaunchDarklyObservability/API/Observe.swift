@@ -5,6 +5,26 @@
 public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveContext {
     func start(sessionId: String)
     func start()
+    /// Record a custom track event as a `launchdarkly.track` span.
+    /// - Parameters:
+    ///   - name: The event key/name.
+    ///   - value: An optional metric value associated with the event.
+    ///   - attributes: Additional attributes to record with the event.
+    func track(name: String, value: Double?, attributes: [String: AttributeValue])
+}
+
+extension Observe {
+    public func track(name: String) {
+        track(name: name, value: nil, attributes: [:])
+    }
+
+    public func track(name: String, value: Double?) {
+        track(name: name, value: value, attributes: [:])
+    }
+
+    public func track(name: String, attributes: [String: AttributeValue]) {
+        track(name: name, value: nil, attributes: attributes)
+    }
 }
 
 /// Context for transfer data from Observability to SessionReplay during initialization
