@@ -344,7 +344,7 @@ let config = { () -> LDConfig in
 
 `productAnalytics` controls product-analytics telemetry, emitted as OpenTelemetry spans:
 
-- `taps` (default `.disabled`): emit a `click` span for each tap. Session Replay capture is unaffected by this flag.
+- `taps` (default `.enabled`): emit a `click` span for each tap. Session Replay capture is unaffected by this flag.
 - `trackEvents` (default `.enabled`): emit a `launchdarkly.track` span when a custom event is tracked, either automatically via the LaunchDarkly `afterTrack` hook (`LDClient.track(...)`) or manually via `LDObserve.shared.track(...)`.
 
 Use the `.enabled` / `.disabled` presets, or configure fields individually with `ProductAnalytics(taps:trackEvents:)`.

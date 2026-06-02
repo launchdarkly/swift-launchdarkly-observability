@@ -254,7 +254,7 @@ public struct ObservabilityOptions {
     ///   - instrumentation: Per-feature toggles for automatic instrumentation (URLSession,
     ///     memory, CPU, launch times, …). Defaults to all features disabled.
     ///   - productAnalytics: Toggles for product-analytics telemetry (taps, track events).
-    ///     Defaults to taps disabled and track events enabled.
+    ///     Defaults to taps enabled and track events enabled.
     public init(
         isEnabled: Bool = true,
         serviceName: String = "observability-swift",
