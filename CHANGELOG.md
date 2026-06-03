@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.38.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.37.0...0.38.0) (2026-06-03)
+
+
+### Features
+
+* add productAnalytics option, track API, taps ([#205](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/205)) ([9e02ed9](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/9e02ed95654f6f1b2ff8eb03aad3f2c12ab8157e))
+
 ## [0.37.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.36.0...0.37.0) (2026-05-29)
 
 
