@@ -176,7 +176,7 @@ final class ObservabilityService: InternalObserve {
         )
         self.tracer = appTraceClient
         
-        let tapsEnabled = options.productAnalytics.taps.isEnabled
+        let tapsEnabled = options.analytics.taps.isEnabled
         let userInteractionManager = UserInteractionManager(options: options, sessionManaging: sessionManager) { interaction in
             // Gate only the telemetry span; capture still flows to Session Replay.
             guard tapsEnabled else { return }
@@ -396,7 +396,7 @@ extension ObservabilityService: TrackEmitting {
         attributes: [String: AttributeValue],
         contextKeyAttributes: [String: AttributeValue]?
     ) {
-        guard options.productAnalytics.trackEvents.isEnabled else { return }
+        guard options.analytics.trackEvents.isEnabled else { return }
 
         // Apply in increasing precedence so event identity can never be clobbered: user-supplied
         // track data first, then context keys, then the reserved key/value attributes last.

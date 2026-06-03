@@ -26,7 +26,7 @@ struct Client {
                         cpu: .disabled,
                         launchTimes: .enabled
                     ),
-                    productAnalytics: .enabled
+                    analytics: .enabled
                 )
             ),
             SessionReplay(
