@@ -173,7 +173,7 @@ public struct ObservabilityOptions {
     /// Configuration for product analytics telemetry.
     ///
     /// Controls which user-behaviour signals are emitted as OpenTelemetry spans.
-    public struct ProductAnalytics {
+    public struct Analytics {
         /// Whether to emit a `click` span for each tap. Capture for Session Replay
         /// is unaffected by this flag.
         let taps: FeatureFlag
@@ -212,7 +212,7 @@ public struct ObservabilityOptions {
     public var log: OSLog
     public var crashReporting: CrashReporting
     public var instrumentation: Instrumentation
-    public var productAnalytics: ProductAnalytics
+    public var analytics: Analytics
     
     /// Creates a configuration for the Observability plugin.
     ///
@@ -253,7 +253,7 @@ public struct ObservabilityOptions {
     ///     (KSCrash or MetricKit). Defaults to ``CrashReporting/enabled`` (KSCrash).
     ///   - instrumentation: Per-feature toggles for automatic instrumentation (URLSession,
     ///     memory, CPU, launch times, …). Defaults to all features disabled.
-    ///   - productAnalytics: Toggles for product-analytics telemetry (taps, track events).
+    ///   - analytics: Toggles for analytics telemetry (taps, track events).
     ///     Defaults to taps enabled and track events enabled.
     public init(
         isEnabled: Bool = true,
@@ -274,7 +274,7 @@ public struct ObservabilityOptions {
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: CrashReporting = .enabled,
         instrumentation: Instrumentation = .init(),
-        productAnalytics: ProductAnalytics = .init()
+        analytics: Analytics = .init()
     ) {
         self.serviceName = serviceName
         self.serviceVersion = serviceVersion
@@ -293,7 +293,7 @@ public struct ObservabilityOptions {
         self.log = log
         self.crashReporting = crashReporting
         self.instrumentation = instrumentation
-        self.productAnalytics = productAnalytics
+        self.analytics = analytics
         self.isEnabled = isEnabled
     }
 }
