@@ -115,6 +115,20 @@ final class MainMenuViewModel: ObservableObject {
 		)
 	}
 	
+	func trackViaLDClient() {
+		// Records a track span automatically via the Observability afterTrack hook.
+		LDClient.get()?.track(key: "track-via-ld-client")
+	}
+
+	func trackViaLDObserve() {
+		// Records a track span directly through the Observability API.
+		LDObserve.shared.track(
+			name: "track-via-ld-observe",
+			value: 7.0,
+			attributes: ["source": .string("ld-observe")]
+		)
+	}
+
 	func crash() -> Never {
 		fatalError()
 	}

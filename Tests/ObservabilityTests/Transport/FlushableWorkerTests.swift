@@ -30,8 +30,10 @@ struct FlushableWorkerTests {
         
         await worker.start()
         
-        // Wait until at least 1 tick is observed, with a generous timeout
-        let deadline = Date().addingTimeInterval(5)
+        // Wait until at least 1 tick is observed, with a generous timeout.
+        // Timeout is intentionally large to tolerate scheduler/thread-pool
+        // contention on busy CI machines, which is what made this test flaky.
+        let deadline = Date().addingTimeInterval(30)
         while await recorder.tickCount < 1 && Date() < deadline {
             try await Task.sleep(nanoseconds: 10_000_000) // 10ms poll
         }

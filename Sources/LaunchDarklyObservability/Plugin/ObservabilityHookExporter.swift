@@ -10,6 +10,14 @@ import Common
 /// Takes only simple Swift types — no Hook protocol, no @objc.
 /// Both ObservabilityHook (native Swift) and ObservabilityHookProxy (C# bridge)
 /// delegate here so the tracing logic is written exactly once.
+/// Receives track events and identify context keys so the single span emitter
+/// (`ObservabilityService`) can produce `track` spans and cache context keys.
+protocol TrackEmitting: AnyObject {
+    func track(name: String, value: Double?, attributes: [String: AttributeValue],
+               contextKeyAttributes: [String: AttributeValue]?)
+    func updateCachedContextKeys(_ contextKeys: [String: String])
+}
+
 final class ObservabilityHookExporter {
 
     private let spans: BoundedMap<String, any Span>
@@ -18,6 +26,8 @@ final class ObservabilityHookExporter {
     private let withValue: Bool
     private let traceClient: TracesApi
     private let logClient: InternalLogsApi
+    /// The single track-span emitter. Set by `ObservabilityService` after construction.
+    weak var trackEmitter: TrackEmitting?
 
     init(traceClient: TracesApi,
          logClient: InternalLogsApi,
@@ -128,6 +138,9 @@ extension ObservabilityHookExporter: ObservabilityHookExporting {
 
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool) {
         guard completed else { return }
+        // Cache context keys so the manual track path can attribute events.
+        trackEmitter?.updateCachedContextKeys(contextKeys)
+
         var attributes = [String: AttributeValue]()
         for (k, v) in contextKeys {
             attributes[k] = .string(v)
@@ -142,6 +155,19 @@ extension ObservabilityHookExporter: ObservabilityHookExporting {
             severity: .info,
             attributes: attributes
         )
+    }
+
+    func afterTrack(eventKey: String, metricValue: Double?,
+                    attributes: [String: AttributeValue], contextKeys: [String: String]) {
+        var contextKeyAttributes = [String: AttributeValue]()
+        for (k, v) in contextKeys {
+            contextKeyAttributes[k] = .string(v)
+        }
+        // Route through the single emitter so gating/caching stay in one place.
+        trackEmitter?.track(name: eventKey,
+                            value: metricValue,
+                            attributes: attributes,
+                            contextKeyAttributes: contextKeyAttributes)
     }
 }
 

@@ -13,4 +13,5 @@ public enum SemanticConvention {
     public static let systemMemoryWarning = "system.memory.memory_warning"
     public static let deviceModelName = "device.model.name"
     public static let deviceModelIdentifier = "device.model.identifier"
+    public static let trackSpanName = "track"
 }

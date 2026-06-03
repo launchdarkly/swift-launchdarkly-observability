@@ -13,7 +13,7 @@ extension TouchInteraction {
         attributes["position.x"] = .string(point.x.toString())
         attributes["position.y"] = .string(point.y.toString())
         
-        let span = tracer.startSpan(name: "user.tap",
+        let span = tracer.startSpan(name: "click",
                                     attributes: attributes,
                                     startTime: Date(timeIntervalSince1970: startTimestamp))
         span.end(time: Date(timeIntervalSince1970: timestamp))
