@@ -203,7 +203,7 @@ final class ObservabilityService: InternalObserve {
             options: options
         )
         // Route the afterTrack hook and identify context keys back into this service,
-        // so it remains the single emitter of launchdarkly.track spans.
+        // so it remains the single emitter of track spans.
         self.hookExporter.trackEmitter = self
     }
 }
@@ -388,7 +388,7 @@ extension ObservabilityService: Observe {
 }
 
 extension ObservabilityService: TrackEmitting {
-    /// Single emitter for `launchdarkly.track` spans. Both the LD `afterTrack` hook and the
+    /// Single emitter for `track` spans. Both the LD `afterTrack` hook and the
     /// manual `LDObserve.track` path funnel through here.
     func track(
         name: String,

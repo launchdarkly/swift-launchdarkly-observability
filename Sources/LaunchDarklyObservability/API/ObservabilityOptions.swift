@@ -177,7 +177,7 @@ public struct ObservabilityOptions {
         /// Whether to emit a `click` span for each tap. Capture for Session Replay
         /// is unaffected by this flag.
         let taps: FeatureFlag
-        /// Whether to emit a `launchdarkly.track` span when a custom event is tracked
+        /// Whether to emit a `track` span when a custom event is tracked
         /// (via the LD `afterTrack` hook or ``LDObserve/track(name:value:attributes:)``).
         let trackEvents: FeatureFlag
         

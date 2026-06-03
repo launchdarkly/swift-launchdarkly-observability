@@ -5,7 +5,7 @@
 public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveContext {
     func start(sessionId: String)
     func start()
-    /// Record a custom track event as a `launchdarkly.track` span.
+    /// Record a custom track event as a `track` span.
     /// - Parameters:
     ///   - name: The event key/name.
     ///   - value: An optional metric value associated with the event.

@@ -11,7 +11,7 @@ import Common
 /// Both ObservabilityHook (native Swift) and ObservabilityHookProxy (C# bridge)
 /// delegate here so the tracing logic is written exactly once.
 /// Receives track events and identify context keys so the single span emitter
-/// (`ObservabilityService`) can produce `launchdarkly.track` spans and cache context keys.
+/// (`ObservabilityService`) can produce `track` spans and cache context keys.
 protocol TrackEmitting: AnyObject {
     func track(name: String, value: Double?, attributes: [String: AttributeValue],
                contextKeyAttributes: [String: AttributeValue]?)

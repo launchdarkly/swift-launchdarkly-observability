@@ -138,7 +138,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				5006D6B12EEB4D460081FEA5 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */,
-				50FD5D642FCE26D7008B9E06 /* XCLocalSwiftPackageReference "../../ios-client-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E7904AC52E6A523D00A15337 /* Products */;
@@ -386,10 +385,6 @@
 		5006D6B12EEB4D460081FEA5 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../../swift-launchdarkly-observability";
-		};
-		50FD5D642FCE26D7008B9E06 /* XCLocalSwiftPackageReference "../../ios-client-sdk" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../ios-client-sdk";
 		};
 /* End XCLocalSwiftPackageReference section */
 
