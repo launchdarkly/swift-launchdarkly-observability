@@ -20,8 +20,10 @@ final class MaskApplier {
                     context.restoreGState()
                 }
                 
+                // Stable masks use the primary shade; only the "before" of a
+                // shifted pair is overlaid in the duplicate shade.
                 context.saveGState()
-                drawRect(context, transform, rect, fillColor: Self.duplicateMaskColor)
+                drawRect(context, transform, rect, fillColor: after == nil ? Self.standardMaskColor : Self.duplicateMaskColor)
                 context.restoreGState()
                 
             case .quad(let beforeQuad):
@@ -32,8 +34,10 @@ final class MaskApplier {
                     context.restoreGState()
                 }
                 
+                // Stable masks use the primary shade; only the "before" of a
+                // shifted pair is overlaid in the duplicate shade.
                 context.saveGState()
-                drawQuad(context, quad: beforeQuad, fillColor: Self.duplicateMaskColor)
+                drawQuad(context, quad: beforeQuad, fillColor: after == nil ? Self.standardMaskColor : Self.duplicateMaskColor)
                 context.restoreGState()
             }
         }
