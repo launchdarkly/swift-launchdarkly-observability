@@ -87,7 +87,7 @@ public final class ImageCaptureService: ImageCaptureServicing {
                     return
                 }
                 
-                var applyOperations = [[MaskOperation]]()
+                var applyOperations = [[(MaskOperation, MaskOperation?)]]()
                 var areas = [OffsettedArea]()
                 for (before, after) in zip(maskOperationsBefore, maskOperationsAfter) {
                     if let newOperations = self.maskStabilizer.duplicateUnsimilar(before: before.maskOperations, after: after.maskOperations) {
