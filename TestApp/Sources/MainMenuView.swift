@@ -272,18 +272,21 @@ struct MainMenuView: View {
                     .buttonStyle(.borderedProminent)
             }
 
-            Text("Customer API")
+            Text("Error")
+                .fontWeight(.bold)
+
+            Button {
+                viewModel.recordError()
+            } label: {
+                Text("Error")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+
+            Text("Logs")
                 .fontWeight(.bold)
 
             HStack {
-                Button {
-                    viewModel.recordError()
-                } label: {
-                    Text("Error")
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-
                 Button {
                     viewModel.recordLogs()
                 } label: {
@@ -298,6 +301,9 @@ struct MainMenuView: View {
                 }
                 .buttonStyle(.borderedProminent)
             }
+
+            Text("Traces")
+                .fontWeight(.bold)
 
             HStack {
                 Button {
