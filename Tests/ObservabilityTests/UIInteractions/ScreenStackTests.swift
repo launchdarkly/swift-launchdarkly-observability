@@ -38,6 +38,36 @@ struct ScreenStackTests {
         #expect(stack.record("Profile") == "Home")
     }
 
+    @Test("Same name with distinct ids are treated as separate screens")
+    func sameNameDistinctIds() {
+        let stack = ScreenStack()
+        #expect(stack.record("Detail", id: "item-1") == nil)
+        // Same display name but a different id is a real navigation, not a re-appearance.
+        #expect(stack.record("Detail", id: "item-2") == "Detail")
+        #expect(stack.snapshot == ["Detail", "Detail"])
+    }
+
+    @Test("Re-appearance keyed by id keeps history stable")
+    func reappearanceById() {
+        let stack = ScreenStack()
+        _ = stack.record("Home", id: "home")
+        _ = stack.record("Detail", id: "item-1")
+        // The same id re-appears (e.g. UIKit re-show); no navigation occurred.
+        #expect(stack.record("Detail", id: "item-1") == "Home")
+        #expect(stack.snapshot == ["Home", "Detail"])
+    }
+
+    @Test("Pop-back matches by id")
+    func popBackById() {
+        let stack = ScreenStack()
+        _ = stack.record("Detail", id: "item-1")
+        _ = stack.record("Detail", id: "item-2")
+        _ = stack.record("Detail", id: "item-3")
+        // Returning to item-1 pops everything above it; previous is nil (item-1 is the root).
+        #expect(stack.record("Detail", id: "item-1") == nil)
+        #expect(stack.snapshot == ["Detail"])
+    }
+
     @Test("Reset clears history")
     func reset() {
         let stack = ScreenStack()

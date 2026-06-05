@@ -481,7 +481,9 @@ extension ObservabilityService: TrackEmitting {
     /// broadcast (Session Replay `Navigate`) always fires once a screen is recorded.
     func emitScreenView(_ screen: ScreenView) {
         // Resolve previous_screen against the shared stack before recording this one.
-        let previousScreen = screenStack.record(screen.name)
+        // Identity is keyed on screenId (when present) so distinct screens sharing a
+        // display name aren't collapsed into a re-appearance of one another.
+        let previousScreen = screenStack.record(screen.name, id: screen.screenId)
 
         // Broadcast the navigation so Session Replay can emit a `Navigate` event,
         // mirroring the web SDK's per-path-change custom event. This is independent
