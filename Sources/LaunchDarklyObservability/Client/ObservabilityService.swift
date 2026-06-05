@@ -486,7 +486,12 @@ extension ObservabilityService: TrackEmitting {
         // Only the analytics span is gated by the screenViews flag.
         guard options.analytics.screenViews.isEnabled else { return }
 
+        // Apply in increasing precedence so the screen-view taxonomy can never be clobbered: identify
+        // context keys first, then the reserved `event.*` fields last (matching the track path).
         var spanAttributes: [String: AttributeValue] = [:]
+        for (k, v) in cachedContextKeyAttributes {
+            spanAttributes[k] = v
+        }
         spanAttributes[SemanticConvention.eventName] = .string(screen.name)
         if let screenClass = screen.screenClass {
             spanAttributes[SemanticConvention.eventScreenClass] = .string(screenClass)
@@ -499,10 +504,6 @@ extension ObservabilityService: TrackEmitting {
         }
         if let category = screen.category {
             spanAttributes[SemanticConvention.eventCategory] = .string(category)
-        }
-        // Merge identify context keys, same as the track path.
-        for (k, v) in cachedContextKeyAttributes {
-            spanAttributes[k] = v
         }
 
         let span = tracer.startSpan(name: SemanticConvention.screenViewSpanName, attributes: spanAttributes)
