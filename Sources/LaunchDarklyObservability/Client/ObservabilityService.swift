@@ -38,6 +38,9 @@ final class ObservabilityService: InternalObserve {
     private var screenViewManager: ScreenViewManager?
     /// Broadcasts each recorded screen view so Session Replay can emit `Navigate` events.
     private let screenViewSubject = PassthroughSubject<ScreenViewEvent, Never>()
+    /// Broadcasts each `track` event so Session Replay can emit a `Track` event regardless of the
+    /// entry path (`LDClient.track` or the manual `LDObserve.track` API).
+    private let trackSubject = PassthroughSubject<TrackEvent, Never>()
     private var crashReporting: CrashReporting?
     
     let hookExporter: ObservabilityHookExporter
@@ -198,7 +201,8 @@ final class ObservabilityService: InternalObserve {
             transportService: transportService,
             userInteractionManager: userInteractionManager,
             sessionAttributes: sessionAttributes,
-            screenViews: screenViewSubject.eraseToAnyPublisher()
+            screenViews: screenViewSubject.eraseToAnyPublisher(),
+            tracks: trackSubject.eraseToAnyPublisher()
         )
         self.context = context
         
@@ -422,6 +426,18 @@ extension ObservabilityService: TrackEmitting {
         attributes: [String: AttributeValue],
         contextKeyAttributes: [String: AttributeValue]?
     ) {
+        // Broadcast so Session Replay can record a `Track` event for every track path, independent
+        // of the trackEvents span flag below (mirrors the `Navigate` broadcast in emitScreenView).
+        // Carries only user-supplied track data, matching the previous SessionReplayHook payload.
+        trackSubject.send(
+            TrackEvent(
+                name: name,
+                metricValue: metricValue,
+                attributes: attributes,
+                timestamp: Date().timeIntervalSince1970
+            )
+        )
+
         guard options.analytics.trackEvents.isEnabled else { return }
 
         // Apply in increasing precedence so event identity can never be clobbered: user-supplied

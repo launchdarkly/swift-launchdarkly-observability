@@ -151,12 +151,19 @@ final class SessionReplayService: SessionReplayServicing {
     }
     
     func afterTrack(name: String, metricValue: Double?, attributes: [String: AttributeValue]) {
+        recordTrack(name: name, metricValue: metricValue, attributes: attributes, timestamp: Date().timeIntervalSince1970)
+    }
+
+    /// Records a `Track` timeline event onto the active recording. Shared by the cross-platform
+    /// bridge (`SessionReplayHookProxy`) and the in-process track subscription fed by
+    /// Observability's single emitter.
+    private func recordTrack(name: String, metricValue: Double?, attributes: [String: AttributeValue], timestamp: TimeInterval) {
         let sessionId = observabilityContext.sessionManager.sessionInfo.id
         let payload = TrackItemPayload(
             name: name,
             metricValue: metricValue,
             attributes: attributes,
-            timestamp: Date().timeIntervalSince1970,
+            timestamp: timestamp,
             sessionId: sessionId
         )
         Task { [transportService] in
@@ -218,7 +225,21 @@ final class SessionReplayService: SessionReplayServicing {
                 }
             }
             .store(in: &cancellables)
-            
+
+        // Record a `Track` event for every track path (`LDClient.track` and the manual
+        // `LDObserve.track` API, including standalone init without `LDClient`), which the LD
+        // client hook alone misses.
+        observabilityContext.tracks
+            .sink { [weak self] track in
+                self?.recordTrack(
+                    name: track.name,
+                    metricValue: track.metricValue,
+                    attributes: track.attributes,
+                    timestamp: track.timestamp
+                )
+            }
+            .store(in: &cancellables)
+
         captureManager.isEnabled = true
     }
     

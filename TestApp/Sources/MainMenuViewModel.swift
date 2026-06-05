@@ -4,6 +4,7 @@ import LaunchDarklyObservability
 
 final class MainMenuViewModel: ObservableObject {
 	@Published var isNetworkInProgress: Bool = false
+	private var screenViewCounter = 0
 	
 	func recordError() {
 		LDObserve.shared.recordError(Failure.crash, attributes: [:])
@@ -146,10 +147,11 @@ final class MainMenuViewModel: ObservableObject {
 	func trackScreenView() {
 		// Records a screen_view span manually; previous_screen is resolved through
 		// the same shared screen stack used by automatic capture.
+		screenViewCounter += 1
 		LDObserve.shared.trackScreenView(
-			name: "Manual Demo Screen",
+			name: "Manual Demo Screen \(screenViewCounter)",
 			screenClass: "MainMenuView",
-			screenId: "main-menu-demo",
+			screenId: "main-menu-demo-\(screenViewCounter)",
 			category: "Demo"
 		)
 	}
