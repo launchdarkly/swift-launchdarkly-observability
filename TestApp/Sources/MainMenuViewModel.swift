@@ -125,8 +125,7 @@ final class MainMenuViewModel: ObservableObject {
                 "test-false": false,
                 "test-integer": .number(42),
                 "test-double": 3.14
-            ],
-            metricValue: 7.0
+            ]
         )
 	}
 
@@ -140,8 +139,7 @@ final class MainMenuViewModel: ObservableObject {
                 "test-false": false,
                 "test-integer": .number(42),
                 "test-double": 3.14
-            ],
-            metricValue: 7.0
+            ]
 		)
 	}
 
