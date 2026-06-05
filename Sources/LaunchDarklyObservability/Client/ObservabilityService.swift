@@ -42,6 +42,7 @@ final class ObservabilityService: InternalObserve {
     /// entry path (`LDClient.track` or the manual `LDObserve.track` API).
     private let trackSubject = PassthroughSubject<TrackEvent, Never>()
     private var crashReporting: CrashReporting?
+    private var cancellables = Set<AnyCancellable>()
     
     let hookExporter: ObservabilityHookExporter
     
@@ -230,6 +231,16 @@ extension ObservabilityService {
         let options = self.options
         
         transportService.start()
+
+        // A new session (e.g. after a background timeout) must start with a fresh navigation
+        // history: otherwise the first `screen_view`/`Navigate` of the new session would resolve
+        // `event.previous_screen` against the prior session, and a re-appearing first screen would
+        // be deduped instead of emitting a fresh navigation.
+        sessionManager.publisher()
+            .sink { [weak self] _ in
+                self?.screenStack.reset()
+            }
+            .store(in: &cancellables)
         
         // MARK: - Network
         if options.instrumentation.launchTimes.isEnabled {
