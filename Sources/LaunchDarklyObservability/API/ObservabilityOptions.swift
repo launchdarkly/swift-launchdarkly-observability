@@ -151,6 +151,11 @@ public struct ObservabilityOptions {
     }
     public struct Instrumentation {
         let urlSession: FeatureFlag
+        /// Whether to run the user-tap detection machinery (issuing tap events from the
+        /// captured touch stream). Publishing those taps as OpenTelemetry `click` spans is
+        /// governed separately by ``Analytics/taps``; Session Replay capture is unaffected
+        /// by either flag.
+        let userTaps: FeatureFlag
         let memory: FeatureFlag
         let memoryWarnings: FeatureFlag
         let cpu: FeatureFlag
@@ -158,12 +163,14 @@ public struct ObservabilityOptions {
         
         public init(
             urlSession: FeatureFlag = .disabled,
+            userTaps: FeatureFlag = .enabled,
             memory: FeatureFlag = .disabled,
             memoryWarnings: FeatureFlag = .disabled,
             cpu: FeatureFlag = .disabled,
             launchTimes: FeatureFlag = .disabled
         ) {
             self.urlSession = urlSession
+            self.userTaps = userTaps
             self.memory = memory
             self.memoryWarnings = memoryWarnings
             self.cpu = cpu
@@ -174,8 +181,10 @@ public struct ObservabilityOptions {
     ///
     /// Controls which user-behaviour signals are emitted as OpenTelemetry spans.
     public struct Analytics {
-        /// Whether to emit a `click` span for each tap. Capture for Session Replay
-        /// is unaffected by this flag.
+        /// Whether to publish a `click` span for each detected tap. Tap detection itself
+        /// is governed by ``Instrumentation/userTaps``; if that is disabled no taps are
+        /// issued and this flag has no effect. Capture for Session Replay is unaffected
+        /// by either flag.
         let taps: FeatureFlag
         /// Whether to emit a `track` span when a custom event is tracked
         /// (via the LD `afterTrack` hook or ``LDObserve/track(key:data:metricValue:)``).
@@ -252,7 +261,8 @@ public struct ObservabilityOptions {
     ///   - crashReporting: Crash-reporting configuration, including which provider to use
     ///     (KSCrash or MetricKit). Defaults to ``CrashReporting/enabled`` (KSCrash).
     ///   - instrumentation: Per-feature toggles for automatic instrumentation (URLSession,
-    ///     memory, CPU, launch times, …). Defaults to all features disabled.
+    ///     user taps, memory, CPU, launch times, …). Defaults to all features disabled
+    ///     except user-tap detection, which is enabled.
     ///   - analytics: Toggles for analytics telemetry (taps, track events).
     ///     Defaults to taps enabled and track events enabled.
     public init(

@@ -344,7 +344,7 @@ let config = { () -> LDConfig in
 
 `analytics` controls analytics telemetry, emitted as OpenTelemetry spans:
 
-- `taps` (default `.enabled`): emit a `click` span for each tap. Session Replay capture is unaffected by this flag.
+- `taps` (default `.enabled`): publish a `click` span for each detected tap. Tap detection is governed by `instrumentation.userTaps` (default `.enabled`); if that is disabled, no taps are issued and this flag has no effect. Session Replay capture is unaffected by either flag.
 - `trackEvents` (default `.enabled`): emit a `track` span when a custom event is tracked, either automatically via the LaunchDarkly `afterTrack` hook (`LDClient.track(...)`) or manually via `LDObserve.shared.track(...)`.
 
 Use the `.enabled` / `.disabled` presets, or configure fields individually with `Analytics(taps:trackEvents:)`.
