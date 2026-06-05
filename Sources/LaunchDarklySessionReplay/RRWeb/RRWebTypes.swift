@@ -67,4 +67,6 @@ enum CustomDataTag: String, Codable {
     case identify = "Identify"
     /// Non-spatial press: remote control, physical keyboard, or software keyboard. Payload: `PressPayload` with `source` discriminator.
     case press = "Press"
+    /// Custom analytics event produced by `LDClient.track` (or the manual track path). Payload: stringified JSON `{ "event", "value", "data" }`.
+    case track = "Track"
 }

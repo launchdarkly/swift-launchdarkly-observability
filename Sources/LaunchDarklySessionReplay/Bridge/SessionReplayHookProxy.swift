@@ -26,4 +26,10 @@ public final class SessionReplayHookProxy: NSObject {
         }
         sessionReplayService.afterIdentify(contextKeys: keys, canonicalKey: canonicalKey, completed: completed)
     }
+
+    @objc(afterTrackWithName:value:attributes:)
+    public func afterTrack(name: String, metricValue: NSNumber?, attributes: NSDictionary) {
+        let attrs = AttributeConverter.convert((attributes as? [String: Any]) ?? [:])
+        sessionReplayService.afterTrack(name: name, metricValue: metricValue?.doubleValue, attributes: attrs)
+    }
 }
