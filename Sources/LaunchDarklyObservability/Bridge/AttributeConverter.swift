@@ -8,11 +8,11 @@ import OpenTelemetryApi
 /// `AttributeValue.init?(Any)` does not handle Foundation collection types,
 /// so this converter checks for `NSDictionary` / `NSArray` explicitly and
 /// recurses into nested structures.
-enum AttributeConverter {
+public enum AttributeConverter {
 
     /// Converts a `[String: Any]` dictionary of Foundation values into
     /// `[String: AttributeValue]`.
-    static func convert(_ source: [String: Any]) -> [String: AttributeValue] {
+    public static func convert(_ source: [String: Any]) -> [String: AttributeValue] {
         var result: [String: AttributeValue] = [:]
         for (key, value) in source {
             result[key] = convertValue(value)
@@ -29,7 +29,7 @@ enum AttributeConverter {
     ///    (avoids Swift's special bridging that converts NSNumber(0/1) to Bool)
     /// 4. `String`        → `.string`
     /// 5. Fallback        → `.string(String(describing: value))`
-    static func convertValue(_ value: Any) -> AttributeValue {
+    public static func convertValue(_ value: Any) -> AttributeValue {
         if let nsDict = value as? NSDictionary {
             var labels: [String: AttributeValue] = [:]
             for (key, val) in nsDict {

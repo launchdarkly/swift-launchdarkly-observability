@@ -1,3 +1,5 @@
+import LaunchDarkly
+
 // Lightweight no-op implementation of Observe used as the default before the Observability plugin is installed.
 /// Does not allocate exporters, start tasks, or perform network requests.
 final class NoOpObservabilityService: Observe {
@@ -20,7 +22,7 @@ final class NoOpObservabilityService: Observe {
         NoOpTracer().startSpan(name: name, attributes: attributes)
     }
 
-    func track(name: String, value: Double?, attributes: [String: AttributeValue]) {}
+    func track(key: String, data: LDValue?, metricValue: Double?) {}
 
     func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?) {}
 }

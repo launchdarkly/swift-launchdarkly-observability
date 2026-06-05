@@ -185,7 +185,7 @@ public struct ObservabilityOptions {
         /// is unaffected by this flag.
         let taps: FeatureFlag
         /// Whether to emit a `track` span when a custom event is tracked
-        /// (via the LD `afterTrack` hook or ``LDObserve/track(name:value:attributes:)``).
+        /// (via the LD `afterTrack` hook or ``LDObserve/track(key:data:metricValue:)``).
         let trackEvents: FeatureFlag
         /// Whether to emit a `screen_view` span when a screen is shown
         /// (automatically via the `UIViewController` swizzle or manually via

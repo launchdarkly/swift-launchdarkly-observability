@@ -227,7 +227,7 @@ struct RRWebEventGeneratorTests {
         )
         let trackPayload = TrackItemPayload(
             name: "purchase",
-            value: 9.99,
+            metricValue: 9.99,
             attributes: ["currency": .string("USD"), "count": .int(2)],
             timestamp: 42.0,
             sessionId: "test-session"

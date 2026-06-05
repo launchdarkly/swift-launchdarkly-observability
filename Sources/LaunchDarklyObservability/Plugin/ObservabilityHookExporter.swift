@@ -13,7 +13,7 @@ import Common
 /// Receives track events and identify context keys so the single span emitter
 /// (`ObservabilityService`) can produce `track` spans and cache context keys.
 protocol TrackEmitting: AnyObject {
-    func track(name: String, value: Double?, attributes: [String: AttributeValue],
+    func track(name: String, metricValue: Double?, attributes: [String: AttributeValue],
                contextKeyAttributes: [String: AttributeValue]?)
     func updateCachedContextKeys(_ contextKeys: [String: String])
 }
@@ -165,7 +165,7 @@ extension ObservabilityHookExporter: ObservabilityHookExporting {
         }
         // Route through the single emitter so gating/caching stay in one place.
         trackEmitter?.track(name: eventKey,
-                            value: metricValue,
+                            metricValue: metricValue,
                             attributes: attributes,
                             contextKeyAttributes: contextKeyAttributes)
     }

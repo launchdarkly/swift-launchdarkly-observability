@@ -270,7 +270,7 @@ actor RRWebEventGenerator {
     func trackEvent(itemPayload: TrackItemPayload) -> Event? {
         // Match the web `Track` custom event: a stringified JSON `{ data, value, event }`.
         let payload = TrackPayload(event: itemPayload.name,
-                                   value: itemPayload.value,
+                                   value: itemPayload.metricValue,
                                    data: itemPayload.attributes)
         guard let data = try? JSONEncoder().encode(payload),
               let payloadJSONString = String(data: data, encoding: .utf8) else {

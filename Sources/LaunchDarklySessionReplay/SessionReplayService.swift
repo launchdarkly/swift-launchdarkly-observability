@@ -23,7 +23,7 @@ protocol SessionReplayServicing: AnyObject {
     
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool)
 
-    func afterTrack(name: String, value: Double?, attributes: [String: AttributeValue])
+    func afterTrack(name: String, metricValue: Double?, attributes: [String: AttributeValue])
 }
 
 struct SessionReplayContext {
@@ -150,11 +150,11 @@ final class SessionReplayService: SessionReplayServicing {
         }
     }
     
-    func afterTrack(name: String, value: Double?, attributes: [String: AttributeValue]) {
+    func afterTrack(name: String, metricValue: Double?, attributes: [String: AttributeValue]) {
         let sessionId = observabilityContext.sessionManager.sessionInfo.id
         let payload = TrackItemPayload(
             name: name,
-            value: value,
+            metricValue: metricValue,
             attributes: attributes,
             timestamp: Date().timeIntervalSince1970,
             sessionId: sessionId
