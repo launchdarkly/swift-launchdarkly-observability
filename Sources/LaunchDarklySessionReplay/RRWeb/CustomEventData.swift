@@ -21,6 +21,14 @@ struct ClickPayload: Codable {
     var clickSelector: String
 }
 
+/// Mirrors the web `Track` custom-event payload (`{ ...metadata, event }`) emitted by
+/// `RecordSDK.track` -> `addCustomEvent('Track', stringify(...))`.
+struct TrackPayload: Codable {
+    var event: String
+    var value: Double?
+    var data: [String: String]
+}
+
 /// Unified wire payload for `CustomDataTag.press` (`"Press"`).
 /// `source` discriminates input origin: `"remote"`, `"physical-keyboard"`, or `"software-keyboard"`.
 /// `pressType` and `pressTypeSystemRaw` are only set when `source == "remote"`.

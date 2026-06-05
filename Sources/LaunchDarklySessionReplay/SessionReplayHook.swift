@@ -34,4 +34,14 @@ final class SessionReplayHook: Hook {
         )
         return seriesData
     }
+
+    public func afterTrack(seriesContext: TrackSeriesContext) {
+        guard let delegate else { return }
+
+        delegate.afterTrack(
+            name: seriesContext.key,
+            metricValue: seriesContext.metricValue,
+            attributes: seriesContext.data?.toAttributes() ?? [:]
+        )
+    }
 }

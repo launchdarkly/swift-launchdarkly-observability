@@ -1,6 +1,7 @@
 import Foundation
 import OpenTelemetrySdk
 import OSLog
+import LaunchDarkly
 #if !LD_COCOAPODS
     import Common
 #endif
@@ -386,8 +387,11 @@ extension ObservabilityService: Observe {
         tracer.startSpan(name: name, attributes: attributes)
     }
 
-    func track(name: String, value: Double?, attributes: [String: AttributeValue]) {
-        track(name: name, value: value, attributes: attributes, contextKeyAttributes: nil)
+    func track(key: String, data: LDValue?, metricValue: Double?) {
+        track(name: key,
+              metricValue: metricValue,
+              attributes: data?.toAttributes() ?? [:],
+              contextKeyAttributes: nil)
     }
 }
 
@@ -396,7 +400,7 @@ extension ObservabilityService: TrackEmitting {
     /// manual `LDObserve.track` path funnel through here.
     func track(
         name: String,
-        value: Double?,
+        metricValue: Double?,
         attributes: [String: AttributeValue],
         contextKeyAttributes: [String: AttributeValue]?
     ) {
@@ -413,8 +417,8 @@ extension ObservabilityService: TrackEmitting {
             spanAttributes[k] = v
         }
         spanAttributes["key"] = .string(name)
-        if let value {
-            spanAttributes["value"] = .double(value)
+        if let metricValue {
+            spanAttributes["value"] = .double(metricValue)
         }
 
         let span = tracer.startSpan(name: SemanticConvention.trackSpanName, attributes: spanAttributes)

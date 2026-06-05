@@ -187,7 +187,7 @@ public struct ObservabilityOptions {
         /// by either flag.
         let taps: FeatureFlag
         /// Whether to emit a `track` span when a custom event is tracked
-        /// (via the LD `afterTrack` hook or ``LDObserve/track(name:value:attributes:)``).
+        /// (via the LD `afterTrack` hook or ``LDObserve/track(key:data:metricValue:)``).
         let trackEvents: FeatureFlag
         
         public static var enabled: Self {

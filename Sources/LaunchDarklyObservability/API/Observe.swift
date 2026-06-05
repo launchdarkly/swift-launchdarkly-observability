@@ -1,4 +1,5 @@
 @_exported import OpenTelemetryApi
+import LaunchDarkly
 
 /// Interface for observability operations in the LaunchDarkly iOS SDK.
 /// Provides methods for recording various types of information.
@@ -6,25 +7,16 @@ public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveConte
     func start(sessionId: String)
     func start()
     /// Record a custom track event as a `track` span.
+    ///
+    /// Mirrors `LDClient.track(key:data:metricValue:)` so the same call shape
+    /// works whether the event is recorded through the LaunchDarkly client (via
+    /// the `afterTrack` hook) or directly through this API.
     /// - Parameters:
-    ///   - name: The event key/name.
-    ///   - value: An optional metric value associated with the event.
-    ///   - attributes: Additional attributes to record with the event.
-    func track(name: String, value: Double?, attributes: [String: AttributeValue])
-}
-
-extension Observe {
-    public func track(name: String) {
-        track(name: name, value: nil, attributes: [:])
-    }
-
-    public func track(name: String, value: Double?) {
-        track(name: name, value: value, attributes: [:])
-    }
-
-    public func track(name: String, attributes: [String: AttributeValue]) {
-        track(name: name, value: nil, attributes: attributes)
-    }
+    ///   - key: The key for the event.
+    ///   - data: The data associated with the event, if any.
+    ///   - metricValue: A numeric value used by LaunchDarkly experimentation for
+    ///     numeric custom metrics, if any.
+    func track(key: String, data: LDValue?, metricValue: Double?)
 }
 
 /// Context for transfer data from Observability to SessionReplay during initialization

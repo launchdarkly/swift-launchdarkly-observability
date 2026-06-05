@@ -1,4 +1,5 @@
 import Foundation
+import LaunchDarkly
 
 public final class LDObserve  {
     private let clientQueue = DispatchQueue(label: "com.launchdarkly.LDObserve.client")
@@ -67,7 +68,7 @@ extension LDObserve: Observe {
         client.startSpan(name: name, attributes: attributes)
     }
 
-    public func track(name: String, value: Double?, attributes: [String : AttributeValue]) {
-        client.track(name: name, value: value, attributes: attributes)
+    public func track(key: String, data: LDValue? = nil, metricValue: Double? = nil) {
+        client.track(key: key, data: data, metricValue: metricValue)
     }
 }
