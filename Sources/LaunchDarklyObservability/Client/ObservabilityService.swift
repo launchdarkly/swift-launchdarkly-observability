@@ -236,8 +236,16 @@ extension ObservabilityService {
         // history: otherwise the first `screen_view`/`Navigate` of the new session would resolve
         // `event.previous_screen` against the prior session, and a re-appearing first screen would
         // be deduped instead of emitting a fresh navigation.
+        //
+        // Only reset on an actual session *change*. `SessionManager.start` also publishes the
+        // initial session asynchronously; resetting on it would clobber a first screen that was
+        // recorded synchronously while starting screen capture below. Seed with the current
+        // session id so the initial emission is ignored even if it arrives after this subscription.
+        var lastSessionId = sessionManager.sessionInfo.id
         sessionManager.publisher()
-            .sink { [weak self] _ in
+            .sink { [weak self] info in
+                guard info.id != lastSessionId else { return }
+                lastSessionId = info.id
                 self?.screenStack.reset()
             }
             .store(in: &cancellables)
