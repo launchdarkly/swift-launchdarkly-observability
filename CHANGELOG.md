@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.39.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.38.0...0.39.0) (2026-06-05)
+
+
+### Features
+
+* emit Track custom events in session replay ([#209](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/209)) ([5438cec](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/5438cec935f54ab47d2dab478ca46453c9bcf23c))
+* screen views, navigation, and click taxonomy ([#210](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/210)) ([653c0fc](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/653c0fc6602a8bdebc47f21c0ac654cf7d302ce8))
+* taps analytical options ([#211](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/211)) ([e72dc65](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/e72dc65e97ef8798b3c5f2aee0226a4c33192515))
+
 ## [0.38.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.37.0...0.38.0) (2026-06-03)
 
 
