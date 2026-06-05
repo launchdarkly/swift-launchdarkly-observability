@@ -69,7 +69,12 @@ final class CaptureManager: EventSource {
         self.captureService = captureService
         let baseFrameInterval = frameRate > 0 ? 1.0 / frameRate : .infinity
         self.baseFrameInterval = baseFrameInterval
-        self.maxIdleFrameInterval = baseFrameInterval.isFinite ? max(baseFrameInterval, 1.0) : .infinity
+        // Idle cap is a multiple of the base rate (so back-off has an effect even
+        // when the base interval is already >= 1s), with a hard ceiling so we
+        // never stall capture entirely.
+        self.maxIdleFrameInterval = baseFrameInterval.isFinite
+            ? min(baseFrameInterval * 8, 2.0)
+            : .infinity
         self.exportDiffManager = ExportDiffManager(compression: compression, scale: 1.0)
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
