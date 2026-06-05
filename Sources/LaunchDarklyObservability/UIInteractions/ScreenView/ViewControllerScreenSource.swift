@@ -78,6 +78,32 @@ final class ViewControllerScreenSource {
         isActive = true
     }
 
+    /// Emits a `ScreenView` for the currently top-most visible controller, as if it had just
+    /// appeared. Used to seed a new session (after a session-id change) with the screen the user
+    /// is already viewing, since UIKit won't fire `viewDidAppear` again for an on-screen controller.
+    ///
+    /// No-op when capture isn't active or no trackable controller is on screen. UIKit access is
+    /// hopped onto the main thread, matching where the swizzled callbacks run.
+    func captureCurrent() {
+        guard isActive else { return }
+
+        let capture: () -> Void = { [weak self] in
+            guard let self, let yield = self.yield else { return }
+            guard let top = ViewControllerScreenSource.currentTopViewController() else { return }
+            // Mark on-screen so a later spurious `viewDidAppear` for the same controller is deduped.
+            self.onScreen.add(top)
+            if let screen = ViewControllerScreenSource.screenView(for: top) {
+                yield(screen)
+            }
+        }
+
+        if Thread.isMainThread {
+            capture()
+        } else {
+            DispatchQueue.main.async(execute: capture)
+        }
+    }
+
     func stop() {
         guard isActive else { return }
 
@@ -164,6 +190,40 @@ final class ViewControllerScreenSource {
     private static func nonEmpty(_ value: String?) -> String? {
         guard let value, !value.isEmpty else { return nil }
         return value
+    }
+
+    /// The top-most visible view controller in the active foreground key window, or `nil`.
+    static func currentTopViewController() -> UIViewController? {
+        let keyWindow = UIApplication.shared.connectedScenes
+            .filter { $0.activationState == .foregroundActive }
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+            ?? UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .flatMap { $0.windows }
+                .first { $0.isKeyWindow }
+
+        return topViewController(from: keyWindow?.rootViewController)
+    }
+
+    /// Resolves the visible leaf controller below [root], descending through presented controllers
+    /// and the standard container controllers. Pure and testable (no UIKit globals).
+    static func topViewController(from root: UIViewController?) -> UIViewController? {
+        guard let root else { return nil }
+
+        if let presented = root.presentedViewController {
+            return topViewController(from: presented)
+        }
+
+        switch root {
+        case let nav as UINavigationController:
+            return topViewController(from: nav.visibleViewController) ?? nav
+        case let tab as UITabBarController:
+            return topViewController(from: tab.selectedViewController) ?? tab
+        default:
+            return root
+        }
     }
 }
 #endif

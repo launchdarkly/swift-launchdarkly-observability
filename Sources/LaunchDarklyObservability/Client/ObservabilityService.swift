@@ -244,9 +244,13 @@ extension ObservabilityService {
         var lastSessionId = sessionManager.sessionInfo.id
         sessionManager.publisher()
             .sink { [weak self] info in
-                guard info.id != lastSessionId else { return }
+                guard let self, info.id != lastSessionId else { return }
                 lastSessionId = info.id
-                self?.screenStack.reset()
+                self.screenStack.reset()
+                // Re-seed the new session with the screen the user is still viewing. UIKit won't
+                // fire `viewDidAppear` for an already-visible controller, so without this the new
+                // session would have no opening `screen_view` span or `Navigate` event.
+                self.screenViewManager?.captureCurrentScreen()
             }
             .store(in: &cancellables)
         

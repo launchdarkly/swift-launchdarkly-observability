@@ -24,6 +24,15 @@ final class ScreenViewManager {
         #endif
     }
 
+    /// Re-emits the screen the user is currently viewing, as if it had just appeared. Used to seed
+    /// a fresh session (after a session-id change) so the new session gets an opening `screen_view`
+    /// span and `Navigate` event even though no `viewDidAppear` fires for the on-screen controller.
+    func captureCurrentScreen() {
+        #if canImport(UIKit)
+        source.captureCurrent()
+        #endif
+    }
+
     func stop() {
         #if canImport(UIKit)
         source.stop()

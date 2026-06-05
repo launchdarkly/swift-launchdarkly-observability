@@ -71,5 +71,52 @@ struct ViewControllerScreenSourceTests {
     func filteredControllersProduceNil() {
         #expect(ViewControllerScreenSource.screenView(for: UINavigationController()) == nil)
     }
+
+    @Test("topViewController returns the root for a plain controller")
+    func topViewControllerPlain() {
+        let root = ProfileViewController()
+        #expect(ViewControllerScreenSource.topViewController(from: root) === root)
+    }
+
+    @Test("topViewController descends into a navigation controller's visible child")
+    func topViewControllerNavigation() {
+        let visible = ProfileViewController()
+        let nav = UINavigationController(rootViewController: visible)
+        #expect(ViewControllerScreenSource.topViewController(from: nav) === visible)
+    }
+
+    @Test("topViewController descends into a tab bar's selected child")
+    func topViewControllerTabBar() {
+        let first = ProfileViewController()
+        let second = CheckoutVC()
+        let tab = UITabBarController()
+        tab.viewControllers = [first, second]
+        tab.selectedIndex = 1
+        #expect(ViewControllerScreenSource.topViewController(from: tab) === second)
+    }
+
+    @Test("topViewController follows presented controllers")
+    func topViewControllerPresented() async {
+        // A presented controller on top of a nav stack should win over the nav's visible child.
+        // Presentation only takes effect when the presenter is in a live window hierarchy.
+        let base = ProfileViewController()
+        let nav = UINavigationController(rootViewController: base)
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        window.rootViewController = nav
+        window.makeKeyAndVisible()
+
+        let presented = CheckoutVC()
+        await withCheckedContinuation { continuation in
+            nav.present(presented, animated: false) { continuation.resume() }
+        }
+
+        #expect(ViewControllerScreenSource.topViewController(from: nav) === presented)
+        window.isHidden = true
+    }
+
+    @Test("topViewController is nil for no root")
+    func topViewControllerNil() {
+        #expect(ViewControllerScreenSource.topViewController(from: nil) == nil)
+    }
 }
 #endif
