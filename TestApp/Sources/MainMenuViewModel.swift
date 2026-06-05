@@ -120,7 +120,7 @@ final class MainMenuViewModel: ObservableObject {
 		LDClient.get()?.track(
             key: "track-via-ld-observe",
             data: [
-                "test-string": "maui",
+                "test-string": "ios",
                 "test-true": true,
                 "test-false": false,
                 "test-integer": .number(42),
@@ -135,7 +135,7 @@ final class MainMenuViewModel: ObservableObject {
 		LDObserve.shared.track(
 			key: "track-via-ld-observe",
             data: [
-                "test-string": "maui",
+                "test-string": "ios",
                 "test-true": true,
                 "test-false": false,
                 "test-integer": .number(42),
