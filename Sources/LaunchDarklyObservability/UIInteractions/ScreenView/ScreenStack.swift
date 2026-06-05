@@ -1,40 +1,29 @@
 import Foundation
 
-/// The outcome of recording a screen appearance.
-struct ScreenTransition: Equatable {
-    /// The screen viewed immediately before this one, if any.
-    let previous: String?
-    /// `true` when the recorded screen was already on top (a re-appearance), so the navigation
-    /// history is unchanged. Callers should skip emitting navigation/analytics events in this case
-    /// to avoid duplicates.
-    let isReappearance: Bool
-}
-
 /// Thread-safe holder of the navigation history of viewed screens.
 ///
 /// It is the single source of truth used by both the automatic
 /// (`ViewControllerScreenSource`) and manual (`LDObserve.trackScreenView`) paths
 /// to resolve `event.previous_screen`.
 ///
-/// `record(_:)` returns the previous screen name and whether the appearance was a re-appearance
-/// of the current top, then updates the stack. Re-recording the screen that is already on top is
-/// treated as a no-op (its `previous_screen` stays stable and the stack is left unchanged), so it
-/// is robust to UIKit re-presenting the same controller (e.g. modal dismissals calling
-/// `viewDidAppear` again).
+/// `record(_:)` returns the name of the screen that was viewed immediately before
+/// the supplied one, then updates the stack. Re-recording the screen that is
+/// already on top is treated as a no-op (its `previous_screen` stays stable and
+/// the stack is left unchanged), so it is robust to UIKit re-presenting the same
+/// controller (e.g. modal dismissals calling `viewDidAppear` again).
 final class ScreenStack {
     private let queue = DispatchQueue(label: "com.launchdarkly.observability.screenStack")
     private var stack: [String] = []
 
     init() {}
 
-    /// Records a screen appearance and returns the resulting ``ScreenTransition``.
+    /// Records a screen appearance and returns the previous screen name (if any).
     @discardableResult
-    func record(_ name: String) -> ScreenTransition {
+    func record(_ name: String) -> String? {
         queue.sync {
             // Re-appearance of the current top: keep history stable.
             if stack.last == name {
-                let previous = stack.count >= 2 ? stack[stack.count - 2] : nil
-                return ScreenTransition(previous: previous, isReappearance: true)
+                return stack.count >= 2 ? stack[stack.count - 2] : nil
             }
 
             let previous = stack.last
@@ -47,7 +36,7 @@ final class ScreenStack {
                 stack.append(name)
             }
 
-            return ScreenTransition(previous: previous, isReappearance: false)
+            return previous
         }
     }
 

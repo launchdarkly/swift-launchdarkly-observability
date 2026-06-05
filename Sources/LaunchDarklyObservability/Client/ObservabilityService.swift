@@ -470,13 +470,7 @@ extension ObservabilityService: TrackEmitting {
     /// broadcast (Session Replay `Navigate`) always fires once a screen is recorded.
     func emitScreenView(_ screen: ScreenView) {
         // Resolve previous_screen against the shared stack before recording this one.
-        let transition = screenStack.record(screen.name)
-
-        // Re-appearance of the current top screen (e.g. repeated `viewDidAppear` after a modal
-        // dismissal) leaves history unchanged; skip it so we don't duplicate `Navigate` timeline
-        // entries or `screen_view` spans.
-        guard !transition.isReappearance else { return }
-        let previousScreen = transition.previous
+        let previousScreen = screenStack.record(screen.name)
 
         // Broadcast the navigation so Session Replay can emit a `Navigate` event,
         // mirroring the web SDK's per-path-change custom event. This is independent
