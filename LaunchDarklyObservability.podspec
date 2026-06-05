@@ -43,7 +43,7 @@ Pod::Spec.new do |s|
   # Common sources + LaunchDarkly SDK dependency
   s.subspec "Common" do |ss|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
-    ss.dependency 'LaunchDarkly', '~> 11.1.0'
+    ss.dependency 'LaunchDarkly', '~> 11.2'
   end
 
   # JSONExporters subspec — OTLP/JSON wire-format models and adapters

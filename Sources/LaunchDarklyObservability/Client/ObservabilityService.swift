@@ -186,10 +186,14 @@ final class ObservabilityService: InternalObserve {
         )
         self.tracer = appTraceClient
         
-        let tapsEnabled = options.analytics.taps.isEnabled
+        // `instrumentation.userTaps` enables the tap-detection machinery (issuing tap
+        // events); `analytics.taps` governs whether a detected tap is published as an OTel
+        // `click` span. Capture still flows to Session Replay regardless of either flag.
+        let userTapsEnabled = options.instrumentation.userTaps.isEnabled
+        let publishTaps = options.analytics.taps.isEnabled
         let userInteractionManager = UserInteractionManager(options: options, sessionManaging: sessionManager) { interaction in
-            // Gate only the telemetry span; capture still flows to Session Replay.
-            guard tapsEnabled else { return }
+            guard userTapsEnabled else { return }
+            guard publishTaps else { return }
             interaction.startEndSpan(tracer: tracerDecorator)
         }
         self.userInteractionManager = userInteractionManager
