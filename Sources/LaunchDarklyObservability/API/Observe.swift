@@ -19,20 +19,6 @@ public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveConte
     func track(key: String, data: LDValue?, metricValue: Double?)
 }
 
-extension Observe {
-    public func track(key: String) {
-        track(key: key, data: nil, metricValue: nil)
-    }
-
-    public func track(key: String, data: LDValue?) {
-        track(key: key, data: data, metricValue: nil)
-    }
-
-    public func track(key: String, metricValue: Double?) {
-        track(key: key, data: nil, metricValue: metricValue)
-    }
-}
-
 /// Context for transfer data from Observability to SessionReplay during initialization
 public protocol ObserveContext {
     var context: ObservabilityContext? { get }
