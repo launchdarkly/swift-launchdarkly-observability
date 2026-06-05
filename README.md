@@ -14,6 +14,8 @@ The iOS observability plugin automatically instruments:
 - **Crash Reporting**: Automatic crash reporting
 - **Feature Flag Evaluations**: Evaluation events added to your spans.
 - **Session Management**: User session tracking and background timeout handling
+- **Taps**: A `click` span for each tap interaction
+- **Screen Views**: A `screen_view` span when a `UIViewController` appears, plus a Session Replay `Navigate` event on each screen change
 
 ## Example Application
 
@@ -346,8 +348,22 @@ let config = { () -> LDConfig in
 
 - `taps` (default `.enabled`): publish a `click` span for each detected tap. Tap detection is governed by `instrumentation.userTaps` (default `.enabled`); if that is disabled, no taps are issued and this flag has no effect. Session Replay capture is unaffected by either flag.
 - `trackEvents` (default `.enabled`): emit a `track` span when a custom event is tracked, either automatically via the LaunchDarkly `afterTrack` hook (`LDClient.track(...)`) or manually via `LDObserve.shared.track(...)`.
+- `screenViews` (default `.enabled`): emit a `screen_view` span when a screen is shown. This flag only gates the span — it does **not** control screen detection.
 
-Use the `.enabled` / `.disabled` presets, or configure fields individually with `Analytics(taps:trackEvents:)`.
+Use the `.enabled` / `.disabled` presets, or configure fields individually with `Analytics(taps:trackEvents:screenViews:)`.
+
+`instrumentation` controls automatic instrumentation. Most features default to `.disabled`, except:
+
+- `screens` (default `.enabled`): automatically detect screen changes by swizzling `UIViewController`. This drives the automatic `screen_view` span (gated separately by `analytics.screenViews`) and Session Replay `Navigate` events. Set it to `.disabled` to turn off automatic screen detection while still allowing manual `trackScreenView(...)` calls.
+
+```swift
+Observability(
+    options: .init(
+        instrumentation: .init(screens: .disabled),     // turn off automatic screen detection
+        analytics: .init(screenViews: .disabled)         // or keep detection on but suppress the span
+    )
+)
+```
 
 ### Recording Observability Data
 
@@ -402,6 +418,112 @@ LDObserve.shared.track(
     metricValue: 42.0
 )
 ```
+
+### Tracking Screen Views
+
+A `screen_view` event captures when a screen is shown, using the `event.*` attribute namespace (`event.name`, `event.screen_class`, `event.screen_id`, `event.previous_screen`, `event.category`). `previous_screen` is resolved automatically from a shared screen stack, so it stays correct regardless of whether a screen was captured automatically or manually.
+
+Each recorded screen change also produces a Session Replay `Navigate` event (mirroring the web SDK), so the replay timeline reflects navigation.
+
+#### Automatic capture (UIKit)
+
+When `instrumentation.screens` is enabled (the default), the SDK swizzles `UIViewController` and records a `screen_view` whenever a view controller appears. Container/system controllers (e.g. `UINavigationController`, `UITabBarController`) are skipped.
+
+To customize how a controller is reported, conform it to `LDScreenNameProviding`:
+
+```swift
+import LaunchDarklyObservability
+
+final class CheckoutViewController: UIViewController, LDScreenNameProviding {
+    var ldScreenName: String? { "Checkout" }
+    var ldScreenCategory: String? { "Commerce" }
+}
+```
+
+#### Manual capture
+
+Pure SwiftUI navigation (e.g. `NavigationStack` destinations) is not observed by the `UIViewController` swizzle, so record those screens manually.
+
+In SwiftUI, use the `trackScreen` modifier on the screen's root view. A single call per screen is enough — `previous_screen` is resolved from the shared stack:
+
+```swift
+import SwiftUI
+import LaunchDarklyObservability
+
+struct ProfileView: View {
+    var body: some View {
+        VStack {
+            // ...
+        }
+        .trackScreen("Profile", category: "Account")
+    }
+}
+```
+
+##### Navigation stacks and modals
+
+`trackScreen` records on `.onAppear`, which SwiftUI does **not** re-run when you pop back to a screen in a `NavigationStack`, or when a presented `sheet` / `fullScreenCover` is dismissed. For those cases use the path- and presentation-aware modifiers so back-navigation and modal returns are tracked correctly.
+
+Apply `trackScreenStack` to the `NavigationStack` itself, passing the same `path` binding. The top of the path (or the `root` name when the path is empty) is recorded on first appearance and on every push/pop. Return `nil` from `destination` to skip a screen that already records itself.
+
+```swift
+import SwiftUI
+import LaunchDarklyObservability
+
+struct RootView: View {
+    @State private var path: [Route] = []
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            // ...
+        }
+        .trackScreenStack(path, root: "Home") { route in
+            switch route {
+            case .profile: return "Profile"
+            case .settings: return "Settings"
+            }
+        }
+    }
+}
+```
+
+Apply `trackScreenReturn` to a presenting screen to re-emit it once a modal closes. Pass the flag (or a combination of flags) that drives the presentations; the screen is recorded on each `true` -> `false` transition:
+
+```swift
+struct RootView: View {
+    @State private var activeSheet: Sheet?
+
+    var body: some View {
+        List { /* ... */ }
+            .sheet(item: $activeSheet) { sheet in /* ... */ }
+            // `activeSheet != nil` is true while any sheet is up; re-emits "Home" once it closes.
+            .trackScreenReturn("Home", isPresented: activeSheet != nil)
+    }
+}
+```
+
+> Driving presentations from a single optional/enum route (e.g. `sheet(item:)`) keeps `isPresented` to one expression. If you must use multiple `sheet(isPresented:)` flags, combine them: `isPresented: a || b || c`.
+
+Both modifiers require iOS 14 / macOS 11 / tvOS 14 / watchOS 7 or later.
+
+Or call the API directly from anywhere after the SDK is initialized:
+
+```swift
+import LaunchDarklyObservability
+
+LDObserve.shared.trackScreenView(
+    name: "Profile",
+    screenClass: "ProfileView",
+    screenId: "MyApp.ProfileView",
+    category: "Account"
+)
+
+// Convenience overloads:
+LDObserve.shared.trackScreenView(name: "Profile")
+LDObserve.shared.trackScreenView(name: "Profile", category: "Account")
+```
+
+Manual `trackScreenView(...)` calls work even when automatic detection (`instrumentation.screens`) is disabled. The emitted `screen_view` span is still gated by `analytics.screenViews`.
 
 ## Contributing
 

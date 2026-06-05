@@ -20,18 +20,32 @@ enum Failure: LocalizedError {
 struct MainMenuView: View {
     @StateObject private var viewModel = MainMenuViewModel()
     @State private var path: [String] = []
-    @State private var isMaskingUIKitOneFieldEnabled: Bool = false
-    @State private var isMaskingUIKitCreditCardEnabled: Bool = false
-    @State private var isMaskingSwiftUICreditCardEnabled: Bool = false
-    @State private var isMaskPropagationEnabled: Bool = false
-    @State private var isMaskPropagationUIKitEnabled: Bool = false
-    @State private var isNumberPadEnabled: Bool = false
-    @State private var isNotebookEnabled: Bool = false
-    @State private var isStoryboardEnabled: Bool = false
-    @State private var isWebviewEnabled: Bool = false
-    @State private var isDialogsUIKitEnabled: Bool = false
-    @State private var isDialogsSwiftUIEnabled: Bool = false
+    /// Single source of truth for the presented sheet. `nil` means none — so tracking back to
+    /// "Main Menu" on dismissal is just `activeSheet != nil`.
+    @State private var activeSheet: MenuSheet?
     @State private var isSessionReplayEnabled: Bool = true
+
+    @ViewBuilder
+    private func sheetContent(_ sheet: MenuSheet) -> some View {
+        switch sheet {
+        case .maskingOneFieldUIKit: MaskingElementsSimpleUIKitView()
+        case .maskPropagationSwiftUI: NestedMaskingPropagationView()
+        case .maskPropagationUIKit: NestedMaskingPropagationUIKitView()
+        case .numberPad: NumberPadView()
+        case .storyboard: StoryboardRootView()
+        #if os(iOS)
+        case .creditCardUIKit: MaskingCreditCardUIKitView()
+        case .creditCardSwiftUI: MaskingCreditCardSwiftUIView()
+        case .notebook: NotebookView()
+        case .dialogsUIKit: DialogsUIKitView()
+        case .dialogsSwiftUI: DialogsSwiftUIView()
+        #endif
+        #if canImport(WebKit)
+        case .webView: WebViewControllertView()
+        #endif
+        }
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             HStack {
@@ -59,6 +73,12 @@ struct MainMenuView: View {
                 }
             }
         }
+        // Path-driven tracking so popping back to the root re-emits "Main Menu" (SwiftUI does not
+        // re-run `.onAppear` on pop). "fruta" tracks itself via its own screens, so skip it here.
+        .trackScreenStack(path, root: "Main Menu") { $0 == "fruta" ? nil : $0 }
+        // Re-emit "Main Menu" when the presented sheet is dismissed (SwiftUI does not re-run the
+        // presenter's `.onAppear` after a sheet closes).
+        .trackScreenReturn("Main Menu", isPresented: activeSheet != nil)
         #if os(iOS)
         .onChange(of: path) { newValue in
             if !newValue.contains("fruta") {
@@ -70,43 +90,9 @@ struct MainMenuView: View {
             }
         }
         #endif
-        .sheet(isPresented: $isMaskingUIKitOneFieldEnabled) {
-            MaskingElementsSimpleUIKitView()
+        .sheet(item: $activeSheet) { sheet in
+            sheetContent(sheet)
         }
-        .sheet(isPresented: $isMaskPropagationEnabled) {
-            NestedMaskingPropagationView()
-        }
-        .sheet(isPresented: $isMaskPropagationUIKitEnabled) {
-            NestedMaskingPropagationUIKitView()
-        }
-#if os(iOS)
-        .sheet(isPresented: $isMaskingUIKitCreditCardEnabled) {
-            MaskingCreditCardUIKitView()
-        }
-        .sheet(isPresented: $isMaskingSwiftUICreditCardEnabled) {
-            MaskingCreditCardSwiftUIView()
-        }
-        .sheet(isPresented: $isNotebookEnabled) {
-            NotebookView()
-        }
-        .sheet(isPresented: $isDialogsUIKitEnabled) {
-            DialogsUIKitView()
-        }
-        .sheet(isPresented: $isDialogsSwiftUIEnabled) {
-            DialogsSwiftUIView()
-        }
-#endif
-        .sheet(isPresented: $isNumberPadEnabled) {
-            NumberPadView()
-        }
-        .sheet(isPresented: $isStoryboardEnabled) {
-            StoryboardRootView()
-        }
-#if canImport(WebKit)
-        .sheet(isPresented: $isWebviewEnabled) {
-            WebViewControllertView()
-        }
-#endif
     }
 
     // MARK: - Session Replay
@@ -114,27 +100,27 @@ struct MainMenuView: View {
     private var sessionReplaySection: some View {
         Section {
             MaskingGridRow(title: "One TextField", uikitAction: {
-                isMaskingUIKitOneFieldEnabled = true
+                activeSheet = .maskingOneFieldUIKit
             }, swiftUIAction: nil).ldMask()
 
 #if os(iOS)
             MaskingGridRow(title: "Credit Card", uikitAction: {
-                isMaskingUIKitCreditCardEnabled = true
+                activeSheet = .creditCardUIKit
             }) {
-                isMaskingSwiftUICreditCardEnabled = true
+                activeSheet = .creditCardSwiftUI
             }
             MaskingGridRow(title: "Number Pad", uikitAction: nil) {
-                isNumberPadEnabled = true
+                activeSheet = .numberPad
             }
             MaskingGridRow(title: "Mask Propagation", uikitAction: {
-                isMaskPropagationUIKitEnabled = true
+                activeSheet = .maskPropagationUIKit
             }) {
-                isMaskPropagationEnabled = true
+                activeSheet = .maskPropagationSwiftUI
             }
             MaskingGridRow(title: "Dialogs", uikitAction: {
-                isDialogsUIKitEnabled = true
+                activeSheet = .dialogsUIKit
             }) {
-                isDialogsSwiftUIEnabled = true
+                activeSheet = .dialogsSwiftUI
             }
 #endif
 #if os(iOS)
@@ -143,18 +129,20 @@ struct MainMenuView: View {
             }
 #endif
             HStack {
+#if os(iOS)
                 Button("Drawing") {
-                    isNotebookEnabled = true
+                    activeSheet = .notebook
                 }
                 .buttonStyle(.borderedProminent)
+#endif
 
                 Button("Storyboard") {
-                    isStoryboardEnabled = true
+                    activeSheet = .storyboard
                 }
                 .buttonStyle(.borderedProminent)
 #if canImport(WebKit)
                 Button("WebView") {
-                    isWebviewEnabled = true
+                    activeSheet = .webView
                 }
                 .buttonStyle(.borderedProminent)
 #endif
@@ -271,6 +259,10 @@ struct MainMenuView: View {
                 Button("Track (LDObserve)") { viewModel.trackViaLDObserve() }
                     .buttonStyle(.borderedProminent)
             }
+            HStack {
+                Button("Track Screen View") { viewModel.trackScreenView() }
+                    .buttonStyle(.borderedProminent)
+            }
 
             Text("Error")
                 .fontWeight(.bold)
@@ -323,6 +315,28 @@ struct MainMenuView: View {
         }
     }
 
+}
+
+/// The set of sheets presentable from the main menu. Backing `MainMenuView.activeSheet` with a
+/// single route keeps presentation (and "return to Main Menu" tracking) to one source of truth.
+private enum MenuSheet: Identifiable {
+    case maskingOneFieldUIKit
+    case maskPropagationSwiftUI
+    case maskPropagationUIKit
+    case numberPad
+    case storyboard
+    #if os(iOS)
+    case creditCardUIKit
+    case creditCardSwiftUI
+    case notebook
+    case dialogsUIKit
+    case dialogsSwiftUI
+    #endif
+    #if canImport(WebKit)
+    case webView
+    #endif
+
+    var id: Self { self }
 }
 
 enum Colors {

@@ -35,13 +35,8 @@ final class SessionReplayHook: Hook {
         return seriesData
     }
 
-    public func afterTrack(seriesContext: TrackSeriesContext) {
-        guard let delegate else { return }
-
-        delegate.afterTrack(
-            name: seriesContext.key,
-            metricValue: seriesContext.metricValue,
-            attributes: seriesContext.data?.toAttributes() ?? [:]
-        )
-    }
+    // Note: there is intentionally no afterTrack override. `Track` replay events are recorded from
+    // Observability's single track emitter via ObservabilityContext.tracks, so they cover both
+    // LDClient.track and the manual LDObserve.track API without double-recording. The native
+    // LDClient.track path reaches the emitter through ObservabilityHook.afterTrack.
 }

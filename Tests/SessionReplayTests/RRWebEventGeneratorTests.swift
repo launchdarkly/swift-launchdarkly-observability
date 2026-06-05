@@ -265,6 +265,44 @@ struct RRWebEventGeneratorTests {
         #expect(data?["payload"] as? String == "{\"event\":\"login\"}")
     }
 
+    @Test("Appends Navigate custom event with the screen name as a string payload")
+    func appendsNavigateEvent() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let navigatePayload = NavigateItemPayload(
+            name: "Profile",
+            timestamp: 42.0,
+            sessionId: "test-session"
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: navigatePayload)]
+        let events = await generator.generateEvents(items: items)
+        #expect(events.count == 1)
+        #expect(events[0].type == .Custom)
+        let encoded = try JSONEncoder().encode(events[0])
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Navigate")
+        // Plain string payload, matching the web `addCustomEvent('Navigate', url)`.
+        #expect(data?["payload"] as? String == "Profile")
+    }
+
+    @Test("Navigate custom event decodes via AnyEventData round-trip")
+    func navigateEventDecodesRoundTrip() throws {
+        let custom = CustomEventData(tag: .navigate, payload: "Home")
+        let event = Event(type: .Custom, data: AnyEventData(custom), timestamp: 10.0, _sid: 1)
+        let encoded = try JSONEncoder().encode(event)
+        let decoded = try JSONDecoder().decode(Event.self, from: encoded)
+        #expect(decoded.type == .Custom)
+        let roundTrip = try JSONEncoder().encode(decoded)
+        let json = try JSONSerialization.jsonObject(with: roundTrip) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Navigate")
+        #expect(data?["payload"] as? String == "Home")
+    }
+
     @Test("Press custom event decodes via AnyEventData round-trip")
     func pressEventDecodesRoundTrip() throws {
         let payload = PressPayload(source: "remote", pressType: "other", pressTypeSystemRaw: 77)

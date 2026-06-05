@@ -67,6 +67,7 @@ public protocol SimpleNestedViewControllerDelegate: AnyObject {
 }
 
 import SwiftUI
+import LaunchDarklyObservability
 
 // MARK: - Wrapper for UIKit controller
 struct SimpleNestedViewControllerWrapper: UIViewControllerRepresentable {
@@ -117,6 +118,7 @@ struct MaskingElementsSimpleUIKitView: View {
                     SnapshotButton()
                 }
         }
+        .trackScreen("Masking Simple View (UIKit)")
     }
 }
 

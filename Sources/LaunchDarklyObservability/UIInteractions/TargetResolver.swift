@@ -4,16 +4,18 @@ import UIKit
 public struct TouchTarget: Sendable {
     public let className: String?
     public let accessibilityIdentifier: String?
+    public let text: String?
     public let isAccessibilityElement: Bool?
     public let rectInWindow: CGRect
     public let rectOnScreen: CGRect
     public let rowIndex: IndexPath?
     public let sceneId: String?
     
-    public init(className: String?, accessibilityIdentifier: String?, isAccessibilityElement: Bool?, rectInWindow: CGRect, rectOnScreen: CGRect, rowIndex: IndexPath?, sceneId: String?) {
+    public init(className: String?, accessibilityIdentifier: String?, text: String? = nil, isAccessibilityElement: Bool?, rectInWindow: CGRect, rectOnScreen: CGRect, rowIndex: IndexPath?, sceneId: String?) {
         // Make sure we have Swift string not NSString to transer struct between threads
         self.className = className.map { String($0) }
         self.accessibilityIdentifier = accessibilityIdentifier.map { String($0) }
+        self.text = text.map { String($0) }
         self.isAccessibilityElement = isAccessibilityElement
         self.rectInWindow = rectInWindow
         self.rectOnScreen = rectOnScreen
@@ -54,6 +56,7 @@ final class TargetResolver: TargetResolving {
         let rectWin = semanticView.convert(semanticView.bounds, to: window)
         return TouchTarget(className: String(describing: type(of: semanticView)),
                            accessibilityIdentifier: semanticView.accessibilityIdentifier,
+                           text: semanticView.extractViewInfo().title,
                            isAccessibilityElement: semanticView.isAccessibilityElement,
                            rectInWindow: rectWin,
                            rectOnScreen: window.convert(rectWin, to: nil),

@@ -9,6 +9,7 @@ A view that displays the recipe for a smoothie.
 
 
 import SwiftUI
+import LaunchDarklyObservability
 
 struct RecipeView: View {
     var smoothie: Smoothie
@@ -82,6 +83,7 @@ struct RecipeView: View {
         .toolbar {
             SmoothieFavoriteButton().environmentObject(model)
         }
+        .trackScreen(smoothie.title, screenId: "recipe/\(smoothie.id)", category: "Recipe")
     }
 }
 

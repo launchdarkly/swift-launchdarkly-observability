@@ -1,6 +1,7 @@
 #if os(iOS)
 
 import SwiftUI
+import LaunchDarklyObservability
 
 struct SystemUnderPressureView: View {
     @StateObject private var cpuLoadGenerator = CpuLoadGenerator()
@@ -65,6 +66,7 @@ struct SystemUnderPressureView: View {
         .onDisappear {
             pressurizer.release()
         }
+        .trackScreen("System Under Pressure")
     }
 }
 

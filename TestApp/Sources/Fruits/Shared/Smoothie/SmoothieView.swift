@@ -8,6 +8,7 @@ The smoothie detail view that offers the smoothie for sale and lists its ingredi
 #if os(iOS)
 
 import SwiftUI
+import LaunchDarklyObservability
 
 #if APPCLIP
 import StoreKit
@@ -75,6 +76,7 @@ struct SmoothieView: View {
                                                  comment: "OK button of alert dialog when payments are disabled"))
                 )
             }
+            .trackScreen(smoothie.title, screenId: "smoothie/\(smoothie.id)", category: "Smoothie")
     }
     
     var container: some View {

@@ -1,5 +1,6 @@
 import SwiftUI
 import LaunchDarklySessionReplay
+import LaunchDarklyObservability
 
 struct NestedMaskingPropagationView: View {
     @Environment(\.dismiss) private var dismiss
@@ -69,6 +70,7 @@ struct NestedMaskingPropagationView: View {
                 SnapshotButton()
             }
         }
+        .trackScreen("Nested Masking Propagation")
     }
 
     @ViewBuilder

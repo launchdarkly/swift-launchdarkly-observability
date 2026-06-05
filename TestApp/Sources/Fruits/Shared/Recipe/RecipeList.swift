@@ -9,6 +9,7 @@ A list of unlocked smoothies' recipes, and a call to action to purchase all reci
 
 
 import SwiftUI
+import LaunchDarklyObservability
 
 struct RecipeList: View {
     @EnvironmentObject private var model: Model
@@ -62,6 +63,7 @@ struct RecipeList: View {
                 Text(suggestion.name).searchCompletion(suggestion.name)
             }
         }
+        .trackScreen("Recipes")
     }
     
     @ViewBuilder

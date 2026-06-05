@@ -7,6 +7,7 @@ Displays progress towards the next free smoothie, as well as offers a way for us
 
 import SwiftUI
 import AuthenticationServices
+import LaunchDarklyObservability
 
 struct RewardsView: View {
     @EnvironmentObject private var model: Model
@@ -47,6 +48,7 @@ struct RewardsView: View {
         #endif
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(BubbleBackground().ignoresSafeArea())
+        .trackScreen("Rewards")
     }
 }
 

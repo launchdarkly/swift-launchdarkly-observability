@@ -69,4 +69,6 @@ enum CustomDataTag: String, Codable {
     case press = "Press"
     /// Custom analytics event produced by `LDClient.track` (or the manual track path). Payload: stringified JSON `{ "event", "value", "data" }`.
     case track = "Track"
+    /// Screen change (or first screen). Payload: the screen name string, mirroring the web SDK's `Navigate` URL payload.
+    case navigate = "Navigate"
 }

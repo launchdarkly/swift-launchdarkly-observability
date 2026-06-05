@@ -160,6 +160,11 @@ public struct ObservabilityOptions {
         let memoryWarnings: FeatureFlag
         let cpu: FeatureFlag
         let launchTimes: FeatureFlag
+        /// Whether to automatically detect screen changes by swizzling
+        /// `UIViewController`. This drives both the `screen_view` span (gated
+        /// separately by ``Analytics/screenViews``) and Session Replay `Navigate`
+        /// events. Defaults to `.enabled`.
+        let screens: FeatureFlag
         
         public init(
             urlSession: FeatureFlag = .disabled,
@@ -167,7 +172,8 @@ public struct ObservabilityOptions {
             memory: FeatureFlag = .disabled,
             memoryWarnings: FeatureFlag = .disabled,
             cpu: FeatureFlag = .disabled,
-            launchTimes: FeatureFlag = .disabled
+            launchTimes: FeatureFlag = .disabled,
+            screens: FeatureFlag = .enabled
         ) {
             self.urlSession = urlSession
             self.userTaps = userTaps
@@ -175,6 +181,7 @@ public struct ObservabilityOptions {
             self.memoryWarnings = memoryWarnings
             self.cpu = cpu
             self.launchTimes = launchTimes
+            self.screens = screens
         }
     }
     /// Configuration for product analytics telemetry.
@@ -189,18 +196,27 @@ public struct ObservabilityOptions {
         /// Whether to emit a `track` span when a custom event is tracked
         /// (via the LD `afterTrack` hook or ``LDObserve/track(key:data:metricValue:)``).
         let trackEvents: FeatureFlag
+        /// Whether to emit a `screen_view` span when a screen is shown
+        /// (automatically via the `UIViewController` swizzle or manually via
+        /// ``LDObserve/trackScreenView(name:screenClass:screenId:category:)``).
+        ///
+        /// This only gates the span. Automatic screen *detection* (and therefore
+        /// Session Replay `Navigate` events) is controlled by
+        /// ``Instrumentation/screens``.
+        let screenViews: FeatureFlag
         
         public static var enabled: Self {
-            .init(taps: .enabled, trackEvents: .enabled)
+            .init(taps: .enabled, trackEvents: .enabled, screenViews: .enabled)
         }
         
         public static var disabled: Self {
-            .init(taps: .disabled, trackEvents: .disabled)
+            .init(taps: .disabled, trackEvents: .disabled, screenViews: .disabled)
         }
         
-        public init(taps: FeatureFlag = .enabled, trackEvents: FeatureFlag = .enabled) {
+        public init(taps: FeatureFlag = .enabled, trackEvents: FeatureFlag = .enabled, screenViews: FeatureFlag = .enabled) {
             self.taps = taps
             self.trackEvents = trackEvents
+            self.screenViews = screenViews
         }
     }
     public var isEnabled: Bool
@@ -263,6 +279,7 @@ public struct ObservabilityOptions {
     ///   - instrumentation: Per-feature toggles for automatic instrumentation (URLSession,
     ///     user taps, memory, CPU, launch times, …). Defaults to all features disabled
     ///     except user-tap detection, which is enabled.
+    ///     Automatic screen detection (`screens`), which is enabled.
     ///   - analytics: Toggles for analytics telemetry (taps, track events).
     ///     Defaults to taps enabled and track events enabled.
     public init(
