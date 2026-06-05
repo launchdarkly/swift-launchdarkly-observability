@@ -460,6 +460,52 @@ struct ProfileView: View {
 }
 ```
 
+##### Navigation stacks and modals
+
+`trackScreen` records on `.onAppear`, which SwiftUI does **not** re-run when you pop back to a screen in a `NavigationStack`, or when a presented `sheet` / `fullScreenCover` is dismissed. For those cases use the path- and presentation-aware modifiers so back-navigation and modal returns are tracked correctly.
+
+Apply `trackScreenStack` to the `NavigationStack` itself, passing the same `path` binding. The top of the path (or the `root` name when the path is empty) is recorded on first appearance and on every push/pop. Return `nil` from `destination` to skip a screen that already records itself.
+
+```swift
+import SwiftUI
+import LaunchDarklyObservability
+
+struct RootView: View {
+    @State private var path: [Route] = []
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            // ...
+        }
+        .trackScreenStack(path, root: "Home") { route in
+            switch route {
+            case .profile: return "Profile"
+            case .settings: return "Settings"
+            }
+        }
+    }
+}
+```
+
+Apply `trackScreenReturn` to a presenting screen to re-emit it once a modal closes. Pass the flag (or a combination of flags) that drives the presentations; the screen is recorded on each `true` -> `false` transition:
+
+```swift
+struct RootView: View {
+    @State private var activeSheet: Sheet?
+
+    var body: some View {
+        List { /* ... */ }
+            .sheet(item: $activeSheet) { sheet in /* ... */ }
+            // `activeSheet != nil` is true while any sheet is up; re-emits "Home" once it closes.
+            .trackScreenReturn("Home", isPresented: activeSheet != nil)
+    }
+}
+```
+
+> Driving presentations from a single optional/enum route (e.g. `sheet(item:)`) keeps `isPresented` to one expression. If you must use multiple `sheet(isPresented:)` flags, combine them: `isPresented: a || b || c`.
+
+Both modifiers require iOS 14 / macOS 11 / tvOS 14 / watchOS 7 or later.
+
 Or call the API directly from anywhere after the SDK is initialized:
 
 ```swift
