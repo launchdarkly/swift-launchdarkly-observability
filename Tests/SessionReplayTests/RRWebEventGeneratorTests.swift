@@ -218,6 +218,53 @@ struct RRWebEventGeneratorTests {
         #expect(payload?["pressType"] == nil)
     }
 
+    @Test("Appends Track custom event mirroring the web payload shape")
+    func appendsTrackEvent() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let trackPayload = TrackItemPayload(
+            name: "purchase",
+            value: 9.99,
+            attributes: ["currency": .string("USD"), "count": .int(2)],
+            timestamp: 42.0,
+            sessionId: "test-session"
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: trackPayload)]
+        let events = await generator.generateEvents(items: items)
+        #expect(events.count == 1)
+        #expect(events[0].type == .Custom)
+        let encoded = try JSONEncoder().encode(events[0])
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Track")
+        // Payload is a stringified JSON, matching the web `addCustomEvent('Track', stringify(...))`.
+        let payloadString = try #require(data?["payload"] as? String)
+        let payloadData = try #require(payloadString.data(using: .utf8))
+        let payloadJSON = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any]
+        #expect(payloadJSON?["event"] as? String == "purchase")
+        #expect(payloadJSON?["value"] as? Double == 9.99)
+        let trackData = payloadJSON?["data"] as? [String: Any]
+        #expect(trackData?["currency"] as? String == "USD")
+        #expect(trackData?["count"] as? String == "2")
+    }
+
+    @Test("Track custom event decodes via AnyEventData round-trip")
+    func trackEventDecodesRoundTrip() throws {
+        let custom = CustomEventData(tag: .track, payload: "{\"event\":\"login\"}")
+        let event = Event(type: .Custom, data: AnyEventData(custom), timestamp: 10.0, _sid: 1)
+        let encoded = try JSONEncoder().encode(event)
+        let decoded = try JSONDecoder().decode(Event.self, from: encoded)
+        #expect(decoded.type == .Custom)
+        let roundTrip = try JSONEncoder().encode(decoded)
+        let json = try JSONSerialization.jsonObject(with: roundTrip) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Track")
+        #expect(data?["payload"] as? String == "{\"event\":\"login\"}")
+    }
+
     @Test("Press custom event decodes via AnyEventData round-trip")
     func pressEventDecodesRoundTrip() throws {
         let payload = PressPayload(source: "remote", pressType: "other", pressTypeSystemRaw: 77)

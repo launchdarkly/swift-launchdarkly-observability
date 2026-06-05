@@ -22,6 +22,8 @@ protocol SessionReplayServicing: AnyObject {
     var isRunning: Bool { get }
     
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool)
+
+    func afterTrack(name: String, value: Double?, attributes: [String: AttributeValue])
 }
 
 struct SessionReplayContext {
@@ -145,6 +147,20 @@ final class SessionReplayService: SessionReplayServicing {
                 sessionId: sessionId
             )
             await scheduleIdentifySession(identifyPayload: identifyPayload)
+        }
+    }
+    
+    func afterTrack(name: String, value: Double?, attributes: [String: AttributeValue]) {
+        let sessionId = observabilityContext.sessionManager.sessionInfo.id
+        let payload = TrackItemPayload(
+            name: name,
+            value: value,
+            attributes: attributes,
+            timestamp: Date().timeIntervalSince1970,
+            sessionId: sessionId
+        )
+        Task { [transportService] in
+            await transportService.eventQueue.send(payload)
         }
     }
     
