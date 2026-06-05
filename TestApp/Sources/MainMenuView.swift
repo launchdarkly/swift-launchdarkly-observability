@@ -59,6 +59,7 @@ struct MainMenuView: View {
                 }
             }
         }
+        .trackScreen("Main Menu")
         #if os(iOS)
         .onChange(of: path) { newValue in
             if !newValue.contains("fruta") {
@@ -269,6 +270,11 @@ struct MainMenuView: View {
                 Button("Track (LDClient)") { viewModel.trackViaLDClient() }
                     .buttonStyle(.borderedProminent)
                 Button("Track (LDObserve)") { viewModel.trackViaLDObserve() }
+                    .buttonStyle(.borderedProminent)
+            }
+
+            HStack {
+                Button("Track Screen View") { viewModel.trackScreenView() }
                     .buttonStyle(.borderedProminent)
             }
 

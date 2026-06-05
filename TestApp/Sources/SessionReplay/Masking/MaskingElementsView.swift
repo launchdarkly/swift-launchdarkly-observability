@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import LaunchDarklyObservability
 
 struct MaskingElementsView: View {
     @State var text = ""
@@ -35,6 +36,7 @@ struct MaskingElementsView: View {
                 SnapshotButton()
             }
         }
+        .trackScreen("Masking Elements (UIKit)")
     }
 }
 

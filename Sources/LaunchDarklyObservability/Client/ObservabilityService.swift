@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import OpenTelemetrySdk
 import OSLog
@@ -32,6 +33,10 @@ final class ObservabilityService: InternalObserve {
     private var instruments = [AutoInstrumentation]()
     
     private let userInteractionManager: UserInteractionManager
+    private let screenStack = ScreenStack()
+    private var screenViewManager: ScreenViewManager?
+    /// Broadcasts each recorded screen view so Session Replay can emit `Navigate` events.
+    private let screenViewSubject = PassthroughSubject<ScreenViewEvent, Never>()
     private var crashReporting: CrashReporting?
     
     let hookExporter: ObservabilityHookExporter
@@ -191,7 +196,8 @@ final class ObservabilityService: InternalObserve {
             sessionManager: sessionManager,
             transportService: transportService,
             userInteractionManager: userInteractionManager,
-            sessionAttributes: sessionAttributes
+            sessionAttributes: sessionAttributes,
+            screenViews: screenViewSubject.eraseToAnyPublisher()
         )
         self.context = context
         
@@ -205,6 +211,12 @@ final class ObservabilityService: InternalObserve {
         // Route the afterTrack hook and identify context keys back into this service,
         // so it remains the single emitter of track spans.
         self.hookExporter.trackEmitter = self
+
+        // Automatic screen_view capture routes appearing screens back through the
+        // same single emitter used by the manual `trackScreenView` API.
+        self.screenViewManager = ScreenViewManager { [weak self] screen in
+            self?.emitScreenView(screen)
+        }
     }
 }
 
@@ -239,6 +251,10 @@ extension ObservabilityService {
         }
         
         userInteractionManager.start()
+
+        if options.instrumentation.screens.isEnabled {
+            screenViewManager?.start()
+        }
         
         if options.instrumentation.memory.isEnabled {
             instruments.append(
@@ -385,6 +401,12 @@ extension ObservabilityService: Observe {
     func track(name: String, value: Double?, attributes: [String: AttributeValue]) {
         track(name: name, value: value, attributes: attributes, contextKeyAttributes: nil)
     }
+
+    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?) {
+        emitScreenView(
+            ScreenView(name: name, screenClass: screenClass, screenId: screenId, category: category)
+        )
+    }
 }
 
 extension ObservabilityService: TrackEmitting {
@@ -414,6 +436,56 @@ extension ObservabilityService: TrackEmitting {
         }
 
         let span = tracer.startSpan(name: SemanticConvention.trackSpanName, attributes: spanAttributes)
+        span.end()
+    }
+
+    /// Single funnel for screen changes. Both the automatic
+    /// `ViewControllerScreenSource` capture and the manual `trackScreenView` API
+    /// route through here so `previous_screen` resolution and context-key
+    /// merging stay consistent.
+    ///
+    /// Screen detection itself is gated by ``ObservabilityOptions/Instrumentation/screens``
+    /// (auto capture) or the explicit manual call. The `screen_view` span is gated
+    /// separately by ``ObservabilityOptions/Analytics/screenViews``; the navigation
+    /// broadcast (Session Replay `Navigate`) always fires once a screen is recorded.
+    func emitScreenView(_ screen: ScreenView) {
+        // Resolve previous_screen against the shared stack before recording this one.
+        let previousScreen = screenStack.record(screen.name)
+
+        // Broadcast the navigation so Session Replay can emit a `Navigate` event,
+        // mirroring the web SDK's per-path-change custom event. This is independent
+        // of the `screen_view` span flag.
+        screenViewSubject.send(
+            ScreenViewEvent(
+                name: screen.name,
+                previousName: previousScreen,
+                timestamp: screen.timestamp
+            )
+        )
+
+        // Only the analytics span is gated by the screenViews flag.
+        guard options.analytics.screenViews.isEnabled else { return }
+
+        var spanAttributes: [String: AttributeValue] = [:]
+        spanAttributes[SemanticConvention.eventName] = .string(screen.name)
+        if let screenClass = screen.screenClass {
+            spanAttributes[SemanticConvention.eventScreenClass] = .string(screenClass)
+        }
+        if let screenId = screen.screenId {
+            spanAttributes[SemanticConvention.eventScreenId] = .string(screenId)
+        }
+        if let previousScreen {
+            spanAttributes[SemanticConvention.eventPreviousScreen] = .string(previousScreen)
+        }
+        if let category = screen.category {
+            spanAttributes[SemanticConvention.eventCategory] = .string(category)
+        }
+        // Merge identify context keys, same as the track path.
+        for (k, v) in cachedContextKeyAttributes {
+            spanAttributes[k] = v
+        }
+
+        let span = tracer.startSpan(name: SemanticConvention.screenViewSpanName, attributes: spanAttributes)
         span.end()
     }
 

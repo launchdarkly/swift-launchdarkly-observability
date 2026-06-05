@@ -129,6 +129,17 @@ final class MainMenuViewModel: ObservableObject {
 		)
 	}
 
+	func trackScreenView() {
+		// Records a screen_view span manually; previous_screen is resolved through
+		// the same shared screen stack used by automatic capture.
+		LDObserve.shared.trackScreenView(
+			name: "Manual Demo Screen",
+			screenClass: "MainMenuView",
+			screenId: "main-menu-demo",
+			category: "Demo"
+		)
+	}
+
 	func crash() -> Never {
 		fatalError()
 	}

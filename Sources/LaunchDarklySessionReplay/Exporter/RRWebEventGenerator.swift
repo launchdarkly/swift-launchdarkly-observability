@@ -141,6 +141,9 @@ actor RRWebEventGenerator {
                 events.append(event)
             }
             
+        case let navigateItem as NavigateItemPayload:
+            events.append(navigateEvent(itemPayload: navigateItem))
+            
         default:
             break // Item wasn't needed for SessionReplay
         }
@@ -275,6 +278,16 @@ actor RRWebEventGenerator {
         }
 
         let eventData = CustomEventData(tag: .track, payload: payloadJSONString)
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: itemPayload.timestamp,
+                          _sid: nextSid)
+        return event
+    }
+    
+    func navigateEvent(itemPayload: NavigateItemPayload) -> Event {
+        // Match the web `Navigate` custom event: a plain string payload (the route/screen name).
+        let eventData = CustomEventData(tag: .navigate, payload: itemPayload.name)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: itemPayload.timestamp,

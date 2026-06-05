@@ -202,6 +202,22 @@ final class SessionReplayService: SessionReplayServicing {
                 }
             }
             .store(in: &cancellables)
+
+        // Mirror the web SDK's `Navigate` custom event: emit one per screen change
+        // (and the first screen) while recording.
+        observabilityContext.screenViews
+            .sink { [transportService, observabilityContext] screenView in
+                let sessionId = observabilityContext.sessionManager.sessionInfo.id
+                let payload = NavigateItemPayload(
+                    name: screenView.name,
+                    timestamp: screenView.timestamp,
+                    sessionId: sessionId
+                )
+                Task {
+                    await transportService.eventQueue.send(payload)
+                }
+            }
+            .store(in: &cancellables)
             
         captureManager.isEnabled = true
     }

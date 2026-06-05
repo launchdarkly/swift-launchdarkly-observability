@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import LaunchDarklyObservability
 
 struct DialogsSwiftUIView: View {
     @Environment(\.dismiss) var dismiss
@@ -87,6 +88,7 @@ struct DialogsSwiftUIView: View {
                 }
             }
         }
+        .trackScreen("Dialogs (SwiftUI)")
     }
 
     private func presentWindowSheet(sizing: DimSizing) {

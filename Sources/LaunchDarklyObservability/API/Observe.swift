@@ -11,6 +11,17 @@ public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveConte
     ///   - value: An optional metric value associated with the event.
     ///   - attributes: Additional attributes to record with the event.
     func track(name: String, value: Double?, attributes: [String: AttributeValue])
+    /// Manually record a `screen_view` event as a `screen_view` span.
+    ///
+    /// Use this for screens that automatic capture cannot observe (e.g. pure
+    /// SwiftUI navigation). `previous_screen` is resolved through the same shared
+    /// screen stack used by automatic capture.
+    /// - Parameters:
+    ///   - name: The human-readable screen name (`event.name`, required).
+    ///   - screenClass: The screen's class/type (`event.screen_class`).
+    ///   - screenId: A stable screen identifier (`event.screen_id`).
+    ///   - category: An optional screen group (`event.category`).
+    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?)
 }
 
 extension Observe {
@@ -24,6 +35,14 @@ extension Observe {
 
     public func track(name: String, attributes: [String: AttributeValue]) {
         track(name: name, value: nil, attributes: attributes)
+    }
+
+    public func trackScreenView(name: String) {
+        trackScreenView(name: name, screenClass: nil, screenId: nil, category: nil)
+    }
+
+    public func trackScreenView(name: String, category: String?) {
+        trackScreenView(name: name, screenClass: nil, screenId: nil, category: category)
     }
 }
 

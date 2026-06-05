@@ -23,6 +23,7 @@ struct TVMainMenuView: View {
             customerAPITab
                 .tabItem { Label("Customer API", systemImage: "terminal.fill") }
         }
+        .trackScreen("Main Menu (tvOS)")
         .fullScreenCover(isPresented: $showFruta) {
             TVFrutaAppView()
         }

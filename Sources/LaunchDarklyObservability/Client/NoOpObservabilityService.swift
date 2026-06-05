@@ -21,6 +21,8 @@ final class NoOpObservabilityService: Observe {
     }
 
     func track(name: String, value: Double?, attributes: [String: AttributeValue]) {}
+
+    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?) {}
 }
 
 extension NoOpObservabilityService {

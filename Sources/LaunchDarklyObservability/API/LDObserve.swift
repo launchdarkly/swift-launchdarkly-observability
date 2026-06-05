@@ -70,4 +70,8 @@ extension LDObserve: Observe {
     public func track(name: String, value: Double?, attributes: [String : AttributeValue]) {
         client.track(name: name, value: value, attributes: attributes)
     }
+
+    public func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?) {
+        client.trackScreenView(name: name, screenClass: screenClass, screenId: screenId, category: category)
+    }
 }

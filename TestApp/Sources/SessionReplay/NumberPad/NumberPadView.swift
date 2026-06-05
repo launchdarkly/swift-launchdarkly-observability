@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import LaunchDarklyObservability
 
 struct NumberPadView: View {
     @State var text = ""
@@ -34,6 +35,7 @@ struct NumberPadView: View {
                 SnapshotButton()
             }
         }
+        .trackScreen("Number Pad (SwiftUI)")
     }
 }
 
