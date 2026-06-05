@@ -63,8 +63,9 @@ struct ScreenStackTests {
         _ = stack.record("Detail", id: "item-1")
         _ = stack.record("Detail", id: "item-2")
         _ = stack.record("Detail", id: "item-3")
-        // Returning to item-1 pops everything above it; previous is nil (item-1 is the root).
-        #expect(stack.record("Detail", id: "item-1") == nil)
+        // Returning to item-1 pops everything above it (matched by id); previous is the
+        // screen we came from, and the stack is trimmed back down to a single entry.
+        #expect(stack.record("Detail", id: "item-1") == "Detail")
         #expect(stack.snapshot == ["Detail"])
     }
 
