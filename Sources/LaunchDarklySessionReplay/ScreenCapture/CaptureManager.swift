@@ -12,7 +12,31 @@ final class CaptureManager: EventSource {
     private let eventQueue: EventQueue
     @MainActor
     private var lastFrameDispatchTime: DispatchTime?
-    private let frameInterval: Double
+
+    // Base (fast) cadence derived from the configured frame rate. The effective
+    // cadence is adapted at runtime between `baseFrameInterval` and
+    // `maxIdleFrameInterval` (see `effectiveFrameInterval`).
+    private let baseFrameInterval: Double
+    // Slowest cadence used while the screen is idle (a sequence of identical
+    // frames). Capped so we never fully stop capturing.
+    private let maxIdleFrameInterval: Double
+    // Number of consecutive identical (non-exported) frames seen so far. Drives
+    // the idle back-off once it passes `idleBackoffThreshold`.
+    @MainActor
+    private var idleFrameStreak: Int = 0
+    // While `now < interactionDeadline` the cadence is pinned to the base (fast)
+    // rate so user-driven changes are captured promptly.
+    @MainActor
+    private var interactionDeadline: DispatchTime?
+
+    // Identical frames tolerated at the base rate before the cadence starts
+    // backing off.
+    private let idleBackoffThreshold = 3
+    // Each idle step past the threshold multiplies the interval by this factor.
+    private let idleBackoffMultiplier = 2.0
+    // Duration of the fast-cadence window opened by each user interaction.
+    private let interactionSpeedupWindow: Double = 1.0
+
     @MainActor
     private var isEventQueueAvailable: Bool = true
     @MainActor
@@ -40,9 +64,12 @@ final class CaptureManager: EventSource {
          frameRate: Double,
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue,
+         interactionSignal: AnyPublisher<Void, Never>? = nil,
          sessionIdProvider: @Sendable @escaping () -> String) {
         self.captureService = captureService
-        self.frameInterval = frameRate > 0 ? 1.0 / frameRate : .infinity
+        let baseFrameInterval = frameRate > 0 ? 1.0 / frameRate : .infinity
+        self.baseFrameInterval = baseFrameInterval
+        self.maxIdleFrameInterval = baseFrameInterval.isFinite ? max(baseFrameInterval, 1.0) : .infinity
         self.exportDiffManager = ExportDiffManager(compression: compression, scale: 1.0)
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
@@ -83,6 +110,15 @@ final class CaptureManager: EventSource {
                     case .didFinishLaunching, .willEnterForeground, .didEnterBackground:
                         break
                     }
+                }
+            }
+            .store(in: &cancellables)
+
+        interactionSignal?
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                MainActor.assumeIsolated {
+                    self?.noteInteraction()
                 }
             }
             .store(in: &cancellables)
@@ -132,7 +168,7 @@ final class CaptureManager: EventSource {
         let now = DispatchTime.now()
         if let lastFrameDispatchTime {
             let timeInBackground = Double(now.uptimeNanoseconds - lastFrameDispatchTime.uptimeNanoseconds) / Double(NSEC_PER_SEC)
-            guard timeInBackground >= frameInterval else {
+            guard timeInBackground >= effectiveFrameInterval(now: now) else {
                 return
             }
         }
@@ -146,18 +182,62 @@ final class CaptureManager: EventSource {
             await MainActor.run { self.isCapturingInFlight = false }
 
             guard let rawFrame else {
-                // dropped frame
+                // Capture was interrupted/failed: leave the cadence untouched.
                 return
             }
             
             try? self.rawFrameWriter?.write(rawFrame: rawFrame)
 
-            guard let exportFrame = self.exportDiffManager.exportFrame(from: rawFrame) else {
+            // A nil export means the frame was identical to the previous one
+            // (content-based dedup). Feed that back into the cadence so a static
+            // screen backs off, while any change snaps us back to the base rate.
+            let exportFrame = self.exportDiffManager.exportFrame(from: rawFrame)
+            await MainActor.run { self.recordCaptureResult(changed: exportFrame != nil) }
+
+            guard let exportFrame else {
                 // dropped frame
                 return
             }
             
             await self.eventQueue.send(ImageItemPayload(exportFrame: exportFrame, sessionId: self.sessionIdProvider()))
         }
+    }
+
+    /// Current minimum interval between captures, adapted to recent activity.
+    ///
+    /// - Inside the post-interaction window the base (fast) rate is used.
+    /// - Otherwise the interval grows geometrically once `idleFrameStreak`
+    ///   exceeds `idleBackoffThreshold`, capped at `maxIdleFrameInterval`.
+    @MainActor
+    private func effectiveFrameInterval(now: DispatchTime) -> Double {
+        if let interactionDeadline, now < interactionDeadline {
+            return baseFrameInterval
+        }
+        guard idleFrameStreak > idleBackoffThreshold else {
+            return baseFrameInterval
+        }
+        let steps = idleFrameStreak - idleBackoffThreshold
+        let scaled = baseFrameInterval * pow(idleBackoffMultiplier, Double(steps))
+        return min(scaled, maxIdleFrameInterval)
+    }
+
+    /// Records whether the most recent capture produced a change, driving the
+    /// idle back-off. A change resets the streak (speed back up); an identical
+    /// frame extends it (slow down).
+    @MainActor
+    private func recordCaptureResult(changed: Bool) {
+        if changed {
+            idleFrameStreak = 0
+        } else {
+            idleFrameStreak += 1
+        }
+    }
+
+    /// Opens a fast-cadence window and resets the idle back-off so user-driven
+    /// changes are captured promptly.
+    @MainActor
+    private func noteInteraction() {
+        interactionDeadline = DispatchTime.now() + interactionSpeedupWindow
+        idleFrameStreak = 0
     }
 }

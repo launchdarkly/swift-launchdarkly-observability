@@ -107,6 +107,10 @@ final class SessionReplayService: SessionReplayServicing {
                                              frameRate: sessonReplayOptions.frameRate,
                                              appLifecycleManager: observabilityContext.appLifecycleManager,
                                              eventQueue: transportService.eventQueue,
+                                             interactionSignal: observabilityContext.userInteractionManager
+                                                 .interactionEvents
+                                                 .map { _ in () }
+                                                 .eraseToAnyPublisher(),
                                              sessionIdProvider: observabilityContext.sessionManager.sessionIdProvider)
         self.userInteractionManager = observabilityContext.userInteractionManager
         
