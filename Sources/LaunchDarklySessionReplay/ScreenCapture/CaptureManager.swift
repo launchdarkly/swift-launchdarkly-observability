@@ -15,6 +15,8 @@ final class CaptureManager: EventSource {
     private let frameInterval: Double
     @MainActor
     private var isEventQueueAvailable: Bool = true
+    @MainActor
+    private var isCapturingInFlight: Bool = false
     private let sessionExporterId = ObjectIdentifier(SessionReplayExporter.self)
     private var cancellables = Set<AnyCancellable>()
     private let debugFrameWriter = false
@@ -102,6 +104,9 @@ final class CaptureManager: EventSource {
         captureService.interuptCapture()
         displayLink?.invalidate()
         displayLink = nil
+        // An interrupted capture may never invoke its yield closure, so clear the
+        // in-flight flag here to avoid wedging the loop on the next start.
+        isCapturingInFlight = false
     }
     
     @MainActor
@@ -114,7 +119,16 @@ final class CaptureManager: EventSource {
         guard isEnabled, displayLink != nil, isEventQueueAvailable else {
             return
         }
-        
+
+        // Coalesce: a single capture (collect "before" → render → reconcile on
+        // the next tick → encode) spans several runloop ticks, so the display
+        // link can fire again while one is still in flight. Skip this tick
+        // instead of starting an overlapping capture; the running capture clears
+        // the flag when it yields (and `internalStop()` clears it if interrupted).
+        guard !isCapturingInFlight else {
+            return
+        }
+
         let now = DispatchTime.now()
         if let lastFrameDispatchTime {
             let timeInBackground = Double(now.uptimeNanoseconds - lastFrameDispatchTime.uptimeNanoseconds) / Double(NSEC_PER_SEC)
@@ -124,8 +138,13 @@ final class CaptureManager: EventSource {
         }
         
         self.lastFrameDispatchTime = now
-        
+        self.isCapturingInFlight = true
+
         captureService.captureRawFrame { rawFrame in
+            // The capture has produced (or dropped) a frame; release the gate so
+            // the next display-link tick can start the following capture.
+            await MainActor.run { self.isCapturingInFlight = false }
+
             guard let rawFrame else {
                 // dropped frame
                 return
