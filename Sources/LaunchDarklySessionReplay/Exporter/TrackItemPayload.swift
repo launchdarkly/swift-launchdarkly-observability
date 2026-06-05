@@ -8,7 +8,7 @@ import LaunchDarklyObservability
 /// here so the same timeline event is produced in the replay.
 struct TrackItemPayload: EventQueueItemPayload {
     let name: String
-    let value: Double?
+    let metricValue: Double?
     let attributes: [String: String]
     var timestamp: TimeInterval
     let sessionId: String
@@ -24,12 +24,12 @@ struct TrackItemPayload: EventQueueItemPayload {
 
 extension TrackItemPayload {
     init(name: String,
-         value: Double?,
+         metricValue: Double?,
          attributes: [String: AttributeValue],
          timestamp: TimeInterval,
          sessionId: String) {
         self.name = name
-        self.value = value
+        self.metricValue = metricValue
         self.attributes = attributes.compactMapValues { Self.stringValue(from: $0) }
         self.timestamp = timestamp
         self.sessionId = sessionId

@@ -397,11 +397,9 @@ span.end()
 // Record a custom track event as a `track` span.
 // (Calling LDClient.get()?.track(key:) records the same span automatically via the afterTrack hook.)
 LDObserve.shared.track(
-    name: "checkout_completed",
-    value: 42.0,
-    attributes: [
-        "currency": .string("USD")
-    ]
+    key: "checkout_completed",
+    data: ["currency": "USD"],
+    metricValue: 42.0
 )
 ```
 

@@ -38,28 +38,10 @@ final class SessionReplayHook: Hook {
     public func afterTrack(seriesContext: TrackSeriesContext) {
         guard let delegate else { return }
 
-        var attributes = [String: AttributeValue]()
-        if case let .object(data) = seriesContext.data {
-            for (k, v) in data {
-                if let attr = Self.attributeValue(from: v) {
-                    attributes[k] = attr
-                }
-            }
-        }
-
         delegate.afterTrack(
             name: seriesContext.key,
-            value: seriesContext.metricValue,
-            attributes: attributes
+            metricValue: seriesContext.metricValue,
+            attributes: seriesContext.data?.toAttributes() ?? [:]
         )
-    }
-
-    private static func attributeValue(from value: LDValue) -> AttributeValue? {
-        switch value {
-        case .bool(let b): return .bool(b)
-        case .number(let n): return .double(n)
-        case .string(let s): return .string(s)
-        case .null, .array, .object: return nil
-        }
     }
 }
