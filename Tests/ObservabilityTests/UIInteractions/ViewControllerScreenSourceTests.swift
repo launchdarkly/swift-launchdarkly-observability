@@ -106,8 +106,16 @@ struct ViewControllerScreenSourceTests {
         window.makeKeyAndVisible()
 
         let presented = CheckoutVC()
-        await withCheckedContinuation { continuation in
-            nav.present(presented, animated: false) { continuation.resume() }
+        // UIKit establishes `presentedViewController` synchronously during this call.
+        // We intentionally do NOT wait on the completion handler: in a headless test
+        // host the modal transition can stall and the completion never fires, which
+        // previously hung this test indefinitely. Poll the relationship instead, with
+        // a bounded number of run-loop turns so the test can never hang.
+        nav.present(presented, animated: false)
+        var attempts = 0
+        while nav.presentedViewController !== presented && attempts < 100 {
+            try? await Task.sleep(nanoseconds: 10_000_000) // 10ms, up to ~1s total
+            attempts += 1
         }
 
         #expect(ViewControllerScreenSource.topViewController(from: nav) === presented)
