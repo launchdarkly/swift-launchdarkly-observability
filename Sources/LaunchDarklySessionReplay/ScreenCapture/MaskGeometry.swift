@@ -30,10 +30,21 @@ enum MaskGeometry {
                                                     ty: ty).scaledBy(x: scale, y: scale)
             return Mask.affine(rect: lBounds, transform: affineTransform)
         } else {
-            // TODO: finish 3D animations
+            // 3D / perspective transform: the projected shape is a general
+            // quadrilateral that can't be expressed as a CGAffineTransform, so
+            // project each corner into the root layer and mask the resulting
+            // quad. `convert(_:to:)` walks the full layer chain and applies the
+            // perspective projection, so a view that is flipping or tilting in
+            // 3D is still covered instead of being left unmasked.
+            let scaleTransform = CGAffineTransform(scaleX: scale, y: scale)
+            let quad = Quad(
+                p0: layer.convert(CGPoint(x: lBounds.minX, y: lBounds.minY), to: rPresentation).applying(scaleTransform),
+                p1: layer.convert(CGPoint(x: lBounds.maxX, y: lBounds.minY), to: rPresentation).applying(scaleTransform),
+                p2: layer.convert(CGPoint(x: lBounds.maxX, y: lBounds.maxY), to: rPresentation).applying(scaleTransform),
+                p3: layer.convert(CGPoint(x: lBounds.minX, y: lBounds.maxY), to: rPresentation).applying(scaleTransform)
+            )
+            return Mask.quad(quad)
         }
-
-        return nil
     }
 
     /// `true` if `inner` is fully inside `container` (within `tolerance`
