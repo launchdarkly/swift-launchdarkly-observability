@@ -53,10 +53,8 @@ actor RRWebEventGenerator {
     private var stats: SessionReplayStats?
     private let isDebug = false
     private var nodeIds: [ImageSignature: Int] = [:]
-    private let log: OSLog
     
     init(log: OSLog, title: String, method _: SessionReplayOptions.CompressionMethod) {
-        self.log = log
         if isDebug {
             self.stats = SessionReplayStats(log: log)
         }
@@ -243,11 +241,6 @@ actor RRWebEventGenerator {
                           data: AnyEventData(eventData),
                           timestamp: interaction.timestamp,
                           _sid: nextSid)
-        #if DEBUG
-        if let data = try? JSONEncoder().encode(event), let json = String(data: data, encoding: .utf8) {
-            os_log("%{public}@", log: log, type: .debug, "[SR Click] \(json)")
-        }
-        #endif
         return event
     }
     
