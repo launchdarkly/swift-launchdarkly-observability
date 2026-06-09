@@ -53,8 +53,10 @@ actor RRWebEventGenerator {
     private var stats: SessionReplayStats?
     private let isDebug = false
     private var nodeIds: [ImageSignature: Int] = [:]
+    private let log: OSLog
     
     init(log: OSLog, title: String, method _: SessionReplayOptions.CompressionMethod) {
+        self.log = log
         if isDebug {
             self.stats = SessionReplayStats(log: log)
         }
@@ -228,14 +230,24 @@ actor RRWebEventGenerator {
     func clickEvent(interaction: TouchInteraction) -> Event? {
         guard case .touchDown = interaction.kind else { return nil }
         
+        // Mirror the web `Click` payload (`highlight-run` ClickListener):
+        // - clickTarget: element identifier (web: full CSS selector path; iOS analog: class name)
+        // - clickTextContent: the element's visible text (web: `target.textContent`)
+        // - clickSelector: simple selector (web: `#id` else tag; iOS analog: a11y id else class name)
+        let target = interaction.target
         let eventData = CustomEventData(tag: .click, payload: ClickPayload(
-            clickTarget: interaction.target?.className ?? "",
-            clickTextContent: interaction.target?.accessibilityIdentifier ?? "",
-            clickSelector: interaction.target?.accessibilityIdentifier ?? "view"))
+            clickTarget: target?.className ?? "",
+            clickTextContent: target?.text ?? "",
+            clickSelector: target?.accessibilityIdentifier ?? target?.className ?? "view"))
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: interaction.timestamp,
                           _sid: nextSid)
+        #if DEBUG
+        if let data = try? JSONEncoder().encode(event), let json = String(data: data, encoding: .utf8) {
+            os_log("%{public}@", log: log, type: .debug, "[SR Click] \(json)")
+        }
+        #endif
         return event
     }
     

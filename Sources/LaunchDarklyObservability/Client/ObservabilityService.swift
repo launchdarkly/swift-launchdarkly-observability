@@ -197,7 +197,7 @@ final class ObservabilityService: InternalObserve {
         let userInteractionManager = UserInteractionManager(options: options, sessionManaging: sessionManager) { interaction in
             guard userTapsEnabled else { return }
             guard publishTaps else { return }
-            interaction.startEndSpan(tracer: tracerDecorator)
+            interaction.startEndSpan(tracer: tracerDecorator, log: options.log)
         }
         self.userInteractionManager = userInteractionManager
         
