@@ -7,6 +7,7 @@ The menu tab or content list that includes all smoothies.
 #if os(iOS)
 
 import SwiftUI
+import LaunchDarklyObservability
 
 struct SmoothieMenu: View {
     
@@ -18,6 +19,7 @@ struct SmoothieMenu: View {
         }
         SmoothieList(smoothies: Smoothie.all())
             .navigationTitle(menuText)
+            .trackScreen("Smoothie Menu")
     }
     
 }

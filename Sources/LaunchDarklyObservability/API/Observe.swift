@@ -1,4 +1,5 @@
 @_exported import OpenTelemetryApi
+import LaunchDarkly
 
 /// Interface for observability operations in the LaunchDarkly iOS SDK.
 /// Provides methods for recording various types of information.
@@ -6,24 +7,36 @@ public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveConte
     func start(sessionId: String)
     func start()
     /// Record a custom track event as a `track` span.
+    ///
+    /// Mirrors `LDClient.track(key:data:metricValue:)` so the same call shape
+    /// works whether the event is recorded through the LaunchDarkly client (via
+    /// the `afterTrack` hook) or directly through this API.
     /// - Parameters:
-    ///   - name: The event key/name.
-    ///   - value: An optional metric value associated with the event.
-    ///   - attributes: Additional attributes to record with the event.
-    func track(name: String, value: Double?, attributes: [String: AttributeValue])
+    ///   - key: The key for the event.
+    ///   - data: The data associated with the event, if any.
+    ///   - metricValue: A numeric value used by LaunchDarkly experimentation for
+    ///     numeric custom metrics, if any.
+    func track(key: String, data: LDValue?, metricValue: Double?)
+    /// Manually record a `screen_view` event as a `screen_view` span.
+    ///
+    /// Use this for screens that automatic capture cannot observe (e.g. pure
+    /// SwiftUI navigation). `previous_screen` is resolved through the same shared
+    /// screen stack used by automatic capture.
+    /// - Parameters:
+    ///   - name: The human-readable screen name (`event.name`, required).
+    ///   - screenClass: The screen's class/type (`event.screen_class`).
+    ///   - screenId: A stable screen identifier (`event.screen_id`).
+    ///   - category: An optional screen group (`event.category`).
+    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?)
 }
 
 extension Observe {
-    public func track(name: String) {
-        track(name: name, value: nil, attributes: [:])
+    public func trackScreenView(name: String) {
+        trackScreenView(name: name, screenClass: nil, screenId: nil, category: nil)
     }
 
-    public func track(name: String, value: Double?) {
-        track(name: name, value: value, attributes: [:])
-    }
-
-    public func track(name: String, attributes: [String: AttributeValue]) {
-        track(name: name, value: nil, attributes: attributes)
+    public func trackScreenView(name: String, category: String?) {
+        trackScreenView(name: name, screenClass: nil, screenId: nil, category: category)
     }
 }
 

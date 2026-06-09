@@ -4,6 +4,7 @@ import LaunchDarklyObservability
 
 final class MainMenuViewModel: ObservableObject {
 	@Published var isNetworkInProgress: Bool = false
+	private var screenViewCounter = 0
 	
 	func recordError() {
 		LDObserve.shared.recordError(Failure.crash, attributes: [:])
@@ -117,15 +118,41 @@ final class MainMenuViewModel: ObservableObject {
 	
 	func trackViaLDClient() {
 		// Records a track span automatically via the Observability afterTrack hook.
-		LDClient.get()?.track(key: "track-via-ld-client")
+		LDClient.get()?.track(
+            key: "track-via-ld-observe",
+            data: [
+                "test-string": "ios",
+                "test-true": true,
+                "test-false": false,
+                "test-integer": .number(42),
+                "test-double": 3.14
+            ]
+        )
 	}
 
 	func trackViaLDObserve() {
 		// Records a track span directly through the Observability API.
 		LDObserve.shared.track(
-			name: "track-via-ld-observe",
-			value: 7.0,
-			attributes: ["source": .string("ld-observe")]
+			key: "track-via-ld-observe",
+            data: [
+                "test-string": "ios",
+                "test-true": true,
+                "test-false": false,
+                "test-integer": .number(42),
+                "test-double": 3.14
+            ]
+		)
+	}
+
+	func trackScreenView() {
+		// Records a screen_view span manually; previous_screen is resolved through
+		// the same shared screen stack used by automatic capture.
+		screenViewCounter += 1
+		LDObserve.shared.trackScreenView(
+			name: "Manual Demo Screen \(screenViewCounter)",
+			screenClass: "MainMenuView",
+			screenId: "main-menu-demo-\(screenViewCounter)",
+			category: "Demo"
 		)
 	}
 

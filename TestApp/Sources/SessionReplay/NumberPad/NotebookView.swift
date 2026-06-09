@@ -1,6 +1,7 @@
 #if os(iOS)
 
 import SwiftUI
+import LaunchDarklyObservability
 
 struct NotebookView: View {
     private let gridSpacing: CGFloat = 24
@@ -49,6 +50,7 @@ struct NotebookView: View {
                 SnapshotButton()
             }
         }
+        .trackScreen("Notebook (SwiftUI)")
     }
 }
 

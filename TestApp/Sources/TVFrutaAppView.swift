@@ -1,6 +1,7 @@
 #if os(tvOS)
 
 import SwiftUI
+import LaunchDarklyObservability
 
 struct TVFrutaAppView: View {
     @Environment(\.dismiss) private var dismiss
@@ -30,6 +31,7 @@ struct TVFrutaAppView: View {
                 TVFrutaDetailView(item: item, allItems: FrutaItem.all)
             }
         }
+        .trackScreen("Fruta Gallery (tvOS)")
     }
 }
 
@@ -136,6 +138,7 @@ private struct TVFrutaDetailView: View {
         .onAppear {
             currentIndex = allItems.firstIndex(where: { $0.id == item.id }) ?? 0
         }
+        .trackScreen("Fruta Detail (tvOS)", category: "Fruta")
     }
 
     private var displayedItem: FrutaItem {

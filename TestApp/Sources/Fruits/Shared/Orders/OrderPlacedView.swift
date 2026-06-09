@@ -10,6 +10,7 @@ A view presented to the user once they order a smoothie, and when it's ready to 
 import SwiftUI
 import AuthenticationServices
 import StoreKit
+import LaunchDarklyObservability
 
 struct OrderPlacedView: View {
     @EnvironmentObject private var model: Model
@@ -91,6 +92,7 @@ struct OrderPlacedView: View {
             }
             #endif
         }
+        .trackScreen("Order Placed", category: "Smoothie")
     }
     
     var orderStatusCard: some View {

@@ -8,6 +8,7 @@ The favorites tab or content list that includes smoothies marked as favorites.
 #if os(iOS)
 
 import SwiftUI
+import LaunchDarklyObservability
 
 struct FavoriteSmoothies: View {
     @EnvironmentObject private var model: Model
@@ -30,6 +31,7 @@ struct FavoriteSmoothies: View {
             }
             .navigationTitle(Text("Favorites", comment: "Title of the 'favorites' app section showing the list of favorite smoothies"))
             .environmentObject(model)
+            .trackScreen("Favorite Smoothies")
     }
 }
 

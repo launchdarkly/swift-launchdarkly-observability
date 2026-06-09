@@ -136,6 +136,14 @@ actor RRWebEventGenerator {
         case let pressItem as PressInteractionPayload:
             appendPressInteraction(payload: pressItem, events: &events)
             
+        case let trackItem as TrackItemPayload:
+            if let event = trackEvent(itemPayload: trackItem) {
+                events.append(event)
+            }
+            
+        case let navigateItem as NavigateItemPayload:
+            events.append(navigateEvent(itemPayload: navigateItem))
+            
         default:
             break // Item wasn't needed for SessionReplay
         }
@@ -252,6 +260,34 @@ actor RRWebEventGenerator {
         }
         
         let eventData = CustomEventData(tag: .identify, payload: userJSONString)
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: itemPayload.timestamp,
+                          _sid: nextSid)
+        return event
+    }
+    
+    func trackEvent(itemPayload: TrackItemPayload) -> Event? {
+        // Match the web `Track` custom event: a stringified JSON `{ data, value, event }`.
+        let payload = TrackPayload(event: itemPayload.name,
+                                   value: itemPayload.metricValue,
+                                   data: itemPayload.attributes)
+        guard let data = try? JSONEncoder().encode(payload),
+              let payloadJSONString = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+
+        let eventData = CustomEventData(tag: .track, payload: payloadJSONString)
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: itemPayload.timestamp,
+                          _sid: nextSid)
+        return event
+    }
+    
+    func navigateEvent(itemPayload: NavigateItemPayload) -> Event {
+        // Match the web `Navigate` custom event: a plain string payload (the route/screen name).
+        let eventData = CustomEventData(tag: .navigate, payload: itemPayload.name)
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: itemPayload.timestamp,

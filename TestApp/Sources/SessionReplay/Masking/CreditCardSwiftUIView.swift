@@ -2,6 +2,7 @@
 
 import SwiftUI
 import LaunchDarklySessionReplay
+import LaunchDarklyObservability
 
 struct MaskingCreditCardSwiftUIView: View {
     @Environment(\.dismiss) private var dismiss
@@ -149,6 +150,7 @@ struct MaskingCreditCardSwiftUIView: View {
                 SnapshotButton()
             }
         }
+        .trackScreen("Masking Credit Card (SwiftUI)")
     }
     
     private func labeledField<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {

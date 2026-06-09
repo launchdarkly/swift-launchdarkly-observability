@@ -22,6 +22,8 @@ protocol SessionReplayServicing: AnyObject {
     var isRunning: Bool { get }
     
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool)
+
+    func afterTrack(name: String, metricValue: Double?, attributes: [String: AttributeValue])
 }
 
 struct SessionReplayContext {
@@ -148,6 +150,27 @@ final class SessionReplayService: SessionReplayServicing {
         }
     }
     
+    func afterTrack(name: String, metricValue: Double?, attributes: [String: AttributeValue]) {
+        recordTrack(name: name, metricValue: metricValue, attributes: attributes, timestamp: Date().timeIntervalSince1970)
+    }
+
+    /// Records a `Track` timeline event onto the active recording. Shared by the cross-platform
+    /// bridge (`SessionReplayHookProxy`) and the in-process track subscription fed by
+    /// Observability's single emitter.
+    private func recordTrack(name: String, metricValue: Double?, attributes: [String: AttributeValue], timestamp: TimeInterval) {
+        let sessionId = observabilityContext.sessionManager.sessionInfo.id
+        let payload = TrackItemPayload(
+            name: name,
+            metricValue: metricValue,
+            attributes: attributes,
+            timestamp: timestamp,
+            sessionId: sessionId
+        )
+        Task { [transportService] in
+            await transportService.eventQueue.send(payload)
+        }
+    }
+    
     func scheduleIdentifySession(identifyPayload: IdentifyItemPayload) async {
         do {
             try await sessionReplayExporter.identifySession(identifyPayload: identifyPayload)
@@ -186,7 +209,37 @@ final class SessionReplayService: SessionReplayServicing {
                 }
             }
             .store(in: &cancellables)
-            
+
+        // Mirror the web SDK's `Navigate` custom event: emit one per screen change
+        // (and the first screen) while recording.
+        observabilityContext.screenViews
+            .sink { [transportService, observabilityContext] screenView in
+                let sessionId = observabilityContext.sessionManager.sessionInfo.id
+                let payload = NavigateItemPayload(
+                    name: screenView.name,
+                    timestamp: screenView.timestamp,
+                    sessionId: sessionId
+                )
+                Task {
+                    await transportService.eventQueue.send(payload)
+                }
+            }
+            .store(in: &cancellables)
+
+        // Record a `Track` event for every track path (`LDClient.track` and the manual
+        // `LDObserve.track` API, including standalone init without `LDClient`), which the LD
+        // client hook alone misses.
+        observabilityContext.tracks
+            .sink { [weak self] track in
+                self?.recordTrack(
+                    name: track.name,
+                    metricValue: track.metricValue,
+                    attributes: track.attributes,
+                    timestamp: track.timestamp
+                )
+            }
+            .store(in: &cancellables)
+
         captureManager.isEnabled = true
     }
     

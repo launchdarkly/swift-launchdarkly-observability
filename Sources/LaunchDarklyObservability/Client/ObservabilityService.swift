@@ -1,6 +1,8 @@
+import Combine
 import Foundation
 import OpenTelemetrySdk
 import OSLog
+import LaunchDarkly
 #if !LD_COCOAPODS
     import Common
 #endif
@@ -32,7 +34,15 @@ final class ObservabilityService: InternalObserve {
     private var instruments = [AutoInstrumentation]()
     
     private let userInteractionManager: UserInteractionManager
+    private let screenStack = ScreenStack()
+    private var screenViewManager: ScreenViewManager?
+    /// Broadcasts each recorded screen view so Session Replay can emit `Navigate` events.
+    private let screenViewSubject = PassthroughSubject<ScreenViewEvent, Never>()
+    /// Broadcasts each `track` event so Session Replay can emit a `Track` event regardless of the
+    /// entry path (`LDClient.track` or the manual `LDObserve.track` API).
+    private let trackSubject = PassthroughSubject<TrackEvent, Never>()
     private var crashReporting: CrashReporting?
+    private var cancellables = Set<AnyCancellable>()
     
     let hookExporter: ObservabilityHookExporter
     
@@ -195,7 +205,9 @@ final class ObservabilityService: InternalObserve {
             sessionManager: sessionManager,
             transportService: transportService,
             userInteractionManager: userInteractionManager,
-            sessionAttributes: sessionAttributes
+            sessionAttributes: sessionAttributes,
+            screenViews: screenViewSubject.eraseToAnyPublisher(),
+            tracks: trackSubject.eraseToAnyPublisher()
         )
         self.context = context
         
@@ -209,6 +221,12 @@ final class ObservabilityService: InternalObserve {
         // Route the afterTrack hook and identify context keys back into this service,
         // so it remains the single emitter of track spans.
         self.hookExporter.trackEmitter = self
+
+        // Automatic screen_view capture routes appearing screens back through the
+        // same single emitter used by the manual `trackScreenView` API.
+        self.screenViewManager = ScreenViewManager { [weak self] screen in
+            self?.emitScreenView(screen)
+        }
     }
 }
 
@@ -217,6 +235,28 @@ extension ObservabilityService {
         let options = self.options
         
         transportService.start()
+
+        // A new session (e.g. after a background timeout) must start with a fresh navigation
+        // history: otherwise the first `screen_view`/`Navigate` of the new session would resolve
+        // `event.previous_screen` against the prior session, and a re-appearing first screen would
+        // be deduped instead of emitting a fresh navigation.
+        //
+        // Only reset on an actual session *change*. `SessionManager.start` also publishes the
+        // initial session asynchronously; resetting on it would clobber a first screen that was
+        // recorded synchronously while starting screen capture below. Seed with the current
+        // session id so the initial emission is ignored even if it arrives after this subscription.
+        var lastSessionId = sessionManager.sessionInfo.id
+        sessionManager.publisher()
+            .sink { [weak self] info in
+                guard let self, info.id != lastSessionId else { return }
+                lastSessionId = info.id
+                self.screenStack.reset()
+                // Re-seed the new session with the screen the user is still viewing. UIKit won't
+                // fire `viewDidAppear` for an already-visible controller, so without this the new
+                // session would have no opening `screen_view` span or `Navigate` event.
+                self.screenViewManager?.captureCurrentScreen()
+            }
+            .store(in: &cancellables)
         
         // MARK: - Network
         if options.instrumentation.launchTimes.isEnabled {
@@ -243,6 +283,10 @@ extension ObservabilityService {
         }
         
         userInteractionManager.start()
+
+        if options.instrumentation.screens.isEnabled {
+            screenViewManager?.start()
+        }
         
         if options.instrumentation.memory.isEnabled {
             instruments.append(
@@ -386,8 +430,17 @@ extension ObservabilityService: Observe {
         tracer.startSpan(name: name, attributes: attributes)
     }
 
-    func track(name: String, value: Double?, attributes: [String: AttributeValue]) {
-        track(name: name, value: value, attributes: attributes, contextKeyAttributes: nil)
+    func track(key: String, data: LDValue?, metricValue: Double?) {
+        track(name: key,
+              metricValue: metricValue,
+              attributes: data?.toAttributes() ?? [:],
+              contextKeyAttributes: nil)
+    }
+
+    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?) {
+        emitScreenView(
+            ScreenView(name: name, screenClass: screenClass, screenId: screenId, category: category)
+        )
     }
 }
 
@@ -396,10 +449,22 @@ extension ObservabilityService: TrackEmitting {
     /// manual `LDObserve.track` path funnel through here.
     func track(
         name: String,
-        value: Double?,
+        metricValue: Double?,
         attributes: [String: AttributeValue],
         contextKeyAttributes: [String: AttributeValue]?
     ) {
+        // Broadcast so Session Replay can record a `Track` event for every track path, independent
+        // of the trackEvents span flag below (mirrors the `Navigate` broadcast in emitScreenView).
+        // Carries only user-supplied track data, matching the previous SessionReplayHook payload.
+        trackSubject.send(
+            TrackEvent(
+                name: name,
+                metricValue: metricValue,
+                attributes: attributes,
+                timestamp: Date().timeIntervalSince1970
+            )
+        )
+
         guard options.analytics.trackEvents.isEnabled else { return }
 
         // Apply in increasing precedence so event identity can never be clobbered: user-supplied
@@ -413,11 +478,64 @@ extension ObservabilityService: TrackEmitting {
             spanAttributes[k] = v
         }
         spanAttributes["key"] = .string(name)
-        if let value {
-            spanAttributes["value"] = .double(value)
+        if let metricValue {
+            spanAttributes["value"] = .double(metricValue)
         }
 
         let span = tracer.startSpan(name: SemanticConvention.trackSpanName, attributes: spanAttributes)
+        span.end()
+    }
+
+    /// Single funnel for screen changes. Both the automatic
+    /// `ViewControllerScreenSource` capture and the manual `trackScreenView` API
+    /// route through here so `previous_screen` resolution and context-key
+    /// merging stay consistent.
+    ///
+    /// Screen detection itself is gated by ``ObservabilityOptions/Instrumentation/screens``
+    /// (auto capture) or the explicit manual call. The `screen_view` span is gated
+    /// separately by ``ObservabilityOptions/Analytics/screenViews``; the navigation
+    /// broadcast (Session Replay `Navigate`) always fires once a screen is recorded.
+    func emitScreenView(_ screen: ScreenView) {
+        // Resolve previous_screen against the shared stack before recording this one.
+        // Identity is keyed on screenId (when present) so distinct screens sharing a
+        // display name aren't collapsed into a re-appearance of one another.
+        let previousScreen = screenStack.record(screen.name, id: screen.screenId)
+
+        // Broadcast the navigation so Session Replay can emit a `Navigate` event,
+        // mirroring the web SDK's per-path-change custom event. This is independent
+        // of the `screen_view` span flag.
+        screenViewSubject.send(
+            ScreenViewEvent(
+                name: screen.name,
+                previousName: previousScreen,
+                timestamp: screen.timestamp
+            )
+        )
+
+        // Only the analytics span is gated by the screenViews flag.
+        guard options.analytics.screenViews.isEnabled else { return }
+
+        // Apply in increasing precedence so the screen-view taxonomy can never be clobbered: identify
+        // context keys first, then the reserved `event.*` fields last (matching the track path).
+        var spanAttributes: [String: AttributeValue] = [:]
+        for (k, v) in cachedContextKeyAttributes {
+            spanAttributes[k] = v
+        }
+        spanAttributes[SemanticConvention.eventName] = .string(screen.name)
+        if let screenClass = screen.screenClass {
+            spanAttributes[SemanticConvention.eventScreenClass] = .string(screenClass)
+        }
+        if let screenId = screen.screenId {
+            spanAttributes[SemanticConvention.eventScreenId] = .string(screenId)
+        }
+        if let previousScreen {
+            spanAttributes[SemanticConvention.eventPreviousScreen] = .string(previousScreen)
+        }
+        if let category = screen.category {
+            spanAttributes[SemanticConvention.eventCategory] = .string(category)
+        }
+
+        let span = tracer.startSpan(name: SemanticConvention.screenViewSpanName, attributes: spanAttributes)
         span.end()
     }
 

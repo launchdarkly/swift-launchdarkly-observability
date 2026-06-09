@@ -50,6 +50,10 @@ struct AnyEventData: Codable {
                 try CustomEventData<String>(from: decoder)
             case .press:
                 try CustomEventData<PressPayload>(from: decoder)
+            case .track:
+                try CustomEventData<String>(from: decoder)
+            case .navigate:
+                try CustomEventData<String>(from: decoder)
             }
         } else {
             throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Unexpected EventData"))
