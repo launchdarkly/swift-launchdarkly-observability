@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.41.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.40.0...0.41.0) (2026-06-09)
+
+
+### Features
+
+* app_foreground / app_background lifecycle events (spans + Session Replay breadcrumbs) ([#214](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/214)) ([650e35d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/650e35d68d082222a6ca19a609850d686f2f1b3e))
+
 ## [0.40.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.39.0...0.40.0) (2026-06-09)
 
 
