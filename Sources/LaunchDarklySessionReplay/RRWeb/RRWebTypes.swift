@@ -71,4 +71,8 @@ enum CustomDataTag: String, Codable {
     case track = "Track"
     /// Screen change (or first screen). Payload: the screen name string, mirroring the web SDK's `Navigate` URL payload.
     case navigate = "Navigate"
+    /// App entered the foreground (taxonomy `app_foreground`). Payload: stringified JSON `{ "lifecycle_state" }`.
+    case appForeground = "Foreground"
+    /// App entered the background (taxonomy `app_background`). Payload: stringified JSON `{ "lifecycle_state" }`.
+    case appBackground = "Background"
 }

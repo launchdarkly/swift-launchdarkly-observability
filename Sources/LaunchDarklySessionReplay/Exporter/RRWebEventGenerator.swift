@@ -144,6 +144,11 @@ actor RRWebEventGenerator {
         case let navigateItem as NavigateItemPayload:
             events.append(navigateEvent(itemPayload: navigateItem))
             
+        case let lifecycleItem as AppLifecycleItemPayload:
+            if let event = appLifecycleEvent(itemPayload: lifecycleItem) {
+                events.append(event)
+            }
+            
         default:
             break // Item wasn't needed for SessionReplay
         }
@@ -295,6 +300,21 @@ actor RRWebEventGenerator {
         return event
     }
     
+    func appLifecycleEvent(itemPayload: AppLifecycleItemPayload) -> Event? {
+        // Carry the taxonomy `event.*` fields as a stringified JSON payload, mirroring `Track`.
+        guard let data = try? JSONEncoder().encode(itemPayload.payload),
+              let payloadJSONString = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+
+        let eventData = CustomEventData(tag: itemPayload.tag, payload: payloadJSONString)
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: itemPayload.timestamp,
+                          _sid: nextSid)
+        return event
+    }
+
     func viewPortEvent(exportFrame: ExportFrame, timestamp: TimeInterval) -> Event {
         let payload = ViewportPayload(width: Int(exportFrame.originalSize.width),
                                       height: Int(exportFrame.originalSize.height),

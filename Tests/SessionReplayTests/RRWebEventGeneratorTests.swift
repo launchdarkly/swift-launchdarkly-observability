@@ -303,6 +303,69 @@ struct RRWebEventGeneratorTests {
         #expect(data?["payload"] as? String == "Home")
     }
 
+    @Test("Appends Foreground breadcrumb carrying lifecycle_state")
+    func appendsAppForegroundEvent() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let payload = AppLifecycleItemPayload(
+            signal: AppLifecycleSignal(kind: .foreground, lifecycleState: "foreground", timestamp: 42.0),
+            sessionId: "test-session"
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: payload)]
+        let events = await generator.generateEvents(items: items)
+        #expect(events.count == 1)
+        #expect(events[0].type == .Custom)
+        let encoded = try JSONEncoder().encode(events[0])
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Foreground")
+        let payloadString = try #require(data?["payload"] as? String)
+        let payloadData = try #require(payloadString.data(using: .utf8))
+        let payloadJSON = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any]
+        #expect(payloadJSON?["lifecycle_state"] as? String == "foreground")
+    }
+
+    @Test("Appends Background breadcrumb carrying lifecycle_state")
+    func appendsAppBackgroundEvent() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let payload = AppLifecycleItemPayload(
+            signal: AppLifecycleSignal(kind: .background, lifecycleState: "background", timestamp: 42.0),
+            sessionId: "test-session"
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: payload)]
+        let events = await generator.generateEvents(items: items)
+        #expect(events.count == 1)
+        let encoded = try JSONEncoder().encode(events[0])
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Background")
+        let payloadString = try #require(data?["payload"] as? String)
+        let payloadData = try #require(payloadString.data(using: .utf8))
+        let payloadJSON = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any]
+        #expect(payloadJSON?["lifecycle_state"] as? String == "background")
+    }
+
+    @Test("App lifecycle breadcrumb decodes via AnyEventData round-trip")
+    func appLifecycleEventDecodesRoundTrip() throws {
+        let custom = CustomEventData(tag: .appForeground, payload: "{\"lifecycle_state\":\"foreground\"}")
+        let event = Event(type: .Custom, data: AnyEventData(custom), timestamp: 10.0, _sid: 1)
+        let encoded = try JSONEncoder().encode(event)
+        let decoded = try JSONDecoder().decode(Event.self, from: encoded)
+        #expect(decoded.type == .Custom)
+        let roundTrip = try JSONEncoder().encode(decoded)
+        let json = try JSONSerialization.jsonObject(with: roundTrip) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Foreground")
+        #expect(data?["payload"] as? String == "{\"lifecycle_state\":\"foreground\"}")
+    }
+
     @Test("Press custom event decodes via AnyEventData round-trip")
     func pressEventDecodesRoundTrip() throws {
         let payload = PressPayload(source: "remote", pressType: "other", pressTypeSystemRaw: 77)

@@ -41,6 +41,9 @@ final class ObservabilityService: InternalObserve {
     /// Broadcasts each `track` event so Session Replay can emit a `Track` event regardless of the
     /// entry path (`LDClient.track` or the manual `LDObserve.track` API).
     private let trackSubject = PassthroughSubject<TrackEvent, Never>()
+    /// Broadcasts each app-lifecycle signal so Session Replay can emit an `Open`/`Foreground`/
+    /// `Background` breadcrumb, independent of the `analytics.appLifecycle` span flag.
+    private let appLifecycleSubject = PassthroughSubject<AppLifecycleSignal, Never>()
     private var crashReporting: CrashReporting?
     private var cancellables = Set<AnyCancellable>()
     
@@ -207,7 +210,8 @@ final class ObservabilityService: InternalObserve {
             userInteractionManager: userInteractionManager,
             sessionAttributes: sessionAttributes,
             screenViews: screenViewSubject.eraseToAnyPublisher(),
-            tracks: trackSubject.eraseToAnyPublisher()
+            tracks: trackSubject.eraseToAnyPublisher(),
+            appLifecycleEvents: appLifecycleSubject.eraseToAnyPublisher()
         )
         self.context = context
         
@@ -321,13 +325,12 @@ extension ObservabilityService {
             instruments.append(memoryWarningMonitor)
         }
         
-        let appLifecycleLogger = AppLifecycleLogger(appLifecycleManager: appLifecycleManager, appLogBuilder: appLogBuilder) { [weak self] log in
-            guard let self else { return }
-            Task {
-                await self.eventQueue.send(LogItem(log: log))
-            }
+        // Always track lifecycle so the Session Replay breadcrumb broadcast fires; the
+        // `app_foreground`/`app_background` span is gated separately below.
+        let appLifecycleTracker = AppLifecycleTracker(appLifecycleManager: appLifecycleManager) { [weak self] signal in
+            self?.handleAppLifecycleSignal(signal)
         }
-        instruments.append(appLifecycleLogger)
+        instruments.append(appLifecycleTracker)
 
         let crashReporting: CrashReporting
         if options.crashReporting.source == .KSCrash {
@@ -536,6 +539,41 @@ extension ObservabilityService: TrackEmitting {
         }
 
         let span = tracer.startSpan(name: SemanticConvention.screenViewSpanName, attributes: spanAttributes)
+        span.end()
+    }
+
+    /// Single funnel for app-lifecycle signals. Broadcasts the signal so Session
+    /// Replay can record an `Open`/`Foreground`/`Background` breadcrumb (always,
+    /// mirroring the `Navigate`/`Track` broadcasts), then emits the taxonomy span
+    /// only when gated on by `analytics.appLifecycle`.
+    func handleAppLifecycleSignal(_ signal: AppLifecycleSignal) {
+        appLifecycleSubject.send(signal)
+
+        guard options.analytics.appLifecycle.isEnabled else { return }
+        emitAppLifecycleSpan(signal)
+    }
+
+    /// Emits the app-lifecycle span (`app_foreground`, `app_background`).
+    /// Mirrors the `track`/`screen_view` paths: identify context keys are applied
+    /// first, then the taxonomy `event.*` fields last so they can never be clobbered.
+    private func emitAppLifecycleSpan(_ signal: AppLifecycleSignal) {
+        var spanAttributes: [String: AttributeValue] = [:]
+        for (k, v) in cachedContextKeyAttributes {
+            spanAttributes[k] = v
+        }
+
+        let spanName: String
+        switch signal.kind {
+        case .foreground:
+            spanName = SemanticConvention.appForegroundSpanName
+        case .background:
+            spanName = SemanticConvention.appBackgroundSpanName
+        }
+        if let state = signal.lifecycleState {
+            spanAttributes[SemanticConvention.eventLifecycleState] = .string(state)
+        }
+
+        let span = tracer.startSpan(name: spanName, attributes: spanAttributes)
         span.end()
     }
 
