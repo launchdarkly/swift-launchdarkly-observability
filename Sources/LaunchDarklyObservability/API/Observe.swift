@@ -10,13 +10,15 @@ public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveConte
     ///
     /// Mirrors `LDClient.track(key:data:metricValue:)` so the same call shape
     /// works whether the event is recorded through the LaunchDarkly client (via
-    /// the `afterTrack` hook) or directly through this API.
+    /// the `afterTrack` hook) or directly through this API. `data` is a plain
+    /// dictionary so callers need not depend on `LDValue`.
     /// - Parameters:
     ///   - key: The key for the event.
-    ///   - data: The data associated with the event, if any.
+    ///   - data: The data associated with the event, if any. Object members are
+    ///     attached as span attributes.
     ///   - metricValue: A numeric value used by LaunchDarkly experimentation for
     ///     numeric custom metrics, if any.
-    func track(key: String, data: LDValue?, metricValue: Double?)
+    func track(key: String, data: [String: Any]?, metricValue: Double?)
     /// Manually record a `screen_view` event as a `screen_view` span.
     ///
     /// Use this for screens that automatic capture cannot observe (e.g. pure

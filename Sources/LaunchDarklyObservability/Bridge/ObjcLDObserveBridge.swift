@@ -22,6 +22,15 @@ public final class ObjcLDObserveBridge: NSObject {
         return ObjcLogger(internalLogger: service.logClient, customerLogger: service.customerLogClient)
     }
 
+    /// Records a custom `track` event. Always broadcasts a Session Replay
+    /// `Track` timeline event and, when `analytics.trackEvents` is enabled, emits
+    /// the `track` span. `data` carries the optional event payload as a plain
+    /// dictionary (e.g. across the Flutter pigeon bridge).
+    @objc(trackWithKey:data:metricValue:)
+    public static func track(key: String, data: [String: Any]?, metricValue: NSNumber?) {
+        LDObserve.shared.track(key: key, data: data, metricValue: metricValue?.doubleValue)
+    }
+
     @objc(recordErrorWithMessage:cause:)
     public static func recordError(message: String, cause: String?) {
         let error = NSError(

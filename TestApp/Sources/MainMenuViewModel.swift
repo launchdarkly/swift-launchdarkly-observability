@@ -138,7 +138,7 @@ final class MainMenuViewModel: ObservableObject {
                 "test-string": "ios",
                 "test-true": true,
                 "test-false": false,
-                "test-integer": .number(42),
+                "test-integer": 42,
                 "test-double": 3.14
             ]
 		)

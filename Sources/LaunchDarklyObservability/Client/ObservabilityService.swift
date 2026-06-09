@@ -433,10 +433,10 @@ extension ObservabilityService: Observe {
         tracer.startSpan(name: name, attributes: attributes)
     }
 
-    func track(key: String, data: LDValue?, metricValue: Double?) {
+    func track(key: String, data: [String: Any]?, metricValue: Double?) {
         track(name: key,
               metricValue: metricValue,
-              attributes: data?.toAttributes() ?? [:],
+              attributes: data.map { AttributeConverter.convert($0) } ?? [:],
               contextKeyAttributes: nil)
     }
 
