@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.40.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.39.0...0.40.0) (2026-06-09)
+
+
+### Features
+
+* convex-hull mask drawing for drifted masks ([#208](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/208)) ([128a053](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/128a053709efd73c901ea6aebcdf8fc643d8ab25))
+
 ## [0.39.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.38.0...0.39.0) (2026-06-05)
 
 
