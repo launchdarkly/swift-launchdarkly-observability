@@ -6,9 +6,9 @@ import UIKit
 /// passes around `ImageCaptureService.captureRawFrame`). When views
 /// shift slightly between the two passes — typical during scrolling or
 /// keyboard animations — the same logical mask occupies two nearby
-/// frames; we keep both and tag the second one as
-/// ``MaskOperation/Kind/fillDuplicate`` so the renderer covers the
-/// transition area instead of leaving a sliver of unmasked content.
+/// frames; we pair the "before" op with its shifted "after" counterpart
+/// so the renderer can cover the transition area (via a convex hull of
+/// both positions) instead of leaving a sliver of unmasked content.
 ///
 /// The reconciliation is purely functional: it doesn't read any
 /// privacy settings or hierarchy state, only the geometry of the two
@@ -25,18 +25,21 @@ final class MaskStabilizer {
     /// is dropped.
     private let overlapTolerance: CGFloat = 1.1
 
-    /// Returns a merged operation list that includes every operation
-    /// from `operationsBefore` plus a `fillDuplicate` copy of any
-    /// `operationsAfter` element that shifted enough to expose
-    /// previously-masked content. Returns `nil` (the caller should
-    /// drop the frame) when an op moved further than its own size,
-    /// because we can't guarantee coverage of the in-between area.
-    func duplicateUnsimilar(before operationsBefore: [MaskOperation], after operationsAfter: [MaskOperation]) -> [MaskOperation]? {
+    /// Returns one entry per "before" operation, paired with its shifted
+    /// "after" counterpart when the mask moved enough to expose
+    /// previously-masked content (the renderer spans the gap by drawing
+    /// the convex hull of both positions). The "after" element is `nil`
+    /// when movement is within tolerance and the "before" mask already
+    /// covers the area. Returns `nil` (the caller should drop the frame)
+    /// when an op moved further than its own size, because we can't
+    /// guarantee coverage of the in-between area.
+    func duplicateUnsimilar(before operationsBefore: [MaskOperation], after operationsAfter: [MaskOperation]) -> [(MaskOperation, MaskOperation?)]? {
         guard operationsBefore.count == operationsAfter.count else {
             return nil
         }
 
-        var result = operationsBefore
+        var result = [(MaskOperation, MaskOperation?)]()
+        result.reserveCapacity(operationsBefore.count)
         for (before, after) in zip(operationsBefore, operationsAfter) {
             let diffX = abs(before.effectiveFrame.minX - after.effectiveFrame.minX)
             let diffY = abs(before.effectiveFrame.minY - after.effectiveFrame.minY)
@@ -44,6 +47,7 @@ final class MaskStabilizer {
             guard max(diffX, diffY) > moveTolerance else {
                 // Movement is within tolerance; the "before" mask
                 // already covers the same area.
+                result.append((before, nil))
                 continue
             }
 
@@ -54,9 +58,7 @@ final class MaskStabilizer {
                 return nil
             }
 
-            var after = after
-            after.kind = .fillDuplicate
-            result.append(after)
+            result.append((before, after))
         }
 
         return result

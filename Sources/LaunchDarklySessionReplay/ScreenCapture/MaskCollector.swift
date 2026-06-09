@@ -105,7 +105,7 @@ final class MaskCollector {
             let shouldMask = policy.shouldMask(view, viewType: viewType, resolvedExplicitMask: resolvedExplicitMask)
 
             if shouldMask, let mask = MaskGeometry.createMask(rPresentation: rPresentation, layer: layer, scale: scale) {
-                var operation = MaskOperation(mask: mask, kind: .fill, effectiveFrame: effectiveFrame)
+                var operation = MaskOperation(mask: mask, effectiveFrame: effectiveFrame)
 #if DEBUG
                 operation.accessibilityIdentifier = view.accessibilityIdentifier
 #endif
@@ -138,7 +138,7 @@ final class MaskCollector {
             guard shouldMask, let mask = MaskGeometry.createMask(rPresentation: rPresentation, layer: layer, scale: scale) else {
                 return false
             }
-            operations.append(MaskOperation(mask: mask, kind: .fill, effectiveFrame: effectiveFrame))
+            operations.append(MaskOperation(mask: mask, effectiveFrame: effectiveFrame))
             return true
         }
 

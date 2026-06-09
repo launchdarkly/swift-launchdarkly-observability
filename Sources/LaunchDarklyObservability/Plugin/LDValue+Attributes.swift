@@ -12,7 +12,7 @@ extension LDValue {
     /// Foundation, so scalar/array/object handling stays in one place. Only
     /// object payloads have key/value members; scalar and array payloads map to
     /// an empty dictionary.
-    package func toAttributes() -> [String: AttributeValue] {
+    func toAttributes() -> [String: AttributeValue] {
         guard case .object = self else { return [:] }
         return AttributeConverter.convert((toFoundation() as? [String: Any]) ?? [:])
     }

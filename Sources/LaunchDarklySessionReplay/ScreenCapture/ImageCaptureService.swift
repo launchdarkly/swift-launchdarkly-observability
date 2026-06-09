@@ -71,14 +71,18 @@ public final class ImageCaptureService: ImageCaptureServicing {
       
         shouldCapture = true // can be set to false from external class to stop capturing work early
         DispatchQueue.main.async { [weak self, weak maskCollector] in
-            // Move collecting masks after to the next tick
+            // Move collecting masks after to the next tick. This second pass is
+            // also the safety net for content that appears during capture (e.g.
+            // an instantly-shown dialog): it is absent from `before` but present
+            // in `after`, so the counts differ and the frame is dropped instead
+            // of leaking unmasked. So we must NOT skip it when `before` is empty.
             guard let self, let maskCollector, shouldCapture else { return }
-           
+
             let hasMasks = maskOperationsBefore.contains(where: { !$0.maskOperations.isEmpty })
             if (hasMasks) {
                 CATransaction.flush()
             }
-            
+
             let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: self.scale)  }
             
             Task {
@@ -87,7 +91,7 @@ public final class ImageCaptureService: ImageCaptureServicing {
                     return
                 }
                 
-                var applyOperations = [[MaskOperation]]()
+                var applyOperations = [[(MaskOperation, MaskOperation?)]]()
                 var areas = [OffsettedArea]()
                 for (before, after) in zip(maskOperationsBefore, maskOperationsAfter) {
                     if let newOperations = self.maskStabilizer.duplicateUnsimilar(before: before.maskOperations, after: after.maskOperations) {

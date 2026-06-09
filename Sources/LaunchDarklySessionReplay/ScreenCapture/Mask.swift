@@ -14,13 +14,7 @@ enum Mask {
 }
 
 struct MaskOperation {
-    enum Kind {
-        case fill
-        case fillDuplicate
-    }
-    
     var mask: Mask
-    var kind: Kind
     var effectiveFrame: CGRect
     
     #if DEBUG
