@@ -9,7 +9,7 @@ LaunchDarkly Observability SDK for Swift
 ### Automatic Instrumentation
 
 The iOS observability plugin automatically instruments:
-- **Activity Lifecycle**: App lifecycle events and transitions
+- **Activity Lifecycle**: `app_foreground` / `app_background` spans on lifecycle transitions, plus matching Session Replay `Foreground` / `Background` breadcrumbs
 - **HTTP Requests**: URLSession requests
 - **Crash Reporting**: Automatic crash reporting
 - **Feature Flag Evaluations**: Evaluation events added to your spans.
@@ -349,8 +349,9 @@ let config = { () -> LDConfig in
 - `taps` (default `.enabled`): publish a `click` span for each detected tap. Tap detection is governed by `instrumentation.userTaps` (default `.enabled`); if that is disabled, no taps are issued and this flag has no effect. Session Replay capture is unaffected by either flag.
 - `trackEvents` (default `.enabled`): emit a `track` span when a custom event is tracked, either automatically via the LaunchDarkly `afterTrack` hook (`LDClient.track(...)`) or manually via `LDObserve.shared.track(...)`.
 - `screenViews` (default `.enabled`): emit a `screen_view` span when a screen is shown. This flag only gates the span — it does **not** control screen detection.
+- `appLifecycle` (default `.enabled`): emit app-lifecycle spans as the app moves between states: `app_foreground` (with `event.lifecycle_state = foreground`) when it enters the foreground, and `app_background` (with `event.lifecycle_state = background`) when it enters the background. This flag only gates the span — the matching Session Replay `Foreground` / `Background` breadcrumbs are emitted regardless.
 
-Use the `.enabled` / `.disabled` presets, or configure fields individually with `Analytics(taps:trackEvents:screenViews:)`.
+Use the `.enabled` / `.disabled` presets, or configure fields individually with `Analytics(taps:trackEvents:screenViews:appLifecycle:)`.
 
 `instrumentation` controls automatic instrumentation. Most features default to `.disabled`, except:
 

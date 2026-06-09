@@ -240,6 +240,18 @@ final class SessionReplayService: SessionReplayServicing {
             }
             .store(in: &cancellables)
 
+        // Emit an `Open`/`Foreground`/`Background` breadcrumb for each app-lifecycle signal,
+        // mirroring the per-screen `Navigate` breadcrumb above.
+        observabilityContext.appLifecycleEvents
+            .sink { [transportService, observabilityContext] signal in
+                let sessionId = observabilityContext.sessionManager.sessionInfo.id
+                let payload = AppLifecycleItemPayload(signal: signal, sessionId: sessionId)
+                Task {
+                    await transportService.eventQueue.send(payload)
+                }
+            }
+            .store(in: &cancellables)
+
         captureManager.isEnabled = true
     }
     

@@ -204,19 +204,24 @@ public struct ObservabilityOptions {
         /// Session Replay `Navigate` events) is controlled by
         /// ``Instrumentation/screens``.
         let screenViews: FeatureFlag
+        /// Whether to emit app-lifecycle spans (`app_foreground`, `app_background`)
+        /// as the app moves between foreground and background states. Maps to the
+        /// analytics taxonomy app-lifecycle events.
+        let appLifecycle: FeatureFlag
         
         public static var enabled: Self {
-            .init(taps: .enabled, trackEvents: .enabled, screenViews: .enabled)
+            .init(taps: .enabled, trackEvents: .enabled, screenViews: .enabled, appLifecycle: .enabled)
         }
         
         public static var disabled: Self {
-            .init(taps: .disabled, trackEvents: .disabled, screenViews: .disabled)
+            .init(taps: .disabled, trackEvents: .disabled, screenViews: .disabled, appLifecycle: .disabled)
         }
         
-        public init(taps: FeatureFlag = .enabled, trackEvents: FeatureFlag = .enabled, screenViews: FeatureFlag = .enabled) {
+        public init(taps: FeatureFlag = .enabled, trackEvents: FeatureFlag = .enabled, screenViews: FeatureFlag = .enabled, appLifecycle: FeatureFlag = .enabled) {
             self.taps = taps
             self.trackEvents = trackEvents
             self.screenViews = screenViews
+            self.appLifecycle = appLifecycle
         }
     }
     public var isEnabled: Bool
