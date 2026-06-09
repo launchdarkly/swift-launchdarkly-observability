@@ -9,37 +9,37 @@ final class MaskApplier {
     
     func applyViewMasks(context: CGContext, operations: [(MaskOperation, MaskOperation?)]) {
         for (before, after) in operations {
-            switch before.mask {
-            case .affine(let rect, let transform):
-                if let after, case .affine(let rect2, let transform2) = after.mask {
-                    // Merge two transformed rects via convex hull
-                    context.saveGState()
-                    let quad1 = quadFrom(rect: rect, transform: transform)
-                    let quad2 = quadFrom(rect: rect2, transform: transform2)
-                    drawHull(context, quad1: quad1, quad2: quad2, fillColor: Self.standardMaskColor)
-                    context.restoreGState()
-                }
-                
-                // Stable masks use the primary shade; only the "before" of a
-                // shifted pair is overlaid in the duplicate shade.
+            // Cover the transition area between the two passes via a
+            // convex hull. Both mask cases reduce to a quad, so the hull
+            // is built even when `before` and `after` use different
+            // cases (e.g. affine before and quad after when a layer
+            // crosses a 3D transform between passes).
+            if let after {
                 context.saveGState()
-                drawRect(context, transform, rect, fillColor: after == nil ? Self.standardMaskColor : Self.duplicateMaskColor)
-                context.restoreGState()
-                
-            case .quad(let beforeQuad):
-                if let after, case .quad(let afterQuad) = after.mask {
-                    // Merge two quads via convex hull
-                    context.saveGState()
-                    drawHull(context, quad1: beforeQuad, quad2: afterQuad, fillColor: Self.standardMaskColor)
-                    context.restoreGState()
-                }
-                
-                // Stable masks use the primary shade; only the "before" of a
-                // shifted pair is overlaid in the duplicate shade.
-                context.saveGState()
-                drawQuad(context, quad: beforeQuad, fillColor: after == nil ? Self.standardMaskColor : Self.duplicateMaskColor)
+                drawHull(context,
+                         quad1: quad(from: before.mask),
+                         quad2: quad(from: after.mask),
+                         fillColor: Self.standardMaskColor)
                 context.restoreGState()
             }
+
+            context.saveGState()
+            switch before.mask {
+            case .affine(let rect, let transform):
+                drawRect(context, transform, rect, fillColor: Self.duplicateMaskColor)
+            case .quad(let beforeQuad):
+                drawQuad(context, quad: beforeQuad, fillColor: Self.duplicateMaskColor)
+            }
+            context.restoreGState()
+        }
+    }
+
+    private func quad(from mask: Mask) -> Quad {
+        switch mask {
+        case .affine(let rect, let transform):
+            return quadFrom(rect: rect, transform: transform)
+        case .quad(let quad):
+            return quad
         }
     }
     
