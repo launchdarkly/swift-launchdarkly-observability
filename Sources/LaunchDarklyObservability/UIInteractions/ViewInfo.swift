@@ -78,6 +78,10 @@ extension UIView {
 
     // Depth-first search for a sensible text inside subviews (UILabel/UIButton)
     private func firstDescendantTitle() -> String? {
+        // Never read or descend into text-input views. They render typed values through
+        // private label subviews, so scanning descendants would leak user input
+        // (passwords, emails, search queries, etc.) into the captured title.
+        if isSensitiveTextInput { return nil }
         if let label = self as? UILabel, let t = cleaned(label.text) { return t }
         if let btn = self as? UIButton {
             return firstNonEmpty(btn.titleLabel?.text, btn.currentTitle, btn.title(for: .normal), btn.attributedTitle(for: .normal)?.string)
@@ -86,6 +90,15 @@ extension UIView {
             if let t = sub.firstDescendantTitle() { return t }
         }
         return nil
+    }
+
+    // Views that hold user-typed input. Their values must never be captured, and we must
+    // not descend into them since their text is rendered via internal subviews.
+    private var isSensitiveTextInput: Bool {
+        if self is UITextField { return true }
+        if self is UISearchBar { return true }
+        if let textView = self as? UITextView { return textView.isEditable }
+        return false
     }
 
     private func allSegmentTitles(_ seg: UISegmentedControl) -> String? {
