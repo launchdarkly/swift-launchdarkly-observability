@@ -25,10 +25,30 @@ public final class ObjcLDObserveBridge: NSObject {
     /// Records a custom `track` event. Always broadcasts a Session Replay
     /// `Track` timeline event and, when `analytics.trackEvents` is enabled, emits
     /// the `track` span. `data` carries the optional event payload as a plain
-    /// dictionary (e.g. across the Flutter pigeon bridge).
-    @objc(trackWithKey:data:metricValue:)
-    public static func track(key: String, data: [String: Any]?, metricValue: NSNumber?) {
-        LDObserve.shared.track(key: key, data: data, metricValue: metricValue?.doubleValue)
+    /// dictionary (e.g. across the Flutter pigeon bridge). `contextKeys` carries
+    /// the evaluation context's kind -> key pairs; when supplied they annotate
+    /// the `track` span (not the Session Replay `Track` payload), so hosts whose
+    /// LaunchDarkly client lives outside this SDK (e.g. Flutter) can attribute
+    /// the span to the same context the web SDK records.
+    @objc(trackWithKey:data:metricValue:contextKeys:)
+    public static func track(key: String, data: [String: Any]?, metricValue: NSNumber?, contextKeys: [String: String]?) {
+        guard let contextKeys, !contextKeys.isEmpty,
+              let service = LDObserve.shared.client as? ObservabilityService else {
+            // No explicit context (or no live service): fall back to the public
+            // path, which uses the cached identify context for the span.
+            LDObserve.shared.track(key: key, data: data, metricValue: metricValue?.doubleValue)
+            return
+        }
+        var contextKeyAttributes: [String: AttributeValue] = [:]
+        for (kind, value) in contextKeys {
+            contextKeyAttributes[kind] = .string(value)
+        }
+        service.track(
+            name: key,
+            metricValue: metricValue?.doubleValue,
+            attributes: data.map { AttributeConverter.convert($0) } ?? [:],
+            contextKeyAttributes: contextKeyAttributes
+        )
     }
 
     @objc(recordErrorWithMessage:cause:)
