@@ -117,7 +117,7 @@ extension ObservabilityHookExporter: ObservabilityHookExporting {
         attributes[Self.SEMCONV_FEATURE_FLAG_PROVIDER_NAME] = .string(Self.PROVIDER_NAME)
         attributes[Self.SEMCONV_FEATURE_FLAG_CONTEXT_ID] = .string(contextKey)
 
-        let span = traceClient.startSpan(name: Self.FEATURE_FLAG_SPAN_NAME, attributes: attributes)
+        let span = traceClient.startSpan(name: Self.FEATURE_FLAG_SPAN_NAME, attributes: attributes, spanKind: .internal)
 
         if let (_, evictedSpan) = spans.setValue(span, forKey: evaluationId) {
             evictedSpan.end()

@@ -89,6 +89,11 @@ public protocol TracesApi {
     /// - name The name of the span
     /// - attributes The attributes to record with the span
     func startSpan(name: String, attributes: [String : AttributeValue]) -> Span
+    /// Start a span with an explicit kind.
+    /// - name The name of the span
+    /// - attributes The attributes to record with the span
+    /// - spanKind The kind of the span (defaults to `.client` for most spans)
+    func startSpan(name: String, attributes: [String : AttributeValue], spanKind: SpanKind) -> Span
 }
 
 extension TracesApi {
@@ -98,5 +103,11 @@ extension TracesApi {
 
     public func startSpan(name: String) -> Span {
         startSpan(name: name, attributes: [:])
+    }
+
+    /// Default implementation forwards to ``startSpan(name:attributes:)``, leaving the span kind
+    /// to the implementation's default. Conformers that can honor a specific kind override this.
+    public func startSpan(name: String, attributes: [String : AttributeValue], spanKind: SpanKind) -> Span {
+        startSpan(name: name, attributes: attributes)
     }
 }

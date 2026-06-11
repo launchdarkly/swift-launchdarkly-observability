@@ -28,6 +28,10 @@ final class TracerDecorator: Tracer {
     func spanBuilder(spanName: String) -> any SpanBuilder {
         let builder = tracer.spanBuilder(spanName: spanName)
 
+        // Spans default to `.client`; callers that need a different kind (e.g. flag
+        // evaluations, which are `.internal`) override this after building.
+        builder.setSpanKind(spanKind: .client)
+
         if let parent = OpenTelemetry.instance.contextProvider.activeSpan {
             builder.setParent(parent)
         }
@@ -68,14 +72,16 @@ extension TracerDecorator: TracesApi {
 
 /// Internal method used to set span start date
 extension Tracer {
-    func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date) -> any Span {
+    func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date, spanKind: SpanKind = .client) -> any Span {
         let builder = spanBuilder(spanName: name)
+        builder.setSpanKind(spanKind: spanKind)
         attributes.forEach {
             builder.setAttribute(key: $0.key, value: $0.value)
         }
         
         builder.setStartTime(time: startTime)
-        
+
+ 
         let span = builder.startSpan()
         return span
     }
