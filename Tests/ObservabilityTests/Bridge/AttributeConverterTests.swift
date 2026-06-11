@@ -31,13 +31,72 @@ struct AttributeConverterTests {
         #expect(result == .double(3.14))
     }
 
-    // MARK: - Unsupported / fallback
+    // MARK: - Foundation reference types (always represented)
 
-    @Test("falls back to string for unsupported types")
-    func unsupportedFallback() {
+    @Test("converts Date to ISO8601 string")
+    func dateValue() {
         let date = Date(timeIntervalSince1970: 0)
         let result = AttributeConverter.convertValue(date)
-        #expect(result == .string(String(describing: date)))
+        #expect(result == .string(ISO8601DateFormatter().string(from: date)))
+    }
+
+    @Test("converts URL to absolute string")
+    func urlValue() {
+        let url = URL(string: "https://example.com/path?q=1")!
+        let result = AttributeConverter.convertValue(url)
+        #expect(result == .string("https://example.com/path?q=1"))
+    }
+
+    @Test("converts UUID to uuidString")
+    func uuidValue() {
+        let uuid = UUID()
+        let result = AttributeConverter.convertValue(uuid)
+        #expect(result == .string(uuid.uuidString))
+    }
+
+    @Test("converts Data to base64 string")
+    func dataValue() {
+        let data = Data([0x01, 0x02, 0x03])
+        let result = AttributeConverter.convertValue(data)
+        #expect(result == .string(data.base64EncodedString()))
+    }
+
+    // MARK: - Unsupported / fallback
+
+    private final class Unrepresentable: NSObject {
+        override var description: String { "unrepresentable" }
+    }
+
+    @Test("drops unsupported types by default")
+    func unsupportedDroppedByDefault() {
+        #expect(AttributeConverter.convertValue(Unrepresentable()) == nil)
+    }
+
+    @Test("stringifies unsupported types when requested")
+    func unsupportedStringifiedWhenRequested() {
+        let result = AttributeConverter.convertValue(Unrepresentable(), stringifyUnknown: true)
+        #expect(result == .string("unrepresentable"))
+    }
+
+    // MARK: - Null
+
+    @Test("drops NSNull regardless of stringifyUnknown")
+    func nullAlwaysDropped() {
+        #expect(AttributeConverter.convertValue(NSNull()) == nil)
+        #expect(AttributeConverter.convertValue(NSNull(), stringifyUnknown: true) == nil)
+    }
+
+    @Test("drops null entries and array elements")
+    func nullDroppedInCollections() {
+        let source: [String: Any] = [
+            "kept": "value",
+            "dropped": NSNull(),
+            "list": [NSNumber(value: 1), NSNull(), NSNumber(value: 2)] as NSArray
+        ]
+        let result = AttributeConverter.convert(source)
+        #expect(result["kept"] == .string("value"))
+        #expect(result["dropped"] == nil)
+        #expect(result["list"] == .array(AttributeArray(values: [.int(1), .int(2)])))
     }
 
     // MARK: - NSDictionary (nested)

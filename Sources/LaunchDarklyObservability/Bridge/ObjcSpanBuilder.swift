@@ -43,7 +43,8 @@ public final class ObjcSpanBuilder: NSObject {
 
     @objc(setAttributeWithKey:value:)
     public func setAttribute(key: String, value: NSObject) {
-        span.setAttribute(key: key, value: AttributeConverter.convertValue(value))
+        guard let converted = AttributeConverter.convertValue(value) else { return }
+        span.setAttribute(key: key, value: converted)
     }
 
     @objc(setAttributes:)

@@ -12,8 +12,12 @@ extension LDValue {
     /// Foundation, so scalar/array/object handling stays in one place. Only
     /// object payloads have key/value members; scalar and array payloads map to
     /// an empty dictionary.
+    ///
+    /// Uses the default `stringifyUnknown: false`, so values without an attribute
+    /// form (e.g. `null`) are dropped — keeping the `LDClient.track` hook path
+    /// identical to the manual `LDObserve.track` path.
     func toAttributes() -> [String: AttributeValue] {
         guard case .object = self else { return [:] }
-        return AttributeConverter.convert((toFoundation() as? [String: Any]) ?? [:])
+        return AttributeConverter.convert((toFoundation() as? [String: Any]) ?? [:], stringifyUnknown: false)
     }
 }
