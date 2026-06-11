@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.42.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.41.0...0.42.0) (2026-06-11)
+
+
+### Features
+
+* dictionary-based track API and Obj-C track bridge ([#218](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/218)) ([14746b7](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/14746b70860401b7a548ca9f4a932488d1a3ec32))
+* richer Session Replay click descriptions (target text/selector) ([#217](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/217)) ([dd0134f](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/dd0134fd9f538bfff07376edf7dc5a69409787d0))
+
 ## [0.41.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.40.0...0.41.0) (2026-06-09)
 
 
