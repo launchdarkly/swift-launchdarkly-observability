@@ -25,19 +25,60 @@ struct AttributeConverterTests {
         #expect(result == .int(42))
     }
 
+    @Test("preserves 64-bit integers beyond Int32 range")
+    func preservesLong() {
+        // > Int32.max (2_147_483_647): must not be truncated to 32 bits.
+        let big = 9_000_000_000
+        #expect(AttributeConverter.convertValue(big) == .int(big))
+        // Same value arriving as a bridged NSNumber (objCType "q").
+        #expect(AttributeConverter.convertValue(NSNumber(value: Int64(big))) == .int(big))
+    }
+
     @Test("converts Double value")
     func doubleValue() {
         let result = AttributeConverter.convertValue(3.14)
         #expect(result == .double(3.14))
     }
 
-    // MARK: - Unsupported / fallback
+    // MARK: - Unsupported / fallback (delegated to OpenTelemetry)
 
-    @Test("falls back to string for unsupported types")
-    func unsupportedFallback() {
-        let date = Date(timeIntervalSince1970: 0)
-        let result = AttributeConverter.convertValue(date)
-        #expect(result == .string(String(describing: date)))
+    private final class Unrepresentable: NSObject {
+        override var description: String { "unrepresentable" }
+    }
+
+    @Test("drops values OpenTelemetry cannot represent by default")
+    func unsupportedDroppedByDefault() {
+        // `Date` has no OTel attribute form, so OTel returns nil and we drop it
+        // rather than inventing a string format.
+        #expect(AttributeConverter.convertValue(Date(timeIntervalSince1970: 0)) == nil)
+        #expect(AttributeConverter.convertValue(Unrepresentable()) == nil)
+    }
+
+    @Test("stringifies unrepresentable values when requested")
+    func unsupportedStringifiedWhenRequested() {
+        let result = AttributeConverter.convertValue(Unrepresentable(), stringifyUnknown: true)
+        #expect(result == .string("unrepresentable"))
+    }
+
+    // MARK: - Null
+
+    @Test("drops NSNull regardless of stringifyUnknown")
+    func nullAlwaysDropped() {
+        #expect(AttributeConverter.convertValue(NSNull()) == nil)
+        #expect(AttributeConverter.convertValue(NSNull(), stringifyUnknown: true) == nil)
+    }
+
+    @Test("drops null entries and array elements")
+    func nullDroppedInCollections() {
+        let source: [String: Any] = [
+            "kept": "value",
+            "dropped": NSNull(),
+            "list": [NSNumber(value: 1), NSNull(), NSNumber(value: 2)] as NSArray
+        ]
+        let result = AttributeConverter.convert(source)
+        #expect(result["kept"] == .string("value"))
+        #expect(result["dropped"] == nil)
+        #expect(result["list"] == .array(AttributeArray(values: [.int(1), .int(2)])))
     }
 
     // MARK: - NSDictionary (nested)

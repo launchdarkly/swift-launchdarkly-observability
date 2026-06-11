@@ -381,13 +381,13 @@ LDObserve.shared.recordIncr(metric: .init(name: "page_views", value: 1.0))
 LDObserve.shared.recordHistogram(metric: .init(name: "response_time", value: 150.0))
 LDObserve.shared.recordUpDownCounter(metric: .init(name: "active_connections", value: 1.0))
 
-// Record logs
+// Record logs — pass attributes as a plain dictionary via `properties`.
 LDObserve.shared.recordLog(
     message: "User performed action",
     severity: .info,
-    attributes: [
-        "user_id": .string("12345"),
-        "action": .string("button_click")
+    properties: [
+        "user_id": "12345",
+        "action": "button_click"
     ]
 )
 
@@ -403,9 +403,9 @@ LDObserve.shared.recordError(
 // Create spans for tracing
 let span = LDObserve.shared.startSpan(
     name: "api_request",
-    attributes: [
-        "endpoint": .string("/api/users"),
-        "method": .string("GET")
+    properties: [
+        "endpoint": "/api/users",
+        "method": "GET"
     ]
 )
 
@@ -415,10 +415,17 @@ span.end()
 // (Calling LDClient.get()?.track(key:) records the same span automatically via the afterTrack hook.)
 LDObserve.shared.track(
     key: "checkout_completed",
-    data: ["currency": "USD"],
+    properties: ["currency": "USD"],
     metricValue: 42.0
 )
 ```
+
+`recordLog`, `startSpan`, and `track` accept attributes/data as a plain Swift
+dictionary via the `properties:` label — pass `String`, `Bool`, `Int`, `Double`,
+arrays, and nested dictionaries directly, with no need to import `OpenTelemetryApi`
+or build `AttributeValue`s. The `attributes:` (`AttributeValue`) overloads remain
+available when you need precise OpenTelemetry typing (as shown for `recordError`
+above).
 
 ### Tracking Screen Views
 
@@ -522,6 +529,29 @@ LDObserve.shared.trackScreenView(
 // Convenience overloads:
 LDObserve.shared.trackScreenView(name: "Profile")
 LDObserve.shared.trackScreenView(name: "Profile", category: "Account")
+```
+
+You can attach custom attributes to the `screen_view` span via the optional
+`properties:` parameter — a plain dictionary, using the same conversion rules as a
+`track` event's `properties` (no need to build `AttributeValue`s). Custom
+properties are applied at lower precedence than the reserved `event.*` taxonomy
+fields, so they can never clobber them:
+
+```swift
+LDObserve.shared.trackScreenView(
+    name: "Profile",
+    screenClass: "ProfileView",
+    screenId: "MyApp.ProfileView",
+    category: "Account",
+    properties: [
+        "tab": "overview",
+        "is_owner": true
+    ]
+)
+
+// Also available on the convenience overloads:
+LDObserve.shared.trackScreenView(name: "Profile", properties: ["tab": "overview"])
+LDObserve.shared.trackScreenView(name: "Profile", category: "Account", properties: ["tab": "overview"])
 ```
 
 Manual `trackScreenView(...)` calls work even when automatic detection (`instrumentation.screens`) is disabled. The emitted `screen_view` span is still gated by `analytics.screenViews`.

@@ -1,4 +1,5 @@
 import Foundation
+import OpenTelemetryApi
 
 /// A single screen appearance, mapped to the taxonomy `screen_view` event.
 ///
@@ -13,6 +14,10 @@ struct ScreenView: Equatable {
     let screenId: String?
     /// Screen group, e.g. `Onboarding`. Maps to `event.category`.
     let category: String?
+    /// Optional caller-supplied attributes attached to the `screen_view` span,
+    /// applied at lower precedence than the reserved `event.*` fields so they can
+    /// never clobber the taxonomy. Empty for automatically captured screens.
+    let attributes: [String: AttributeValue]
     /// Capture time.
     let timestamp: TimeInterval
 
@@ -20,11 +25,13 @@ struct ScreenView: Equatable {
          screenClass: String? = nil,
          screenId: String? = nil,
          category: String? = nil,
+         attributes: [String: AttributeValue] = [:],
          timestamp: TimeInterval = Date().timeIntervalSince1970) {
         self.name = name
         self.screenClass = screenClass
         self.screenId = screenId
         self.category = category
+        self.attributes = attributes
         self.timestamp = timestamp
     }
 }

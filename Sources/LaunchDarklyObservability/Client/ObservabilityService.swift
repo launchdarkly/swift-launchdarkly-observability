@@ -433,16 +433,22 @@ extension ObservabilityService: Observe {
         tracer.startSpan(name: name, attributes: attributes)
     }
 
-    func track(key: String, data: LDValue?, metricValue: Double?) {
+    func track(key: String, properties: [String: Any]?, metricValue: Double?) {
         track(name: key,
               metricValue: metricValue,
-              attributes: data?.toAttributes() ?? [:],
+              attributes: properties?.toOtelAttributes() ?? [:],
               contextKeyAttributes: nil)
     }
 
-    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?) {
+    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {
         emitScreenView(
-            ScreenView(name: name, screenClass: screenClass, screenId: screenId, category: category)
+            ScreenView(
+                name: name,
+                screenClass: screenClass,
+                screenId: screenId,
+                category: category,
+                attributes: properties?.toOtelAttributes() ?? [:]
+            )
         )
     }
 }
@@ -469,6 +475,7 @@ extension ObservabilityService: TrackEmitting {
         )
 
         guard options.analytics.trackEvents.isEnabled else { return }
+        guard options.tracesApi.includeSpans else { return }
 
         // Apply in increasing precedence so event identity can never be clobbered: user-supplied
         // track data first, then context keys, then the reserved key/value attributes last.
@@ -485,8 +492,14 @@ extension ObservabilityService: TrackEmitting {
             spanAttributes["value"] = .double(metricValue)
         }
 
-        let span = tracer.startSpan(name: SemanticConvention.trackSpanName, attributes: spanAttributes)
-        span.end()
+        // `track` events are modeled as CONSUMER spans (an incoming domain event)
+        // rather than INTERNAL. Built via the decorator so the span kind can be set.
+        let builder = tracerDecorator.spanBuilder(spanName: SemanticConvention.trackSpanName)
+        builder.setSpanKind(spanKind: .consumer)
+        for (key, value) in spanAttributes {
+            builder.setAttribute(key: key, value: value)
+        }
+        builder.startSpan().end()
     }
 
     /// Single funnel for screen changes. Both the automatic
@@ -518,9 +531,13 @@ extension ObservabilityService: TrackEmitting {
         // Only the analytics span is gated by the screenViews flag.
         guard options.analytics.screenViews.isEnabled else { return }
 
-        // Apply in increasing precedence so the screen-view taxonomy can never be clobbered: identify
-        // context keys first, then the reserved `event.*` fields last (matching the track path).
+        // Apply in increasing precedence so the screen-view taxonomy can never be clobbered: caller
+        // properties first, then identify context keys, then the reserved `event.*` fields last
+        // (matching the track path).
         var spanAttributes: [String: AttributeValue] = [:]
+        for (k, v) in screen.attributes {
+            spanAttributes[k] = v
+        }
         for (k, v) in cachedContextKeyAttributes {
             spanAttributes[k] = v
         }
