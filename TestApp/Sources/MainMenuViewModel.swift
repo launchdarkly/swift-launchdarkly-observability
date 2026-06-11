@@ -105,7 +105,7 @@ final class MainMenuViewModel: ObservableObject {
 			message: "logs-button-pressed",
 			severity: .info,
 			attributes: [
-				"test-string": .string("maui"),
+				"test-string": .string("swift"),
 				"test-true": .bool(true),
 				"test-false": .bool(false),
 				"test-integer": .int(42),
@@ -119,7 +119,7 @@ final class MainMenuViewModel: ObservableObject {
 	func trackViaLDClient() {
 		// Records a track span automatically via the Observability afterTrack hook.
 		LDClient.get()?.track(
-            key: "track-via-ld-observe",
+            key: "track-via-ld-client",
             data: [
                 "test-string": "ios",
                 "test-true": true,
@@ -139,7 +139,9 @@ final class MainMenuViewModel: ObservableObject {
                 "test-true": true,
                 "test-false": false,
                 "test-integer": 42,
-                "test-double": 3.14
+                "test-double": 3.14,
+                "test-swiftmap": ["test-string": "val"],
+                "test-AttributeValue": AttributeValue.set(.init(labels: ["string": .string("swift")]))
             ]
 		)
 	}

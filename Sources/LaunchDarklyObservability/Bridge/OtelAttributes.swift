@@ -42,8 +42,10 @@ extension Dictionary where Key == String, Value == Any {
             return .array(AttributeArray(values: nsArray.compactMap { attributeValue(from: $0) }))
         }
 
-        // Match the NSNumber handling used for spans/logs so a numeric
-        // NSNumber(0/1) is not misread as a Bool (and vice versa).
+        // NSNumber covers values bridged from the Obj-C/pigeon bridge and, on
+        // Apple platforms, native Swift Bool/Int/Double (which bridge to NSNumber).
+        // objCType disambiguates bool vs numeric so an NSNumber(0/1) is not misread
+        // as a Bool (and vice versa).
         if let number = value as? NSNumber {
             switch String(cString: number.objCType) {
             case "c", "B": return .bool(number.boolValue)
@@ -53,6 +55,13 @@ extension Dictionary where Key == String, Value == Any {
         }
 
         if let string = value as? String { return .string(string) }
+
+        // Explicit native Swift scalars as a guaranteed fallback, in case a value
+        // is not NSNumber-bridged. Kept after the NSNumber branch so a bridged
+        // NSNumber(0/1) keeps its numeric/bool identity rather than matching `Bool`.
+        if let boolValue = value as? Bool { return .bool(boolValue) }
+        if let intValue = value as? Int { return .int(intValue) }
+        if let doubleValue = value as? Double { return .double(doubleValue) }
 
         // Date, arbitrary objects, etc.: dropped rather than stringified.
         return nil

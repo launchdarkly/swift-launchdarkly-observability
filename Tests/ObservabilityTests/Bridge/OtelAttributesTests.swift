@@ -34,6 +34,28 @@ struct OtelAttributesTests {
         #expect(result.count == 5)
     }
 
+    @Test("keeps native Swift Bool/Int/Double scalars from a [String: Any] payload")
+    func nativeSwiftScalars() {
+        // Mirrors the LDObserve.shared.track / TestApp payload: native Swift
+        // scalar literals boxed in [String: Any] (not Foundation types).
+        let source: [String: Any] = [
+            "test-string": "ios",
+            "test-true": true,
+            "test-false": false,
+            "test-integer": 42,
+            "test-double": 3.14
+        ]
+
+        let result = source.toOtelAttributes()
+
+        #expect(result["test-string"] == .string("ios"))
+        #expect(result["test-true"] == .bool(true))
+        #expect(result["test-false"] == .bool(false))
+        #expect(result["test-integer"] == .int(42))
+        #expect(result["test-double"] == .double(3.14))
+        #expect(result.count == 5)
+    }
+
     // MARK: - Already-built attribute values are used, not skipped
 
     @Test("uses an already-built AttributeValue directly")
