@@ -22,9 +22,9 @@ final class NoOpObservabilityService: Observe {
         NoOpTracer().startSpan(name: name, attributes: attributes)
     }
 
-    func track(key: String, data: [String: Any]?, metricValue: Double?) {}
+    func track(key: String, properties: [String: Any]?, metricValue: Double?) {}
 
-    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?) {}
+    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {}
 }
 
 extension NoOpObservabilityService {

@@ -36,7 +36,7 @@ public final class ObjcLDObserveBridge: NSObject {
               let service = LDObserve.shared.client as? ObservabilityService else {
             // No explicit context (or no live service): fall back to the public
             // path, which uses the cached identify context for the span.
-            LDObserve.shared.track(key: key, data: data, metricValue: metricValue?.doubleValue)
+            LDObserve.shared.track(key: key, properties: data, metricValue: metricValue?.doubleValue)
             return
         }
         var contextKeyAttributes: [String: AttributeValue] = [:]

@@ -72,6 +72,38 @@ struct OtelAttributesTests {
         #expect(result.count == 2)
     }
 
+    @Test("mixes native values with a pre-built OTel AttributeValue in one payload")
+    func mixesNativeAndOtelAttributes() {
+        // Mirrors a real `track`/`recordLog` payload: callers may favor native
+        // values (the `properties:` API) but can still embed pre-built OTel
+        // `AttributeValue`s (the `attributes:` API) in the same dictionary. Both
+        // must survive conversion. The example apps now use only native values,
+        // so this is the unit-test home for the OTel-attribute path.
+        let source: [String: Any] = [
+            "test-string": "ios",
+            "test-true": true,
+            "test-integer": 42,
+            "test-double": 3.14,
+            // Native nested map.
+            "test-swiftmap": ["test-string": "val"],
+            // Pre-built OTel attribute value supplied directly by the caller.
+            "test-AttributeValue": AttributeValue.set(.init(labels: ["string": .string("swift")]))
+        ]
+
+        let result = source.toOtelAttributes()
+
+        // Native values convert by their Swift type.
+        #expect(result["test-string"] == .string("ios"))
+        #expect(result["test-true"] == .bool(true))
+        #expect(result["test-integer"] == .int(42))
+        #expect(result["test-double"] == .double(3.14))
+        // Native nested map -> AttributeSet.
+        #expect(result["test-swiftmap"] == .set(AttributeSet(labels: ["test-string": .string("val")])))
+        // Pre-built OTel AttributeValue is used as-is.
+        #expect(result["test-AttributeValue"] == .set(AttributeSet(labels: ["string": .string("swift")])))
+        #expect(result.count == 6)
+    }
+
     @Test("nests a whole [String: AttributeValue] set under its key")
     func usesWholeAttributeSet() {
         let attributes: [String: AttributeValue] = [

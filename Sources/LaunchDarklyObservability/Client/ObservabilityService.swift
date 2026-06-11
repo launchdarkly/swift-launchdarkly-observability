@@ -433,16 +433,22 @@ extension ObservabilityService: Observe {
         tracer.startSpan(name: name, attributes: attributes)
     }
 
-    func track(key: String, data: [String: Any]?, metricValue: Double?) {
+    func track(key: String, properties: [String: Any]?, metricValue: Double?) {
         track(name: key,
               metricValue: metricValue,
-              attributes: data?.toOtelAttributes() ?? [:],
+              attributes: properties?.toOtelAttributes() ?? [:],
               contextKeyAttributes: nil)
     }
 
-    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?) {
+    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {
         emitScreenView(
-            ScreenView(name: name, screenClass: screenClass, screenId: screenId, category: category)
+            ScreenView(
+                name: name,
+                screenClass: screenClass,
+                screenId: screenId,
+                category: category,
+                attributes: properties?.toOtelAttributes() ?? [:]
+            )
         )
     }
 }
@@ -525,9 +531,13 @@ extension ObservabilityService: TrackEmitting {
         // Only the analytics span is gated by the screenViews flag.
         guard options.analytics.screenViews.isEnabled else { return }
 
-        // Apply in increasing precedence so the screen-view taxonomy can never be clobbered: identify
-        // context keys first, then the reserved `event.*` fields last (matching the track path).
+        // Apply in increasing precedence so the screen-view taxonomy can never be clobbered: caller
+        // properties first, then identify context keys, then the reserved `event.*` fields last
+        // (matching the track path).
         var spanAttributes: [String: AttributeValue] = [:]
+        for (k, v) in screen.attributes {
+            spanAttributes[k] = v
+        }
         for (k, v) in cachedContextKeyAttributes {
             spanAttributes[k] = v
         }

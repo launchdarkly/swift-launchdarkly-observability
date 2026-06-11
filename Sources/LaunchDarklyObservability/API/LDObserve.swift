@@ -68,11 +68,11 @@ extension LDObserve: Observe {
         client.startSpan(name: name, attributes: attributes)
     }
 
-    public func track(key: String, data: [String: Any]? = nil, metricValue: Double? = nil) {
-        client.track(key: key, data: data, metricValue: metricValue)
+    public func track(key: String, properties: [String: Any]? = nil, metricValue: Double? = nil) {
+        client.track(key: key, properties: properties, metricValue: metricValue)
     }
 
-    public func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?) {
-        client.trackScreenView(name: name, screenClass: screenClass, screenId: screenId, category: category)
+    public func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {
+        client.trackScreenView(name: name, screenClass: screenClass, screenId: screenId, category: category, properties: properties)
     }
 }

@@ -25,8 +25,8 @@ final class MainMenuViewModel: ObservableObject {
 
 	func triggerNestedSpans() {
 		Task {
-			let span0 = LDObserve.shared.startSpan(name: "NestedSpan", attributes: ["test-true": .bool(true),
-                                                                                    "test-double": .double(3.14)])
+			let span0 = LDObserve.shared.startSpan(name: "NestedSpan", properties: ["test-true": true,
+                                                                                    "test-double": 3.14])
 			await OpenTelemetry.instance.contextProvider.withActiveSpan(span0) {
 				let span1 = LDObserve.shared.startSpan(name: "NestedSpan1", attributes: [:])
 				await OpenTelemetry.instance.contextProvider.withActiveSpan(span1) {
@@ -84,7 +84,7 @@ final class MainMenuViewModel: ObservableObject {
 	func recordLogWithContext() {
 		let span = LDObserve.shared.startSpan(
 			name: "log-context-demo",
-			attributes: ["demo": .string("log-with-context")]
+			properties: ["demo": "log-with-context"]
 		)
 		let capturedContext = span.context
 		span.end()
@@ -94,7 +94,7 @@ final class MainMenuViewModel: ObservableObject {
 			LDObserve.shared.recordLog(
 				message: "Log with span context",
 				severity: .warn,
-				attributes: ["source": .string("detached-queue-demo")],
+				properties: ["source": "detached-queue-demo"],
 				spanContext: capturedContext
 			)
 		}
@@ -104,14 +104,14 @@ final class MainMenuViewModel: ObservableObject {
 		LDObserve.shared.recordLog(
 			message: "logs-button-pressed",
 			severity: .info,
-			attributes: [
-				"test-string": .string("swift"),
-				"test-true": .bool(true),
-				"test-false": .bool(false),
-				"test-integer": .int(42),
-				"test-double": .double(3.14),
-				"test-array": .array(.init(values: [.double(3.14)])),
-				"test-nested": .set(.init(labels: ["array": .array(.init(values: [.int(1)]))]))
+			properties: [
+				"test-string": "swift",
+				"test-true": true,
+				"test-false": false,
+				"test-integer": 42,
+				"test-double": 3.14,
+				"test-array": [3.14],
+				"test-nested": ["array": [1]]
 			]
 		)
 	}
@@ -134,14 +134,13 @@ final class MainMenuViewModel: ObservableObject {
 		// Records a track span directly through the Observability API.
 		LDObserve.shared.track(
 			key: "track-via-ld-observe",
-            data: [
+            properties: [
                 "test-string": "ios",
                 "test-true": true,
                 "test-false": false,
                 "test-integer": 42,
                 "test-double": 3.14,
-                "test-swiftmap": ["test-string": "val"],
-                "test-AttributeValue": AttributeValue.set(.init(labels: ["string": .string("swift")]))
+                "test-swiftmap": ["test-string": "val"]
             ]
 		)
 	}
@@ -151,8 +150,8 @@ final class MainMenuViewModel: ObservableObject {
 		// example from analytics-taxonomy.md (§4.2): scalar fields plus a
 		// `products` array of line-item objects.
 		LDObserve.shared.track(
-			key: "Checkout Started",
-			data: [
+			key: "checkout-started",
+			properties: [
 				"name": "Checkout Started",
 				"order_id": "ord_5521",
 				"value": 72.0,
@@ -173,7 +172,11 @@ final class MainMenuViewModel: ObservableObject {
 			name: "Manual Demo Screen \(screenViewCounter)",
 			screenClass: "MainMenuView",
 			screenId: "main-menu-demo-\(screenViewCounter)",
-			category: "Demo"
+			category: "Demo",
+			properties: [
+				"source": "manual-demo",
+				"index": screenViewCounter
+			]
 		)
 	}
 
