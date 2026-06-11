@@ -46,7 +46,7 @@ public final class ObjcLDObserveBridge: NSObject {
         service.track(
             name: key,
             metricValue: metricValue?.doubleValue,
-            attributes: data.map { AttributeConverter.convert($0) } ?? [:],
+            attributes: data?.toOtelAttributes() ?? [:],
             contextKeyAttributes: contextKeyAttributes
         )
     }

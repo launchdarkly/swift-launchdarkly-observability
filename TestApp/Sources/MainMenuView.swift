@@ -262,6 +262,8 @@ struct MainMenuView: View {
             HStack {
                 Button("Track Screen View") { viewModel.trackScreenView() }
                     .buttonStyle(.borderedProminent)
+                Button("Track (Nested)") { viewModel.trackNested() }
+                    .buttonStyle(.borderedProminent)
             }
 
             Text("Error")

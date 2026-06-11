@@ -144,6 +144,25 @@ final class MainMenuViewModel: ObservableObject {
 		)
 	}
 
+	func trackNested() {
+		// A nested `track` payload following the Segment "Checkout Started"
+		// example from analytics-taxonomy.md (§4.2): scalar fields plus a
+		// `products` array of line-item objects.
+		LDObserve.shared.track(
+			key: "Checkout Started",
+			data: [
+				"name": "Checkout Started",
+				"order_id": "ord_5521",
+				"value": 72.0,
+				"currency": "USD",
+				"products": [
+					["product_id": "SKU-1234", "quantity": 2, "price": 24.0],
+					["product_id": "SKU-9876", "quantity": 1, "price": 24.0]
+				]
+			]
+		)
+	}
+
 	func trackScreenView() {
 		// Records a screen_view span manually; previous_screen is resolved through
 		// the same shared screen stack used by automatic capture.
