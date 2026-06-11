@@ -179,6 +179,18 @@ struct OtelAttributesTests {
         #expect(result.count == 1)
     }
 
+    // MARK: - 64-bit integers
+
+    @Test("preserves 64-bit integers without truncation")
+    func preservesLong() {
+        let big = 9_000_000_000 // > Int32.max
+        let source: [String: Any] = ["id": big]
+
+        let result = source.toOtelAttributes()
+
+        #expect(result["id"] == .int(big))
+    }
+
     // MARK: - NSNumber type fidelity
 
     @Test("maps NSNumber bool/int/double by underlying type")

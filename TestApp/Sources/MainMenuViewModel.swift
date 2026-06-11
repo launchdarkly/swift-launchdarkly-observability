@@ -109,6 +109,7 @@ final class MainMenuViewModel: ObservableObject {
 				"test-true": true,
 				"test-false": false,
 				"test-integer": 42,
+				"test-long": 9_000_000_000,
 				"test-double": 3.14,
 				"test-array": [3.14],
 				"test-nested": ["array": [1]]
@@ -125,7 +126,8 @@ final class MainMenuViewModel: ObservableObject {
                 "test-true": true,
                 "test-false": false,
                 "test-integer": .number(42),
-                "test-double": 3.14
+                "test-double": 3.14,
+                "test-long-number": .number(9_000_000_000_123),
             ]
         )
 	}
@@ -139,6 +141,9 @@ final class MainMenuViewModel: ObservableObject {
                 "test-true": true,
                 "test-false": false,
                 "test-integer": 42,
+                // A 64-bit value beyond Int32 range (e.g. epoch nanoseconds),
+                // demonstrating that long integers survive conversion.
+                "test-long": 9_000_000_000_123,
                 "test-double": 3.14,
                 "test-swiftmap": ["test-string": "val"]
             ]

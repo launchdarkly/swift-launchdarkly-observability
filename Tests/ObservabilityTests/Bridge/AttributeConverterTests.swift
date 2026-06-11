@@ -25,54 +25,36 @@ struct AttributeConverterTests {
         #expect(result == .int(42))
     }
 
+    @Test("preserves 64-bit integers beyond Int32 range")
+    func preservesLong() {
+        // > Int32.max (2_147_483_647): must not be truncated to 32 bits.
+        let big = 9_000_000_000
+        #expect(AttributeConverter.convertValue(big) == .int(big))
+        // Same value arriving as a bridged NSNumber (objCType "q").
+        #expect(AttributeConverter.convertValue(NSNumber(value: Int64(big))) == .int(big))
+    }
+
     @Test("converts Double value")
     func doubleValue() {
         let result = AttributeConverter.convertValue(3.14)
         #expect(result == .double(3.14))
     }
 
-    // MARK: - Foundation reference types (always represented)
-
-    @Test("converts Date to ISO8601 string")
-    func dateValue() {
-        let date = Date(timeIntervalSince1970: 0)
-        let result = AttributeConverter.convertValue(date)
-        #expect(result == .string(ISO8601DateFormatter().string(from: date)))
-    }
-
-    @Test("converts URL to absolute string")
-    func urlValue() {
-        let url = URL(string: "https://example.com/path?q=1")!
-        let result = AttributeConverter.convertValue(url)
-        #expect(result == .string("https://example.com/path?q=1"))
-    }
-
-    @Test("converts UUID to uuidString")
-    func uuidValue() {
-        let uuid = UUID()
-        let result = AttributeConverter.convertValue(uuid)
-        #expect(result == .string(uuid.uuidString))
-    }
-
-    @Test("converts Data to base64 string")
-    func dataValue() {
-        let data = Data([0x01, 0x02, 0x03])
-        let result = AttributeConverter.convertValue(data)
-        #expect(result == .string(data.base64EncodedString()))
-    }
-
-    // MARK: - Unsupported / fallback
+    // MARK: - Unsupported / fallback (delegated to OpenTelemetry)
 
     private final class Unrepresentable: NSObject {
         override var description: String { "unrepresentable" }
     }
 
-    @Test("drops unsupported types by default")
+    @Test("drops values OpenTelemetry cannot represent by default")
     func unsupportedDroppedByDefault() {
+        // `Date` has no OTel attribute form, so OTel returns nil and we drop it
+        // rather than inventing a string format.
+        #expect(AttributeConverter.convertValue(Date(timeIntervalSince1970: 0)) == nil)
         #expect(AttributeConverter.convertValue(Unrepresentable()) == nil)
     }
 
-    @Test("stringifies unsupported types when requested")
+    @Test("stringifies unrepresentable values when requested")
     func unsupportedStringifiedWhenRequested() {
         let result = AttributeConverter.convertValue(Unrepresentable(), stringifyUnknown: true)
         #expect(result == .string("unrepresentable"))

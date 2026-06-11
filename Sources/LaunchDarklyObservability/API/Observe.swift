@@ -48,7 +48,7 @@ extension Observe {
 
     /// Convenience that omits the screen class/id. See the full overload for the
     /// `properties` semantics.
-    public func trackScreenView(name: String, category: String? = nil, properties: [String: Any]?) {
+    public func trackScreenView(name: String, category: String?, properties: [String: Any]?) {
         trackScreenView(name: name, screenClass: nil, screenId: nil, category: category, properties: properties)
     }
 

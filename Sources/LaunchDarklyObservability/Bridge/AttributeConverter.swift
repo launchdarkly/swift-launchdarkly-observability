@@ -7,15 +7,13 @@ import OpenTelemetryApi
 /// (`LDValue` bridged to Foundation), the manual `LDObserve` track/log/span
 /// APIs (`[String: Any]`), and the Obj-C / .NET MAUI bridge (`NSString`,
 /// `NSNumber`, `NSDictionary`, `NSArray`). `AttributeValue.init?(Any)` does not
-/// handle Foundation collection types, so this converter checks for
-/// `NSDictionary` / `NSArray` explicitly and recurses into nested structures.
+/// handle Foundation collection/number types, so this converter checks for
+/// `NSDictionary` / `NSArray` / `NSNumber` explicitly and recurses into nested
+/// structures. Anything else is handed to `AttributeValue.init?` so the
+/// representation choice stays OpenTelemetry's, not ours.
 ///
-/// Common Foundation reference types with a well-defined string form
-/// (`Date`, `URL`, `UUID`, `Data`) are always mapped to that form, independent
-/// of `stringifyUnknown`, so values bridged from Obj-C / .NET MAUI are never lost.
-///
-/// `stringifyUnknown` only controls what happens to values that have *no*
-/// meaningful representation (e.g. an arbitrary object):
+/// `stringifyUnknown` controls what happens to values OpenTelemetry cannot
+/// represent (e.g. a `Date`, which has no OTel attribute form):
 /// - `false` (default): drop the value, so it never appears as an attribute.
 /// - `true`: fall back to `.string(String(describing:))`.
 ///
@@ -23,8 +21,6 @@ import OpenTelemetryApi
 /// the `.null <-> NSNull` Foundation mapping — there is no OTel attribute form for
 /// null, and emitting a `"<null>"` string would be misleading.
 public enum AttributeConverter {
-
-    private static let iso8601Formatter = ISO8601DateFormatter()
 
     /// Converts a `[String: Any]` dictionary into `[String: AttributeValue]`,
     /// omitting any entries whose value cannot be represented.
@@ -49,9 +45,9 @@ public enum AttributeConverter {
     /// 5. `NSNumber`      → `.bool` / `.int` / `.double` based on `objCType`
     ///    (avoids Swift's special bridging that converts NSNumber(0/1) to Bool)
     /// 6. `String`        → `.string`
-    /// 7. Swift `Bool`/`Int`/`Double` → guaranteed fallback for non-bridged scalars
-    /// 8. `Date`/`URL`/`UUID`/`Data` → `.string` (well-defined form, always kept)
-    /// 9. Unrepresentable → `.string(String(describing:))` when `stringifyUnknown`, else `nil`
+    /// 7. Otherwise       → delegated to `AttributeValue(_:)`. Whatever OTel cannot
+    ///    represent (e.g. `Date`) becomes `.string(String(describing:))` when
+    ///    `stringifyUnknown` is set, else `nil`.
     public static func convertValue(_ value: Any, stringifyUnknown: Bool = false) -> AttributeValue? {
         // Already an attribute value, or a whole attribute set: use directly.
         if let attributeValue = value as? AttributeValue { return attributeValue }
@@ -94,23 +90,11 @@ public enum AttributeConverter {
 
         if let string = value as? String { return .string(string) }
 
-        // Explicit native Swift scalars as a guaranteed fallback, in case a value
-        // is not NSNumber-bridged. Kept after the NSNumber branch so a bridged
-        // NSNumber(0/1) keeps its numeric/bool identity rather than matching `Bool`.
-        if let boolValue = value as? Bool { return .bool(boolValue) }
-        if let intValue = value as? Int { return .int(intValue) }
-        if let doubleValue = value as? Double { return .double(doubleValue) }
-
-        // Common Foundation reference types with a well-defined string form.
-        // Handled explicitly (independent of `stringifyUnknown`) so values bridged
-        // from Obj-C / .NET MAUI aren't silently dropped.
-        if let date = value as? Date { return .string(iso8601Formatter.string(from: date)) }
-        if let url = value as? URL { return .string(url.absoluteString) }
-        if let uuid = value as? UUID { return .string(uuid.uuidString) }
-        if let data = value as? Data { return .string(data.base64EncodedString()) }
-
-        // Arbitrary objects with no meaningful form: stringify only when asked,
-        // otherwise drop.
+        // Delegate anything else to OpenTelemetry's own conversion rather than
+        // inventing a representation. It maps the remaining scalar/array types it
+        // supports and returns nil for everything it has no attribute form for
+        // (e.g. `Date`), which we then stringify only when asked, otherwise drop.
+        if let otelValue = AttributeValue(value) { return otelValue }
         return stringifyUnknown ? .string(String(describing: value)) : nil
     }
 }
