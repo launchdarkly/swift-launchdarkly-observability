@@ -31,6 +31,19 @@ final class TraceClient: TracesApi {
         let span = builder.startSpan()
         return span
     }
+
+    /// Starts a span with an explicit kind. Used for the few spans that must not use the
+    /// default `.client` kind (e.g. flag evaluations, which are `.internal`).
+    func startSpan(name: String, attributes: [String : AttributeValue], spanKind: SpanKind) -> any Span {
+        let builder = tracer.spanBuilder(spanName: name)
+        builder.setSpanKind(spanKind: spanKind)
+        attributes.forEach {
+            builder.setAttribute(key: $0.key, value: $0.value)
+        }
+
+        let span = builder.startSpan()
+        return span
+    }
 }
 
 /// Internal method used to set span start date

@@ -20,7 +20,8 @@ extension TouchInteraction {
 
         let span = tracer.startSpan(name: SemanticConvention.clickSpanName,
                                     attributes: attributes,
-                                    startTime: Date(timeIntervalSince1970: startTimestamp))
+                                    startTime: Date(timeIntervalSince1970: startTimestamp),
+                                    spanKind: .client)
         span.end(time: Date(timeIntervalSince1970: timestamp))
     }
 }
