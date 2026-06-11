@@ -228,10 +228,15 @@ actor RRWebEventGenerator {
     func clickEvent(interaction: TouchInteraction) -> Event? {
         guard case .touchDown = interaction.kind else { return nil }
         
+        // Mirror the web `Click` payload (`highlight-run` ClickListener):
+        // - clickTarget: element identifier (web: full CSS selector path; iOS analog: class name)
+        // - clickTextContent: the element's visible text (web: `target.textContent`)
+        // - clickSelector: simple selector (web: `#id` else tag; iOS analog: a11y id else class name)
+        let target = interaction.target
         let eventData = CustomEventData(tag: .click, payload: ClickPayload(
-            clickTarget: interaction.target?.className ?? "",
-            clickTextContent: interaction.target?.accessibilityIdentifier ?? "",
-            clickSelector: interaction.target?.accessibilityIdentifier ?? "view"))
+            clickTarget: target?.className ?? "",
+            clickTextContent: target?.text ?? "",
+            clickSelector: target?.accessibilityIdentifier ?? target?.className ?? "view"))
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: interaction.timestamp,
