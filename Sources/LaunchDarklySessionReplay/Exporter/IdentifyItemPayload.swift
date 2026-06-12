@@ -51,9 +51,10 @@ extension IdentifyItemPayload {
         if let contextFriendlyNameUnwrapped = options.contextFriendlyName, contextFriendlyNameUnwrapped.isNotEmpty {
             contextFriendlyName = contextFriendlyNameUnwrapped
         }
-        attributes["key"] = contextFriendlyName ?? canonicalKey
+        let displayKey = contextFriendlyName ?? canonicalKey
+        attributes["key"] = displayKey
         attributes["canonicalKey"] = canonicalKey
-        attributes["userIdentifier"] = contextFriendlyName ?? canonicalKey
+        attributes["userIdentifier"] = displayKey
 
         return attributes
     }
