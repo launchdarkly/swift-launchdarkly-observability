@@ -639,7 +639,14 @@ extension ObservabilityService: TrackEmitting {
             spanAttributes[SemanticConvention.eventPreviousVersion] = .string(previousVersion)
         }
 
-        let span = tracer.startSpan(name: SemanticConvention.appLaunchSpanName, attributes: spanAttributes)
+        // The span is emitted at the end of `start()` (after async startup instrumentation), but it
+        // represents the launch itself. Anchor it to the process-start instant captured at dylib
+        // load (`AppStartTime`) and end it at the launch-detection time carried by the signal, so
+        // analytics timestamps reflect the real startup window and aren't skewed by SDK init work.
+        let launchTime = Date(timeIntervalSince1970: signal.timestamp)
+        let spanStart = min(AppStartTime.stats.startDate, launchTime)
+
+        let span = tracer.startSpan(name: SemanticConvention.appLaunchSpanName, attributes: spanAttributes, startTime: spanStart)
         // Taxonomy §4.6: cold/warm lives on the `app.start` span event (orthogonal to
         // `event.launch_type`). Always attach when known under `analytics.appLaunch`.
         // `instrumentation.launchTimes` is inert on iOS (the legacy per-scene launch metric was
@@ -651,9 +658,10 @@ extension ObservabilityService: TrackEmitting {
             if let durationMs = signal.startDurationMs {
                 eventAttributes[SemanticConvention.startDurationMs] = .double(durationMs)
             }
-            span.addEvent(name: SemanticConvention.appStartEventName, attributes: eventAttributes)
+            // Place the event at the launch-detection time so it falls within the span window.
+            span.addEvent(name: SemanticConvention.appStartEventName, attributes: eventAttributes, timestamp: launchTime)
         }
-        span.end()
+        span.end(time: launchTime)
     }
 
     func updateCachedContextKeys(_ contextKeys: [String: String]) {

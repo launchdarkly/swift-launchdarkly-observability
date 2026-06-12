@@ -1,3 +1,5 @@
+import Foundation
+
 final class AppTraceClient: TracesApi {
     private let options: ObservabilityOptions.AppTracing
     private let tracingApiClient: TracesApi
@@ -23,5 +25,15 @@ final class AppTraceClient: TracesApi {
                 .startSpan()
         }
         return tracingApiClient.startSpan(name: name, attributes: attributes)
+    }
+
+    func startSpan(name: String, attributes: [String : OpenTelemetryApi.AttributeValue], startTime: Date) -> any OpenTelemetryApi.Span {
+        guard options.includeSpans else {
+            return OpenTelemetry.instance.tracerProvider
+                .get(instrumentationName: "")
+                .spanBuilder(spanName: "")
+                .startSpan()
+        }
+        return tracingApiClient.startSpan(name: name, attributes: attributes, startTime: startTime)
     }
 }

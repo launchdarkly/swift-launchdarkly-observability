@@ -1,5 +1,6 @@
 @_exported import OpenTelemetryApi
 import LaunchDarkly
+import Foundation
 
 /// Interface for observability operations in the LaunchDarkly iOS SDK.
 /// Provides methods for recording various types of information.
@@ -122,6 +123,12 @@ public protocol TracesApi {
     /// - attributes The attributes to record with the span
     /// - spanKind The kind of the span (defaults to `.client` for most spans)
     func startSpan(name: String, attributes: [String : AttributeValue], spanKind: SpanKind) -> Span
+    /// Start a span with an explicit start time. Used for spans that represent a window earlier
+    /// than emit time (e.g. `app_launch`, which is created after async startup work has finished).
+    /// - name The name of the span
+    /// - attributes The attributes to record with the span
+    /// - startTime The span's start time
+    func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date) -> Span
 }
 
 extension TracesApi {
@@ -136,6 +143,12 @@ extension TracesApi {
     /// Default implementation forwards to ``startSpan(name:attributes:)``, leaving the span kind
     /// to the implementation's default. Conformers that can honor a specific kind override this.
     public func startSpan(name: String, attributes: [String : AttributeValue], spanKind: SpanKind) -> Span {
+        startSpan(name: name, attributes: attributes)
+    }
+
+    /// Default implementation ignores `startTime` and forwards to ``startSpan(name:attributes:)``.
+    /// Conformers that can honor an explicit start time override this.
+    public func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date) -> Span {
         startSpan(name: name, attributes: attributes)
     }
 
