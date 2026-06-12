@@ -61,6 +61,9 @@ public struct SessionReplayOptions {
     public var compression: CompressionMethod = .overlayTiles()
     /// Target capture rate in frames per second.
     public var frameRate: Double
+    /// Render scale applied when capturing frames. Usually from 1-4, where
+    /// `1` = 160 DPI. Higher values capture at greater resolution. Defaults to `1.0`.
+    public var scale: CGFloat
     public var renderStrategy: RenderStrategy
     public var serviceName: String
     public var privacy = PrivacyOptions()
@@ -72,6 +75,7 @@ public struct SessionReplayOptions {
                 privacy: PrivacyOptions = PrivacyOptions(),
                 compression: CompressionMethod = .overlayTiles(),
                 frameRate: Double = 1.0,
+                scale: CGFloat = 1.0,
                 renderStrategy: RenderStrategy = .drawHierarchy,
                 log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklySessionReplayPlugin")) {
         self.isEnabled = isEnabled
@@ -80,6 +84,7 @@ public struct SessionReplayOptions {
         self.privacy = privacy
         self.compression = compression
         self.frameRate = frameRate
+        self.scale = scale
         self.renderStrategy = renderStrategy
         self.log = log
     }

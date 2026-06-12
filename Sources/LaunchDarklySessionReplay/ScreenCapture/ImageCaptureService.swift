@@ -35,11 +35,12 @@ public final class ImageCaptureService: ImageCaptureServicing {
     @MainActor
     private var shouldCapture = false
     
-    private let scale = 1.0
+    private let scale: CGFloat
     
     public init(options: SessionReplayOptions) {
         maskCollector = MaskCollector(privacySettings: options.privacy)
         renderStrategy = options.renderStrategy
+        scale = options.scale
     }
     
     // MARK: - Capture
