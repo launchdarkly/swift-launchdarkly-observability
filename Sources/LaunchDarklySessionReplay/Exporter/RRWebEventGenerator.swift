@@ -71,13 +71,39 @@ actor RRWebEventGenerator {
         return events
     }
     
-    func generateWakeUpEvents(items: [EventQueueItem]) -> [Event] {
+    func generateWakeUpEvents(items: [EventQueueItem], appLaunchSignal: AppLaunchSignal? = nil, appLifecycleSignal: AppLifecycleSignal? = nil) -> [Event] {
         var events = [Event]()
         if let imageId, let firstItem = items.first {
             events.append(reloadEvent(timestamp: firstItem.timestamp))
+            if let signal = appLaunchSignal {
+                let payload = AppLaunchItemPayload(signal: signal, sessionId: "")
+                if let launchEvent = appLaunchEvent(itemPayload: payload) {
+                    events.append(launchEvent)
+                }
+            }
+            // The initial `Foreground` fires at cold launch, before replay subscribes, so it is
+            // emitted here from the cached signal (mirroring `Launch`).
+            if let signal = appLifecycleSignal {
+                let payload = AppLifecycleItemPayload(signal: signal, sessionId: "")
+                if let lifecycleEvent = appLifecycleEvent(itemPayload: payload) {
+                    events.append(lifecycleEvent)
+                }
+            }
             wakeUpPlayerEvents(&events, imageId, firstItem.timestamp)
         }
         return events
+    }
+
+    /// Emits the cached initial `Foreground` breadcrumb on its own. Used when the cold-launch
+    /// foreground signal is handled *after* the one-time wake-up payload has already been sent,
+    /// so it can't ride along with that batch. Requires the player to be initialized (a snapshot
+    /// has set the image node id), mirroring the wake-up gate, so the breadcrumb lands on a live
+    /// timeline rather than before the first full snapshot.
+    func generateInitialForegroundEvents(appLifecycleSignal: AppLifecycleSignal) -> [Event] {
+        guard imageId != nil else { return [] }
+        let payload = AppLifecycleItemPayload(signal: appLifecycleSignal, sessionId: "")
+        guard let lifecycleEvent = appLifecycleEvent(itemPayload: payload) else { return [] }
+        return [lifecycleEvent]
     }
     
     fileprivate func wakeUpPlayerEvents(_ events: inout [Event], _ imageId: Int, _ timestamp: TimeInterval) {
@@ -146,6 +172,11 @@ actor RRWebEventGenerator {
             
         case let lifecycleItem as AppLifecycleItemPayload:
             if let event = appLifecycleEvent(itemPayload: lifecycleItem) {
+                events.append(event)
+            }
+
+        case let launchItem as AppLaunchItemPayload:
+            if let event = appLaunchEvent(itemPayload: launchItem) {
                 events.append(event)
             }
             
@@ -307,6 +338,20 @@ actor RRWebEventGenerator {
     
     func appLifecycleEvent(itemPayload: AppLifecycleItemPayload) -> Event? {
         // Carry the taxonomy `event.*` fields as a stringified JSON payload, mirroring `Track`.
+        guard let data = try? JSONEncoder().encode(itemPayload.payload),
+              let payloadJSONString = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+
+        let eventData = CustomEventData(tag: itemPayload.tag, payload: payloadJSONString)
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: itemPayload.timestamp,
+                          _sid: nextSid)
+        return event
+    }
+
+    func appLaunchEvent(itemPayload: AppLaunchItemPayload) -> Event? {
         guard let data = try? JSONEncoder().encode(itemPayload.payload),
               let payloadJSONString = String(data: data, encoding: .utf8) else {
             return nil

@@ -89,6 +89,14 @@ final class SessionReplayService: SessionReplayServicing {
     }
     
     private var cancellables = Set<AnyCancellable>()
+    /// App-lifecycle subscription, attached at init and kept for the service's lifetime (not torn
+    /// down with `internalStop`) so the cold-launch foreground is never missed.
+    private var lifecycleCancellable: AnyCancellable?
+    /// Whether the one-shot cold-launch foreground has been forwarded to the exporter. Main-thread only.
+    private var hasHandledInitialForeground = false
+    /// Gates queuing of lifecycle breadcrumbs to the recording window so a sampled-out session is not
+    /// initialized by a stray transition. Toggled in `internalStart`/`internalStop`. Main-thread only.
+    private var lifecycleQueueingEnabled = false
     
     init(observabilityContext: ObservabilityContext,
          sessonReplayOptions: SessionReplayOptions,
@@ -122,16 +130,49 @@ final class SessionReplayService: SessionReplayServicing {
         
         
         let replayApiService = SessionReplayAPIService(gqlClient: graphQLClient)
+        // The launch signal is resolved during Observability start (before this exporter exists), so
+        // it is read once here on the main thread and injected as immutable state — never read from
+        // the shared context on the exporter's background executor.
         let sessionReplayExporter = SessionReplayExporter(context: sessionReplayContext,
                                                           replayApiService: replayApiService,
-                                                          title: ApplicationProperties.name ?? "iOS app")
+                                                          title: ApplicationProperties.name ?? "iOS app",
+                                                          appLaunchSignal: observabilityContext.appLaunchSignal)
         self.sessionReplayExporter = sessionReplayExporter
         
         Task {
             await transportService.batchWorker.addExporter(sessionReplayExporter)
             transportService.start()
         }
+
+        // Subscribe synchronously here (not in `internalStart`, which is enabled via an async task and
+        // would attach after the cold-launch `didBecomeActive`). The first foreground is handed to the
+        // exporter via the safe `setInitialForeground` setter (emitted on the wake-up batch); later
+        // transitions are queued as breadcrumbs while recording.
+        lifecycleCancellable = observabilityContext.appLifecycleEvents
+            .sink { [weak self] signal in
+                self?.handleAppLifecycleSignal(signal)
+            }
         os_log("LaunchDarkly Session Replay started, version: %{public}@", log: log, type: .info, sdkVersion)
+    }
+
+    /// Routes app-lifecycle signals (delivered on the main thread). The first foreground is the
+    /// cold-launch foreground: it is stored on the exporter and emitted on the wake-up batch, so it
+    /// is never queued here. Subsequent transitions are queued as `Foreground`/`Background`
+    /// breadcrumbs, but only while recording so a sampled-out session isn't initialized.
+    private func handleAppLifecycleSignal(_ signal: AppLifecycleSignal) {
+        if signal.kind == .foreground, !hasHandledInitialForeground {
+            hasHandledInitialForeground = true
+            let exporter = sessionReplayExporter
+            Task { await exporter.setInitialForeground(signal) }
+            return
+        }
+
+        guard lifecycleQueueingEnabled else { return }
+        let sessionId = observabilityContext.sessionManager.sessionInfo.id
+        let payload = AppLifecycleItemPayload(signal: signal, sessionId: sessionId)
+        Task { [transportService] in
+            await transportService.eventQueue.send(payload)
+        }
     }
     
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool) {
@@ -240,17 +281,11 @@ final class SessionReplayService: SessionReplayServicing {
             }
             .store(in: &cancellables)
 
-        // Emit an `Open`/`Foreground`/`Background` breadcrumb for each app-lifecycle signal,
-        // mirroring the per-screen `Navigate` breadcrumb above.
-        observabilityContext.appLifecycleEvents
-            .sink { [transportService, observabilityContext] signal in
-                let sessionId = observabilityContext.sessionManager.sessionInfo.id
-                let payload = AppLifecycleItemPayload(signal: signal, sessionId: sessionId)
-                Task {
-                    await transportService.eventQueue.send(payload)
-                }
-            }
-            .store(in: &cancellables)
+        // App-lifecycle breadcrumbs are handled by the lifetime subscription attached in `init`
+        // (`handleAppLifecycleSignal`). Enable queueing now that recording has started; the initial
+        // cold-launch foreground (forwarded to the exporter) and `Launch` are emitted on the first
+        // wake-up export batch.
+        lifecycleQueueingEnabled = true
 
         captureManager.isEnabled = true
     }
@@ -267,6 +302,7 @@ final class SessionReplayService: SessionReplayServicing {
     @MainActor
     private func internalStop() {
         cancellables.removeAll()
+        lifecycleQueueingEnabled = false
         captureManager.isEnabled = false
     }
 }

@@ -17,13 +17,21 @@ protocol AppLifecycleTracking: AutoInstrumentation {}
 /// lifecycle notifications, replacing the previous log-based reporting with
 /// taxonomy-aligned signals (consumed as both spans and Session Replay breadcrumbs).
 ///
-/// Mapping (only these transitions produce a signal):
-/// - `willEnterForeground` → `.foreground` with `lifecycleState = foreground`.
-/// - `didEnterBackground` → `.background` with `lifecycleState = background`.
+/// A small foreground/background state machine ensures each genuine visibility
+/// transition yields exactly one signal:
+/// - `didBecomeActive` / `willEnterForeground` → `.foreground` (only when not already
+///   foregrounded). iOS posts **no** foreground notification on a cold launch — it posts
+///   `didBecomeActive` instead — so handling `didBecomeActive` is what produces the initial
+///   `foreground` on launch (matching Android's `ON_START`). Warm returns post both
+///   `willEnterForeground` and `didBecomeActive`; the state guard collapses them to one.
+/// - `didEnterBackground` → `.background` (only when currently foregrounded).
+/// - `willResignActive` is ignored: it fires for transient interruptions (e.g. Control Center)
+///   that are not a full background, so it must not toggle state.
 final class AppLifecycleTracker: AppLifecycleTracking {
     private let appLifecycleManager: AppLifecycleManaging
     private let yield: (AppLifecycleSignal) -> Void
     private var cancellable: AnyCancellable?
+    private var isForeground = false
 
     init(appLifecycleManager: AppLifecycleManaging, yield: @escaping (AppLifecycleSignal) -> Void) {
         self.appLifecycleManager = appLifecycleManager
@@ -46,11 +54,15 @@ final class AppLifecycleTracker: AppLifecycleTracking {
 
     private func signal(for event: AppLifeCycleEvent) -> AppLifecycleSignal? {
         switch event {
-        case .willEnterForeground:
+        case .didBecomeActive, .willEnterForeground:
+            guard !isForeground else { return nil }
+            isForeground = true
             return AppLifecycleSignal(kind: .foreground, lifecycleState: AppLifecycleState.foreground.rawValue)
         case .didEnterBackground:
+            guard isForeground else { return nil }
+            isForeground = false
             return AppLifecycleSignal(kind: .background, lifecycleState: AppLifecycleState.background.rawValue)
-        case .didFinishLaunching, .didBecomeActive, .willResignActive, .willTerminate:
+        case .didFinishLaunching, .willResignActive, .willTerminate:
             return nil
         }
     }

@@ -18,6 +18,11 @@ final class ObservabilityService: InternalObserve {
     public var context: ObservabilityContext?
     
     private let autoInstrumentationSamplingInterval: TimeInterval = 5.0
+    /// Uptime captured at the earliest SDK entry point. Swift evaluates stored-property defaults
+    /// during `init`, before any of the service's setup work (transport, crash-report flushing,
+    /// instrument wiring) runs, so using this as the end of the cold/warm startup window keeps the
+    /// `app.start` `start.duration_ms` from being inflated by the SDK's own initialization time.
+    private let appStartEndUptime: TimeInterval = ProcessInfo.processInfo.systemUptime
     private let transportService: TransportService
     private let sessionManager: SessionManager
     private let eventQueue: EventQueue
@@ -44,6 +49,10 @@ final class ObservabilityService: InternalObserve {
     /// Broadcasts each app-lifecycle signal so Session Replay can emit an `Open`/`Foreground`/
     /// `Background` breadcrumb, independent of the `analytics.appLifecycle` span flag.
     private let appLifecycleSubject = PassthroughSubject<AppLifecycleSignal, Never>()
+    /// The one-shot process-launch signal, resolved at the earliest point in `init` (persisting the
+    /// app version exactly once). Handed to `ObservabilityContext` as an immutable setup value and
+    /// emitted as the `app_launch` span during `start()`.
+    private let appLaunchSignal: AppLaunchSignal?
     private var crashReporting: CrashReporting?
     private var cancellables = Set<AnyCancellable>()
     
@@ -200,6 +209,15 @@ final class ObservabilityService: InternalObserve {
             interaction.startEndSpan(tracer: tracerDecorator)
         }
         self.userInteractionManager = userInteractionManager
+
+        // Resolve the one-shot launch signal at the earliest point so it can be handed to the
+        // context as an immutable setup value (Session Replay injects it into the exporter at
+        // construction). Resolved synchronously here via a local closure — no `self` capture and
+        // no cross-thread mailbox — and persists the app version exactly once. The `app_launch`
+        // span is emitted later in `start()` once the tracer and cached context keys are ready.
+        var resolvedLaunchSignal: AppLaunchSignal?
+        AppLaunchTracker(appStartEndUptime: appStartEndUptime) { resolvedLaunchSignal = $0 }.start()
+        self.appLaunchSignal = resolvedLaunchSignal
         
         let context = ObservabilityContext(
             sdkKey: mobileKey,
@@ -211,7 +229,8 @@ final class ObservabilityService: InternalObserve {
             sessionAttributes: sessionAttributes,
             screenViews: screenViewSubject.eraseToAnyPublisher(),
             tracks: trackSubject.eraseToAnyPublisher(),
-            appLifecycleEvents: appLifecycleSubject.eraseToAnyPublisher()
+            appLifecycleEvents: appLifecycleSubject.eraseToAnyPublisher(),
+            appLaunchSignal: appLaunchSignal
         )
         self.context = context
         
@@ -263,19 +282,6 @@ extension ObservabilityService {
             .store(in: &cancellables)
         
         // MARK: - Network
-        if options.instrumentation.launchTimes.isEnabled {
-            let launchTracker = LaunchTracker()            
-            instruments
-                .append(
-                    InstrumentationTask<TraceClient>(
-                        instrument: _traceClient,
-                        samplingInterval: autoInstrumentationSamplingInterval
-                    ) {
-                        await launchTracker.trace(using: $0)
-                    }
-                )
-        }
-        
         if options.instrumentation.urlSession.isEnabled {
             instruments.append(
                 NetworkInstrumentationManager(
@@ -358,6 +364,13 @@ extension ObservabilityService {
 
         for instrument in instruments {
             instrument.start()
+        }
+
+        // Emit the `app_launch` span (and its `app.start` performance event) from the signal resolved
+        // at the earliest point in `init`. Done here, after the tracer and cached context keys are
+        // ready, so attributes are populated; gated by `analytics.appLaunch` inside the handler.
+        if let appLaunchSignal {
+            handleAppLaunchSignal(appLaunchSignal)
         }
     }
 }
@@ -564,6 +577,10 @@ extension ObservabilityService: TrackEmitting {
     /// mirroring the `Navigate`/`Track` broadcasts), then emits the taxonomy span
     /// only when gated on by `analytics.appLifecycle`.
     func handleAppLifecycleSignal(_ signal: AppLifecycleSignal) {
+        // Broadcast every transition (including the cold-launch foreground). Session Replay's
+        // lifetime subscription captures the first foreground and forwards it to the exporter via
+        // `setInitialForeground`, emitting it on the first wake-up batch; later transitions become
+        // live breadcrumbs.
         appLifecycleSubject.send(signal)
 
         guard options.analytics.appLifecycle.isEnabled else { return }
@@ -592,6 +609,59 @@ extension ObservabilityService: TrackEmitting {
 
         let span = tracer.startSpan(name: spanName, attributes: spanAttributes)
         span.end()
+    }
+
+    /// Emits the taxonomy `app_launch` span when gated on by `analytics.appLaunch`. The Session
+    /// Replay `Launch` breadcrumb is delivered separately: the signal is handed to the exporter at
+    /// construction (via `ObservabilityContext.appLaunchSignal`), not broadcast from here.
+    func handleAppLaunchSignal(_ signal: AppLaunchSignal) {
+        guard options.analytics.appLaunch.isEnabled else { return }
+        emitAppLaunchSpan(signal)
+    }
+
+    /// Emits the `app_launch` span. Context keys are applied first, then the taxonomy
+    /// `event.*` fields, and finally the cold/warm startup dimension as an `app.start`
+    /// span event (mirroring the analytics taxonomy `app_launch` shape).
+    private func emitAppLaunchSpan(_ signal: AppLaunchSignal) {
+        var spanAttributes: [String: AttributeValue] = [:]
+        for (k, v) in cachedContextKeyAttributes {
+            spanAttributes[k] = v
+        }
+
+        spanAttributes[SemanticConvention.eventLaunchType] = .string(signal.launchType.rawValue)
+        if let version = signal.version {
+            spanAttributes[SemanticConvention.eventVersion] = .string(version)
+        }
+        if let build = signal.build {
+            spanAttributes[SemanticConvention.eventBuild] = .string(build)
+        }
+        if let previousVersion = signal.previousVersion {
+            spanAttributes[SemanticConvention.eventPreviousVersion] = .string(previousVersion)
+        }
+
+        // The span is emitted at the end of `start()` (after async startup instrumentation), but it
+        // represents the launch itself. Anchor it to the process-start instant captured at dylib
+        // load (`AppStartTime`) and end it at the launch-detection time carried by the signal, so
+        // analytics timestamps reflect the real startup window and aren't skewed by SDK init work.
+        let launchTime = Date(timeIntervalSince1970: signal.timestamp)
+        let spanStart = min(AppStartTime.stats.startDate, launchTime)
+
+        let span = tracer.startSpan(name: SemanticConvention.appLaunchSpanName, attributes: spanAttributes, startTime: spanStart)
+        // Taxonomy §4.6: cold/warm lives on the `app.start` span event (orthogonal to
+        // `event.launch_type`). Always attach when known under `analytics.appLaunch`.
+        // `instrumentation.launchTimes` is inert on iOS (the legacy per-scene launch metric was
+        // folded into this span) and intentionally never gated this event.
+        if let startType = signal.startType {
+            var eventAttributes: [String: AttributeValue] = [
+                SemanticConvention.startType: .string(startType.rawValue)
+            ]
+            if let durationMs = signal.startDurationMs {
+                eventAttributes[SemanticConvention.startDurationMs] = .double(durationMs)
+            }
+            // Place the event at the launch-detection time so it falls within the span window.
+            span.addEvent(name: SemanticConvention.appStartEventName, attributes: eventAttributes, timestamp: launchTime)
+        }
+        span.end(time: launchTime)
     }
 
     func updateCachedContextKeys(_ contextKeys: [String: String]) {

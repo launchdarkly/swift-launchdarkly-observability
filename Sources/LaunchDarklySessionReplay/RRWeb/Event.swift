@@ -56,6 +56,8 @@ struct AnyEventData: Codable {
                 try CustomEventData<String>(from: decoder)
             case .appForeground, .appBackground:
                 try CustomEventData<String>(from: decoder)
+            case .appLaunch:
+                try CustomEventData<String>(from: decoder)
             }
         } else {
             throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Unexpected EventData"))

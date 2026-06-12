@@ -159,6 +159,13 @@ public struct ObservabilityOptions {
         let memory: FeatureFlag
         let memoryWarnings: FeatureFlag
         let cpu: FeatureFlag
+        /// Whether to emit legacy launch-time performance metrics. This currently only has an
+        /// effect on Android (TTID/TTFD histograms); on iOS the legacy per-scene launch-time
+        /// metric was refactored into the `app_launch` span, so this flag is presently inert on
+        /// iOS and is retained for cross-platform parity (it is propagated as a single option from
+        /// the Flutter SDK) and possible future use. The `app.start` span event on `app_launch`
+        /// (cold/warm via `start.type`, with `start.duration_ms`) is always attached when
+        /// ``Analytics/appLaunch`` is enabled and is never gated by this flag. Defaults to `.disabled`.
         let launchTimes: FeatureFlag
         /// Whether to automatically detect screen changes by swizzling
         /// `UIViewController`. This drives both the `screen_view` span (gated
@@ -208,20 +215,25 @@ public struct ObservabilityOptions {
         /// as the app moves between foreground and background states. Maps to the
         /// analytics taxonomy app-lifecycle events.
         let appLifecycle: FeatureFlag
+        /// Whether to emit an `app_launch` span (with `event.launch_type` and version
+        /// fields, plus an `app.start` span event for the cold/warm startup dimension)
+        /// once per process launch. Maps to the analytics taxonomy `app_launch` event.
+        let appLaunch: FeatureFlag
         
         public static var enabled: Self {
-            .init(taps: .enabled, trackEvents: .enabled, screenViews: .enabled, appLifecycle: .enabled)
+            .init(taps: .enabled, trackEvents: .enabled, screenViews: .enabled, appLifecycle: .enabled, appLaunch: .enabled)
         }
         
         public static var disabled: Self {
-            .init(taps: .disabled, trackEvents: .disabled, screenViews: .disabled, appLifecycle: .disabled)
+            .init(taps: .disabled, trackEvents: .disabled, screenViews: .disabled, appLifecycle: .disabled, appLaunch: .disabled)
         }
         
-        public init(taps: FeatureFlag = .enabled, trackEvents: FeatureFlag = .enabled, screenViews: FeatureFlag = .enabled, appLifecycle: FeatureFlag = .enabled) {
+        public init(taps: FeatureFlag = .enabled, trackEvents: FeatureFlag = .enabled, screenViews: FeatureFlag = .enabled, appLifecycle: FeatureFlag = .enabled, appLaunch: FeatureFlag = .enabled) {
             self.taps = taps
             self.trackEvents = trackEvents
             self.screenViews = screenViews
             self.appLifecycle = appLifecycle
+            self.appLaunch = appLaunch
         }
     }
     public var isEnabled: Bool
