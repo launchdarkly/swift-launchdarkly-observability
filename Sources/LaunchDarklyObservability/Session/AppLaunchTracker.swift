@@ -81,7 +81,17 @@ final class AppLaunchTracker: AppLifecycleTracking {
         let startType: AppLaunchSignal.StartType = AppStartTime.stats.isActivePrewarm ? .warm : .cold
         // Use the SDK-entry uptime (not "now"): resolveSignal runs after the service's setup work,
         // so measuring to now would inflate the startup duration by that setup time.
-        let startDurationMs = (appStartEndUptime - AppStartTime.stats.startTime) * 1000.0
+        let startDurationSeconds = appStartEndUptime - AppStartTime.stats.startTime
+        let startDurationMs = startDurationSeconds >= 0 ? startDurationSeconds * 1000.0 : nil
+
+        // Anchor the event time to the end of the measured startup window (process start +
+        // duration, i.e. the early SDK-entry point), not to "now". resolveSignal runs after most of
+        // observability init, so defaulting the timestamp to now would push the span end and the
+        // Session Replay `Launch` placement past the window that `start.duration_ms` deliberately
+        // excludes, making span length and breadcrumb placement inconsistent with that metric.
+        let timestamp = AppStartTime.stats.startDate
+            .addingTimeInterval(max(0, startDurationSeconds))
+            .timeIntervalSince1970
 
         return AppLaunchSignal(
             launchType: launchType,
@@ -89,7 +99,8 @@ final class AppLaunchTracker: AppLifecycleTracking {
             build: build,
             previousVersion: previousVersion,
             startType: startType,
-            startDurationMs: startDurationMs >= 0 ? startDurationMs : nil
+            startDurationMs: startDurationMs,
+            timestamp: timestamp
         )
     }
 }
