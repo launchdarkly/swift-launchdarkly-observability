@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.43.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.42.0...0.43.0) (2026-06-12)
+
+
+### Features
+
+* app_launch span + Session Replay Launch breadcrumb ([#221](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/221)) ([5f0b888](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/5f0b8887bf995e55f3fbb56af2ea4ad8ac04f80b))
+
+
+### Bug Fixes
+
+* include userIdentifier in Session Replay Identify payload ([#220](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/220)) ([e66f860](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/e66f8601b76e8e78c99e5b276fc08db659607aa2))
+
 ## [0.42.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.41.0...0.42.0) (2026-06-11)
 
 
