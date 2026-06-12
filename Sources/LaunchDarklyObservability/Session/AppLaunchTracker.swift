@@ -64,9 +64,9 @@ final class AppLaunchTracker: AppLifecycleTracking {
         let (launchType, previousVersion) = versionStore.resolveAndPersist(currentVersion: version)
 
         // iOS marks prewarmed launches via the `ActivePrewarm` environment flag; treat those as
-        // warm starts. Everything else is a cold process start.
-        let isPrewarm = ProcessInfo.processInfo.environment["ActivePrewarm"] == "1"
-        let startType: AppLaunchSignal.StartType = isPrewarm ? .warm : .cold
+        // warm starts. The flag is removed after `didFinishLaunching`, so it's captured at load
+        // time by `AppStartTime` (read here from that cache, not the live environment).
+        let startType: AppLaunchSignal.StartType = AppStartTime.stats.isActivePrewarm ? .warm : .cold
         let startDurationMs = (ProcessInfo.processInfo.systemUptime - AppStartTime.stats.startTime) * 1000.0
 
         return AppLaunchSignal(
