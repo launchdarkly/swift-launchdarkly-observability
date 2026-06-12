@@ -159,10 +159,13 @@ public struct ObservabilityOptions {
         let memory: FeatureFlag
         let memoryWarnings: FeatureFlag
         let cpu: FeatureFlag
-        /// Whether to emit legacy launch-time performance metrics (TTID/TTFD on Android).
-        /// The `app.start` span event on `app_launch` (cold/warm via `start.type`) is always
-        /// attached when ``Analytics/appLaunch`` is enabled and is not gated by this flag.
-        /// Defaults to `.disabled`.
+        /// Whether to emit legacy launch-time performance metrics. This currently only has an
+        /// effect on Android (TTID/TTFD histograms); on iOS the legacy per-scene launch-time
+        /// metric was refactored into the `app_launch` span, so this flag is presently inert on
+        /// iOS and is retained for cross-platform parity (it is propagated as a single option from
+        /// the Flutter SDK) and possible future use. The `app.start` span event on `app_launch`
+        /// (cold/warm via `start.type`, with `start.duration_ms`) is always attached when
+        /// ``Analytics/appLaunch`` is enabled and is never gated by this flag. Defaults to `.disabled`.
         let launchTimes: FeatureFlag
         /// Whether to automatically detect screen changes by swizzling
         /// `UIViewController`. This drives both the `screen_view` span (gated

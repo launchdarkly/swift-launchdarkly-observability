@@ -641,8 +641,9 @@ extension ObservabilityService: TrackEmitting {
 
         let span = tracer.startSpan(name: SemanticConvention.appLaunchSpanName, attributes: spanAttributes)
         // Taxonomy §4.6: cold/warm lives on the `app.start` span event (orthogonal to
-        // `event.launch_type`). Always attach when known; `instrumentation.launchTimes`
-        // only gates legacy TTID/TTFD-style metrics, not this event.
+        // `event.launch_type`). Always attach when known under `analytics.appLaunch`.
+        // `instrumentation.launchTimes` is inert on iOS (the legacy per-scene launch metric was
+        // folded into this span) and intentionally never gated this event.
         if let startType = signal.startType {
             var eventAttributes: [String: AttributeValue] = [
                 SemanticConvention.startType: .string(startType.rawValue)
