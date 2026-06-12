@@ -44,6 +44,9 @@ final class ObservabilityService: InternalObserve {
     /// Broadcasts each app-lifecycle signal so Session Replay can emit an `Open`/`Foreground`/
     /// `Background` breadcrumb, independent of the `analytics.appLifecycle` span flag.
     private let appLifecycleSubject = PassthroughSubject<AppLifecycleSignal, Never>()
+    /// Tracks whether the cold-launch foreground has been cached for the Session Replay wake-up
+    /// path, so it is captured exactly once and not also broadcast live.
+    private var hasCachedInitialForeground = false
     /// Broadcasts the app-launch signal so Session Replay can emit a `Launch` breadcrumb,
     /// independent of the `analytics.appLaunch` span flag.
     private let appLaunchSubject = PassthroughSubject<AppLaunchSignal, Never>()
@@ -562,7 +565,17 @@ extension ObservabilityService: TrackEmitting {
     /// mirroring the `Navigate`/`Track` broadcasts), then emits the taxonomy span
     /// only when gated on by `analytics.appLifecycle`.
     func handleAppLifecycleSignal(_ signal: AppLifecycleSignal) {
-        appLifecycleSubject.send(signal)
+        // The initial foreground fires at cold launch, before Session Replay subscribes to
+        // [appLifecycleEvents], so the live breadcrumb path misses it (PassthroughSubject doesn't
+        // buffer). Cache it for Session Replay to emit from the first wake-up batch (mirroring
+        // `Launch`), and skip the live broadcast for it so it isn't emitted twice if replay did
+        // subscribe in time. All later transitions go through the live broadcast as usual.
+        if signal.kind == .foreground, !hasCachedInitialForeground {
+            hasCachedInitialForeground = true
+            self.context?.appLifecycleSignal = signal
+        } else {
+            appLifecycleSubject.send(signal)
+        }
 
         guard options.analytics.appLifecycle.isEnabled else { return }
         emitAppLifecycleSpan(signal)

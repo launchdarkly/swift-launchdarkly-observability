@@ -71,7 +71,7 @@ actor RRWebEventGenerator {
         return events
     }
     
-    func generateWakeUpEvents(items: [EventQueueItem], appLaunchSignal: AppLaunchSignal? = nil) -> [Event] {
+    func generateWakeUpEvents(items: [EventQueueItem], appLaunchSignal: AppLaunchSignal? = nil, appLifecycleSignal: AppLifecycleSignal? = nil) -> [Event] {
         var events = [Event]()
         if let imageId, let firstItem = items.first {
             events.append(reloadEvent(timestamp: firstItem.timestamp))
@@ -79,6 +79,14 @@ actor RRWebEventGenerator {
                 let payload = AppLaunchItemPayload(signal: signal, sessionId: "")
                 if let launchEvent = appLaunchEvent(itemPayload: payload) {
                     events.append(launchEvent)
+                }
+            }
+            // The initial `Foreground` fires at cold launch, before replay subscribes, so it is
+            // emitted here from the cached signal (mirroring `Launch`).
+            if let signal = appLifecycleSignal {
+                let payload = AppLifecycleItemPayload(signal: signal, sessionId: "")
+                if let lifecycleEvent = appLifecycleEvent(itemPayload: payload) {
+                    events.append(lifecycleEvent)
                 }
             }
             wakeUpPlayerEvents(&events, imageId, firstItem.timestamp)

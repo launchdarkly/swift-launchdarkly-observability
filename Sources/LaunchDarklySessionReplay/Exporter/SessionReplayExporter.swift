@@ -104,7 +104,8 @@ actor SessionReplayExporter: EventExporting {
         if shouldWakeUpSession {
             let events = await eventGenerator.generateWakeUpEvents(
                 items: items,
-                appLaunchSignal: context.observabilityContext.appLaunchSignal
+                appLaunchSignal: context.observabilityContext.appLaunchSignal,
+                appLifecycleSignal: context.observabilityContext.appLifecycleSignal
             )
             // The wake-up payload (Reload + cached `Launch` breadcrumb + player wake-up) is empty
             // until a snapshot sets the image node id. Only clear the flag once we actually have

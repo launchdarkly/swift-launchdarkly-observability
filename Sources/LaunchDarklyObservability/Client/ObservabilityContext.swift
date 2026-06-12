@@ -30,6 +30,10 @@ public class ObservabilityContext {
     /// The process-launch signal resolved at SDK start. Session Replay emits the
     /// `Launch` breadcrumb from this cache on the first wake-up export batch.
     public var appLaunchSignal: AppLaunchSignal?
+    /// The initial foreground signal (cold launch). Like [appLaunchSignal], it fires before
+    /// Session Replay subscribes to [appLifecycleEvents], so Session Replay emits the initial
+    /// `Foreground` breadcrumb from this cache on the first wake-up export batch instead.
+    public var appLifecycleSignal: AppLifecycleSignal?
     
     public init(
         sdkKey: String,

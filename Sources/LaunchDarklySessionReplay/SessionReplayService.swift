@@ -240,8 +240,11 @@ final class SessionReplayService: SessionReplayServicing {
             }
             .store(in: &cancellables)
 
-        // Emit an `Open`/`Foreground`/`Background` breadcrumb for each app-lifecycle signal,
-        // mirroring the per-screen `Navigate` breadcrumb above.
+        // Emit a `Foreground`/`Background` breadcrumb for each app-lifecycle transition,
+        // mirroring the per-screen `Navigate` breadcrumb above. The *initial* cold-launch
+        // foreground is not delivered here (it fires before this subscription is attached); it is
+        // emitted from the cached [ObservabilityContext.appLifecycleSignal] on the first wake-up
+        // export batch, like `Launch` below.
         observabilityContext.appLifecycleEvents
             .sink { [transportService, observabilityContext] signal in
                 let sessionId = observabilityContext.sessionManager.sessionInfo.id
