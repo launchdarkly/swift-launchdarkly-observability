@@ -148,6 +148,11 @@ actor RRWebEventGenerator {
             if let event = appLifecycleEvent(itemPayload: lifecycleItem) {
                 events.append(event)
             }
+
+        case let launchItem as AppLaunchItemPayload:
+            if let event = appLaunchEvent(itemPayload: launchItem) {
+                events.append(event)
+            }
             
         default:
             break // Item wasn't needed for SessionReplay
@@ -307,6 +312,20 @@ actor RRWebEventGenerator {
     
     func appLifecycleEvent(itemPayload: AppLifecycleItemPayload) -> Event? {
         // Carry the taxonomy `event.*` fields as a stringified JSON payload, mirroring `Track`.
+        guard let data = try? JSONEncoder().encode(itemPayload.payload),
+              let payloadJSONString = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+
+        let eventData = CustomEventData(tag: itemPayload.tag, payload: payloadJSONString)
+        let event = Event(type: .Custom,
+                          data: AnyEventData(eventData),
+                          timestamp: itemPayload.timestamp,
+                          _sid: nextSid)
+        return event
+    }
+
+    func appLaunchEvent(itemPayload: AppLaunchItemPayload) -> Event? {
         guard let data = try? JSONEncoder().encode(itemPayload.payload),
               let payloadJSONString = String(data: data, encoding: .utf8) else {
             return nil

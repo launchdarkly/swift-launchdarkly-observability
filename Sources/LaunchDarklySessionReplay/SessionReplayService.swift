@@ -252,6 +252,17 @@ final class SessionReplayService: SessionReplayServicing {
             }
             .store(in: &cancellables)
 
+        // Emit a `Launch` breadcrumb for the app-launch signal, mirroring the lifecycle breadcrumb.
+        observabilityContext.appLaunchEvents
+            .sink { [transportService, observabilityContext] signal in
+                let sessionId = observabilityContext.sessionManager.sessionInfo.id
+                let payload = AppLaunchItemPayload(signal: signal, sessionId: sessionId)
+                Task {
+                    await transportService.eventQueue.send(payload)
+                }
+            }
+            .store(in: &cancellables)
+
         captureManager.isEnabled = true
     }
     

@@ -23,6 +23,9 @@ public class ObservabilityContext {
     /// Ordered stream of app-lifecycle signals, used by Session Replay to emit
     /// `Open` / `Foreground` / `Background` breadcrumbs.
     public let appLifecycleEvents: AnyPublisher<AppLifecycleSignal, Never>
+    /// Stream of app-launch signals (one per process launch), used by Session Replay
+    /// to emit a `Launch` breadcrumb.
+    public let appLaunchEvents: AnyPublisher<AppLaunchSignal, Never>
     
     public init(
         sdkKey: String,
@@ -34,7 +37,8 @@ public class ObservabilityContext {
         sessionAttributes: [String: AttributeValue],
         screenViews: AnyPublisher<ScreenViewEvent, Never>,
         tracks: AnyPublisher<TrackEvent, Never>,
-        appLifecycleEvents: AnyPublisher<AppLifecycleSignal, Never>) {
+        appLifecycleEvents: AnyPublisher<AppLifecycleSignal, Never>,
+        appLaunchEvents: AnyPublisher<AppLaunchSignal, Never>) {
             self.sdkKey = sdkKey
             self.options = options
             self.appLifecycleManager = appLifecycleManager
@@ -45,5 +49,6 @@ public class ObservabilityContext {
             self.screenViews = screenViews
             self.tracks = tracks
             self.appLifecycleEvents = appLifecycleEvents
+            self.appLaunchEvents = appLaunchEvents
         }
 }

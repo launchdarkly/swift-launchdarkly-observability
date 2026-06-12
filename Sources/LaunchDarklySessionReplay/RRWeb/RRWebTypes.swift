@@ -75,4 +75,6 @@ enum CustomDataTag: String, Codable {
     case appForeground = "Foreground"
     /// App entered the background (taxonomy `app_background`). Payload: stringified JSON `{ "lifecycle_state" }`.
     case appBackground = "Background"
+    /// App process launched (taxonomy `app_launch`). Payload: stringified JSON `{ "launch_type" }`.
+    case appLaunch = "Launch"
 }

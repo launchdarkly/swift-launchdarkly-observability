@@ -44,6 +44,9 @@ final class ObservabilityService: InternalObserve {
     /// Broadcasts each app-lifecycle signal so Session Replay can emit an `Open`/`Foreground`/
     /// `Background` breadcrumb, independent of the `analytics.appLifecycle` span flag.
     private let appLifecycleSubject = PassthroughSubject<AppLifecycleSignal, Never>()
+    /// Broadcasts the app-launch signal so Session Replay can emit a `Launch` breadcrumb,
+    /// independent of the `analytics.appLaunch` span flag.
+    private let appLaunchSubject = PassthroughSubject<AppLaunchSignal, Never>()
     private var crashReporting: CrashReporting?
     private var cancellables = Set<AnyCancellable>()
     
@@ -211,7 +214,8 @@ final class ObservabilityService: InternalObserve {
             sessionAttributes: sessionAttributes,
             screenViews: screenViewSubject.eraseToAnyPublisher(),
             tracks: trackSubject.eraseToAnyPublisher(),
-            appLifecycleEvents: appLifecycleSubject.eraseToAnyPublisher()
+            appLifecycleEvents: appLifecycleSubject.eraseToAnyPublisher(),
+            appLaunchEvents: appLaunchSubject.eraseToAnyPublisher()
         )
         self.context = context
         
@@ -263,19 +267,6 @@ extension ObservabilityService {
             .store(in: &cancellables)
         
         // MARK: - Network
-        if options.instrumentation.launchTimes.isEnabled {
-            let launchTracker = LaunchTracker()            
-            instruments
-                .append(
-                    InstrumentationTask<TraceClient>(
-                        instrument: _traceClient,
-                        samplingInterval: autoInstrumentationSamplingInterval
-                    ) {
-                        await launchTracker.trace(using: $0)
-                    }
-                )
-        }
-        
         if options.instrumentation.urlSession.isEnabled {
             instruments.append(
                 NetworkInstrumentationManager(
@@ -331,6 +322,13 @@ extension ObservabilityService {
             self?.handleAppLifecycleSignal(signal)
         }
         instruments.append(appLifecycleTracker)
+
+        // Always track launch so the Session Replay `Launch` breadcrumb fires; the
+        // `app_launch` span (and its `app.start` performance span event) is gated below.
+        let appLaunchTracker = AppLaunchTracker { [weak self] signal in
+            self?.handleAppLaunchSignal(signal)
+        }
+        instruments.append(appLaunchTracker)
 
         let crashReporting: CrashReporting
         if options.crashReporting.source == .KSCrash {
@@ -591,6 +589,51 @@ extension ObservabilityService: TrackEmitting {
         }
 
         let span = tracer.startSpan(name: spanName, attributes: spanAttributes)
+        span.end()
+    }
+
+    /// Single funnel for the app-launch signal. Broadcasts it so Session Replay can record
+    /// a `Launch` breadcrumb (always), then emits the taxonomy `app_launch` span only when
+    /// gated on by `analytics.appLaunch`.
+    func handleAppLaunchSignal(_ signal: AppLaunchSignal) {
+        appLaunchSubject.send(signal)
+
+        guard options.analytics.appLaunch.isEnabled else { return }
+        emitAppLaunchSpan(signal)
+    }
+
+    /// Emits the `app_launch` span. Context keys are applied first, then the taxonomy
+    /// `event.*` fields, and finally the cold/warm startup dimension as an `app.start`
+    /// span event (mirroring the analytics taxonomy `app_launch` shape).
+    private func emitAppLaunchSpan(_ signal: AppLaunchSignal) {
+        var spanAttributes: [String: AttributeValue] = [:]
+        for (k, v) in cachedContextKeyAttributes {
+            spanAttributes[k] = v
+        }
+
+        spanAttributes[SemanticConvention.eventLaunchType] = .string(signal.launchType.rawValue)
+        if let version = signal.version {
+            spanAttributes[SemanticConvention.eventVersion] = .string(version)
+        }
+        if let build = signal.build {
+            spanAttributes[SemanticConvention.eventBuild] = .string(build)
+        }
+        if let previousVersion = signal.previousVersion {
+            spanAttributes[SemanticConvention.eventPreviousVersion] = .string(previousVersion)
+        }
+
+        let span = tracer.startSpan(name: SemanticConvention.appLaunchSpanName, attributes: spanAttributes)
+        // The cold/warm startup-performance dimension is the refactored home of the legacy
+        // launch-time metering, so it stays gated by `instrumentation.launchTimes`.
+        if options.instrumentation.launchTimes.isEnabled, let startType = signal.startType {
+            var eventAttributes: [String: AttributeValue] = [
+                SemanticConvention.startType: .string(startType.rawValue)
+            ]
+            if let durationMs = signal.startDurationMs {
+                eventAttributes[SemanticConvention.startDurationMs] = .double(durationMs)
+            }
+            span.addEvent(name: SemanticConvention.appStartEventName, attributes: eventAttributes)
+        }
         span.end()
     }
 

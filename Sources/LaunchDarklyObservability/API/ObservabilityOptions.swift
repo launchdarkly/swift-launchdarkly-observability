@@ -159,6 +159,10 @@ public struct ObservabilityOptions {
         let memory: FeatureFlag
         let memoryWarnings: FeatureFlag
         let cpu: FeatureFlag
+        /// Whether to attach the cold/warm startup-performance dimension to the `app_launch`
+        /// span as an `app.start` span event. The `app_launch` span itself (with
+        /// `event.launch_type`/version fields) is gated separately by ``Analytics/appLaunch``.
+        /// Defaults to `.disabled`.
         let launchTimes: FeatureFlag
         /// Whether to automatically detect screen changes by swizzling
         /// `UIViewController`. This drives both the `screen_view` span (gated
@@ -208,20 +212,25 @@ public struct ObservabilityOptions {
         /// as the app moves between foreground and background states. Maps to the
         /// analytics taxonomy app-lifecycle events.
         let appLifecycle: FeatureFlag
+        /// Whether to emit an `app_launch` span (with `event.launch_type` and version
+        /// fields, plus an `app.start` span event for the cold/warm startup dimension)
+        /// once per process launch. Maps to the analytics taxonomy `app_launch` event.
+        let appLaunch: FeatureFlag
         
         public static var enabled: Self {
-            .init(taps: .enabled, trackEvents: .enabled, screenViews: .enabled, appLifecycle: .enabled)
+            .init(taps: .enabled, trackEvents: .enabled, screenViews: .enabled, appLifecycle: .enabled, appLaunch: .enabled)
         }
         
         public static var disabled: Self {
-            .init(taps: .disabled, trackEvents: .disabled, screenViews: .disabled, appLifecycle: .disabled)
+            .init(taps: .disabled, trackEvents: .disabled, screenViews: .disabled, appLifecycle: .disabled, appLaunch: .disabled)
         }
         
-        public init(taps: FeatureFlag = .enabled, trackEvents: FeatureFlag = .enabled, screenViews: FeatureFlag = .enabled, appLifecycle: FeatureFlag = .enabled) {
+        public init(taps: FeatureFlag = .enabled, trackEvents: FeatureFlag = .enabled, screenViews: FeatureFlag = .enabled, appLifecycle: FeatureFlag = .enabled, appLaunch: FeatureFlag = .enabled) {
             self.taps = taps
             self.trackEvents = trackEvents
             self.screenViews = screenViews
             self.appLifecycle = appLifecycle
+            self.appLaunch = appLaunch
         }
     }
     public var isEnabled: Bool
