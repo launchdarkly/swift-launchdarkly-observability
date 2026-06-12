@@ -16,6 +16,9 @@ public struct AppLaunchSignal: Sendable, Equatable {
         case install
         /// First launch after a version change.
         case update
+        /// The current app version could not be read, so the launch milestone is
+        /// indeterminable (nothing is persisted, so it can't be compared across launches).
+        case unknown
     }
 
     /// The cold/warm startup-performance dimension (taxonomy `app.start` span event).

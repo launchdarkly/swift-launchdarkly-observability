@@ -1,9 +1,9 @@
 import Foundation
 
-/// Resolves the product-milestone of a launch (`install` / `update` / `relaunch`)
-/// by comparing the current app version against the last one persisted in
-/// `UserDefaults`. Persists the current version as a side effect so the next launch
-/// can be classified.
+/// Resolves the product-milestone of a launch (`install` / `update` / `relaunch`,
+/// or `unknown` when the version is unreadable) by comparing the current app version
+/// against the last one persisted in `UserDefaults`. Persists the current version as a
+/// side effect so the next launch can be classified.
 struct AppVersionStore {
     static let lastVersionKey = "com.launchdarkly.observability.lastAppVersion"
 
@@ -16,10 +16,15 @@ struct AppVersionStore {
     /// Classifies the launch relative to the stored version, then records `currentVersion`.
     /// - Returns: the resolved launch type and the previous version (only for `update`).
     func resolveAndPersist(currentVersion: String?) -> (launchType: AppLaunchSignal.LaunchType, previousVersion: String?) {
-        let stored = defaults.string(forKey: Self.lastVersionKey)
-        defer {
-            if let currentVersion { defaults.set(currentVersion, forKey: Self.lastVersionKey) }
+        // Without a readable version there is nothing to persist or compare, so the milestone is
+        // indeterminable. Returning `.unknown` (rather than `.install`) avoids misclassifying
+        // every such relaunch as a fresh install.
+        guard let currentVersion else {
+            return (.unknown, nil)
         }
+
+        let stored = defaults.string(forKey: Self.lastVersionKey)
+        defaults.set(currentVersion, forKey: Self.lastVersionKey)
 
         guard let stored else {
             return (.install, nil)
