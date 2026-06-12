@@ -53,6 +53,7 @@ extension IdentifyItemPayload {
         }
         attributes["key"] = contextFriendlyName ?? canonicalKey
         attributes["canonicalKey"] = canonicalKey
+        attributes["userIdentifier"] = contextFriendlyName ?? canonicalKey
 
         return attributes
     }
