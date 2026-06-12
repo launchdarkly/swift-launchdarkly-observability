@@ -5,9 +5,15 @@ import LaunchDarklyObservability
 /// custom-event payload. Mirrors the web `Identify`/`Track` stringified-JSON shape.
 struct AppLaunchPayload: Codable {
     var launchType: String?
+    var version: String?
+    var build: String?
+    var previousVersion: String?
 
     enum CodingKeys: String, CodingKey {
         case launchType = "launch_type"
+        case version
+        case build
+        case previousVersion = "previous_version"
     }
 }
 
@@ -31,7 +37,12 @@ struct AppLaunchItemPayload: EventQueueItemPayload {
 extension AppLaunchItemPayload {
     init(signal: AppLaunchSignal, sessionId: String) {
         self.tag = .appLaunch
-        self.payload = AppLaunchPayload(launchType: signal.launchType.rawValue)
+        self.payload = AppLaunchPayload(
+            launchType: signal.launchType.rawValue,
+            version: signal.version,
+            build: signal.build,
+            previousVersion: signal.previousVersion
+        )
         self.timestamp = signal.timestamp
         self.sessionId = sessionId
     }
