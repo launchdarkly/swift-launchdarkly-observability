@@ -54,13 +54,21 @@ final class TileDiffManager {
         }
         previousSignature = imageSignature
 
+        // `diffRect` and the tile layout are expressed in pixels (the signature is
+        // computed from the CGImage), whereas the exported tile rects and
+        // `originalSize` the player lays tiles out in are in points. These two spaces
+        // only coincide at `scale == 1`; for `scale > 1` keep all crop math in pixels
+        // and convert the exported rect back to points using `scale`.
+        let pixelWidth = CGFloat(frame.image.cgImage?.width ?? Int(frame.image.size.width * scale))
+        let pixelHeight = CGFloat(frame.image.cgImage?.height ?? Int(frame.image.size.height * scale))
+
         let isKeyframe: Bool
         if case .overlayTiles(let layers, _) = compression, layers > 0 {
             incrementalSnapshots = (incrementalSnapshots + 1) % layers
             if incrementalSnapshots == 0 {
                 isKeyframe = true
             } else {
-                let needWholeScreen = (diffRect.size.width >= frame.image.size.width && diffRect.size.height >= frame.image.size.height)
+                let needWholeScreen = (diffRect.size.width >= pixelWidth && diffRect.size.height >= pixelHeight)
                 if needWholeScreen {
                     incrementalSnapshots = 0
                 }
@@ -82,16 +90,28 @@ final class TileDiffManager {
                 height: frame.image.size.height
             )
         } else {
-            finalRect = CGRect(
+            // Crop in pixel space — `CGImage.cropping(to:)` operates on pixels.
+            let cropRect = CGRect(
                 x: diffRect.minX,
                 y: diffRect.minY,
-                width: min(frame.image.size.width - diffRect.minX, diffRect.width),
-                height: min(frame.image.size.height - diffRect.minY, diffRect.height)
+                width: min(pixelWidth - diffRect.minX, diffRect.width),
+                height: min(pixelHeight - diffRect.minY, diffRect.height)
             )
-            guard let cropped = frame.image.cgImage?.cropping(to: finalRect) else {
+            guard let cropped = frame.image.cgImage?.cropping(to: cropRect) else {
                 return nil
             }
             finalImage = UIImage(cgImage: cropped)
+            // Convert back to point space for the exported tile rect so it matches the
+            // point-based `originalSize` the player positions/sizes tiles against. The
+            // cropped image keeps its full pixel resolution; the player downscales it
+            // into the point-sized tile.
+            let pointScale = scale > 0 ? scale : 1.0
+            finalRect = CGRect(
+                x: cropRect.minX / pointScale,
+                y: cropRect.minY / pointScale,
+                width: cropRect.width / pointScale,
+                height: cropRect.height / pointScale
+            )
         }
 
         let imageSignatureForTransfer: ImageSignature? = {
