@@ -159,9 +159,9 @@ public struct ObservabilityOptions {
         let memory: FeatureFlag
         let memoryWarnings: FeatureFlag
         let cpu: FeatureFlag
-        /// Whether to attach the cold/warm startup-performance dimension to the `app_launch`
-        /// span as an `app.start` span event. The `app_launch` span itself (with
-        /// `event.launch_type`/version fields) is gated separately by ``Analytics/appLaunch``.
+        /// Whether to emit legacy launch-time performance metrics (TTID/TTFD on Android).
+        /// The `app.start` span event on `app_launch` (cold/warm via `start.type`) is always
+        /// attached when ``Analytics/appLaunch`` is enabled and is not gated by this flag.
         /// Defaults to `.disabled`.
         let launchTimes: FeatureFlag
         /// Whether to automatically detect screen changes by swizzling

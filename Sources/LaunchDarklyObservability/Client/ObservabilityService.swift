@@ -627,9 +627,10 @@ extension ObservabilityService: TrackEmitting {
         }
 
         let span = tracer.startSpan(name: SemanticConvention.appLaunchSpanName, attributes: spanAttributes)
-        // The cold/warm startup-performance dimension is the refactored home of the legacy
-        // launch-time metering, so it stays gated by `instrumentation.launchTimes`.
-        if options.instrumentation.launchTimes.isEnabled, let startType = signal.startType {
+        // Taxonomy §4.6: cold/warm lives on the `app.start` span event (orthogonal to
+        // `event.launch_type`). Always attach when known; `instrumentation.launchTimes`
+        // only gates legacy TTID/TTFD-style metrics, not this event.
+        if let startType = signal.startType {
             var eventAttributes: [String: AttributeValue] = [
                 SemanticConvention.startType: .string(startType.rawValue)
             ]
