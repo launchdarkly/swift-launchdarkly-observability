@@ -23,9 +23,13 @@ public class ObservabilityContext {
     /// Ordered stream of app-lifecycle signals, used by Session Replay to emit
     /// `Open` / `Foreground` / `Background` breadcrumbs.
     public let appLifecycleEvents: AnyPublisher<AppLifecycleSignal, Never>
-    /// Stream of app-launch signals (one per process launch), used by Session Replay
-    /// to emit a `Launch` breadcrumb.
+    /// Stream of app-launch signals (one per process launch). Retained for in-process
+    /// consumers; Session Replay reads [appLaunchSignal] instead because the launch
+    /// fires before replay subscribes.
     public let appLaunchEvents: AnyPublisher<AppLaunchSignal, Never>
+    /// The process-launch signal resolved at SDK start. Session Replay emits the
+    /// `Launch` breadcrumb from this cache on the first wake-up export batch.
+    public var appLaunchSignal: AppLaunchSignal?
     
     public init(
         sdkKey: String,

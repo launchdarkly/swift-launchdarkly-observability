@@ -596,6 +596,10 @@ extension ObservabilityService: TrackEmitting {
     /// a `Launch` breadcrumb (always), then emits the taxonomy `app_launch` span only when
     /// gated on by `analytics.appLaunch`.
     func handleAppLaunchSignal(_ signal: AppLaunchSignal) {
+        // Cached for Session Replay: the launch fires during SDK start, before replay
+        // subscribes to [appLaunchEvents], so the breadcrumb is emitted from this
+        // value on the first wake-up export batch (alongside `Reload`).
+        self.context?.appLaunchSignal = signal
         appLaunchSubject.send(signal)
 
         guard options.analytics.appLaunch.isEnabled else { return }

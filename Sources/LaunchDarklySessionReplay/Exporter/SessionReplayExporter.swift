@@ -102,7 +102,10 @@ actor SessionReplayExporter: EventExporting {
         try await pushPayload(initializedSession: initializedSession, events: events)
         
         if shouldWakeUpSession {
-            let events = await eventGenerator.generateWakeUpEvents(items: items)
+            let events = await eventGenerator.generateWakeUpEvents(
+                items: items,
+                appLaunchSignal: context.observabilityContext.appLaunchSignal
+            )
             // we need a separate payload to wake up player
             try await pushPayload(initializedSession: initializedSession, events: events)
             shouldWakeUpSession = false

@@ -71,10 +71,16 @@ actor RRWebEventGenerator {
         return events
     }
     
-    func generateWakeUpEvents(items: [EventQueueItem]) -> [Event] {
+    func generateWakeUpEvents(items: [EventQueueItem], appLaunchSignal: AppLaunchSignal? = nil) -> [Event] {
         var events = [Event]()
         if let imageId, let firstItem = items.first {
             events.append(reloadEvent(timestamp: firstItem.timestamp))
+            if let signal = appLaunchSignal {
+                let payload = AppLaunchItemPayload(signal: signal, sessionId: "")
+                if let launchEvent = appLaunchEvent(itemPayload: payload) {
+                    events.append(launchEvent)
+                }
+            }
             wakeUpPlayerEvents(&events, imageId, firstItem.timestamp)
         }
         return events
