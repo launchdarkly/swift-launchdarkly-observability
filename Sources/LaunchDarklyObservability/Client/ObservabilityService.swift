@@ -49,12 +49,10 @@ final class ObservabilityService: InternalObserve {
     /// Broadcasts each app-lifecycle signal so Session Replay can emit an `Open`/`Foreground`/
     /// `Background` breadcrumb, independent of the `analytics.appLifecycle` span flag.
     private let appLifecycleSubject = PassthroughSubject<AppLifecycleSignal, Never>()
-    /// Tracks whether the cold-launch foreground has been cached for the Session Replay wake-up
-    /// path, so it is captured exactly once and not also broadcast live.
-    private var hasCachedInitialForeground = false
-    /// Broadcasts the app-launch signal so Session Replay can emit a `Launch` breadcrumb,
-    /// independent of the `analytics.appLaunch` span flag.
-    private let appLaunchSubject = PassthroughSubject<AppLaunchSignal, Never>()
+    /// The one-shot process-launch signal, resolved at the earliest point in `init` (persisting the
+    /// app version exactly once). Handed to `ObservabilityContext` as an immutable setup value and
+    /// emitted as the `app_launch` span during `start()`.
+    private let appLaunchSignal: AppLaunchSignal?
     private var crashReporting: CrashReporting?
     private var cancellables = Set<AnyCancellable>()
     
@@ -211,6 +209,15 @@ final class ObservabilityService: InternalObserve {
             interaction.startEndSpan(tracer: tracerDecorator)
         }
         self.userInteractionManager = userInteractionManager
+
+        // Resolve the one-shot launch signal at the earliest point so it can be handed to the
+        // context as an immutable setup value (Session Replay injects it into the exporter at
+        // construction). Resolved synchronously here via a local closure — no `self` capture and
+        // no cross-thread mailbox — and persists the app version exactly once. The `app_launch`
+        // span is emitted later in `start()` once the tracer and cached context keys are ready.
+        var resolvedLaunchSignal: AppLaunchSignal?
+        AppLaunchTracker(appStartEndUptime: appStartEndUptime) { resolvedLaunchSignal = $0 }.start()
+        self.appLaunchSignal = resolvedLaunchSignal
         
         let context = ObservabilityContext(
             sdkKey: mobileKey,
@@ -223,7 +230,7 @@ final class ObservabilityService: InternalObserve {
             screenViews: screenViewSubject.eraseToAnyPublisher(),
             tracks: trackSubject.eraseToAnyPublisher(),
             appLifecycleEvents: appLifecycleSubject.eraseToAnyPublisher(),
-            appLaunchEvents: appLaunchSubject.eraseToAnyPublisher()
+            appLaunchSignal: appLaunchSignal
         )
         self.context = context
         
@@ -331,13 +338,6 @@ extension ObservabilityService {
         }
         instruments.append(appLifecycleTracker)
 
-        // Always track launch so the Session Replay `Launch` breadcrumb fires; the
-        // `app_launch` span (and its `app.start` performance span event) is gated below.
-        let appLaunchTracker = AppLaunchTracker(appStartEndUptime: appStartEndUptime) { [weak self] signal in
-            self?.handleAppLaunchSignal(signal)
-        }
-        instruments.append(appLaunchTracker)
-
         let crashReporting: CrashReporting
         if options.crashReporting.source == .KSCrash {
             crashReporting = try KSCrashReportService(logsApi: logClient, log: options.log)
@@ -364,6 +364,13 @@ extension ObservabilityService {
 
         for instrument in instruments {
             instrument.start()
+        }
+
+        // Emit the `app_launch` span (and its `app.start` performance event) from the signal resolved
+        // at the earliest point in `init`. Done here, after the tracer and cached context keys are
+        // ready, so attributes are populated; gated by `analytics.appLaunch` inside the handler.
+        if let appLaunchSignal {
+            handleAppLaunchSignal(appLaunchSignal)
         }
     }
 }
@@ -570,17 +577,11 @@ extension ObservabilityService: TrackEmitting {
     /// mirroring the `Navigate`/`Track` broadcasts), then emits the taxonomy span
     /// only when gated on by `analytics.appLifecycle`.
     func handleAppLifecycleSignal(_ signal: AppLifecycleSignal) {
-        // The initial foreground fires at cold launch, before Session Replay subscribes to
-        // [appLifecycleEvents], so the live breadcrumb path misses it (PassthroughSubject doesn't
-        // buffer). Cache it for Session Replay to emit from the first wake-up batch (mirroring
-        // `Launch`), and skip the live broadcast for it so it isn't emitted twice if replay did
-        // subscribe in time. All later transitions go through the live broadcast as usual.
-        if signal.kind == .foreground, !hasCachedInitialForeground {
-            hasCachedInitialForeground = true
-            self.context?.appLifecycleSignal = signal
-        } else {
-            appLifecycleSubject.send(signal)
-        }
+        // Broadcast every transition (including the cold-launch foreground). Session Replay's
+        // lifetime subscription captures the first foreground and forwards it to the exporter via
+        // `setInitialForeground`, emitting it on the first wake-up batch; later transitions become
+        // live breadcrumbs.
+        appLifecycleSubject.send(signal)
 
         guard options.analytics.appLifecycle.isEnabled else { return }
         emitAppLifecycleSpan(signal)
@@ -610,16 +611,10 @@ extension ObservabilityService: TrackEmitting {
         span.end()
     }
 
-    /// Single funnel for the app-launch signal. Broadcasts it so Session Replay can record
-    /// a `Launch` breadcrumb (always), then emits the taxonomy `app_launch` span only when
-    /// gated on by `analytics.appLaunch`.
+    /// Emits the taxonomy `app_launch` span when gated on by `analytics.appLaunch`. The Session
+    /// Replay `Launch` breadcrumb is delivered separately: the signal is handed to the exporter at
+    /// construction (via `ObservabilityContext.appLaunchSignal`), not broadcast from here.
     func handleAppLaunchSignal(_ signal: AppLaunchSignal) {
-        // Cached for Session Replay: the launch fires during SDK start, before replay
-        // subscribes to [appLaunchEvents], so the breadcrumb is emitted from this
-        // value on the first wake-up export batch (alongside `Reload`).
-        self.context?.appLaunchSignal = signal
-        appLaunchSubject.send(signal)
-
         guard options.analytics.appLaunch.isEnabled else { return }
         emitAppLaunchSpan(signal)
     }

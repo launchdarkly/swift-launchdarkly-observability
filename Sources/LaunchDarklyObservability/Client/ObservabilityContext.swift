@@ -23,17 +23,10 @@ public class ObservabilityContext {
     /// Ordered stream of app-lifecycle signals, used by Session Replay to emit
     /// `Open` / `Foreground` / `Background` breadcrumbs.
     public let appLifecycleEvents: AnyPublisher<AppLifecycleSignal, Never>
-    /// Stream of app-launch signals (one per process launch). Retained for in-process
-    /// consumers; Session Replay reads [appLaunchSignal] instead because the launch
-    /// fires before replay subscribes.
-    public let appLaunchEvents: AnyPublisher<AppLaunchSignal, Never>
-    /// The process-launch signal resolved at SDK start. Session Replay emits the
-    /// `Launch` breadcrumb from this cache on the first wake-up export batch.
-    public var appLaunchSignal: AppLaunchSignal?
-    /// The initial foreground signal (cold launch). Like [appLaunchSignal], it fires before
-    /// Session Replay subscribes to [appLifecycleEvents], so Session Replay emits the initial
-    /// `Foreground` breadcrumb from this cache on the first wake-up export batch instead.
-    public var appLifecycleSignal: AppLifecycleSignal?
+    /// The process-launch signal resolved at SDK start. A one-shot setup value (immutable): Session
+    /// Replay reads it once at construction and injects it into the exporter, so the `Launch`
+    /// breadcrumb is delivered without a cross-thread read of this shared context.
+    public let appLaunchSignal: AppLaunchSignal?
     
     public init(
         sdkKey: String,
@@ -46,7 +39,7 @@ public class ObservabilityContext {
         screenViews: AnyPublisher<ScreenViewEvent, Never>,
         tracks: AnyPublisher<TrackEvent, Never>,
         appLifecycleEvents: AnyPublisher<AppLifecycleSignal, Never>,
-        appLaunchEvents: AnyPublisher<AppLaunchSignal, Never>) {
+        appLaunchSignal: AppLaunchSignal?) {
             self.sdkKey = sdkKey
             self.options = options
             self.appLifecycleManager = appLifecycleManager
@@ -57,6 +50,6 @@ public class ObservabilityContext {
             self.screenViews = screenViews
             self.tracks = tracks
             self.appLifecycleEvents = appLifecycleEvents
-            self.appLaunchEvents = appLaunchEvents
+            self.appLaunchSignal = appLaunchSignal
         }
 }

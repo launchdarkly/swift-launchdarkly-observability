@@ -93,6 +93,18 @@ actor RRWebEventGenerator {
         }
         return events
     }
+
+    /// Emits the cached initial `Foreground` breadcrumb on its own. Used when the cold-launch
+    /// foreground signal is handled *after* the one-time wake-up payload has already been sent,
+    /// so it can't ride along with that batch. Requires the player to be initialized (a snapshot
+    /// has set the image node id), mirroring the wake-up gate, so the breadcrumb lands on a live
+    /// timeline rather than before the first full snapshot.
+    func generateInitialForegroundEvents(appLifecycleSignal: AppLifecycleSignal) -> [Event] {
+        guard imageId != nil else { return [] }
+        let payload = AppLifecycleItemPayload(signal: appLifecycleSignal, sessionId: "")
+        guard let lifecycleEvent = appLifecycleEvent(itemPayload: payload) else { return [] }
+        return [lifecycleEvent]
+    }
     
     fileprivate func wakeUpPlayerEvents(_ events: inout [Event], _ imageId: Int, _ timestamp: TimeInterval) {
         // artificial mouse movement to wake up session replay player
