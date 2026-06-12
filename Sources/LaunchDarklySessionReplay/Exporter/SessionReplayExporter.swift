@@ -106,9 +106,15 @@ actor SessionReplayExporter: EventExporting {
                 items: items,
                 appLaunchSignal: context.observabilityContext.appLaunchSignal
             )
-            // we need a separate payload to wake up player
-            try await pushPayload(initializedSession: initializedSession, events: events)
-            shouldWakeUpSession = false
+            // The wake-up payload (Reload + cached `Launch` breadcrumb + player wake-up) is empty
+            // until a snapshot sets the image node id. Only clear the flag once we actually have
+            // events to send; otherwise a first batch without a snapshot would drop these
+            // breadcrumbs permanently.
+            if events.isNotEmpty {
+                // we need a separate payload to wake up player
+                try await pushPayload(initializedSession: initializedSession, events: events)
+                shouldWakeUpSession = false
+            }
         }
     }
     
