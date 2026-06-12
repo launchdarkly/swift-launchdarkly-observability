@@ -18,6 +18,11 @@ final class ObservabilityService: InternalObserve {
     public var context: ObservabilityContext?
     
     private let autoInstrumentationSamplingInterval: TimeInterval = 5.0
+    /// Uptime captured at the earliest SDK entry point. Swift evaluates stored-property defaults
+    /// during `init`, before any of the service's setup work (transport, crash-report flushing,
+    /// instrument wiring) runs, so using this as the end of the cold/warm startup window keeps the
+    /// `app.start` `start.duration_ms` from being inflated by the SDK's own initialization time.
+    private let appStartEndUptime: TimeInterval = ProcessInfo.processInfo.systemUptime
     private let transportService: TransportService
     private let sessionManager: SessionManager
     private let eventQueue: EventQueue
@@ -328,7 +333,7 @@ extension ObservabilityService {
 
         // Always track launch so the Session Replay `Launch` breadcrumb fires; the
         // `app_launch` span (and its `app.start` performance span event) is gated below.
-        let appLaunchTracker = AppLaunchTracker { [weak self] signal in
+        let appLaunchTracker = AppLaunchTracker(appStartEndUptime: appStartEndUptime) { [weak self] signal in
             self?.handleAppLaunchSignal(signal)
         }
         instruments.append(appLaunchTracker)

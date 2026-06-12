@@ -45,11 +45,18 @@ struct AppVersionStore {
 /// separately by `analytics.appLaunch`.
 final class AppLaunchTracker: AppLifecycleTracking {
     private let versionStore: AppVersionStore
+    private let appStartEndUptime: TimeInterval
     private let yield: (AppLaunchSignal) -> Void
     private var hasYielded = false
 
-    init(versionStore: AppVersionStore = AppVersionStore(), yield: @escaping (AppLaunchSignal) -> Void) {
+    /// - Parameter appStartEndUptime: uptime marking the end of the startup window (defaults to
+    ///   now). Callers should capture this as early as possible — at SDK entry, before setup work —
+    ///   so `start.duration_ms` reflects app startup rather than SDK initialization time.
+    init(versionStore: AppVersionStore = AppVersionStore(),
+         appStartEndUptime: TimeInterval = ProcessInfo.processInfo.systemUptime,
+         yield: @escaping (AppLaunchSignal) -> Void) {
         self.versionStore = versionStore
+        self.appStartEndUptime = appStartEndUptime
         self.yield = yield
     }
 
@@ -72,7 +79,9 @@ final class AppLaunchTracker: AppLifecycleTracking {
         // warm starts. The flag is removed after `didFinishLaunching`, so it's captured at load
         // time by `AppStartTime` (read here from that cache, not the live environment).
         let startType: AppLaunchSignal.StartType = AppStartTime.stats.isActivePrewarm ? .warm : .cold
-        let startDurationMs = (ProcessInfo.processInfo.systemUptime - AppStartTime.stats.startTime) * 1000.0
+        // Use the SDK-entry uptime (not "now"): resolveSignal runs after the service's setup work,
+        // so measuring to now would inflate the startup duration by that setup time.
+        let startDurationMs = (appStartEndUptime - AppStartTime.stats.startTime) * 1000.0
 
         return AppLaunchSignal(
             launchType: launchType,
