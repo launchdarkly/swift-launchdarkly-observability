@@ -5,97 +5,94 @@ import Foundation
 
 actor FlushableWorker {
     typealias Work = @Sendable (_ isFlushing: Bool) async -> Void
-    private enum Trigger {
-        case tick
-        case flush
-    }
-    
-    private var task: Task<Void, Never>? = nil
+
     private let interval: TimeInterval
     private let work: Work
-    private var continuation: AsyncStream<Trigger>.Continuation? = nil
-    private var pending: Trigger? = nil
-    
+
+    private var running = false
+    private var timer: DispatchSourceTimer?
+    private var processingTask: Task<Void, Never>?
+    private var continuation: AsyncStream<Bool>.Continuation?
+    private var flushPending = false
+
     init(interval: TimeInterval, work: @escaping Work) {
         self.interval = interval
         self.work = work
     }
-    
-    func start() async {
-        guard task == nil else { return }
-        
-        var localContinuation: AsyncStream<Trigger>.Continuation?
-        let stream = AsyncStream<Trigger>(bufferingPolicy: .bufferingNewest(1)) { cont in
+
+    func start() {
+        guard !running else { return }
+        running = true
+
+        // Serialize all work (ticks and flushes) through a single consumer so a
+        // tick and a flush never run concurrently. The element payload is the
+        // `isFlushing` flag. `.unbounded` guarantees that an enqueued trigger is
+        // never silently dropped.
+        var localContinuation: AsyncStream<Bool>.Continuation?
+        let stream = AsyncStream<Bool>(bufferingPolicy: .unbounded) { cont in
             localContinuation = cont
         }
-        if let cont = localContinuation {
-            self.setContinuation(cont)
-        }
-        
-        self.task = Task { [weak self] in
-            guard let self else { return }
-            
-            let tickTask = Task { [weak self] in
-                guard let self else { return }
-                
-                while !Task.isCancelled {
-                    try? await Task.sleep(seconds: self.interval)
-                    await self.doTrigger(.tick)
-                }
-            }
-            defer {
-                tickTask.cancel()
-            }
+        continuation = localContinuation
 
-            for await trigger in stream {
-                if Task.isCancelled {
-                    break
+        processingTask = Task { [weak self] in
+            guard let self else { return }
+            for await isFlushing in stream {
+                if Task.isCancelled { break }
+                await self.work(isFlushing)
+                if isFlushing {
+                    await self.clearFlushPending()
                 }
-                await work(trigger == .flush)
-                await clearPending()
             }
         }
+
+        // Drive periodic ticks from a Dispatch timer rather than a
+        // `Task.sleep` loop. The timer fires on a Dispatch queue independent of
+        // the Swift cooperative thread pool, so periodic ticks keep being
+        // enqueued even when that pool is briefly saturated (e.g. on a busy CI
+        // machine). This is what made the interval test flaky.
+        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .utility))
+        timer.schedule(deadline: .now() + interval, repeating: interval, leeway: .milliseconds(5))
+        timer.setEventHandler { [weak self] in
+            guard let self else { return }
+            Task { await self.enqueueTick() }
+        }
+        timer.resume()
+        self.timer = timer
     }
-    
+
     func stop() {
-        task?.cancel()
-        task = nil
+        running = false
+        timer?.cancel()
+        timer = nil
         continuation?.finish()
         continuation = nil
-        pending = nil
+        processingTask?.cancel()
+        processingTask = nil
+        flushPending = false
     }
-    
-    func flush() async {
-        doTrigger(.flush)
+
+    func flush() {
+        guard running else { return }
+        // Coalesce: while a flush is already queued/in-flight, additional flush
+        // requests collapse into the pending one.
+        guard !flushPending else { return }
+        flushPending = true
+        continuation?.yield(true)
     }
-    
-    private func doTrigger(_ next: Trigger) {
-        guard pending != .flush else {
-            // flush is already next
-            return
-        }
-        
-        if next == .flush || pending == nil {
-            pending = next
-            continuation?.yield(next)
-        }
+
+    private func enqueueTick() {
+        guard running else { return }
+        continuation?.yield(false)
     }
-    
-    private func clearPending() {
-        pending = nil
-    }
-    
-    private func setContinuation(_ continuation: AsyncStream<Trigger>.Continuation) {
-        self.continuation = continuation
+
+    private func clearFlushPending() {
+        flushPending = false
     }
 
     deinit {
-        // had to repeat stop code because of Actor
-        task?.cancel()
-        task = nil
+        // Repeated here because an actor's `stop()` can't be awaited from `deinit`.
+        timer?.cancel()
         continuation?.finish()
-        continuation = nil
-        pending = nil
+        processingTask?.cancel()
     }
 }
-
