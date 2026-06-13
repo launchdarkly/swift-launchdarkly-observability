@@ -43,7 +43,9 @@ public final actor BatchWorker {
     
     public func start() async {
         if flushableWorker == nil {
-            flushableWorker = FlushableWorker(interval: 1.5, work: sendQueueItems)
+            flushableWorker = FlushableWorker(interval: 1.5) { [weak self] isFlushing in
+                await self?.sendQueueItems(isFlushing: isFlushing)
+            }
         }
         await flushableWorker?.start()
     }
