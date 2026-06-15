@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklyObservability"
-  s.version          = "0.43.0" # x-release-please-version
+  s.version          = "0.44.0" # x-release-please-version
   s.summary          = "iOS Observability Plugin for LaunchDarkly."
   s.description      = <<-DESC
                         LaunchDarkly is the feature management platform that software teams use to build better software, faster.

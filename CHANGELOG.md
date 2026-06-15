@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.44.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.43.0...0.44.0) (2026-06-15)
+
+
+### Features
+
+* configurable Session Replay capture scale ([#223](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/223)) ([19f8f26](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/19f8f26972aca6ec272b6b9e32b17ec08a66940c))
+
+
+### Bug Fixes
+
+* deflake FlushableWorker interval test via Dispatch timer ([#224](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/224)) ([1a1b7f1](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/1a1b7f126c1d784cf2ec294fe973e057fcee714b))
+
 ## [0.43.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.42.0...0.43.0) (2026-06-12)
 
 
