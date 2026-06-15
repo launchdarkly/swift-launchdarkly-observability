@@ -115,6 +115,7 @@ final class SessionReplayService: SessionReplayServicing {
         self.captureManager = CaptureManager(captureService: captureService,
                                              compression: sessonReplayOptions.compression,
                                              frameRate: sessonReplayOptions.frameRate,
+                                             scale: sessonReplayOptions.scale,
                                              appLifecycleManager: observabilityContext.appLifecycleManager,
                                              eventQueue: transportService.eventQueue,
                                              sessionIdProvider: observabilityContext.sessionManager.sessionIdProvider)
