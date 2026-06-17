@@ -21,6 +21,9 @@ private struct LdClickModifier: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
         if #available(iOS 16.0, tvOS 16.0, *) {
+            // `.global` is the root of the SwiftUI hierarchy: it matches UIKit window coordinates
+            // for a full-screen window but is screen-relative otherwise. The interaction resolver
+            // reconciles both spaces when matching, so taps still resolve under iPad multitasking.
             content.simultaneousGesture(
                 SpatialTapGesture(coordinateSpace: .global).onEnded { value in
                     LdClickRegistry.shared.record(id: id, location: value.location)

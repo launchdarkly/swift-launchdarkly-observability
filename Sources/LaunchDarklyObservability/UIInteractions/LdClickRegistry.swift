@@ -21,7 +21,10 @@ final class LdClickRegistry {
 
     private struct Entry {
         let id: String
-        /// Tap location in `.global` SwiftUI coordinates (≈ window coordinates), when available.
+        /// Tap location in SwiftUI `.global` coordinates, when available. `.global` is the root of the
+        /// SwiftUI hierarchy: it equals UIKit window coordinates for a full-screen window but is
+        /// screen-relative when the window isn't (iPad Split View / Slide Over / Stage Manager). The
+        /// lookup therefore matches against both the window point and the screen-converted point.
         let location: CGPoint?
         let time: TimeInterval
     }
@@ -54,24 +57,34 @@ final class LdClickRegistry {
         lock.unlock()
     }
 
-    /// Returns the id of the most recent entry whose recorded location is within tolerance of
-    /// [point] (window coordinates), or nil. Only entries that carry a location are considered;
-    /// locationless entries are resolved separately via ``locationlessId()`` so they can never
-    /// match an arbitrary point. Non-consuming: entries are left in place (and expire by TTL) so
-    /// multiple capture pipelines resolving the same tap all see the id.
-    func id(at point: CGPoint) -> String? {
+    /// Returns the id of the most recent located entry whose recorded location is within tolerance
+    /// of any of [points], or nil. Passing several candidate points lets the caller reconcile
+    /// coordinate spaces: a `.ldClick` location is recorded in SwiftUI `.global`, which the resolver
+    /// can't disambiguate from UIKit window vs screen coordinates ahead of time (they diverge when
+    /// the window isn't full-screen), so it supplies both. Only entries that carry a location are
+    /// considered; locationless entries are resolved separately via ``locationlessId()`` so they can
+    /// never match an arbitrary point. Non-consuming: entries are left in place (and expire by TTL)
+    /// so multiple capture pipelines resolving the same tap all see the id.
+    func id(atAnyOf points: [CGPoint]) -> String? {
         let now = ProcessInfo.processInfo.systemUptime
         lock.lock()
         defer { lock.unlock() }
         prune(now: now)
         for entry in entries.reversed() {
             guard let location = entry.location else { continue }
-            if abs(location.x - point.x) <= locationTolerance,
-               abs(location.y - point.y) <= locationTolerance {
-                return entry.id
+            for point in points {
+                if abs(location.x - point.x) <= locationTolerance,
+                   abs(location.y - point.y) <= locationTolerance {
+                    return entry.id
+                }
             }
         }
         return nil
+    }
+
+    /// Convenience for a single candidate point. See ``id(atAnyOf:)``.
+    func id(at point: CGPoint) -> String? {
+        id(atAnyOf: [point])
     }
 
     /// Returns the id of the most recent *locationless* entry, but only when it is fresh enough to

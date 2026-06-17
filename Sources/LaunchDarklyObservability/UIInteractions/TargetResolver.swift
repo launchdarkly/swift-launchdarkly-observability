@@ -49,7 +49,11 @@ final class TargetResolver: TargetResolving {
         }
         
         let semanticView = nearestSemanticView(view: hitView)
-        let ldId = resolveLdId(hitView: hitView, windowPoint: point)
+        // `.ldClick` records its location in SwiftUI `.global`, which equals window coordinates for a
+        // full-screen window but is screen-relative otherwise (iPad Split View / Slide Over / Stage
+        // Manager). Supply both so the registry can match whichever space `.global` resolved to.
+        let screenPoint = window.convert(point, to: window.screen.coordinateSpace)
+        let ldId = resolveLdId(hitView: hitView, candidatePoints: [point, screenPoint])
         return touchTarget(for: semanticView, ldId: ldId, window: window)
     }
 
@@ -80,12 +84,13 @@ final class TargetResolver: TargetResolving {
     /// when none is found.
     ///
     /// Priority, most to least precise:
-    /// 1. A `.ldClick(_:)` gesture recorded at this exact point (SwiftUI, location-matched).
+    /// 1. A `.ldClick(_:)` gesture recorded at this tap (SwiftUI, location-matched against any of
+    ///    [candidatePoints], which cover the window/screen coordinate spaces `.global` may use).
     /// 2. `UIView.ldId(_:)` on the hit view or an ancestor (UIKit).
     /// 3. A locationless `.ldClick(_:)` entry (older SwiftUI versions that report no coordinates),
     ///    used only as a last resort so it can't mask a real UIKit id or bleed into a later tap.
-    private func resolveLdId(hitView: UIView, windowPoint: CGPoint) -> String? {
-        if let id = LdClickRegistry.shared.id(at: windowPoint) {
+    private func resolveLdId(hitView: UIView, candidatePoints: [CGPoint]) -> String? {
+        if let id = LdClickRegistry.shared.id(atAnyOf: candidatePoints) {
             return id
         }
         if let id = ldIdWalkingUp(from: hitView) {

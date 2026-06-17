@@ -57,6 +57,24 @@ struct LdClickRegistryTests {
         #expect(registry.locationlessId() == nil)
     }
 
+    @Test("id matches when any candidate point is within tolerance")
+    func matchesAnyCandidatePoint() {
+        let registry = LdClickRegistry()
+        // Recorded in `.global` (here screen-relative); the window point won't match but the
+        // screen-converted candidate will.
+        registry.record(id: "pay", location: CGPoint(x: 300, y: 400))
+        let windowPoint = CGPoint(x: 100, y: 200)
+        let screenPoint = CGPoint(x: 300, y: 400)
+        #expect(registry.id(atAnyOf: [windowPoint, screenPoint]) == "pay")
+    }
+
+    @Test("id returns nil when no candidate point is within tolerance")
+    func noCandidatePointMatches() {
+        let registry = LdClickRegistry()
+        registry.record(id: "pay", location: CGPoint(x: 300, y: 400))
+        #expect(registry.id(atAnyOf: [CGPoint(x: 0, y: 0), CGPoint(x: 50, y: 50)]) == nil)
+    }
+
     @Test("the most recent matching entry wins")
     func mostRecentWins() {
         let registry = LdClickRegistry()

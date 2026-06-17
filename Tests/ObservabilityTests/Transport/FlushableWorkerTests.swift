@@ -20,6 +20,26 @@ struct FlushableWorkerTests {
             events.filter { !$0.isFlush }.count
         }
     }
+
+    /// A one-shot gate: `wait()` suspends until `open()` is called (and returns immediately
+    /// thereafter). Used to hold a unit of work in-flight so a test can deterministically observe
+    /// behaviour that depends on work still being pending.
+    actor Gate {
+        private var isOpen = false
+        private var waiters: [CheckedContinuation<Void, Never>] = []
+
+        func wait() async {
+            if isOpen { return }
+            await withCheckedContinuation { waiters.append($0) }
+        }
+
+        func open() {
+            isOpen = true
+            let pending = waiters
+            waiters.removeAll()
+            pending.forEach { $0.resume() }
+        }
+    }
     
     @Test
     func ticksOccurOnInterval() async throws {
@@ -66,15 +86,21 @@ struct FlushableWorkerTests {
     @Test
     func multipleFlushesCoalesceWhilePending() async throws {
         let recorder = Recorder()
+        // Gate the flush work so the first flush stays in-flight (its pending flag uncleared) until
+        // the test releases it. That's the precondition for coalescing: without the gate the trivial
+        // work can finish - clearing the pending flag - before the second flush is issued, which is a
+        // legitimate non-coalesced outcome and is what made this test flaky under load.
+        let gate = Gate()
         let worker = FlushableWorker(interval: 10.0) { isFlushing in
             await recorder.add(isFlushing)
+            if isFlushing { await gate.wait() }
         }
         
         await worker.start()
         
-        try await Task.sleep(nanoseconds: NSEC_PER_SEC) // allow processing
         await worker.flush()
         await worker.flush() // second flush while first is pending should coalesce
+        await gate.open()     // release the first flush now that the second has been issued
         try await Task.sleep(nanoseconds: NSEC_PER_SEC)
         await worker.stop()
         
