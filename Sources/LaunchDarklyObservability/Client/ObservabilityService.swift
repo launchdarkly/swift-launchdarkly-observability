@@ -687,14 +687,18 @@ extension ObservabilityService: TrackEmitting {
         // load (`AppStartTime`) and end it at the launch-detection time carried by the signal, so
         // analytics timestamps reflect the real startup window and aren't skewed by SDK init work.
         let launchTime = Date(timeIntervalSince1970: signal.timestamp)
-        let spanStart = min(AppStartTime.stats.startDate, launchTime)
+        // The startup-performance dimension (cold/warm `start.type` + `start.duration_ms`) is gated by
+        // `instrumentation.launchTimes`. When it is off we also anchor the span at the launch-detection
+        // time instead of back-dating it to process start, so the span window carries no startup
+        // duration and `start.duration_ms` can't be recovered from it.
+        let includeLaunchTime = options.instrumentation.launchTimes.isEnabled
+        let spanStart = includeLaunchTime ? min(AppStartTime.stats.startDate, launchTime) : launchTime
 
         let span = tracer.startSpan(name: SemanticConvention.appLaunchSpanName, attributes: spanAttributes, startTime: spanStart)
         // Taxonomy §4.6: cold/warm lives on the `app.start` span event (orthogonal to
-        // `event.launch_type`). Always attach when known under `analytics.appLaunch`.
-        // `instrumentation.launchTimes` is inert on iOS (the legacy per-scene launch metric was
-        // folded into this span) and intentionally never gated this event.
-        if let startType = signal.startType {
+        // `event.launch_type`), attached under `analytics.appLaunch` and gated by
+        // `instrumentation.launchTimes`.
+        if includeLaunchTime, let startType = signal.startType {
             var eventAttributes: [String: AttributeValue] = [
                 SemanticConvention.startType: .string(startType.rawValue)
             ]
