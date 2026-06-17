@@ -191,7 +191,7 @@ public struct ObservabilityOptions {
             memory: FeatureFlag = .disabled,
             memoryWarnings: FeatureFlag = .disabled,
             cpu: FeatureFlag = .disabled,
-            launchTimes: FeatureFlag = .disabled,
+            launchTimes: FeatureFlag = .enabled,
             screens: FeatureFlag = .enabled
         ) {
             self.urlSession = urlSession
