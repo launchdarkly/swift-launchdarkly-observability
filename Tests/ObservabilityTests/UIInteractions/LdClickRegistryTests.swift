@@ -34,11 +34,27 @@ struct LdClickRegistryTests {
         #expect(registry.id(at: CGPoint(x: 10, y: 10)) == "id")
     }
 
-    @Test("entries without a location match on recency")
-    func matchesLocationlessEntry() {
+    @Test("a locationless entry never matches an arbitrary point via id(at:)")
+    func locationlessEntryDoesNotMatchByPoint() {
         let registry = LdClickRegistry()
         registry.record(id: "id", location: nil)
-        #expect(registry.id(at: CGPoint(x: 42, y: 42)) == "id")
+        // A locationless entry must not be returned for a geometric lookup, otherwise a later
+        // tap elsewhere could inherit it.
+        #expect(registry.id(at: CGPoint(x: 42, y: 42)) == nil)
+    }
+
+    @Test("a fresh locationless entry is returned by locationlessId")
+    func freshLocationlessEntryMatches() {
+        let registry = LdClickRegistry()
+        registry.record(id: "id", location: nil)
+        #expect(registry.locationlessId() == "id")
+    }
+
+    @Test("a located entry is not returned by locationlessId")
+    func locatedEntryNotReturnedByLocationless() {
+        let registry = LdClickRegistry()
+        registry.record(id: "id", location: CGPoint(x: 10, y: 10))
+        #expect(registry.locationlessId() == nil)
     }
 
     @Test("the most recent matching entry wins")

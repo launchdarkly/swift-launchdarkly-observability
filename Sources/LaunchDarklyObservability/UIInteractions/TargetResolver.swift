@@ -78,11 +78,20 @@ final class TargetResolver: TargetResolving {
     /// fires that gesture) before resolving the target, the id is available here in the same event
     /// cycle. UIKit views use `UIView.ldId(_:)`, read by walking up the view hierarchy. Returns `nil`
     /// when none is found.
+    ///
+    /// Priority, most to least precise:
+    /// 1. A `.ldClick(_:)` gesture recorded at this exact point (SwiftUI, location-matched).
+    /// 2. `UIView.ldId(_:)` on the hit view or an ancestor (UIKit).
+    /// 3. A locationless `.ldClick(_:)` entry (older SwiftUI versions that report no coordinates),
+    ///    used only as a last resort so it can't mask a real UIKit id or bleed into a later tap.
     private func resolveLdId(hitView: UIView, windowPoint: CGPoint) -> String? {
         if let id = LdClickRegistry.shared.id(at: windowPoint) {
             return id
         }
-        return ldIdWalkingUp(from: hitView)
+        if let id = ldIdWalkingUp(from: hitView) {
+            return id
+        }
+        return LdClickRegistry.shared.locationlessId()
     }
 
     /// Walks up from [view] returning the nearest ancestor's `ldId` (set via `UIView.ldId(_:)`), or `nil`.
