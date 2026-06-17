@@ -27,7 +27,7 @@ jobs:
               with:
                   token: ${{ env.GITHUB_PAT }}
 
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
               if: ${{ steps.release.outputs.releases_created == 'true' }}
               with:
                   fetch-depth: 0 # If you only need the current version keep this.
@@ -40,7 +40,7 @@ jobs:
             id-token: write
             contents: read
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
             - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
               name: 'Get CocoaPods token'
               with:

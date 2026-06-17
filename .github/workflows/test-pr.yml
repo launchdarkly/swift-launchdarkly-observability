@@ -10,7 +10,7 @@ jobs:
     name: Unit Tests (iOS Simulator)
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/test-swiftpm
         with:
           ios-sim: 'platform=iOS Simulator,name=iPhone 16,OS=latest'
