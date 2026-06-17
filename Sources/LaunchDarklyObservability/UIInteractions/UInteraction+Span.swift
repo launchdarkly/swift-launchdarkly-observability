@@ -56,8 +56,9 @@ extension TouchInteraction {
         var attributes: [String: AttributeValue] = [:]
         attributes[SemanticConvention.eventType] = .string(SemanticConvention.clickSpanName)
         attributes[SemanticConvention.eventTag] = .string(target?.className ?? "unknown")
-        if let accessibilityIdentifier = target?.accessibilityIdentifier {
-            attributes[SemanticConvention.eventId] = .string(accessibilityIdentifier)
+        // Prefer an explicit `ldId(...)`; fall back to the accessibility identifier.
+        if let id = target?.ldId ?? target?.accessibilityIdentifier {
+            attributes[SemanticConvention.eventId] = .string(id)
         }
         if let text = target?.text {
             attributes[SemanticConvention.eventText] = .string(text)

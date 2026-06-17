@@ -257,17 +257,20 @@ actor RRWebEventGenerator {
     }
     
     func clickEvent(interaction: TouchInteraction) -> Event? {
-        guard case .touchDown = interaction.kind else { return nil }
+        // Resolve on touch-up: the SwiftUI `.ldClick(_:)` tap gesture fires on release, so the
+        // developer-supplied `ldId` is only available on the touch-up target (matching the `click`
+        // span, which is also emitted on touch-up).
+        guard case .touchUp = interaction.kind else { return nil }
         
         // Mirror the web `Click` payload (`highlight-run` ClickListener):
         // - clickTarget: element identifier (web: full CSS selector path; iOS analog: class name)
         // - clickTextContent: the element's visible text (web: `target.textContent`)
-        // - clickSelector: simple selector (web: `#id` else tag; iOS analog: a11y id else class name)
+        // - clickSelector: simple selector (web: `#id` else tag; iOS analog: ldId else a11y id else class name)
         let target = interaction.target
         let eventData = CustomEventData(tag: .click, payload: ClickPayload(
             clickTarget: target?.className ?? "",
             clickTextContent: target?.text ?? "",
-            clickSelector: target?.accessibilityIdentifier ?? target?.className ?? "view"))
+            clickSelector: target?.ldId ?? target?.accessibilityIdentifier ?? target?.className ?? "view"))
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: interaction.timestamp,
