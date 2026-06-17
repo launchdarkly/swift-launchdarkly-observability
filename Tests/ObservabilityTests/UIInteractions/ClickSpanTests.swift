@@ -106,16 +106,17 @@ struct ClickSpanTests {
             sessionId: "session-4"
         )
 
-        interaction.startEndSpan(tracer: tracer, screenId: "MyApp.MainTabViewController")
+        interaction.startEndSpan(tracer: tracer, screenId: "MyApp.MainTabViewController", screenName: "Home")
 
         #expect(processor.ended.count == 1)
         let span = processor.ended[0]
         #expect(span.attributes[SemanticConvention.eventScreenId] == .string("MyApp.MainTabViewController"))
+        #expect(span.attributes[SemanticConvention.eventScreenName] == .string("Home"))
         #expect(span.attributes[SemanticConvention.eventId] == .string("tab.search"))
         #expect(span.attributes[SemanticConvention.eventTag] == .string("UITabBarButton"))
     }
 
-    @Test("click span omits event.screen_id when no current screen is known")
+    @Test("click span omits event.screen_id and event.screen_name when no current screen is known")
     func clickSpanOmitsScreenId() {
         let (tracer, processor) = makeTracer()
         let interaction = TouchInteraction(
@@ -127,11 +128,12 @@ struct ClickSpanTests {
             sessionId: "session-5"
         )
 
-        interaction.startEndSpan(tracer: tracer, screenId: nil)
+        interaction.startEndSpan(tracer: tracer, screenId: nil, screenName: nil)
 
         #expect(processor.ended.count == 1)
         let span = processor.ended[0]
         #expect(span.attributes[SemanticConvention.eventScreenId] == nil)
+        #expect(span.attributes[SemanticConvention.eventScreenName] == nil)
     }
 
     @Test("click span prefers ldId over accessibilityIdentifier for event.id")

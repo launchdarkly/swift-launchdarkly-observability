@@ -19,6 +19,9 @@ struct ClickPayload: Codable {
     var clickTarget: String
     var clickTextContent: String
     var clickSelector: String
+    /// Human-readable name of the screen active when the click happened (`event.screen_name`
+    /// analog), sourced from the most recent `Navigate` event. Omitted when unknown.
+    var screenName: String?
 }
 
 /// Mirrors the web `Track` custom-event payload (`{ ...metadata, event }`) emitted by

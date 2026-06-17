@@ -173,6 +173,18 @@ public struct ObservabilityOptions {
         /// events. Defaults to `.enabled`.
         let screens: FeatureFlag
         
+        /// Every automatic instrumentation feature enabled.
+        public static var enabled: Self {
+            .init(urlSession: .enabled, userTaps: .enabled, memory: .enabled, memoryWarnings: .enabled, cpu: .enabled, launchTimes: .enabled, screens: .enabled)
+        }
+        
+        /// Every automatic instrumentation feature disabled. Note this also turns off user-tap
+        /// detection (so no `click` spans are emitted regardless of ``Analytics/taps``) and
+        /// automatic screen detection (so no `screen_view`/Session Replay `Navigate` events).
+        public static var disabled: Self {
+            .init(urlSession: .disabled, userTaps: .disabled, memory: .disabled, memoryWarnings: .disabled, cpu: .disabled, launchTimes: .disabled, screens: .disabled)
+        }
+        
         public init(
             urlSession: FeatureFlag = .disabled,
             userTaps: FeatureFlag = .enabled,

@@ -10,6 +10,7 @@ enum ClickAttributes {
         tag: String?,
         text: String?,
         screenId: String?,
+        screenName: String? = nil,
         x: Int?,
         y: Int?,
         contextKeyAttributes: [String: AttributeValue] = [:],
@@ -35,6 +36,9 @@ enum ClickAttributes {
         if let screenId {
             attributes[SemanticConvention.eventScreenId] = .string(screenId)
         }
+        if let screenName {
+            attributes[SemanticConvention.eventScreenName] = .string(screenName)
+        }
         if let x {
             attributes[SemanticConvention.eventX] = .int(x)
         }
@@ -46,9 +50,12 @@ enum ClickAttributes {
 }
 
 extension TouchInteraction {
-    /// - Parameter screenId: The current screen's stable id (`event.screen_id`), when known,
-    ///   so the tap correlates with the active `screen_view`. Omitted from the span when `nil`.
-    func startEndSpan(tracer: Tracer, screenId: String? = nil) {
+    /// - Parameters:
+    ///   - screenId: The current screen's stable id (`event.screen_id`), when known, so the tap
+    ///     correlates with the active `screen_view`. Omitted from the span when `nil`.
+    ///   - screenName: The current screen's human-readable name (`event.screen_name`), when known.
+    ///     Omitted from the span when `nil`.
+    func startEndSpan(tracer: Tracer, screenId: String? = nil, screenName: String? = nil) {
         guard case let .touchUp(point) = kind else { return }
 
         // Per analytics-taxonomy §4.1 `click`: one event for all element types,
@@ -65,6 +72,9 @@ extension TouchInteraction {
         }
         if let screenId {
             attributes[SemanticConvention.eventScreenId] = .string(screenId)
+        }
+        if let screenName {
+            attributes[SemanticConvention.eventScreenName] = .string(screenName)
         }
         attributes[SemanticConvention.eventX] = .int(Int(point.x))
         attributes[SemanticConvention.eventY] = .int(Int(point.y))

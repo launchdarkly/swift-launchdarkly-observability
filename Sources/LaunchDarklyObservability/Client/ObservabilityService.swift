@@ -211,7 +211,7 @@ final class ObservabilityService: InternalObserve {
             guard userTapsEnabled else { return }
             guard publishTaps else { return }
             // Correlate the tap with the active screen (taxonomy §4.1 `event.screen_id`).
-            interaction.startEndSpan(tracer: tracerDecorator, screenId: screenStack.currentId)
+            interaction.startEndSpan(tracer: tracerDecorator, screenId: screenStack.currentId, screenName: screenStack.current)
         }
         self.userInteractionManager = userInteractionManager
 
@@ -297,7 +297,13 @@ extension ObservabilityService {
             )
         }
         
-        userInteractionManager.start()
+        // The touch-capture hook (UIWindow.sendEvent swizzle + hit-testing) is invasive, so it is
+        // only installed when something needs it: tap detection here (gated by
+        // `instrumentation.userTaps`) or Session Replay, which starts the same shared manager
+        // itself. With both off, no swizzle or hit-testing is installed.
+        if options.instrumentation.userTaps.isEnabled {
+            userInteractionManager.start()
+        }
 
         if options.instrumentation.screens.isEnabled {
             screenViewManager?.start()
@@ -486,6 +492,7 @@ extension ObservabilityService: Observe {
             text: text,
             // Default to the current screen so the click correlates with the active `screen_view`.
             screenId: screenId ?? screenStack.currentId,
+            screenName: screenStack.current,
             x: x,
             y: y,
             contextKeyAttributes: cachedContextKeyAttributes,

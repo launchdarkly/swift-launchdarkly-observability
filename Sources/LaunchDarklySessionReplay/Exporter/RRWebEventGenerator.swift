@@ -53,6 +53,9 @@ actor RRWebEventGenerator {
     private var stats: SessionReplayStats?
     private let isDebug = false
     private var nodeIds: [ImageSignature: Int] = [:]
+    /// Name of the most recently navigated screen, stamped onto click events. The event queue is
+    /// ordered, so the `Navigate` for the active screen is always processed before its clicks.
+    private var currentScreenName: String?
     
     init(log: OSLog, title: String, method _: SessionReplayOptions.CompressionMethod) {
         if isDebug {
@@ -168,6 +171,7 @@ actor RRWebEventGenerator {
             }
             
         case let navigateItem as NavigateItemPayload:
+            currentScreenName = navigateItem.name
             events.append(navigateEvent(itemPayload: navigateItem))
             
         case let lifecycleItem as AppLifecycleItemPayload:
@@ -270,7 +274,8 @@ actor RRWebEventGenerator {
         let eventData = CustomEventData(tag: .click, payload: ClickPayload(
             clickTarget: target?.className ?? "",
             clickTextContent: target?.text ?? "",
-            clickSelector: target?.ldId ?? target?.accessibilityIdentifier ?? target?.className ?? "view"))
+            clickSelector: target?.ldId ?? target?.accessibilityIdentifier ?? target?.className ?? "view",
+            screenName: currentScreenName))
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: interaction.timestamp,

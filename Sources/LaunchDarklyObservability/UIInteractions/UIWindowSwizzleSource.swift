@@ -29,6 +29,7 @@ final class UIWindowSwizzleSource: UIEventSource, AnyObject {
         
         let swizzledIMP = imp_implementationWithBlock(unsafeBitCast(swizzledSendEventBlock, to: AnyObject.self))
         originalIMP = method_setImplementation(originalMethod, swizzledIMP)
+        isActive = true
     }
     
     func stop() {
@@ -42,6 +43,7 @@ final class UIWindowSwizzleSource: UIEventSource, AnyObject {
         let originalIMP else { return }
         
         _ = method_setImplementation(method, originalIMP)
+        isActive = false
     }
 }
 
