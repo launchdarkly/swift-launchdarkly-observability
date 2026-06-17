@@ -267,12 +267,14 @@ actor RRWebEventGenerator {
         // - clickTextContent: the element's visible text (web: `target.textContent`)
         // - clickSelector: simple selector (web: `#id` else tag; iOS analog: ldId else a11y id else class name)
         let target = interaction.target
-        // `screenName` is stamped onto the interaction at tap time from the live `ScreenStack`, the
-        // same source the OTel `click` span reads, so replay clicks never lag an export-time Navigate.
+        // `screenId`/`screenName` are stamped onto the interaction at tap time from the live
+        // `ScreenStack`, the same source the OTel `click` span and manual `trackClick` read, so replay
+        // clicks correlate to the same stable screen and never lag an export-time Navigate.
         let eventData = CustomEventData(tag: .click, payload: ClickPayload(
             clickTarget: target?.className ?? "",
             clickTextContent: target?.text ?? "",
             clickSelector: target?.ldId ?? target?.accessibilityIdentifier ?? target?.className ?? "view",
+            screenId: interaction.screenId,
             screenName: interaction.screenName))
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),

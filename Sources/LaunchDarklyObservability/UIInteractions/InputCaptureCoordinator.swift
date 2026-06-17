@@ -23,13 +23,20 @@ struct TouchSample: Sendable {
     let target: TouchTarget?
     /// Session id fixed at main-thread capture time (with location/target).
     let sessionId: String
+    /// Active screen (`event.screen_id`/`event.screen_name`) read on the main thread at capture
+    /// time. Fixed here - rather than later on the background interpreter/consumer - so a navigation
+    /// or `screen_view` recorded after the finger lifts can't misattribute the tap to a later screen.
+    let screenId: String?
+    let screenName: String?
 
-    init(touch: UITouch, window: UIWindow, target: TouchTarget?, sessionId: String) {
+    init(touch: UITouch, window: UIWindow, target: TouchTarget?, sessionId: String, screenId: String?, screenName: String?) {
         self.id = ObjectIdentifier(touch)
         self.location = touch.location(in: window)
         self.timestamp = touch.timestamp
         self.target = target
         self.sessionId = sessionId
+        self.screenId = screenId
+        self.screenName = screenName
         self.phase = switch touch.phase {
         case .began: .began
         case .moved: .moved
@@ -43,6 +50,9 @@ struct TouchSample: Sendable {
 
 public typealias TouchInteractionYield = @Sendable (TouchInteraction) -> Void
 public typealias PressInteractionYield = @Sendable (PressInteraction) -> Void
+/// Resolves the active screen (`event.screen_id` / `event.screen_name`) at the instant of a tap.
+/// Read on the main thread at capture time so it reflects the screen the tap actually landed on.
+public typealias ScreenInfoProvider = @Sendable () -> (screenId: String?, screenName: String?)
 
 final class InputCaptureCoordinator {
     private let source: UIEventSource
@@ -51,18 +61,21 @@ final class InputCaptureCoordinator {
     private let pressInterpreter: PressInterpreter
     private let receiverChecker: UIEventReceiverChecker
     private let sessionIdProvider: @Sendable () -> String
+    private let screenInfoProvider: ScreenInfoProvider
     var onTouch: TouchInteractionYield?
     var onPress: PressInteractionYield?
 
     init(targetResolver: TargetResolving = TargetResolver(),
          receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker(),
-         sessionIdProvider: @Sendable @escaping () -> String) {
+         sessionIdProvider: @Sendable @escaping () -> String,
+         screenInfoProvider: @escaping ScreenInfoProvider = { (nil, nil) }) {
         self.targetResolver = targetResolver
         self.touchInterpreter = TouchInterpreter()
         self.pressInterpreter = PressInterpreter()
         self.source = UIWindowSwizzleSource()
         self.receiverChecker = receiverChecker
         self.sessionIdProvider = sessionIdProvider
+        self.screenInfoProvider = screenInfoProvider
     }
     
     func start() {
@@ -136,6 +149,9 @@ final class InputCaptureCoordinator {
     ) {
         guard let touches = event.allTouches else { return }
         let sessionId = sessionIdProvider()
+        // Read the active screen here on the main thread (alongside session/target), so it reflects
+        // the screen at the moment of the touch rather than whenever the background consumer runs.
+        let screen = screenInfoProvider()
         for touch in touches {
             let target: TouchTarget?
             if touch.phase == .began || touch.phase == .ended {
@@ -148,7 +164,9 @@ final class InputCaptureCoordinator {
                 touch: touch,
                 window: window,
                 target: target,
-                sessionId: sessionId
+                sessionId: sessionId,
+                screenId: screen.screenId,
+                screenName: screen.screenName
             )
             continuation.yield(.touch(touchSample))
         }

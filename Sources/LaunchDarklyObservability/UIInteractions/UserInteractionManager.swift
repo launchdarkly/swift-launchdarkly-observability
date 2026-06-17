@@ -28,15 +28,14 @@ public final class UserInteractionManager {
         let targetResolver = TargetResolver()
         self.inputCaptureCoordinator = InputCaptureCoordinator(
             targetResolver: targetResolver,
-            sessionIdProvider: sessionManaging.sessionIdProvider
+            sessionIdProvider: sessionManaging.sessionIdProvider,
+            // Resolve the screen on the main thread at touch-capture time (inside the coordinator), so
+            // it can't drift to a later screen by the time the background interpreter runs `onTouch`.
+            screenInfoProvider: screenInfoProvider
         )
         self.inputCaptureCoordinator.onTouch = { [interactionEventSubject] interaction in
-            // Stamp the live screen once, here in the single funnel both consumers read, so the OTel
-            // `click` span and the Session Replay click event always agree on the screen.
-            var interaction = interaction
-            let screen = screenInfoProvider()
-            interaction.screenId = screen.screenId
-            interaction.screenName = screen.screenName
+            // `interaction` already carries the screen captured on the main thread, so both the OTel
+            // `click` span and the Session Replay click event read the same, correct screen.
             yield(interaction)
             interactionEventSubject.send(.touch(interaction))
         }

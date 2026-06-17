@@ -19,8 +19,14 @@ struct ClickPayload: Codable {
     var clickTarget: String
     var clickTextContent: String
     var clickSelector: String
+    /// Stable id of the screen active when the click happened (`event.screen_id` analog), stamped
+    /// onto the interaction at tap time from the shared `ScreenStack`. Matches the id carried by the
+    /// OpenTelemetry `click` span and manual `trackClick`, so replay clicks correlate to the same
+    /// screen. Omitted when unknown.
+    var screenId: String?
     /// Human-readable name of the screen active when the click happened (`event.screen_name`
-    /// analog), sourced from the most recent `Navigate` event. Omitted when unknown.
+    /// analog), stamped onto the interaction at tap time from the shared `ScreenStack`. Omitted when
+    /// unknown.
     var screenName: String?
 }
 

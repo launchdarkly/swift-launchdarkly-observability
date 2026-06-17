@@ -42,7 +42,9 @@ final class TouchInterpreter {
                                                    startTimestamp: touchSample.timestamp + uptimeDifference,
                                                    timestamp: touchSample.timestamp + uptimeDifference,
                                                    target: touchSample.target,
-                                                   sessionId: sessionId)
+                                                   sessionId: sessionId,
+                                                   screenId: touchSample.screenId,
+                                                   screenName: touchSample.screenName)
             yield(downInteraction)
 
         case .moved:
@@ -60,7 +62,9 @@ final class TouchInterpreter {
                                                        startTimestamp: track.start + uptimeDifference,
                                                        timestamp: touchSample.timestamp + uptimeDifference,
                                                        target: touchSample.target,
-                                                       sessionId: sessionId)
+                                                       sessionId: sessionId,
+                                                       screenId: touchSample.screenId,
+                                                       screenName: touchSample.screenName)
                 track.points.removeAll()
                 track.start = lastPoint.timestamp - uptimeDifference
                 track.startPoint = touchSample.location
@@ -94,7 +98,9 @@ final class TouchInterpreter {
                                                  startTimestamp: startTimestamp + uptimeDifference,
                                                  timestamp: touchSample.timestamp + uptimeDifference,
                                                  target: touchSample.target,
-                                                 sessionId: sessionId)
+                                                 sessionId: sessionId,
+                                                 screenId: touchSample.screenId,
+                                                 screenName: touchSample.screenName)
             yield(upInteraction)
 
             // touchPath
@@ -105,7 +111,9 @@ final class TouchInterpreter {
                                                 startTimestamp: startTimestamp + uptimeDifference,
                                                 timestamp: touchSample.timestamp + uptimeDifference,
                                                 target: touchSample.target,
-                                                sessionId: sessionId)
+                                                sessionId: sessionId,
+                                                screenId: touchSample.screenId,
+                                                screenName: touchSample.screenName)
             yield(moveInteraction)
         case .unknown:
             () //NOOP
@@ -120,7 +128,9 @@ final class TouchInterpreter {
                                                startTimestamp: startTimestamp + uptimeDifference,
                                                timestamp: touchSample.timestamp + uptimeDifference,
                                                target: touchSample.target,
-                                               sessionId: touchSample.sessionId)
+                                               sessionId: touchSample.sessionId,
+                                               screenId: touchSample.screenId,
+                                               screenName: touchSample.screenName)
         if let lastPoint = track.points.last {
             track.points.removeAll()
             track.start = lastPoint.timestamp - uptimeDifference

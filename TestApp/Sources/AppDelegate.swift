@@ -15,36 +15,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         }
         let otlpEndpoint = secrets["otlpEndpoint"] as? String
         let backendUrl = secrets["backendUrl"] as? String
-//        let config = { () -> LDConfig in
-//            var config = LDConfig(
-//                    mobileKey: mobileKey,
-//                    autoEnvAttributes: .enabled
-//                )
-//            config.plugins = [
-//                Observability(options: .init(
-//                    isEnabled: true,
-//                    serviceName: "observability-ios-test-app",
-//                    otlpEndpoint: otlpEndpoint,
-//                    backendUrl: backendUrl,
-//                    resourceAttributes: ["test-options-attribute": .string("ios-test-app")],
-//                    sessionBackgroundTimeout: 3,
-//                    crashReporting: .enabled
-//                   )),
-//                SessionReplay(options: .init(
-//                    isEnabled: true,
-//                    privacy: .init(
-//                        maskTextInputs: true,
-//                        maskWebViews: true,
-//                        maskLabels: false,
-//                        maskImages: false,
-//                        maskAccessibilityIdentifiers: ["email-field", "password-field", "card-brand-chip", "10"],
-//                    )
-//                ))
-//            ]
-//            
-//            return config
-//        }()
-//        
         let config = { () -> LDConfig in
             var config = LDConfig(
                     mobileKey: mobileKey,
@@ -54,11 +24,41 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                 Observability(options: .init(
                     isEnabled: true,
                     serviceName: "observability-ios-test-app",
-                    instrumentation: .disabled,
+                    otlpEndpoint: otlpEndpoint,
+                    backendUrl: backendUrl,
+                    resourceAttributes: ["test-options-attribute": .string("ios-test-app")],
+                    sessionBackgroundTimeout: 3,
+                    crashReporting: .enabled
                    )),
+                SessionReplay(options: .init(
+                    isEnabled: true,
+                    privacy: .init(
+                        maskTextInputs: true,
+                        maskWebViews: true,
+                        maskLabels: false,
+                        maskImages: false,
+                        maskAccessibilityIdentifiers: ["email-field", "password-field", "card-brand-chip", "10"],
+                    )
+                ))
             ]
+            
             return config
         }()
+//        
+//        let config = { () -> LDConfig in
+//            var config = LDConfig(
+//                    mobileKey: mobileKey,
+//                    autoEnvAttributes: .enabled
+//                )
+//            config.plugins = [
+//                Observability(options: .init(
+//                    isEnabled: true,
+//                    serviceName: "observability-ios-test-app",
+//                    instrumentation: .disabled,
+//                   )),
+//            ]
+//            return config
+//        }()
         
         let context = { () -> LDContext in
             var contextBuilder = LDContextBuilder(
