@@ -77,4 +77,38 @@ struct ScreenStackTests {
         #expect(stack.current == nil)
         #expect(stack.record("Profile") == nil)
     }
+
+    @Test("currentId reflects the most recent screen id")
+    func currentIdTracksTop() {
+        let stack = ScreenStack()
+        _ = stack.record("Home", id: "home")
+        #expect(stack.currentId == "home")
+        _ = stack.record("Detail", id: "item-1")
+        #expect(stack.currentId == "item-1")
+    }
+
+    @Test("currentId is nil when the current screen has no id")
+    func currentIdNilWithoutId() {
+        let stack = ScreenStack()
+        _ = stack.record("Home")
+        #expect(stack.currentId == nil)
+    }
+
+    @Test("currentId follows pop-back to the earlier screen's id")
+    func currentIdAfterPopBack() {
+        let stack = ScreenStack()
+        _ = stack.record("Home", id: "home")
+        _ = stack.record("Detail", id: "item-1")
+        _ = stack.record("More", id: "more")
+        _ = stack.record("Home", id: "home")
+        #expect(stack.currentId == "home")
+    }
+
+    @Test("currentId is nil after reset")
+    func currentIdNilAfterReset() {
+        let stack = ScreenStack()
+        _ = stack.record("Home", id: "home")
+        stack.reset()
+        #expect(stack.currentId == nil)
+    }
 }

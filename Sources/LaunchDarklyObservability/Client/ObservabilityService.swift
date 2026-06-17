@@ -39,7 +39,7 @@ final class ObservabilityService: InternalObserve {
     private var instruments = [AutoInstrumentation]()
     
     private let userInteractionManager: UserInteractionManager
-    private let screenStack = ScreenStack()
+    private let screenStack: ScreenStack
     private var screenViewManager: ScreenViewManager?
     /// Broadcasts each recorded screen view so Session Replay can emit `Navigate` events.
     private let screenViewSubject = PassthroughSubject<ScreenViewEvent, Never>()
@@ -203,10 +203,15 @@ final class ObservabilityService: InternalObserve {
         // `click` span. Capture still flows to Session Replay regardless of either flag.
         let userTapsEnabled = options.instrumentation.userTaps.isEnabled
         let publishTaps = options.analytics.taps.isEnabled
+        // Created as a local so the tap closure can read the current screen id without
+        // capturing `self` (which isn't fully initialized yet at this point in `init`).
+        let screenStack = ScreenStack()
+        self.screenStack = screenStack
         let userInteractionManager = UserInteractionManager(options: options, sessionManaging: sessionManager) { interaction in
             guard userTapsEnabled else { return }
             guard publishTaps else { return }
-            interaction.startEndSpan(tracer: tracerDecorator)
+            // Correlate the tap with the active screen (taxonomy §4.1 `event.screen_id`).
+            interaction.startEndSpan(tracer: tracerDecorator, screenId: screenStack.currentId)
         }
         self.userInteractionManager = userInteractionManager
 
@@ -463,6 +468,37 @@ extension ObservabilityService: Observe {
                 attributes: properties?.toOtelAttributes() ?? [:]
             )
         )
+    }
+
+    /// Manually emit a `click` span, mirroring the automatic tap instrumentation. Use this
+    /// to reproduce the taxonomy `click` event for interactions automatic capture can't observe.
+    ///
+    /// Gated by `analytics.taps` (the same flag as automatic click spans). When `screenId` is
+    /// `nil`, the current tracked screen id is used so the click correlates with the active
+    /// `screen_view`. Reserved `event.*` fields take precedence over caller `properties`,
+    /// matching the `screen_view`/`track` precedence model.
+    func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?) {
+        guard options.analytics.taps.isEnabled else { return }
+
+        let spanAttributes = ClickAttributes.build(
+            id: id,
+            tag: tag,
+            text: text,
+            // Default to the current screen so the click correlates with the active `screen_view`.
+            screenId: screenId ?? screenStack.currentId,
+            x: x,
+            y: y,
+            contextKeyAttributes: cachedContextKeyAttributes,
+            properties: properties?.toOtelAttributes() ?? [:]
+        )
+
+        // Mirror the automatic tap span: a CLIENT-kind `click` span built via the decorator.
+        let builder = tracerDecorator.spanBuilder(spanName: SemanticConvention.clickSpanName)
+        builder.setSpanKind(spanKind: .client)
+        for (key, value) in spanAttributes {
+            builder.setAttribute(key: key, value: value)
+        }
+        builder.startSpan().end()
     }
 }
 

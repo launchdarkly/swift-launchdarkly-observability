@@ -30,16 +30,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     sessionBackgroundTimeout: 3,
                     crashReporting: .enabled
                    )),
-                SessionReplay(options: .init(
-                    isEnabled: true,
-                    privacy: .init(
-                        maskTextInputs: true,
-                        maskWebViews: true,
-                        maskLabels: false,
-                        maskImages: false,
-                        maskAccessibilityIdentifiers: ["email-field", "password-field", "card-brand-chip", "10"],
-                    )
-                ))
+//                SessionReplay(options: .init(
+//                    isEnabled: true,
+//                    privacy: .init(
+//                        maskTextInputs: true,
+//                        maskWebViews: true,
+//                        maskLabels: false,
+//                        maskImages: false,
+//                        maskAccessibilityIdentifiers: ["email-field", "password-field", "card-brand-chip", "10"],
+//                    )
+//                ))
             ]
             
             return config

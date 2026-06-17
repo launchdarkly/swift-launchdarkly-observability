@@ -22,6 +22,9 @@ final class ScreenStack {
         let key: String
         /// Human-readable name reported as `previous_screen`.
         let name: String
+        /// Caller-supplied stable screen id (`event.screen_id`), if any. `nil` when the
+        /// screen was recorded without an explicit id (identity then falls back to `name`).
+        let id: String?
     }
 
     private let queue = DispatchQueue(label: "com.launchdarkly.observability.screenStack")
@@ -46,7 +49,7 @@ final class ScreenStack {
             if let existingIndex = stack.lastIndex(where: { $0.key == key }) {
                 stack.removeSubrange((existingIndex + 1)..<stack.count)
             } else {
-                stack.append(Entry(key: key, name: name))
+                stack.append(Entry(key: key, name: name, id: id))
             }
 
             return previous
@@ -56,6 +59,13 @@ final class ScreenStack {
     /// The most recently viewed screen name, if any.
     var current: String? {
         queue.sync { stack.last?.name }
+    }
+
+    /// The stable id (`event.screen_id`) of the most recently viewed screen, if it had one.
+    /// Used to attach `event.screen_id` to `click` spans so taps correlate with the current
+    /// `screen_view`. Returns `nil` when the current screen was recorded without an id.
+    var currentId: String? {
+        queue.sync { stack.last?.id }
     }
 
     /// Test/diagnostic snapshot of the current stack (screen names).

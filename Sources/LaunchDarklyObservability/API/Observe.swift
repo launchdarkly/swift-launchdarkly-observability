@@ -36,6 +36,23 @@ public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveConte
     ///     attached at lower precedence than the reserved `event.*` fields, so
     ///     they can never clobber the taxonomy.
     func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?)
+    /// Manually record a `click` event as a `click` span.
+    ///
+    /// Use this to reproduce the taxonomy `click` event for interactions that automatic
+    /// tap capture cannot observe. Emitted through the same `analytics.taps` gate as
+    /// automatic click spans.
+    /// - Parameters:
+    ///   - id: Stable element identifier (`event.id`).
+    ///   - tag: Element tag/class (`event.tag`), e.g. `UIButton`.
+    ///   - text: Visible label/text of the element (`event.text`).
+    ///   - screenId: Stable screen id (`event.screen_id`). When `nil`, the current tracked
+    ///     screen id is used so the click correlates with the active `screen_view`.
+    ///   - x: Tap x coordinate in screen pixels (`event.x`).
+    ///   - y: Tap y coordinate in screen pixels (`event.y`).
+    ///   - properties: Optional custom attributes (same conversion rules as a `track`
+    ///     event's `properties`). Attached at lower precedence than the reserved `event.*`
+    ///     fields, so they can never clobber the taxonomy.
+    func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?)
 }
 
 extension Observe {
@@ -56,6 +73,12 @@ extension Observe {
     /// Convenience overload without `properties`, preserving the prior call shape.
     public func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?) {
         trackScreenView(name: name, screenClass: screenClass, screenId: screenId, category: category, properties: nil)
+    }
+
+    /// Convenience: record a `click` with the common element fields. The current screen id
+    /// is used unless `screenId` is supplied.
+    public func trackClick(id: String?, tag: String? = nil, text: String? = nil, screenId: String? = nil) {
+        trackClick(id: id, tag: tag, text: text, screenId: screenId, x: nil, y: nil, properties: nil)
     }
 }
 
