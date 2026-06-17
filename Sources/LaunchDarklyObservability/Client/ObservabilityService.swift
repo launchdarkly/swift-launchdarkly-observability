@@ -207,11 +207,17 @@ final class ObservabilityService: InternalObserve {
         // capturing `self` (which isn't fully initialized yet at this point in `init`).
         let screenStack = ScreenStack()
         self.screenStack = screenStack
-        let userInteractionManager = UserInteractionManager(options: options, sessionManaging: sessionManager) { interaction in
+        let userInteractionManager = UserInteractionManager(
+            options: options,
+            sessionManaging: sessionManager,
+            // The active screen is read once at tap time and stamped onto the interaction, so the
+            // OTel span here and the Session Replay click event report the identical screen.
+            screenInfoProvider: { (screenStack.currentId, screenStack.current) }
+        ) { interaction in
             guard userTapsEnabled else { return }
             guard publishTaps else { return }
             // Correlate the tap with the active screen (taxonomy §4.1 `event.screen_id`).
-            interaction.startEndSpan(tracer: tracerDecorator, screenId: screenStack.currentId, screenName: screenStack.current)
+            interaction.startEndSpan(tracer: tracerDecorator, screenId: interaction.screenId, screenName: interaction.screenName)
         }
         self.userInteractionManager = userInteractionManager
 

@@ -16,13 +16,27 @@ public final class UserInteractionManager {
         interactionEventSubject.eraseToAnyPublisher()
     }
     
-    init(options: ObservabilityOptions, sessionManaging: SessionManaging, yield: @escaping TouchInteractionYield) {
+    /// Resolves the active screen (`event.screen_id` / `event.screen_name`) at the instant of a tap.
+    public typealias ScreenInfoProvider = @Sendable () -> (screenId: String?, screenName: String?)
+
+    init(
+        options: ObservabilityOptions,
+        sessionManaging: SessionManaging,
+        screenInfoProvider: @escaping ScreenInfoProvider = { (nil, nil) },
+        yield: @escaping TouchInteractionYield
+    ) {
         let targetResolver = TargetResolver()
         self.inputCaptureCoordinator = InputCaptureCoordinator(
             targetResolver: targetResolver,
             sessionIdProvider: sessionManaging.sessionIdProvider
         )
         self.inputCaptureCoordinator.onTouch = { [interactionEventSubject] interaction in
+            // Stamp the live screen once, here in the single funnel both consumers read, so the OTel
+            // `click` span and the Session Replay click event always agree on the screen.
+            var interaction = interaction
+            let screen = screenInfoProvider()
+            interaction.screenId = screen.screenId
+            interaction.screenName = screen.screenName
             yield(interaction)
             interactionEventSubject.send(.touch(interaction))
         }

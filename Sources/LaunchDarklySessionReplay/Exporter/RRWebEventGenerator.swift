@@ -53,9 +53,6 @@ actor RRWebEventGenerator {
     private var stats: SessionReplayStats?
     private let isDebug = false
     private var nodeIds: [ImageSignature: Int] = [:]
-    /// Name of the most recently navigated screen, stamped onto click events. The event queue is
-    /// ordered, so the `Navigate` for the active screen is always processed before its clicks.
-    private var currentScreenName: String?
     
     init(log: OSLog, title: String, method _: SessionReplayOptions.CompressionMethod) {
         if isDebug {
@@ -171,7 +168,6 @@ actor RRWebEventGenerator {
             }
             
         case let navigateItem as NavigateItemPayload:
-            currentScreenName = navigateItem.name
             events.append(navigateEvent(itemPayload: navigateItem))
             
         case let lifecycleItem as AppLifecycleItemPayload:
@@ -271,11 +267,13 @@ actor RRWebEventGenerator {
         // - clickTextContent: the element's visible text (web: `target.textContent`)
         // - clickSelector: simple selector (web: `#id` else tag; iOS analog: ldId else a11y id else class name)
         let target = interaction.target
+        // `screenName` is stamped onto the interaction at tap time from the live `ScreenStack`, the
+        // same source the OTel `click` span reads, so replay clicks never lag an export-time Navigate.
         let eventData = CustomEventData(tag: .click, payload: ClickPayload(
             clickTarget: target?.className ?? "",
             clickTextContent: target?.text ?? "",
             clickSelector: target?.ldId ?? target?.accessibilityIdentifier ?? target?.className ?? "view",
-            screenName: currentScreenName))
+            screenName: interaction.screenName))
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
                           timestamp: interaction.timestamp,
