@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.45.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.44.0...0.45.0) (2026-06-18)
+
+
+### Features
+
+* richer click analytics (event.id/screen_id/screen_name, ldClick) + instrumentation gating ([#229](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/229)) ([ed5717d](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/ed5717d536404db387cd78d8db3f15e2afe11b9b))
+
 ## [0.44.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.43.0...0.44.0) (2026-06-15)
 
 
