@@ -11,7 +11,7 @@ final class UIWindowSwizzleSource: UIEventSource, AnyObject {
     init() {
     }
     
-    func start(yield: @escaping (UIEvent, UIWindow) -> Void) {
+    func start(handler: @escaping (UIEvent, UIWindow, () -> Void) -> Void) {
         guard !isActive else { return }
         
         guard let originalMethod = class_getInstanceMethod(UIWindow.self, UIWindowSwizzleSource.sendEvenSelector) else { return }
@@ -19,12 +19,15 @@ final class UIWindowSwizzleSource: UIEventSource, AnyObject {
         let swizzledSendEventBlock: @convention(block) (UIWindow, UIEvent) -> Void = { [weak self] window, event in
             guard let self else { return }
             
-            if let originalIMP = self.originalIMP {
+            // Forward to the app's original `sendEvent`. Handed to the handler as a thunk so the
+            // handler decides when the app processes the event relative to its own capture work.
+            let dispatchOriginal: () -> Void = { [weak self] in
+                guard let self, let originalIMP = self.originalIMP else { return }
                 let castedIMP = unsafeBitCast(originalIMP, to: SendEventRef.self)
                 castedIMP(window, UIWindowSwizzleSource.sendEvenSelector, event)
             }
             
-            yield(event, window)
+            handler(event, window, dispatchOriginal)
         }
         
         let swizzledIMP = imp_implementationWithBlock(unsafeBitCast(swizzledSendEventBlock, to: AnyObject.self))

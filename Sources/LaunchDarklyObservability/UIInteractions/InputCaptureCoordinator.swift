@@ -80,22 +80,34 @@ final class InputCaptureCoordinator {
     
     func start() {
         let captureStream = AsyncStream<InteractionCaptureItem> { continuation in
-            source.start { [weak self] event, window in
+            source.start { [weak self] event, window, dispatchOriginal in
                 // Main thread part of work
-                guard let self else { return }
+                guard let self else { dispatchOriginal(); return }
                 
                 let trackWindow = receiverChecker.shouldTrack(window)
                 
                 switch event.type {
                 case .touches:
                     if trackWindow {
-                        processTouches(event: event, window: window, continuation: continuation)
+                        // Sample the active screen BEFORE the app handles the event. A tap handler
+                        // that navigates synchronously (e.g. list row -> detail) updates the screen
+                        // stack during `dispatchOriginal()`; sampling first keeps the tap attributed
+                        // to the screen it actually landed on rather than the destination. Target /
+                        // `ldId` resolution still happens after dispatch (inside `processTouches`),
+                        // because the SwiftUI `.ldClick` gesture only registers its id while the app
+                        // processes the event.
+                        let screen = screenInfoProvider()
+                        dispatchOriginal()
+                        processTouches(event: event, window: window, screen: screen, continuation: continuation)
                     } else {
+                        dispatchOriginal()
                         processTouchesAsPress(event: event, window: window, continuation: continuation)
                     }
                 case .presses:
+                    dispatchOriginal()
                     processPresses(event: event, window: window, continuation: continuation)
                 default:
+                    dispatchOriginal()
                     // `UIPhysicalKeyboardEvent` and other `UIPressesEvent` subclasses can use a `type`
                     // not exposed on `UIEvent.EventType` yet, so they fall through here instead of `.presses`.
                     if event is UIPressesEvent {
@@ -145,13 +157,14 @@ final class InputCaptureCoordinator {
     private func processTouches(
         event: UIEvent,
         window: UIWindow,
+        screen: (screenId: String?, screenName: String?),
         continuation: AsyncStream<InteractionCaptureItem>.Continuation
     ) {
         guard let touches = event.allTouches else { return }
         let sessionId = sessionIdProvider()
-        // Read the active screen here on the main thread (alongside session/target), so it reflects
-        // the screen at the moment of the touch rather than whenever the background consumer runs.
-        let screen = screenInfoProvider()
+        // `screen` was sampled on the main thread BEFORE the app handled the event (see `start`), so
+        // it reflects the screen the touch landed on even if a tap handler navigated synchronously
+        // during dispatch.
         for touch in touches {
             let target: TouchTarget?
             if touch.phase == .began || touch.phase == .ended {
