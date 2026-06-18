@@ -69,6 +69,32 @@ struct ScreenStackTests {
         #expect(stack.snapshot == ["Detail"])
     }
 
+    @Test("Re-recording the top with the same id refreshes its display name")
+    func reappearanceRefreshesName() {
+        let stack = ScreenStack()
+        _ = stack.record("Home", id: "home")
+        _ = stack.record("Detail", id: "item-1")
+        // Same id re-appears with an updated display name; history stays stable but
+        // `current` must reflect the latest name, not the stale one.
+        #expect(stack.record("Detail Updated", id: "item-1") == "Home")
+        #expect(stack.current == "Detail Updated")
+        #expect(stack.currentId == "item-1")
+        #expect(stack.snapshot == ["Home", "Detail Updated"])
+    }
+
+    @Test("Pop-back refreshes the matched screen's display name")
+    func popBackRefreshesName() {
+        let stack = ScreenStack()
+        _ = stack.record("Home", id: "home")
+        _ = stack.record("Detail", id: "item-1")
+        _ = stack.record("More", id: "more")
+        // Pop back to `home` with an updated display name.
+        #expect(stack.record("Home Updated", id: "home") == "More")
+        #expect(stack.current == "Home Updated")
+        #expect(stack.currentId == "home")
+        #expect(stack.snapshot == ["Home Updated"])
+    }
+
     @Test("Reset clears history")
     func reset() {
         let stack = ScreenStack()
@@ -76,5 +102,39 @@ struct ScreenStackTests {
         stack.reset()
         #expect(stack.current == nil)
         #expect(stack.record("Profile") == nil)
+    }
+
+    @Test("currentId reflects the most recent screen id")
+    func currentIdTracksTop() {
+        let stack = ScreenStack()
+        _ = stack.record("Home", id: "home")
+        #expect(stack.currentId == "home")
+        _ = stack.record("Detail", id: "item-1")
+        #expect(stack.currentId == "item-1")
+    }
+
+    @Test("currentId is nil when the current screen has no id")
+    func currentIdNilWithoutId() {
+        let stack = ScreenStack()
+        _ = stack.record("Home")
+        #expect(stack.currentId == nil)
+    }
+
+    @Test("currentId follows pop-back to the earlier screen's id")
+    func currentIdAfterPopBack() {
+        let stack = ScreenStack()
+        _ = stack.record("Home", id: "home")
+        _ = stack.record("Detail", id: "item-1")
+        _ = stack.record("More", id: "more")
+        _ = stack.record("Home", id: "home")
+        #expect(stack.currentId == "home")
+    }
+
+    @Test("currentId is nil after reset")
+    func currentIdNilAfterReset() {
+        let stack = ScreenStack()
+        _ = stack.record("Home", id: "home")
+        stack.reset()
+        #expect(stack.currentId == nil)
     }
 }

@@ -27,6 +27,15 @@ public struct TouchInteraction: Sendable {
     public let timestamp: TimeInterval
     public let target: TouchTarget?
     public let sessionId: String
+    /// Stable id (`event.screen_id`) of the active screen at the moment of the tap, read from the live
+    /// `ScreenStack` on the main thread when the touch is captured (not later on the background
+    /// interpreter/consumer). Travels with the interaction so both the OpenTelemetry `click` span and
+    /// the Session Replay click event report the same screen, and so a navigation after the finger
+    /// lifts can't misattribute the tap to a later screen.
+    public var screenId: String? = nil
+    /// Human-readable name (`event.screen_name`) of the active screen at the moment of the tap. See
+    /// ``screenId``.
+    public var screenName: String? = nil
 }
 
 public enum SwipeDirection: Sendable {

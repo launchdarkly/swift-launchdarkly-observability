@@ -31,6 +31,7 @@ public enum SemanticConvention {
     public static let startDurationMs = "start.duration_ms"
     public static let eventScreenClass = "event.screen_class"
     public static let eventScreenId = "event.screen_id"
+    public static let eventScreenName = "event.screen_name"
     public static let eventPreviousScreen = "event.previous_screen"
     public static let eventCategory = "event.category"
     public static let eventType = "event.type"

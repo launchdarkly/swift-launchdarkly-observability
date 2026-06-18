@@ -239,6 +239,11 @@ final class SessionReplayService: SessionReplayServicing {
     
     @MainActor
     private func internalStart() {
+        // Session Replay needs the touch stream regardless of `instrumentation.userTaps`. The
+        // capture hook is shared with Observability and idempotent, so start it here too: if tap
+        // detection already started it this is a no-op, otherwise SR installs it on its own.
+        userInteractionManager.start()
+
         userInteractionManager.interactionEvents
             .sink { [transportService] event in
                 Task {

@@ -159,13 +159,13 @@ public struct ObservabilityOptions {
         let memory: FeatureFlag
         let memoryWarnings: FeatureFlag
         let cpu: FeatureFlag
-        /// Whether to emit legacy launch-time performance metrics. This currently only has an
-        /// effect on Android (TTID/TTFD histograms); on iOS the legacy per-scene launch-time
-        /// metric was refactored into the `app_launch` span, so this flag is presently inert on
-        /// iOS and is retained for cross-platform parity (it is propagated as a single option from
-        /// the Flutter SDK) and possible future use. The `app.start` span event on `app_launch`
-        /// (cold/warm via `start.type`, with `start.duration_ms`) is always attached when
-        /// ``Analytics/appLaunch`` is enabled and is never gated by this flag. Defaults to `.disabled`.
+        /// Whether to emit launch-time performance telemetry. On Android this also gates the legacy
+        /// TTID/TTFD histograms. On both platforms it gates the `app.start` span event on `app_launch`
+        /// (cold/warm via `start.type`, with `start.duration_ms`): when this flag is disabled the
+        /// `app.start` event is omitted and the `app_launch` span is anchored at the launch-detection
+        /// time (rather than back-dated to process start) so it carries no startup duration. The
+        /// `app_launch` span itself (with `event.launch_type` and version fields) is still emitted when
+        /// ``Analytics/appLaunch`` is enabled. Defaults to `.disabled`.
         let launchTimes: FeatureFlag
         /// Whether to automatically detect screen changes by swizzling
         /// `UIViewController`. This drives both the `screen_view` span (gated
@@ -173,13 +173,25 @@ public struct ObservabilityOptions {
         /// events. Defaults to `.enabled`.
         let screens: FeatureFlag
         
+        /// Every automatic instrumentation feature enabled.
+        public static var enabled: Self {
+            .init(urlSession: .enabled, userTaps: .enabled, memory: .enabled, memoryWarnings: .enabled, cpu: .enabled, launchTimes: .enabled, screens: .enabled)
+        }
+        
+        /// Every automatic instrumentation feature disabled. Note this also turns off user-tap
+        /// detection (so no `click` spans are emitted regardless of ``Analytics/taps``) and
+        /// automatic screen detection (so no `screen_view`/Session Replay `Navigate` events).
+        public static var disabled: Self {
+            .init(urlSession: .disabled, userTaps: .disabled, memory: .disabled, memoryWarnings: .disabled, cpu: .disabled, launchTimes: .disabled, screens: .disabled)
+        }
+        
         public init(
             urlSession: FeatureFlag = .disabled,
             userTaps: FeatureFlag = .enabled,
             memory: FeatureFlag = .disabled,
             memoryWarnings: FeatureFlag = .disabled,
             cpu: FeatureFlag = .disabled,
-            launchTimes: FeatureFlag = .disabled,
+            launchTimes: FeatureFlag = .enabled,
             screens: FeatureFlag = .enabled
         ) {
             self.urlSession = urlSession
@@ -216,8 +228,10 @@ public struct ObservabilityOptions {
         /// analytics taxonomy app-lifecycle events.
         let appLifecycle: FeatureFlag
         /// Whether to emit an `app_launch` span (with `event.launch_type` and version
-        /// fields, plus an `app.start` span event for the cold/warm startup dimension)
-        /// once per process launch. Maps to the analytics taxonomy `app_launch` event.
+        /// fields) once per process launch. Maps to the analytics taxonomy `app_launch`
+        /// event. The cold/warm startup dimension (`app.start` span event with
+        /// `start.type`/`start.duration_ms`) is attached only when
+        /// ``Instrumentation/launchTimes`` is also enabled.
         let appLaunch: FeatureFlag
         
         public static var enabled: Self {

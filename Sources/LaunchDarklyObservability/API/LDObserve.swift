@@ -75,4 +75,8 @@ extension LDObserve: Observe {
     public func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {
         client.trackScreenView(name: name, screenClass: screenClass, screenId: screenId, category: category, properties: properties)
     }
+
+    public func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?) {
+        client.trackClick(id: id, tag: tag, text: text, screenId: screenId, x: x, y: y, properties: properties)
+    }
 }

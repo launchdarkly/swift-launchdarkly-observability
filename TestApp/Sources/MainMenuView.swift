@@ -133,6 +133,7 @@ struct MainMenuView: View {
                 Button("Drawing") {
                     activeSheet = .notebook
                 }
+                .accessibilityIdentifier("a-drawing")
                 .buttonStyle(.borderedProminent)
 #endif
 
@@ -179,6 +180,7 @@ struct MainMenuView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Colors.identifyBgColor)
+                .ldClick("identify.user")
 
                 Button {
                     viewModel.identifyMulti()
@@ -187,6 +189,7 @@ struct MainMenuView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Colors.identifyBgColor)
+                .ldClick("identify.multi")
 
                 Button {
                     viewModel.identifyAnonymous()
@@ -195,6 +198,7 @@ struct MainMenuView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Colors.identifyBgColor)
+                .ldClick("identify.anonymous")
             }
 
             Text("Instrumentation")
@@ -216,6 +220,7 @@ struct MainMenuView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(viewModel.isNetworkInProgress)
+                .ldClick("instrumentation.network_request")
 
                 Button {
                     viewModel.crash()
@@ -224,6 +229,7 @@ struct MainMenuView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
+                .ldClick("instrumentation.crash")
             }
 
 #if os(iOS)
@@ -238,16 +244,21 @@ struct MainMenuView: View {
             HStack {
                 Button("Metric") { viewModel.recordMetric() }
                     .buttonStyle(.borderedProminent)
+                    .ldClick("metric.gauge")
                 Button("Histogram") { viewModel.recordHistogramMetric() }
                     .buttonStyle(.borderedProminent)
+                    .ldClick("metric.histogram")
                 Button("Count") { viewModel.recordCounterMetric() }
                     .buttonStyle(.borderedProminent)
+                    .ldClick("metric.count")
             }
             HStack {
                 Button("Incremental") { viewModel.recordIncrementalMetric() }
                     .buttonStyle(.borderedProminent)
+                    .ldClick("metric.incremental")
                 Button("UpDownCounter") { viewModel.recordUpDownCounterMetric() }
                     .buttonStyle(.borderedProminent)
+                    .ldClick("metric.up_down_counter")
             }
 
             Text("Track")
@@ -256,14 +267,18 @@ struct MainMenuView: View {
             HStack {
                 Button("Track (LDClient)") { viewModel.trackViaLDClient() }
                     .buttonStyle(.borderedProminent)
+                    .ldClick("track.ld_client")
                 Button("Track (LDObserve)") { viewModel.trackViaLDObserve() }
                     .buttonStyle(.borderedProminent)
+                    .ldClick("track.ld_observe")
             }
             HStack {
                 Button("Track Screen View") { viewModel.trackScreenView() }
                     .buttonStyle(.borderedProminent)
+                    .ldClick("track.screen_view")
                 Button("Track (Nested)") { viewModel.trackNested() }
                     .buttonStyle(.borderedProminent)
+                    .ldClick("track.nested")
             }
 
             Text("Error")
@@ -276,6 +291,7 @@ struct MainMenuView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(.red)
+            .ldClick("error.trigger")
 
             Text("Logs")
                 .fontWeight(.bold)
@@ -287,6 +303,7 @@ struct MainMenuView: View {
                     Text("Log")
                 }
                 .buttonStyle(.borderedProminent)
+                .ldClick("logs.log")
 
                 Button {
                     viewModel.recordLogWithContext()
@@ -294,6 +311,7 @@ struct MainMenuView: View {
                     Text("Log with Context")
                 }
                 .buttonStyle(.borderedProminent)
+                .ldClick("logs.log_with_context")
             }
 
             Text("Traces")
@@ -306,6 +324,7 @@ struct MainMenuView: View {
                     Text("Span & Flag Eval")
                 }
                 .buttonStyle(.borderedProminent)
+                .ldClick("traces.span_and_flag_eval")
 
                 Button {
                     viewModel.triggerNestedSpans()
@@ -313,6 +332,7 @@ struct MainMenuView: View {
                     Text("Nested Spans")
                 }
                 .buttonStyle(.borderedProminent)
+                .ldClick("traces.nested_spans")
             }
         }
     }

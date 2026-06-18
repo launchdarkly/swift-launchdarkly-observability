@@ -44,6 +44,22 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             
             return config
         }()
+//        
+//        let config = { () -> LDConfig in
+//            var config = LDConfig(
+//                    mobileKey: mobileKey,
+//                    autoEnvAttributes: .enabled
+//                )
+//            config.plugins = [
+//                Observability(options: .init(
+//                    isEnabled: true,
+//                    serviceName: "observability-ios-test-app",
+//                    instrumentation: .disabled,
+//                   )),
+//            ]
+//            return config
+//        }()
+        
         let context = { () -> LDContext in
             var contextBuilder = LDContextBuilder(
                 key: "12345"

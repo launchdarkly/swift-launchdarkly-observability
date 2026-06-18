@@ -84,6 +84,118 @@ struct ClickSpanTests {
         #expect(span.attributes[SemanticConvention.eventY] == .int(6))
     }
 
+    @Test("click span includes event.screen_id when a current screen is known")
+    func clickSpanIncludesScreenId() {
+        let (tracer, processor) = makeTracer()
+        let target = TouchTarget(
+            className: "UITabBarButton",
+            accessibilityIdentifier: "tab.search",
+            text: "Search and Explore",
+            isAccessibilityElement: true,
+            rectInWindow: .zero,
+            rectOnScreen: .zero,
+            rowIndex: nil,
+            sceneId: nil
+        )
+        let interaction = TouchInteraction(
+            id: 4,
+            kind: .touchUp(CGPoint(x: 120, y: 818)),
+            startTimestamp: 4000,
+            timestamp: 4001,
+            target: target,
+            sessionId: "session-4"
+        )
+
+        interaction.startEndSpan(tracer: tracer, screenId: "MyApp.MainTabViewController", screenName: "Home")
+
+        #expect(processor.ended.count == 1)
+        let span = processor.ended[0]
+        #expect(span.attributes[SemanticConvention.eventScreenId] == .string("MyApp.MainTabViewController"))
+        #expect(span.attributes[SemanticConvention.eventScreenName] == .string("Home"))
+        #expect(span.attributes[SemanticConvention.eventId] == .string("tab.search"))
+        #expect(span.attributes[SemanticConvention.eventTag] == .string("UITabBarButton"))
+    }
+
+    @Test("click span omits event.screen_id and event.screen_name when no current screen is known")
+    func clickSpanOmitsScreenId() {
+        let (tracer, processor) = makeTracer()
+        let interaction = TouchInteraction(
+            id: 5,
+            kind: .touchUp(CGPoint(x: 1, y: 2)),
+            startTimestamp: 5000,
+            timestamp: 5001,
+            target: nil,
+            sessionId: "session-5"
+        )
+
+        interaction.startEndSpan(tracer: tracer, screenId: nil, screenName: nil)
+
+        #expect(processor.ended.count == 1)
+        let span = processor.ended[0]
+        #expect(span.attributes[SemanticConvention.eventScreenId] == nil)
+        #expect(span.attributes[SemanticConvention.eventScreenName] == nil)
+    }
+
+    @Test("click span prefers ldId over accessibilityIdentifier for event.id")
+    func clickSpanPrefersLdId() {
+        let (tracer, processor) = makeTracer()
+        let target = TouchTarget(
+            className: "UIButton",
+            accessibilityIdentifier: "save_profile_btn",
+            ldId: "profile.save",
+            text: "Save",
+            isAccessibilityElement: true,
+            rectInWindow: .zero,
+            rectOnScreen: .zero,
+            rowIndex: nil,
+            sceneId: nil
+        )
+        let interaction = TouchInteraction(
+            id: 6,
+            kind: .touchUp(CGPoint(x: 1, y: 2)),
+            startTimestamp: 6000,
+            timestamp: 6001,
+            target: target,
+            sessionId: "session-6"
+        )
+
+        interaction.startEndSpan(tracer: tracer)
+
+        #expect(processor.ended.count == 1)
+        let span = processor.ended[0]
+        #expect(span.attributes[SemanticConvention.eventId] == .string("profile.save"))
+    }
+
+    @Test("click span falls back to accessibilityIdentifier when ldId is absent")
+    func clickSpanFallsBackToAccessibilityIdentifier() {
+        let (tracer, processor) = makeTracer()
+        let target = TouchTarget(
+            className: "UIButton",
+            accessibilityIdentifier: "save_profile_btn",
+            ldId: nil,
+            text: "Save",
+            isAccessibilityElement: true,
+            rectInWindow: .zero,
+            rectOnScreen: .zero,
+            rowIndex: nil,
+            sceneId: nil
+        )
+        let interaction = TouchInteraction(
+            id: 7,
+            kind: .touchUp(CGPoint(x: 1, y: 2)),
+            startTimestamp: 7000,
+            timestamp: 7001,
+            target: target,
+            sessionId: "session-7"
+        )
+
+        interaction.startEndSpan(tracer: tracer)
+
+        #expect(processor.ended.count == 1)
+        let span = processor.ended[0]
+        #expect(span.attributes[SemanticConvention.eventId] == .string("save_profile_btn"))
+    }
+
     @Test("non-tap interactions do not emit a click span")
     func nonTapInteractionEmitsNothing() {
         let (tracer, processor) = makeTracer()
