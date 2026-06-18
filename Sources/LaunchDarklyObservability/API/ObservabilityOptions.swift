@@ -242,7 +242,11 @@ public struct ObservabilityOptions {
             .init(taps: .disabled, trackEvents: .disabled, screenViews: .disabled, appLifecycle: .disabled, appLaunch: .disabled)
         }
         
-        public init(taps: FeatureFlag = .enabled, trackEvents: FeatureFlag = .enabled, screenViews: FeatureFlag = .enabled, appLifecycle: FeatureFlag = .enabled, appLaunch: FeatureFlag = .enabled) {
+        public init(taps: FeatureFlag = .enabled,
+                    trackEvents: FeatureFlag = .enabled,
+                    screenViews: FeatureFlag = .enabled,
+                    appLifecycle: FeatureFlag = .enabled,
+                    appLaunch: FeatureFlag = .enabled) {
             self.taps = taps
             self.trackEvents = trackEvents
             self.screenViews = screenViews

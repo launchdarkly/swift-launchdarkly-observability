@@ -486,19 +486,26 @@ extension ObservabilityService: Observe {
     /// to reproduce the taxonomy `click` event for interactions automatic capture can't observe.
     ///
     /// Gated by `analytics.taps` (the same flag as automatic click spans). When `screenId` is
-    /// `nil`, the current tracked screen id is used so the click correlates with the active
-    /// `screen_view`. Reserved `event.*` fields take precedence over caller `properties`,
-    /// matching the `screen_view`/`track` precedence model.
+    /// `nil`, the current tracked screen's id and name are used so the click correlates with the
+    /// active `screen_view`; when an explicit `screenId` is supplied, `event.screen_name` is omitted
+    /// (its name is unknown here) to avoid pairing one screen's id with another's name. Reserved
+    /// `event.*` fields take precedence over caller `properties`, matching the `screen_view`/`track`
+    /// precedence model.
     func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?) {
         guard options.analytics.taps.isEnabled else { return }
+
+        // Default to the current screen so the click correlates with the active `screen_view`. Only
+        // pair the current screen's name when we actually defaulted to it; for a caller-supplied
+        // `screenId` the matching name is unknown here, so omit `screen_name` rather than mismatch a
+        // different screen's name with that id.
+        let resolvedScreenName = screenId == nil ? screenStack.current : nil
 
         let spanAttributes = ClickAttributes.build(
             id: id,
             tag: tag,
             text: text,
-            // Default to the current screen so the click correlates with the active `screen_view`.
             screenId: screenId ?? screenStack.currentId,
-            screenName: screenStack.current,
+            screenName: resolvedScreenName,
             x: x,
             y: y,
             contextKeyAttributes: cachedContextKeyAttributes,
