@@ -8,5 +8,10 @@
 	<string>$(otlpEndpoint)</string>
 	<key>backendUrl</key>
 	<string>$(backendUrl)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
