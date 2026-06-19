@@ -10,9 +10,9 @@ runs:
     - name: Push LaunchDarklyObservability to CocoaPods
       if: ${{ inputs.dry_run == 'false' }}
       shell: bash
-      run: pod trunk push LaunchDarklyObservability.podspec --allow-warnings --synchronous --verbose
+      run: pod trunk push LaunchDarklyObservability.podspec --allow-warnings --synchronous
 
     - name: Push LaunchDarklySessionReplay to CocoaPods
       if: ${{ inputs.dry_run == 'false' }}
       shell: bash
-      run: pod trunk push LaunchDarklySessionReplay.podspec --allow-warnings --synchronous --verbose
+      run: pod trunk push LaunchDarklySessionReplay.podspec --allow-warnings --synchronous
