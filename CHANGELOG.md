@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.45.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.45.0...0.45.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* correlate manual trackClick screen_name only when defaulting to current screen ([#231](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/231)) ([593405c](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/593405c48b1b14996400bdbd2c439fd3e8875bf1))
+
 ## [0.45.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.44.0...0.45.0) (2026-06-18)
 
 
