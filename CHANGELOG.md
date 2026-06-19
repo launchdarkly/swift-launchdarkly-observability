@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.45.1...0.46.0) (2026-06-19)
+
+
+### Features
+
+* allow localhost testing ([#233](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/233)) ([b965035](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/b9650357a686ff385e23340b6356a4801d32c7eb))
+
 ## [0.45.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.45.0...0.45.1) (2026-06-18)
 
 
