@@ -14,3 +14,22 @@ jobs:
       - uses: ./.github/actions/test-swiftpm
         with:
           ios-sim: 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+
+  lint-pods:
+    name: Validate Podspecs
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+
+      # Lint against the local sources (pod lib lint) rather than the remote
+      # tag (pod spec lint), since a PR's version tag isn't published yet.
+      - name: Lint LaunchDarklyObservability podspec
+        run: pod lib lint LaunchDarklyObservability.podspec --allow-warnings
+
+      # SessionReplay depends on LaunchDarklyObservability, which isn't
+      # published at this version, so include the local podspec for resolution.
+      - name: Lint LaunchDarklySessionReplay podspec
+        run: |
+          pod lib lint LaunchDarklySessionReplay.podspec \
+            --allow-warnings \
+            --include-podspecs=LaunchDarklyObservability.podspec
