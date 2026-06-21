@@ -10,7 +10,7 @@ jobs:
     name: Unit Tests (iOS Simulator)
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
       - uses: ./.github/actions/test-swiftpm
         with:
           ios-sim: 'platform=iOS Simulator,name=iPhone 16,OS=latest'
@@ -19,7 +19,7 @@ jobs:
     name: Validate Podspecs
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
 
       # Lint against the local sources (pod lib lint) rather than the remote
       # tag (pod spec lint), since a PR's version tag isn't published yet.
