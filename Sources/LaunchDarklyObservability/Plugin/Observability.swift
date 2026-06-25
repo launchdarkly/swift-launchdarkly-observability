@@ -94,6 +94,8 @@ extension Observability {
     }
     
     func add(metadata: EnvironmentMetadata, into resourceAttributes: inout [String: AttributeValue]) {
+        resourceAttributes[SemanticConvention.serviceName] = .string(options.serviceName)
+        resourceAttributes[SemanticConvention.serviceVersion] = .string(options.serviceVersion)
         resourceAttributes[SemanticConvention.launchdarklySdkVersion] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
         resourceAttributes[SemanticConvention.highlightProjectId] = .string(metadata.credential)
         resourceAttributes[SemanticConvention.telemetrySdkName] = .string("opentelemetry")
