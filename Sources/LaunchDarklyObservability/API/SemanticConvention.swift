@@ -6,6 +6,8 @@ public enum SemanticConvention {
     public static let telemetrySdkName = "telemetry.sdk.name"
     public static let telemetryDistroName = "telemetry.distro.name"
     public static let telemetryDistroVersion = "telemetry.distro.version"
+    public static let serviceName = "service.name"
+    public static let serviceVersion = "service.version"
     public static let serviceNamespace = "service.namespace"
     public static let systemCpuUtilization = "system.cpu.utilization"
     public static let systemMemoryAppUsageBytes = "system.memory.app_usage_bytes"
