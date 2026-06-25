@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.46.0...0.46.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* report service.name and service.version as resource attributes ([#236](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/236)) ([2b10d24](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2b10d24ccdbcca8e7a3f30af21bccb9fd2961e9c))
+
 ## [0.46.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.45.1...0.46.0) (2026-06-19)
 
 
