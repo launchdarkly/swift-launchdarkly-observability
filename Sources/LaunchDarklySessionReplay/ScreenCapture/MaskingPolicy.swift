@@ -22,15 +22,21 @@ import Common
 final class MaskingPolicy {
     enum Constants {
         // Private iOS 26 camera UI views whose layer subtrees contain CALayer
-        // subclasses (e.g. `ModeLoupeLayer`) that trap on `init(layer:)` when
-        // session replay walks or snapshots the hierarchy. Mask the enclosing
-        // view and stop recursing so those layers are never touched.
+        // subclasses that trap on `init(layer:)` when session replay walks the
+        // hierarchy. Mask the enclosing view and stop recursing.
         static let maskiOS26ViewTypes = Set(["CameraUI.ChromeSwiftUIView"])
 
-        // Layer-only nodes in the same subtrees that must not be traversed when
-        // reached without a backing UIView (the pre-refactor collector skipped
-        // all layer-only nodes; the iOS 26 layer walk must still skip these).
-        static let maskiOS26LayerTypes = Set(["CameraUI.ModeLoupeLayer"])
+        // Private iOS 26 camera UI layers that must not be traversed — they lack
+        // `init(layer:)` and crash when Core Animation copies them.
+        static let skipiOS26LayerTypes = Set(["CameraUI.ModeLoupeLayer"])
+
+        static func isCameraUIView(className: String) -> Bool {
+            maskiOS26ViewTypes.contains(className)
+        }
+
+        static func isCameraUILayer(className: String) -> Bool {
+            skipiOS26LayerTypes.contains(className)
+        }
 
         // Private UIKit view types SwiftUI uses to render `Text` on iOS <= 18
         // (Core Graphics drawn content). Matching by type name because these
@@ -88,13 +94,13 @@ final class MaskingPolicy {
         self.ignoreAccessibilityIdentifiers = Set(privacySettings.ignoreAccessibilityIdentifiers)
     }
 
-    func shouldIgnore(_ view: UIView, viewType: AnyClass) -> Bool {
+    func shouldIgnore(_ view: UIView, viewType: AnyClass, className: String) -> Bool {
         // Skip entire CameraUI subtrees on iOS 26+. CameraUI.ModeLoupeLayer (a private
         // CALayer subclass in this hierarchy) does not implement init(layer:). Accessing
         // .sublayers on its parent causes CA::Layer::presentation_layer() to call the
         // missing initializer, producing a fatal EXC_BREAKPOINT crash. Returning true
         // here stops recursion into the subtree before we ever reach that layer.
-        if String(describing: viewType).hasPrefix("CameraUI") { return true }
+        if Constants.isCameraUIView(className: className) { return true }
 
         if SessionReplayAssociatedObjects.shouldIgnoreUIView(view) == true {
             return true
@@ -140,19 +146,15 @@ final class MaskingPolicy {
         return false
     }
 
-    func shouldMaskFromGlobalConfig(_ view: UIView, viewType: AnyClass) -> Bool {
-        let stringViewType = String(describing: viewType)
-
+    func shouldMaskFromGlobalConfig(_ view: UIView, className: String) -> Bool {
         // Checked first so iOS 26 camera chrome is always masked regardless of
         // other privacy toggles. Masking stops subtree traversal, avoiding
         // `init(layer:)` crashes in private CameraUI layers.
-        if Constants.maskiOS26ViewTypes.contains(stringViewType) {
-            return true
-        }
+        if Constants.isCameraUIView(className: className) { return true }
 
         // Cheap concrete-type checks first; these short-circuit the
         // common cases (`UILabel`, `UIImageView`, `WKWebView`, plain
-        // `UITextField`/`UITextView`) without recomputing `stringViewType`.
+        // `UITextField`/`UITextView`) without further string lookups.
         if maskWebViews {
 #if canImport(WebKit)
             if view is WKWebView {
@@ -169,11 +171,11 @@ final class MaskingPolicy {
             return true
         }
 
-        // `UITextInput` is a protocol; reuse `stringViewType` for the
+        // `UITextInput` is a protocol; reuse `className` for the
         // `WKContentView` discrimination below.
         if maskTextInputs, view is UITextInput {
 #if canImport(WebKit)
-            if stringViewType != "WKContentView" {
+            if className != "WKContentView" {
                 return true
             }
 #else
@@ -181,11 +183,11 @@ final class MaskingPolicy {
 #endif
         }
 
-        if maskTextInputs, stringViewType == "UIKeyboard" {
+        if maskTextInputs, className == "UIKeyboard" {
             return true
         }
 
-        if maskLabels, Constants.swiftUITextViewTypes.contains(stringViewType) {
+        if maskLabels, Constants.swiftUITextViewTypes.contains(className) {
             return true
         }
 
@@ -213,16 +215,15 @@ final class MaskingPolicy {
     }
 
     /// Final precedence: an explicit (resolved) state wins; otherwise fall back to global config.
-    func shouldMask(_ view: UIView, viewType: AnyClass, resolvedExplicitMask: Bool?) -> Bool {
-        return resolvedExplicitMask ?? shouldMaskFromGlobalConfig(view, viewType: viewType)
+    func shouldMask(_ view: UIView, viewType: AnyClass, className: String, resolvedExplicitMask: Bool?) -> Bool {
+        return resolvedExplicitMask ?? shouldMaskFromGlobalConfig(view, className: className)
     }
 
     /// Private iOS 26 camera layers that trap when session replay walks or
-    /// snapshots them. The pre-refactor collector never descended into
-    /// layer-only nodes; skip these outright instead of calling geometry
+    /// snapshots them. Skip these outright instead of calling geometry
     /// helpers that can trigger `init(layer:)`.
-    func shouldSkipLayer(_ layer: CALayer) -> Bool {
-        Constants.maskiOS26LayerTypes.contains(String(describing: type(of: layer)))
+    func shouldSkipLayer(className: String) -> Bool {
+        Constants.isCameraUILayer(className: className)
     }
 
     /// Evaluates whether a `CALayer` that has no backing `UIView` should be masked.
@@ -231,12 +232,11 @@ final class MaskingPolicy {
     /// Symbols directly as private `CALayer` subclasses without wrapping them in
     /// `UIView`s. The usual `shouldMask(_ view:)` path can't see these, so we
     /// match by the layer's class name.
-    func shouldMaskLayer(_ layer: CALayer) -> Bool {
-        let layerType = String(describing: type(of: layer))
-        if maskLabels, Constants.swiftUITextLayerTypes.contains(layerType) {
+    func shouldMaskLayer(className: String) -> Bool {
+        if maskLabels, Constants.swiftUITextLayerTypes.contains(className) {
             return true
         }
-        if maskImages, Constants.swiftUIImageLayerTypes.contains(layerType) {
+        if maskImages, Constants.swiftUIImageLayerTypes.contains(className) {
             return true
         }
         return false

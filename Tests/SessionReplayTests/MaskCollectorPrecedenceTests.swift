@@ -99,21 +99,24 @@ struct MaskCollectorPrecedenceTests {
     @Test("shouldMask returns true when the resolved explicit state is true")
     func shouldMaskExplicitMaskWins() {
         let view = UIView()
-        #expect(makeSettings().shouldMask(view, viewType: type(of: view), resolvedExplicitMask: true) == true)
+        let className = NSStringFromClass(type(of: view))
+        #expect(makeSettings().shouldMask(view, viewType: type(of: view), className: className, resolvedExplicitMask: true) == true)
     }
 
     @Test("shouldMask: resolved unmask overrides a global rule that would otherwise mask")
     func shouldMaskExplicitUnmaskOverridesGlobal() {
         let settings = makeSettings(.init(maskLabels: true))
         let view = UILabel()
-        #expect(settings.shouldMask(view, viewType: type(of: view), resolvedExplicitMask: false) == false)
+        let className = NSStringFromClass(type(of: view))
+        #expect(settings.shouldMask(view, viewType: type(of: view), className: className, resolvedExplicitMask: false) == false)
     }
 
     @Test("shouldMask: with no explicit rule, the global config decides")
     func shouldMaskGlobalFallback() {
         let settings = makeSettings(.init(maskLabels: true))
         let view = UILabel()
-        #expect(settings.shouldMask(view, viewType: type(of: view), resolvedExplicitMask: nil) == true)
+        let className = NSStringFromClass(type(of: view))
+        #expect(settings.shouldMask(view, viewType: type(of: view), className: className, resolvedExplicitMask: nil) == true)
     }
 
     // MARK: - iOS 26 camera UI (ModeLoupeLayer crash regression)
@@ -133,13 +136,15 @@ struct MaskCollectorPrecedenceTests {
         ))
         guard let cameraClass = NSClassFromString("CameraUI.ChromeSwiftUIView") else { return }
         let view = (cameraClass as! UIView.Type).init()
-        #expect(settings.shouldMask(view, viewType: cameraClass, resolvedExplicitMask: nil) == true)
+        let className = NSStringFromClass(cameraClass)
+        #expect(settings.shouldMask(view, viewType: cameraClass, className: className, resolvedExplicitMask: nil) == true)
     }
 
     @Test("shouldSkipLayer skips CameraUI.ModeLoupeLayer")
     func skipsIOS26CameraLayers() {
         let settings = makeSettings()
-        #expect(MaskingPolicy.Constants.maskiOS26LayerTypes.contains("CameraUI.ModeLoupeLayer"))
-        #expect(settings.shouldSkipLayer(CALayer()) == false)
+        #expect(MaskingPolicy.Constants.skipiOS26LayerTypes.contains("CameraUI.ModeLoupeLayer"))
+        #expect(settings.shouldSkipLayer(className: "CameraUI.ModeLoupeLayer"))
+        #expect(settings.shouldSkipLayer(className: NSStringFromClass(type(of: CALayer()))) == false)
     }
 }
