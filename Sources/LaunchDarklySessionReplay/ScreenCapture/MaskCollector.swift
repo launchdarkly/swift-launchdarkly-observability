@@ -184,6 +184,12 @@ final class MaskCollector {
             } else {
                 if markerOverrideForLayer?.ignore == true { return }
 
+                // Guard against private CameraUI layer subclasses (e.g. CameraUI.ModeLoupeLayer
+                // on iOS 26+) that have no backing UIView and do not implement init(layer:).
+                // Without this guard, accessing .sublayers below triggers CA::Layer::presentation_layer()
+                // which calls the missing initializer and produces a fatal EXC_BREAKPOINT crash.
+                if NSStringFromClass(type(of: layer)).hasPrefix("CameraUI") { return }
+
                 let resolvedExplicitMask: Bool?
                 if inheritedExplicitMask == true || markerOverrideForLayer?.mask == true {
                     resolvedExplicitMask = true

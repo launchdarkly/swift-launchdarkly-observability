@@ -80,6 +80,13 @@ final class MaskingPolicy {
     }
 
     func shouldIgnore(_ view: UIView, viewType: AnyClass) -> Bool {
+        // Skip entire CameraUI subtrees on iOS 26+. CameraUI.ModeLoupeLayer (a private
+        // CALayer subclass in this hierarchy) does not implement init(layer:). Accessing
+        // .sublayers on its parent causes CA::Layer::presentation_layer() to call the
+        // missing initializer, producing a fatal EXC_BREAKPOINT crash. Returning true
+        // here stops recursion into the subtree before we ever reach that layer.
+        if String(describing: viewType).hasPrefix("CameraUI") { return true }
+
         if SessionReplayAssociatedObjects.shouldIgnoreUIView(view) == true {
             return true
         }
