@@ -21,21 +21,13 @@ import Common
 /// into a shared `MaskingPolicy` instance.
 final class MaskingPolicy {
     enum Constants {
-        // Private iOS 26 camera UI views whose layer subtrees contain CALayer
-        // subclasses that trap on `init(layer:)` when session replay walks the
-        // hierarchy. Mask the enclosing view and stop recursing.
-        static let maskiOS26ViewTypes = Set(["CameraUI.ChromeSwiftUIView"])
+        // Prefix shared by private iOS 26 CameraUI class names (e.g.
+        // `CameraUI.ChromeSwiftUIView`, `CameraUI.ModeLoupeLayer`). Types in this
+        // module can trap on `init(layer:)` when session replay walks the tree.
+        static let cameraUIPrefix = "CameraUI"
 
-        // Private iOS 26 camera UI layers that must not be traversed — they lack
-        // `init(layer:)` and crash when Core Animation copies them.
-        static let skipiOS26LayerTypes = Set(["CameraUI.ModeLoupeLayer"])
-
-        static func isMaskiOS26ViewType(className: String) -> Bool {
-            maskiOS26ViewTypes.contains(className)
-        }
-
-        static func isSkipiOS26LayerType(className: String) -> Bool {
-            skipiOS26LayerTypes.contains(className)
+        static func isCameraUIType(className: String) -> Bool {
+            className.hasPrefix(cameraUIPrefix)
         }
 
         // Private UIKit view types SwiftUI uses to render `Text` on iOS <= 18
@@ -100,7 +92,7 @@ final class MaskingPolicy {
         // .sublayers on its parent causes CA::Layer::presentation_layer() to call the
         // missing initializer, producing a fatal EXC_BREAKPOINT crash. Returning true
         // here stops recursion into the subtree before we ever reach that layer.
-        if Constants.isMaskiOS26ViewType(className: className) { return true }
+        if Constants.isCameraUIType(className: className) { return true }
 
         if SessionReplayAssociatedObjects.shouldIgnoreUIView(view) == true {
             return true
@@ -150,7 +142,7 @@ final class MaskingPolicy {
         // Checked first so iOS 26 camera chrome is always masked regardless of
         // other privacy toggles. Masking stops subtree traversal, avoiding
         // `init(layer:)` crashes in private CameraUI layers.
-        if Constants.isMaskiOS26ViewType(className: className) { return true }
+        if Constants.isCameraUIType(className: className) { return true }
 
         // Cheap concrete-type checks first; these short-circuit the
         // common cases (`UILabel`, `UIImageView`, `WKWebView`, plain
@@ -223,7 +215,7 @@ final class MaskingPolicy {
     /// snapshots them. Skip these outright instead of calling geometry
     /// helpers that can trigger `init(layer:)`.
     func shouldSkipLayer(className: String) -> Bool {
-        Constants.isSkipiOS26LayerType(className: className)
+        Constants.isCameraUIType(className: className)
     }
 
     /// Evaluates whether a `CALayer` that has no backing `UIView` should be masked.
