@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.46.1...0.46.2) (2026-07-01)
+
+
+### Bug Fixes
+
+* skip CameraUI layer subtrees to prevent fatal crash on iOS 26+ ([#240](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/240)) ([6efb2b5](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/6efb2b5c134a5aa9d632e8d3f326d2c5a802efb5))
+
 ## [0.46.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.46.0...0.46.1) (2026-06-25)
 
 
