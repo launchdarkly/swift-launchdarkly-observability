@@ -21,7 +21,16 @@ import Common
 /// into a shared `MaskingPolicy` instance.
 final class MaskingPolicy {
     enum Constants {
+        // Private iOS 26 camera UI views whose layer subtrees contain CALayer
+        // subclasses (e.g. `ModeLoupeLayer`) that trap on `init(layer:)` when
+        // session replay walks or snapshots the hierarchy. Mask the enclosing
+        // view and stop recursing so those layers are never touched.
         static let maskiOS26ViewTypes = Set(["CameraUI.ChromeSwiftUIView"])
+
+        // Layer-only nodes in the same subtrees that must not be traversed when
+        // reached without a backing UIView (the pre-refactor collector skipped
+        // all layer-only nodes; the iOS 26 layer walk must still skip these).
+        static let maskiOS26LayerTypes = Set(["CameraUI.ModeLoupeLayer"])
 
         // Private UIKit view types SwiftUI uses to render `Text` on iOS <= 18
         // (Core Graphics drawn content). Matching by type name because these
@@ -132,10 +141,18 @@ final class MaskingPolicy {
     }
 
     func shouldMaskFromGlobalConfig(_ view: UIView, viewType: AnyClass) -> Bool {
+        let stringViewType = String(describing: viewType)
+
+        // Checked first so iOS 26 camera chrome is always masked regardless of
+        // other privacy toggles. Masking stops subtree traversal, avoiding
+        // `init(layer:)` crashes in private CameraUI layers.
+        if Constants.maskiOS26ViewTypes.contains(stringViewType) {
+            return true
+        }
+
         // Cheap concrete-type checks first; these short-circuit the
         // common cases (`UILabel`, `UIImageView`, `WKWebView`, plain
-        // `UITextField`/`UITextView`) without ever computing the
-        // `String(describing: viewType)` representation.
+        // `UITextField`/`UITextView`) without recomputing `stringViewType`.
         if maskWebViews {
 #if canImport(WebKit)
             if view is WKWebView {
@@ -152,33 +169,16 @@ final class MaskingPolicy {
             return true
         }
 
-        // `UITextInput` is a protocol; this check still avoids any
-        // string allocation for the vast majority of views (the
-        // protocol conformance is implemented in cached witness
-        // tables on a small set of UIKit classes).
-        //
-        // The remaining checks all key off the type's name, so once
-        // we've allocated the string for the `WKContentView`
-        // discrimination we keep reusing it instead of recomputing.
-#if canImport(WebKit)
-        let stringViewType: String
+        // `UITextInput` is a protocol; reuse `stringViewType` for the
+        // `WKContentView` discrimination below.
         if maskTextInputs, view is UITextInput {
-            stringViewType = String(describing: viewType)
+#if canImport(WebKit)
             if stringViewType != "WKContentView" {
                 return true
             }
-        } else {
-            stringViewType = String(describing: viewType)
-        }
 #else
-        if maskTextInputs, view is UITextInput {
             return true
-        }
-        let stringViewType = String(describing: viewType)
 #endif
-
-        if Constants.maskiOS26ViewTypes.contains(stringViewType) {
-            return true
         }
 
         if maskTextInputs, stringViewType == "UIKeyboard" {
@@ -215,6 +215,14 @@ final class MaskingPolicy {
     /// Final precedence: an explicit (resolved) state wins; otherwise fall back to global config.
     func shouldMask(_ view: UIView, viewType: AnyClass, resolvedExplicitMask: Bool?) -> Bool {
         return resolvedExplicitMask ?? shouldMaskFromGlobalConfig(view, viewType: viewType)
+    }
+
+    /// Private iOS 26 camera layers that trap when session replay walks or
+    /// snapshots them. The pre-refactor collector never descended into
+    /// layer-only nodes; skip these outright instead of calling geometry
+    /// helpers that can trigger `init(layer:)`.
+    func shouldSkipLayer(_ layer: CALayer) -> Bool {
+        Constants.maskiOS26LayerTypes.contains(String(describing: type(of: layer)))
     }
 
     /// Evaluates whether a `CALayer` that has no backing `UIView` should be masked.

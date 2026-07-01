@@ -39,6 +39,7 @@ struct MainMenuView: View {
         case .notebook: NotebookView()
         case .dialogsUIKit: DialogsUIKitView()
         case .dialogsSwiftUI: DialogsSwiftUIView()
+        case .camera: CameraSampleView()
         #endif
         #if canImport(WebKit)
         case .webView: WebViewControllertView()
@@ -130,10 +131,16 @@ struct MainMenuView: View {
 #endif
             HStack {
 #if os(iOS)
-                Button("Drawing") {
+                Button("Draw") {
                     activeSheet = .notebook
                 }
                 .accessibilityIdentifier("a-drawing")
+                .buttonStyle(.borderedProminent)
+
+                Button("Camera") {
+                    activeSheet = .camera
+                }
+                .accessibilityIdentifier("a-camera")
                 .buttonStyle(.borderedProminent)
 #endif
 
@@ -142,7 +149,7 @@ struct MainMenuView: View {
                 }
                 .buttonStyle(.borderedProminent)
 #if canImport(WebKit)
-                Button("WebView") {
+                Button("Web View") {
                     activeSheet = .webView
                 }
                 .buttonStyle(.borderedProminent)
@@ -353,6 +360,7 @@ private enum MenuSheet: Identifiable {
     case notebook
     case dialogsUIKit
     case dialogsSwiftUI
+    case camera
     #endif
     #if canImport(WebKit)
     case webView

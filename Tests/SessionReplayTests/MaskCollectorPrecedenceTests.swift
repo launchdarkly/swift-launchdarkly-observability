@@ -115,4 +115,31 @@ struct MaskCollectorPrecedenceTests {
         let view = UILabel()
         #expect(settings.shouldMask(view, viewType: type(of: view), resolvedExplicitMask: nil) == true)
     }
+
+    // MARK: - iOS 26 camera UI (ModeLoupeLayer crash regression)
+
+    @Test("maskiOS26ViewTypes includes CameraUI.ChromeSwiftUIView")
+    func maskiOS26ViewTypesIncludesCameraChrome() {
+        #expect(MaskingPolicy.Constants.maskiOS26ViewTypes.contains("CameraUI.ChromeSwiftUIView"))
+    }
+
+    @Test("shouldMaskFromGlobalConfig masks iOS26 camera chrome even when privacy toggles are off")
+    func masksIOS26CameraChromeRegardlessOfPrivacyToggles() {
+        let settings = makeSettings(.init(
+            maskTextInputs: false,
+            maskWebViews: false,
+            maskLabels: false,
+            maskImages: false
+        ))
+        guard let cameraClass = NSClassFromString("CameraUI.ChromeSwiftUIView") else { return }
+        let view = (cameraClass as! UIView.Type).init()
+        #expect(settings.shouldMask(view, viewType: cameraClass, resolvedExplicitMask: nil) == true)
+    }
+
+    @Test("shouldSkipLayer skips CameraUI.ModeLoupeLayer")
+    func skipsIOS26CameraLayers() {
+        let settings = makeSettings()
+        #expect(MaskingPolicy.Constants.maskiOS26LayerTypes.contains("CameraUI.ModeLoupeLayer"))
+        #expect(settings.shouldSkipLayer(CALayer()) == false)
+    }
 }

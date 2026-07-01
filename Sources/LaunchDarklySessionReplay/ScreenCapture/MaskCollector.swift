@@ -152,6 +152,7 @@ final class MaskCollector {
             if NSStringFromClass(type(of: layer)).hasPrefix("CameraUI") { return }
 
             guard !layer.isHidden, layer.opacity >= policy.minimumAlpha else { return }
+            if policy.shouldSkipLayer(layer) { return }
 
             // Frame in root coords is needed both for marker-area lookup
             // and for `effectiveFrame`/`MaskOperation`. Compute it once.
