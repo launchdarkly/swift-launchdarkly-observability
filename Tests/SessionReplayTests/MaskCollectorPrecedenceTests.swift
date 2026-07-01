@@ -99,20 +99,59 @@ struct MaskCollectorPrecedenceTests {
     @Test("shouldMask returns true when the resolved explicit state is true")
     func shouldMaskExplicitMaskWins() {
         let view = UIView()
-        #expect(makeSettings().shouldMask(view, viewType: type(of: view), resolvedExplicitMask: true) == true)
+        let className = NSStringFromClass(type(of: view))
+        #expect(makeSettings().shouldMask(view, viewType: type(of: view), className: className, resolvedExplicitMask: true) == true)
     }
 
     @Test("shouldMask: resolved unmask overrides a global rule that would otherwise mask")
     func shouldMaskExplicitUnmaskOverridesGlobal() {
         let settings = makeSettings(.init(maskLabels: true))
         let view = UILabel()
-        #expect(settings.shouldMask(view, viewType: type(of: view), resolvedExplicitMask: false) == false)
+        let className = NSStringFromClass(type(of: view))
+        #expect(settings.shouldMask(view, viewType: type(of: view), className: className, resolvedExplicitMask: false) == false)
     }
 
     @Test("shouldMask: with no explicit rule, the global config decides")
     func shouldMaskGlobalFallback() {
         let settings = makeSettings(.init(maskLabels: true))
         let view = UILabel()
-        #expect(settings.shouldMask(view, viewType: type(of: view), resolvedExplicitMask: nil) == true)
+        let className = NSStringFromClass(type(of: view))
+        #expect(settings.shouldMask(view, viewType: type(of: view), className: className, resolvedExplicitMask: nil) == true)
+    }
+
+    // MARK: - iOS 26 camera UI (ModeLoupeLayer crash regression)
+
+    @Test("isCameraUIType matches known CameraUI views and layers")
+    func matchesKnownCameraUITypes() {
+        #expect(MaskingPolicy.Constants.isCameraUIType(className: "CameraUI.ChromeSwiftUIView"))
+        #expect(MaskingPolicy.Constants.isCameraUIType(className: "CameraUI.ModeLoupeLayer"))
+    }
+
+    @Test("shouldMaskFromGlobalConfig masks iOS26 camera chrome even when privacy toggles are off")
+    func masksIOS26CameraChromeRegardlessOfPrivacyToggles() {
+        let settings = makeSettings(.init(
+            maskTextInputs: false,
+            maskWebViews: false,
+            maskLabels: false,
+            maskImages: false
+        ))
+        guard let cameraClass = NSClassFromString("CameraUI.ChromeSwiftUIView") else { return }
+        let view = (cameraClass as! UIView.Type).init()
+        let className = NSStringFromClass(cameraClass)
+        #expect(settings.shouldMask(view, viewType: cameraClass, className: className, resolvedExplicitMask: nil) == true)
+    }
+
+    @Test("shouldSkipLayer skips any CameraUI-prefixed layer")
+    func skipsIOS26CameraLayers() {
+        let settings = makeSettings()
+        #expect(settings.shouldSkipLayer(className: "CameraUI.ModeLoupeLayer"))
+        #expect(settings.shouldSkipLayer(className: "CameraUI.SomeOtherLayer"))
+        #expect(settings.shouldSkipLayer(className: NSStringFromClass(type(of: CALayer()))) == false)
+    }
+
+    @Test("isCameraUIType matches any CameraUI-prefixed class name")
+    func matchesCameraUIPrefix() {
+        #expect(MaskingPolicy.Constants.isCameraUIType(className: "CameraUI.UnknownView"))
+        #expect(!MaskingPolicy.Constants.isCameraUIType(className: "UIKit.UIView"))
     }
 }
