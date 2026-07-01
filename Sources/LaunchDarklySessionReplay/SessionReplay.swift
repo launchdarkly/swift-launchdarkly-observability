@@ -22,7 +22,7 @@ public final class SessionReplay: Plugin {
     }
     
     public func getMetadata() -> LaunchDarkly.PluginMetadata {
-        return .init(name: options.serviceName)
+        return .init(name: "session-replay-service") // not used
     }
     
     public func register(client: LaunchDarkly.LDClient, metadata: LaunchDarkly.EnvironmentMetadata) {

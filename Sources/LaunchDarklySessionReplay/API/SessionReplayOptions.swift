@@ -65,7 +65,6 @@ public struct SessionReplayOptions {
     /// `1` = 160 DPI. Higher values capture at greater resolution. Defaults to `1.0`.
     public var scale: CGFloat
     public var renderStrategy: RenderStrategy
-    public var serviceName: String
     public var privacy = PrivacyOptions()
     public var log: OSLog
     
@@ -80,7 +79,6 @@ public struct SessionReplayOptions {
                 log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklySessionReplayPlugin")) {
         self.isEnabled = isEnabled
         self.sampleRate = sampleRate
-        self.serviceName = serviceName
         self.privacy = privacy
         self.compression = compression
         self.frameRate = frameRate
