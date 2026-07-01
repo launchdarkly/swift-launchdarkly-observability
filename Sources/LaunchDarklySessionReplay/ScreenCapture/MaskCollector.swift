@@ -143,6 +143,14 @@ final class MaskCollector {
         }
 
         func visit(layer: CALayer, inheritedExplicitMask: Bool?) {
+            // On iOS 26+, CameraUI private CALayer subclasses (e.g. ModeLoupeLayer) do not
+            // implement init(layer:). Guard at the very top — before ANY property access —
+            // because even isHidden/opacity access can trigger CA::Layer::presentation_layer()
+            // on a layer that lacks the initializer. The same guard is applied at every
+            // sublayer iteration site so CameraUI layers are never passed to visit() at all;
+            // this check is belt-and-suspenders for any path not covered there.
+            if NSStringFromClass(type(of: layer)).hasPrefix("CameraUI") { return }
+
             guard !layer.isHidden, layer.opacity >= policy.minimumAlpha else { return }
 
             // Frame in root coords is needed both for marker-area lookup
@@ -196,23 +204,40 @@ final class MaskCollector {
                 childInheritedMask = resolvedExplicitMask
             }
 
-            // Recurse into sublayers in z-order. Skip the `sorted()`
-            // allocation for the common case of zero or one
-            // sublayers (wrapper views, leaf nodes).
-            guard let sublayers = layer.sublayers, !sublayers.isEmpty else { return }
-            if sublayers.count == 1 {
-                visit(layer: sublayers[0], inheritedExplicitMask: childInheritedMask)
+            // Recurse into sublayers in z-order.
+            //
+            // Use model sublayers and pass them directly to visit() — do NOT call
+            // .presentation() on each sublayer. On iOS 26+, calling .presentation()
+            // on any ancestor of CameraUI.ModeLoupeLayer eagerly builds presentation
+            // copies for the entire descendant tree, which calls init(layer:) on
+            // ModeLoupeLayer and crashes with a fatal EXC_BREAKPOINT. Traversing model
+            // layers avoids this. Mask positions may be slightly off during active
+            // animations, but correctness under normal (non-animating) state is preserved.
+            guard let modelSublayers = layer.model().sublayers, !modelSublayers.isEmpty else { return }
+            let safeSublayers = modelSublayers.filter {
+                !NSStringFromClass(type(of: $0)).hasPrefix("CameraUI")
+            }
+            guard !safeSublayers.isEmpty else { return }
+            if safeSublayers.count == 1 {
+                visit(layer: safeSublayers[0], inheritedExplicitMask: childInheritedMask)
             } else {
-                sublayers.sorted { $0.zPosition < $1.zPosition }
+                safeSublayers.sorted { $0.zPosition < $1.zPosition }
                     .forEach { visit(layer: $0, inheritedExplicitMask: childInheritedMask) }
             }
         }
 
-        if let rootSublayers = rPresentation.sublayers, !rootSublayers.isEmpty {
-            if rootSublayers.count == 1 {
-                visit(layer: rootSublayers[0], inheritedExplicitMask: nil)
+        // Use model sublayers at the root level for the same reason: .sublayers on a
+        // presentation layer creates presentation copies of all children, crashing on
+        // iOS 26 if any child is or contains CameraUI.ModeLoupeLayer.
+        let rootModelSublayers = rPresentation.model().sublayers ?? []
+        let safeRootSublayers = rootModelSublayers.filter {
+            !NSStringFromClass(type(of: $0)).hasPrefix("CameraUI")
+        }
+        if !safeRootSublayers.isEmpty {
+            if safeRootSublayers.count == 1 {
+                visit(layer: safeRootSublayers[0], inheritedExplicitMask: nil)
             } else {
-                rootSublayers.sorted { $0.zPosition < $1.zPosition }
+                safeRootSublayers.sorted { $0.zPosition < $1.zPosition }
                     .forEach { visit(layer: $0, inheritedExplicitMask: nil) }
             }
         }
