@@ -30,11 +30,11 @@ final class MaskingPolicy {
         // `init(layer:)` and crash when Core Animation copies them.
         static let skipiOS26LayerTypes = Set(["CameraUI.ModeLoupeLayer"])
 
-        static func isCameraUIView(className: String) -> Bool {
+        static func isMaskiOS26ViewType(className: String) -> Bool {
             maskiOS26ViewTypes.contains(className)
         }
 
-        static func isCameraUILayer(className: String) -> Bool {
+        static func isSkipiOS26LayerType(className: String) -> Bool {
             skipiOS26LayerTypes.contains(className)
         }
 
@@ -100,7 +100,7 @@ final class MaskingPolicy {
         // .sublayers on its parent causes CA::Layer::presentation_layer() to call the
         // missing initializer, producing a fatal EXC_BREAKPOINT crash. Returning true
         // here stops recursion into the subtree before we ever reach that layer.
-        if Constants.isCameraUIView(className: className) { return true }
+        if Constants.isMaskiOS26ViewType(className: className) { return true }
 
         if SessionReplayAssociatedObjects.shouldIgnoreUIView(view) == true {
             return true
@@ -150,7 +150,7 @@ final class MaskingPolicy {
         // Checked first so iOS 26 camera chrome is always masked regardless of
         // other privacy toggles. Masking stops subtree traversal, avoiding
         // `init(layer:)` crashes in private CameraUI layers.
-        if Constants.isCameraUIView(className: className) { return true }
+        if Constants.isMaskiOS26ViewType(className: className) { return true }
 
         // Cheap concrete-type checks first; these short-circuit the
         // common cases (`UILabel`, `UIImageView`, `WKWebView`, plain
@@ -223,7 +223,7 @@ final class MaskingPolicy {
     /// snapshots them. Skip these outright instead of calling geometry
     /// helpers that can trigger `init(layer:)`.
     func shouldSkipLayer(className: String) -> Bool {
-        Constants.isCameraUILayer(className: className)
+        Constants.isSkipiOS26LayerType(className: className)
     }
 
     /// Evaluates whether a `CALayer` that has no backing `UIView` should be masked.
