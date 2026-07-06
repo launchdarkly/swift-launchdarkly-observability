@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.3](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.46.2...0.46.3) (2026-07-06)
+
+
+### Bug Fixes
+
+* **session-replay:** explicit CameraUI type sets and camera TestApp sample ([#242](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/242)) ([3756946](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/375694643984fbfa01b1b44def4a53b23c6bdcc1))
+
 ## [0.46.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.46.1...0.46.2) (2026-07-01)
 
 
