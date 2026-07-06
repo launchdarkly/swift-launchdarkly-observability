@@ -101,8 +101,8 @@ final class MaskCollector {
         }
 
         // Returns `true` if a mask was emitted for this view (the caller should stop recursing).
-        func emitViewMask(view: UIView, layer: CALayer, viewType: AnyClass, effectiveFrame: CGRect, resolvedExplicitMask: Bool?) -> Bool {
-            let shouldMask = policy.shouldMask(view, viewType: viewType, resolvedExplicitMask: resolvedExplicitMask)
+        func emitViewMask(view: UIView, layer: CALayer, viewType: AnyClass, className: String, effectiveFrame: CGRect, resolvedExplicitMask: Bool?) -> Bool {
+            let shouldMask = policy.shouldMask(view, viewType: viewType, className: className, resolvedExplicitMask: resolvedExplicitMask)
 
             if shouldMask, let mask = MaskGeometry.createMask(rPresentation: rPresentation, layer: layer, scale: scale) {
                 var operation = MaskOperation(mask: mask, effectiveFrame: effectiveFrame)
@@ -133,8 +133,8 @@ final class MaskCollector {
         // backing UIView, so the UIView-based path can't see them. Match by layer class name
         // while still honouring an inherited or marker-area explicit state.
         // Returns `true` if a mask was emitted (the caller should stop recursing).
-        func emitLayerOnlyMask(layer: CALayer, effectiveFrame: CGRect, resolvedExplicitMask: Bool?) -> Bool {
-            let shouldMask = resolvedExplicitMask ?? policy.shouldMaskLayer(layer)
+        func emitLayerOnlyMask(layerClassName: String, layer: CALayer, effectiveFrame: CGRect, resolvedExplicitMask: Bool?) -> Bool {
+            let shouldMask = resolvedExplicitMask ?? policy.shouldMaskLayer(className: layerClassName)
             guard shouldMask, let mask = MaskGeometry.createMask(rPresentation: rPresentation, layer: layer, scale: scale) else {
                 return false
             }
@@ -142,14 +142,13 @@ final class MaskCollector {
             return true
         }
 
-        func visit(layer: CALayer, inheritedExplicitMask: Bool?) {
+        func visit(layer: CALayer, layerClassName: String, inheritedExplicitMask: Bool?) {
             // On iOS 26+, CameraUI private CALayer subclasses (e.g. ModeLoupeLayer) do not
             // implement init(layer:). Guard at the very top — before ANY property access —
             // because even isHidden/opacity access can trigger CA::Layer::presentation_layer()
-            // on a layer that lacks the initializer. The same guard is applied at every
-            // sublayer iteration site so CameraUI layers are never passed to visit() at all;
-            // this check is belt-and-suspenders for any path not covered there.
-            if NSStringFromClass(type(of: layer)).hasPrefix("CameraUI") { return }
+            // on a layer that lacks the initializer. `layerClassName` is computed once by
+            // the caller so we never call NSStringFromClass twice for the same layer.
+            if policy.shouldSkipLayer(className: layerClassName) { return }
 
             guard !layer.isHidden, layer.opacity >= policy.minimumAlpha else { return }
 
@@ -174,8 +173,9 @@ final class MaskCollector {
                 }
 
                 let viewType: AnyClass = type(of: view)
+                let viewClassName = NSStringFromClass(viewType)
 
-                if policy.shouldIgnore(view, viewType: viewType) || markerOverrideForLayer?.ignore == true {
+                if policy.shouldIgnore(view, viewType: viewType, className: viewClassName) || markerOverrideForLayer?.ignore == true {
                     return
                 }
 
@@ -185,7 +185,12 @@ final class MaskCollector {
                     inheritedExplicitMask: inheritedExplicitMask,
                     markerMask: markerOverrideForLayer?.mask
                 )
-                if emitViewMask(view: view, layer: layer, viewType: viewType, effectiveFrame: effectiveFrame, resolvedExplicitMask: resolvedExplicitMask) {
+                if emitViewMask(view: view,
+                                layer: layer,
+                                viewType: viewType,
+                                className: viewClassName,
+                                effectiveFrame: effectiveFrame,
+                                resolvedExplicitMask: resolvedExplicitMask) {
                     return
                 }
                 childInheritedMask = resolvedExplicitMask
@@ -198,7 +203,7 @@ final class MaskCollector {
                 } else {
                     resolvedExplicitMask = inheritedExplicitMask ?? markerOverrideForLayer?.mask
                 }
-                if emitLayerOnlyMask(layer: layer, effectiveFrame: effectiveFrame, resolvedExplicitMask: resolvedExplicitMask) {
+                if emitLayerOnlyMask(layerClassName: layerClassName, layer: layer, effectiveFrame: effectiveFrame, resolvedExplicitMask: resolvedExplicitMask) {
                     return
                 }
                 childInheritedMask = resolvedExplicitMask
@@ -214,15 +219,20 @@ final class MaskCollector {
             // layers avoids this. Mask positions may be slightly off during active
             // animations, but correctness under normal (non-animating) state is preserved.
             guard let modelSublayers = layer.model().sublayers, !modelSublayers.isEmpty else { return }
-            let safeSublayers = modelSublayers.filter {
-                !NSStringFromClass(type(of: $0)).hasPrefix("CameraUI")
+            var safeSublayers: [(CALayer, String)] = []
+            safeSublayers.reserveCapacity(modelSublayers.count)
+            for sublayer in modelSublayers {
+                let sublayerClassName = NSStringFromClass(type(of: sublayer))
+                if !policy.shouldSkipLayer(className: sublayerClassName) {
+                    safeSublayers.append((sublayer, sublayerClassName))
+                }
             }
             guard !safeSublayers.isEmpty else { return }
             if safeSublayers.count == 1 {
-                visit(layer: safeSublayers[0], inheritedExplicitMask: childInheritedMask)
+                visit(layer: safeSublayers[0].0, layerClassName: safeSublayers[0].1, inheritedExplicitMask: childInheritedMask)
             } else {
-                safeSublayers.sorted { $0.zPosition < $1.zPosition }
-                    .forEach { visit(layer: $0, inheritedExplicitMask: childInheritedMask) }
+                safeSublayers.sorted { $0.0.zPosition < $1.0.zPosition }
+                    .forEach { visit(layer: $0.0, layerClassName: $0.1, inheritedExplicitMask: childInheritedMask) }
             }
         }
 
@@ -230,15 +240,20 @@ final class MaskCollector {
         // presentation layer creates presentation copies of all children, crashing on
         // iOS 26 if any child is or contains CameraUI.ModeLoupeLayer.
         let rootModelSublayers = rPresentation.model().sublayers ?? []
-        let safeRootSublayers = rootModelSublayers.filter {
-            !NSStringFromClass(type(of: $0)).hasPrefix("CameraUI")
+        var safeRootSublayers: [(CALayer, String)] = []
+        safeRootSublayers.reserveCapacity(rootModelSublayers.count)
+        for sublayer in rootModelSublayers {
+            let sublayerClassName = NSStringFromClass(type(of: sublayer))
+            if !policy.shouldSkipLayer(className: sublayerClassName) {
+                safeRootSublayers.append((sublayer, sublayerClassName))
+            }
         }
         if !safeRootSublayers.isEmpty {
             if safeRootSublayers.count == 1 {
-                visit(layer: safeRootSublayers[0], inheritedExplicitMask: nil)
+                visit(layer: safeRootSublayers[0].0, layerClassName: safeRootSublayers[0].1, inheritedExplicitMask: nil)
             } else {
-                safeRootSublayers.sorted { $0.zPosition < $1.zPosition }
-                    .forEach { visit(layer: $0, inheritedExplicitMask: nil) }
+                safeRootSublayers.sorted { $0.0.zPosition < $1.0.zPosition }
+                    .forEach { visit(layer: $0.0, layerClassName: $0.1, inheritedExplicitMask: nil) }
             }
         }
 

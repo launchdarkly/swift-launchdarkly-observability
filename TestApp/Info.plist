@@ -8,6 +8,12 @@
 	<string>$(otlpEndpoint)</string>
 	<key>backendUrl</key>
 	<string>$(backendUrl)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Used to present the system camera UI to reproduce the CameraUI.ModeLoupeLayer Session Replay crash.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Used by the system camera UI when capturing video.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used by the system camera UI to save or pick captured media.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
