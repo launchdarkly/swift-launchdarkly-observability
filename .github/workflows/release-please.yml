@@ -17,7 +17,7 @@ jobs:
         steps:
             # Normally a workflow cannot trigger another workflow. For this workflow we need to run required checks.
             # Github determines that something is created by a workflow/bot based on the token.
-            - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+            - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.1
               name: 'Get PAT'
               with:
                   aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
@@ -41,7 +41,7 @@ jobs:
             contents: read
         steps:
             - uses: actions/checkout@v7.0.0
-            - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+            - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.1
               name: 'Get CocoaPods token'
               with:
                   aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
