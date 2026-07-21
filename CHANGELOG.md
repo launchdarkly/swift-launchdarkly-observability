@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.47.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.46.3...0.47.0) (2026-07-21)
+
+
+### Features
+
+* **observability:** resolve React Native nativeID for click event.id ([#245](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/245)) ([587a5e9](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/587a5e902e01e598da9c7e59dfcbfed610d386e8))
+
 ## [0.46.3](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.46.2...0.46.3) (2026-07-06)
 
 
