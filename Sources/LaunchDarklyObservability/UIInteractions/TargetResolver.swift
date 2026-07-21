@@ -59,7 +59,8 @@ final class TargetResolver: TargetResolving {
 
     func resolve(press: UIPress, window: UIWindow) -> TouchTarget? {
         guard let hitView = press.responder as? UIView else { return nil }
-        return touchTarget(for: nearestSemanticView(view: hitView), ldId: ldIdWalkingUp(from: hitView), window: window)
+        let ldId = ldIdWalkingUp(from: hitView) ?? reactNativeIdWalkingUp(from: hitView)
+        return touchTarget(for: nearestSemanticView(view: hitView), ldId: ldId, window: window)
     }
     
     private func touchTarget(for semanticView: UIView, ldId: String?, window: UIWindow) -> TouchTarget {
@@ -87,13 +88,18 @@ final class TargetResolver: TargetResolving {
     /// 1. A `.ldClick(_:)` gesture recorded at this tap (SwiftUI, location-matched against any of
     ///    [candidatePoints], which cover the window/screen coordinate spaces `.global` may use).
     /// 2. `UIView.ldId(_:)` on the hit view or an ancestor (UIKit).
-    /// 3. A locationless `.ldClick(_:)` entry (older SwiftUI versions that report no coordinates),
+    /// 3. React Native's `nativeID` on the hit view or an ancestor (set directly or via the RN SDK's
+    ///    `<LDClick id:>` wrapper). An explicit developer id, so it outranks the locationless fallback.
+    /// 4. A locationless `.ldClick(_:)` entry (older SwiftUI versions that report no coordinates),
     ///    used only as a last resort so it can't mask a real UIKit id or bleed into a later tap.
     private func resolveLdId(hitView: UIView, candidatePoints: [CGPoint]) -> String? {
         if let id = LdClickRegistry.shared.id(atAnyOf: candidatePoints) {
             return id
         }
         if let id = ldIdWalkingUp(from: hitView) {
+            return id
+        }
+        if let id = reactNativeIdWalkingUp(from: hitView) {
             return id
         }
         return LdClickRegistry.shared.locationlessId()
@@ -105,6 +111,40 @@ final class TargetResolver: TargetResolving {
         while let cur = v {
             if let id = LdIdStorage.get(cur), !id.isEmpty { return id }
             v = cur.superview
+        }
+        return nil
+    }
+
+    /// Walks up from [view] returning the nearest ancestor's React Native `nativeID`, or `nil`.
+    ///
+    /// React Native sets the JS `nativeID` prop on the UIView backing a JS element; the LaunchDarkly
+    /// React Native SDK's `<LDClick id:>` wrapper sets it to carry a stable analytics id down to
+    /// native. The two RN architectures expose it under different names — Paper via the
+    /// `UIView (React)` category property `nativeID`, Fabric via `RCTViewComponentView.nativeId` — so
+    /// [reactNativeId] checks both. Read reflectively (KVC after a `responds(to:)` guard) to avoid a
+    /// compile-time dependency on React Native; plain UIKit views simply return `nil`.
+    func reactNativeIdWalkingUp(from view: UIView) -> String? {
+        var v: UIView? = view
+        while let cur = v {
+            if let id = reactNativeId(of: cur) { return id }
+            v = cur.superview
+        }
+        return nil
+    }
+
+    private static let fabricNativeIdSelector = Selector(("nativeId"))
+    private static let paperNativeIDSelector = Selector(("nativeID"))
+
+    /// Returns the view's React Native id (non-empty), checking the Fabric (`nativeId`) then Paper
+    /// (`nativeID`) property. Returns `nil` when the view exposes neither or the value is empty.
+    private func reactNativeId(of view: UIView) -> String? {
+        if view.responds(to: Self.fabricNativeIdSelector),
+           let id = view.value(forKey: "nativeId") as? String, !id.isEmpty {
+            return id
+        }
+        if view.responds(to: Self.paperNativeIDSelector),
+           let id = view.value(forKey: "nativeID") as? String, !id.isEmpty {
+            return id
         }
         return nil
     }
