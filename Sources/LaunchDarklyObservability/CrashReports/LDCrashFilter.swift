@@ -13,7 +13,7 @@ import Foundation
 // Consumes the raw (demangled) KSCrash report dictionary and emits a fatal log
 // record whose `exception.stacktrace` is the structured "ld-apple-1" payload
 // (per-frame image UUID + image-relative offset). The backend symbolicates these
-// frames against the .ldsm maps uploaded via `ldcli symbols upload
+// frames against the .dsymmap maps uploaded via `ldcli symbols upload
 // --type apple-dsym`. Because this reads the raw report rather than the Apple
 // text format, the pipeline no longer includes CrashReportFilterAppleFmt.
 final class LDCrashFilter: NSObject, CrashReportFilter {

@@ -28,7 +28,7 @@ final class KSCrashReportService {
         // raw report dictionary to LDCrashFilter, which builds the structured
         // "ld-apple-1" payload. CrashReportFilterAppleFmt is intentionally omitted:
         // it flattens the report to Apple crash text and would drop the per-frame
-        // image UUID / load address the backend needs to symbolicate from .ldsm maps.
+        // image UUID / load address the backend needs to symbolicate from .dsymmap maps.
         reportStore.sink = CrashReportFilterPipeline(filters: [
             CrashReportFilterDemangle(), // Handles symbol demangling
             LDCrashFilter(logsApi: logsApi)

@@ -6,7 +6,7 @@ import Foundation
 /// Each scenario is triggered in one of two modes (see `Mode`):
 /// - `.crash` terminates the process; KSCrash captures it and the SDK delivers
 ///   the structured `ld-apple-1` payload on the next launch, which the backend
-///   symbolicates against the uploaded dSYM `.ldsm` maps.
+///   symbolicates against the uploaded dSYM `.dsymmap` maps.
 /// - `.error` runs the same failure but catches it (Swift `try`/`catch`) and
 ///   reports it live via `LDObserve.recordError`. Only available for scenarios
 ///   that are catchable — see `supportsHandled`.
@@ -51,8 +51,9 @@ enum CrashScenario: String, CaseIterable, Identifiable {
         /// stacktrace is the on-device `Thread.callStackSymbols` text.
         case error
         /// Catch the failure and report it with a structured `ld-apple-1` payload
-        /// built from the live call stack, so the backend symbolicates it from the
-        /// dSYM `.ldsm` maps (same path as a crash, without terminating).
+        /// built from the call stack captured at the throw site, so the backend
+        /// symbolicates it from the dSYM `.dsymmap` maps (same path as a crash,
+        /// without terminating).
         case errorStructured
         /// Let the failure terminate the process (fatal).
         case crash
@@ -69,4 +70,14 @@ enum CrashScenario: String, CaseIterable, Identifiable {
             return false
         }
     }
+}
+
+/// Wraps a thrown error together with the structured `ld-apple-1` backtrace
+/// captured *at the throw site*. `LiveBacktrace` must be sampled while the
+/// failing frames are still on the stack; sampling it later from the `catch`
+/// block would only capture the reporting path (the error has already unwound),
+/// so the throw-site frames the backend should symbolicate would be lost.
+struct StructuredError: Error {
+    let underlying: Error
+    let stackTraceJSON: String
 }

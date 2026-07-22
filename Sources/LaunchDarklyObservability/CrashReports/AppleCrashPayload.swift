@@ -3,7 +3,7 @@ import Foundation
 /// `AppleCrashPayload` is the structured crash representation ("ld-apple-1") the
 /// SDK writes into the OpenTelemetry `exception.stacktrace` attribute in place of
 /// the legacy Apple crash text. The backend sniffs the `format` discriminator and,
-/// for each frame, looks up the uploaded `.ldsm` symbol map keyed by `image_uuid`
+/// for each frame, looks up the uploaded `.dsymmap` symbol map keyed by `image_uuid`
 /// and resolves the source location from `rel_offset` (the image-relative
 /// instruction offset). `module`/`symbol`/`in_app` drive display and the
 /// un-symbolicated fallback.
@@ -32,7 +32,7 @@ struct AppleCrashPayload: Encodable, Equatable {
         /// Image basename (e.g. "MyApp", "libswiftCore.dylib").
         let module: String?
         /// On-device symbol name, when the OS symbolicated the frame. Serves as a
-        /// fallback label until the backend resolves the .ldsm map.
+        /// fallback label until the backend resolves the .dsymmap map.
         let symbol: String?
         /// Whether the frame belongs to the app's main executable image.
         let inApp: Bool

@@ -195,7 +195,9 @@ final class MainMenuViewModel: ObservableObject {
 			} catch {
 				switch mode {
 				case .error:
-					LDObserve.shared.recordError(error, attributes: [:])
+					// Report the original error; the structured wrapper only
+					// carries the throw-site backtrace for `.errorStructured`.
+					LDObserve.shared.recordError((error as? StructuredError)?.underlying ?? error, attributes: [:])
 				case .errorStructured:
 					recordStructuredError(error)
 				case .crash:
@@ -296,7 +298,13 @@ final class MainMenuViewModel: ObservableObject {
 		case .castFailure:
 			_ = try Self.cast("not an int", to: Int.self)
 		case .decodingFailure:
-			_ = try JSONDecoder().decode([Int].self, from: Data("not json".utf8))
+			// JSONDecoder throws its own error, so capture the backtrace here (at
+			// the failing call) and rewrap before it unwinds past this frame.
+			do {
+				_ = try JSONDecoder().decode([Int].self, from: Data("not json".utf8))
+			} catch {
+				throw StructuredError(underlying: error, stackTraceJSON: LiveBacktrace.applePayloadJSON())
+			}
 		default:
 			break
 		}
@@ -307,24 +315,31 @@ final class MainMenuViewModel: ObservableObject {
 	/// uploaded dSYM — the non-fatal analog of a crash. Uses the same log +
 	/// `exception.*` attribute shape the crash reporter emits.
 	private func recordStructuredError(_ error: Error) {
+		let underlying = (error as? StructuredError)?.underlying ?? error
+		// Prefer the backtrace captured at the throw site. Fall back to a live
+		// capture only for errors that weren't wrapped — that trace reflects the
+		// reporting path, not the failure, but is better than none.
+		let stackTraceJSON = (error as? StructuredError)?.stackTraceJSON ?? LiveBacktrace.applePayloadJSON()
 		LDObserve.shared.recordLog(
-			message: error.localizedDescription,
+			message: underlying.localizedDescription,
 			severity: .error,
 			properties: [
-				"exception.type": String(describing: error),
-				"exception.message": error.localizedDescription,
-				"exception.stacktrace": LiveBacktrace.applePayloadJSON(),
+				"exception.type": String(describing: underlying),
+				"exception.message": underlying.localizedDescription,
+				"exception.stacktrace": stackTraceJSON,
 			]
 		)
 	}
 
 	private static func alwaysThrows() throws -> Int {
-		throw Failure.crash
+		// Capture the backtrace here, at the throw site, so `.errorStructured`
+		// reports these frames rather than the unwound reporting path.
+		throw StructuredError(underlying: Failure.crash, stackTraceJSON: LiveBacktrace.applePayloadJSON())
 	}
 
 	private static func cast<T>(_ value: Any, to type: T.Type) throws -> T {
 		guard let result = value as? T else {
-			throw Failure.cast
+			throw StructuredError(underlying: Failure.cast, stackTraceJSON: LiveBacktrace.applePayloadJSON())
 		}
 		return result
 	}

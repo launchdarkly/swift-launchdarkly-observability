@@ -3,8 +3,11 @@ import MachO
 
 /// Builds the structured `ld-apple-1` stacktrace payload from the *current*
 /// thread's call stack, so a handled error can be symbolicated by the backend
-/// against the uploaded dSYM `.ldsm` maps — exactly like a crash, but without
+/// against the uploaded dSYM `.dsymmap` maps — exactly like a crash, but without
 /// terminating the process.
+///
+/// Capture the payload at the throw site (while the failing frames are still on
+/// the stack), not from a `catch` block after the error has unwound.
 ///
 /// This mirrors `AppleCrashPayloadBuilder` in the SDK, except the frames come
 /// from live return addresses (`Thread.callStackReturnAddresses` + `dladdr` +
