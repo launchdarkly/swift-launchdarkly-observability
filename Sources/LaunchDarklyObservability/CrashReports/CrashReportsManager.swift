@@ -24,9 +24,13 @@ final class KSCrashReportService {
         guard let reportStore = reporter.reportStore else {
             throw InstrumentationError.unableToLoadReportStore
         }
+        // Demangle on-device symbols (used as the fallback label), then hand the
+        // raw report dictionary to LDCrashFilter, which builds the structured
+        // "ld-apple-1" payload. CrashReportFilterAppleFmt is intentionally omitted:
+        // it flattens the report to Apple crash text and would drop the per-frame
+        // image UUID / load address the backend needs to symbolicate from .ldsm maps.
         reportStore.sink = CrashReportFilterPipeline(filters: [
             CrashReportFilterDemangle(), // Handles symbol demangling
-            CrashReportFilterAppleFmt(reportStyle: .symbolicated),
             LDCrashFilter(logsApi: logsApi)
         ])
         
