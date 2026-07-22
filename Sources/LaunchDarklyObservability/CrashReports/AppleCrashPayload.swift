@@ -112,12 +112,34 @@ struct KSCrashReportModel: Decodable {
         let imageVmaddr: UInt64?
         let uuid: String?
         let name: String?
+        /// The runtime crash message KSCrash captured from this image's
+        /// `__DATA,__crash_info` section — e.g. Swift's
+        /// "Fatal error: Index out of range". Set on the image that trapped
+        /// (app or libswiftCore), not under `crash.error`. Different OS/Swift
+        /// versions populate `message`, `message2`, or `signature`, so all three
+        /// are decoded and tried in order (see `bestCrashInfo`).
+        let crashInfoMessage: String?
+        let crashInfoMessage2: String?
+        let crashInfoSignature: String?
 
         enum CodingKeys: String, CodingKey {
             case imageAddr = "image_addr"
             case imageVmaddr = "image_vmaddr"
             case uuid
             case name
+            case crashInfoMessage = "crash_info_message"
+            case crashInfoMessage2 = "crash_info_message2"
+            case crashInfoSignature = "crash_info_signature"
+        }
+
+        /// The most descriptive crash-info string this image carries, if any.
+        var bestCrashInfo: String? {
+            for candidate in [crashInfoMessage, crashInfoMessage2, crashInfoSignature] {
+                if let candidate, !candidate.isEmpty {
+                    return candidate
+                }
+            }
+            return nil
         }
     }
 
@@ -268,8 +290,75 @@ enum AppleCrashPayloadBuilder {
         let error = report.crash?.error
         if let reason = error?.nsexception?.reason, !reason.isEmpty { return reason }
         if let reason = error?.reason, !reason.isEmpty { return reason }
-        if let code = error?.signal?.codeName, !code.isEmpty { return code }
+        // Swift runtime traps (e.g. "Index out of range", force-unwrap of nil)
+        // carry no NSException/error reason; the message lives in the trapping
+        // image's __crash_info section instead. This may be unavailable when the
+        // OS emits a __crash_info version the installed KSCrash can't parse (e.g.
+        // iOS 26+ with KSCrash 2.5.1), in which case we fall back below.
+        if let message = crashInfoMessage(from: report), !message.isEmpty { return message }
+        // Last resort: synthesize the most descriptive signal/mach label instead
+        // of a bare, opaque code like "0" (a numeric signal/mach code_name).
+        return signalDescription(from: error)
+    }
+
+    /// A human-readable mach/signal label (e.g. "EXC_BREAKPOINT (SIGTRAP)") used
+    /// when no runtime message is available. Never returns a purely numeric code.
+    private static func signalDescription(from error: KSCrashReportModel.CrashError?) -> String? {
+        guard let error else {
+            return nil
+        }
+        let mach = error.mach?.exceptionName.flatMap { $0.isEmpty ? nil : $0 }
+        let signalName = error.signal?.name.flatMap { $0.isEmpty ? nil : $0 }
+        let codeName = error.signal?.codeName.flatMap { $0.isEmpty ? nil : $0 }
+
+        if let mach {
+            return signalName.map { "\(mach) (\($0))" } ?? mach
+        }
+        // A named code (e.g. "SEGV_MAPERR") is more specific than the signal;
+        // a purely numeric code (e.g. "0") is opaque, so skip it.
+        if let codeName, !isNumeric(codeName) {
+            return codeName
+        }
+        if let signalName {
+            return signalName
+        }
+        if let type = error.type, !type.isEmpty {
+            return type
+        }
         return nil
+    }
+
+    private static func isNumeric(_ s: String) -> Bool {
+        !s.isEmpty && s.allSatisfy(\.isNumber)
+    }
+
+    /// The Swift/Obj-C runtime crash message captured from an image's
+    /// `__DATA,__crash_info` section. KSCrash records it per binary image (not
+    /// under `crash.error`), so prefer the crashed thread's frame images
+    /// (innermost first) and fall back to any image that captured a message.
+    static func crashInfoMessage(from report: KSCrashReportModel) -> String? {
+        let images = report.binaryImages ?? []
+        guard !images.isEmpty else {
+            return nil
+        }
+
+        var byLoadAddress = [UInt64: KSCrashReportModel.BinaryImage]()
+        for image in images {
+            if let addr = image.imageAddr {
+                byLoadAddress[addr] = image
+            }
+        }
+
+        let threads = report.crash?.threads ?? []
+        let thread = threads.first(where: { $0.crashed == true }) ?? threads.first
+        for frame in thread?.backtrace?.contents ?? [] {
+            if let addr = frame.objectAddr,
+               let message = byLoadAddress[addr]?.bestCrashInfo {
+                return message
+            }
+        }
+
+        return images.compactMap(\.bestCrashInfo).first
     }
 
     static func incidentIdentifier(from report: KSCrashReportModel) -> String {

@@ -126,6 +126,61 @@ struct AppleCrashPayloadBuilderTests {
         #expect(AppleCrashPayloadBuilder.exceptionMessage(from: report) == "index 5 beyond bounds")
     }
 
+    @Test("Surfaces the Swift runtime crash_info_message for a trap, not the signal code")
+    func swiftTrapCrashInfoMessage() throws {
+        // A Swift "Index out of range" trap: EXC_BREAKPOINT/SIGTRAP with no
+        // NSException/error reason and an unhelpful code_name; the real message
+        // lives in the trapping image's crash_info_message.
+        let json = """
+        {
+          "crash": {
+            "error": {
+              "type": "signal",
+              "signal": { "name": "SIGTRAP", "code_name": "0" }
+            },
+            "threads": [
+              { "crashed": true, "backtrace": { "contents": [
+                { "instruction_addr": 4294971392, "object_addr": 4294967296, "object_name": "TestApp" }
+              ] } }
+            ]
+          },
+          "binary_images": [
+            { "image_addr": 4294967296, "uuid": "AAAA-BBBB", "name": "TestApp", "crash_info_message": "Fatal error: Index out of range" }
+          ]
+        }
+        """
+        let report = try JSONDecoder().decode(KSCrashReportModel.self, from: Data(json.utf8))
+        #expect(AppleCrashPayloadBuilder.exceptionType(from: report) == "SIGTRAP")
+        #expect(AppleCrashPayloadBuilder.exceptionMessage(from: report) == "Fatal error: Index out of range")
+    }
+
+    @Test("Falls back to a signal/mach label, never a bare numeric code")
+    func numericSignalCodeFallback() throws {
+        // iOS 26+ with KSCrash 2.5.1: no crash_info_message captured, and the
+        // signal code_name is the opaque "0". We must not surface "0".
+        let json = """
+        {
+          "crash": {
+            "error": {
+              "type": "mach",
+              "signal": { "name": "SIGTRAP", "code_name": "0" },
+              "mach": { "exception_name": "EXC_BREAKPOINT" }
+            },
+            "threads": [
+              { "crashed": true, "backtrace": { "contents": [
+                { "instruction_addr": 4294971392, "object_addr": 4294967296, "object_name": "TestApp" }
+              ] } }
+            ]
+          },
+          "binary_images": [
+            { "image_addr": 4294967296, "uuid": "AAAA-BBBB", "name": "TestApp" }
+          ]
+        }
+        """
+        let report = try JSONDecoder().decode(KSCrashReportModel.self, from: Data(json.utf8))
+        #expect(AppleCrashPayloadBuilder.exceptionMessage(from: report) == "EXC_BREAKPOINT (SIGTRAP)")
+    }
+
     @Test("Returns nil when there is no thread with a backtrace")
     func noBacktraceReturnsNil() throws {
         let json = """

@@ -1,7 +1,7 @@
-# Apple Symbolication — generating & uploading `.ldsm` for TestApp
+# Apple Symbolication — generating & uploading `.dsymmap` for TestApp
 
-This guide shows how to turn TestApp's **dSYM** debug info into LaunchDarkly
-symbol maps (`.ldsm`) and upload them, so crash/error stack traces show real
+This guide shows how to turn TestApp's **dSYM** debug info into compact symbol
+maps (`.dsymmap`) and upload them, so crash/error stack traces show real
 function names, `file:line`, and inlined call frames instead of raw addresses.
 
 ## How it works
@@ -11,12 +11,12 @@ function names, `file:line`, and inlined call frames instead of raw addresses.
    dwarf-with-dsym`).
 2. `ldcli symbols upload --type apple-dsym` reads the dSYM, and for **each
    architecture** (e.g. `arm64`, `x86_64`) compiles the DWARF into a compact
-   `.ldsm` symbol map keyed by that slice's **build UUID**.
-3. Each map is uploaded to `_sym/apple/id/<UUID>`. At crash time the SDK reports
-   the image UUID + instruction offset for each frame, and the backend loads the
-   matching map to symbolicate.
+   `.dsymmap` symbol map keyed by that slice's **build UUID**.
+3. Each map is uploaded to `_sym/apple/id/<UUID>.dsymmap`. At crash time the SDK
+   reports the image UUID + instruction offset for each frame, and the backend
+   loads the matching map to symbolicate.
 
-You never generate or check in the `.ldsm` yourself — `ldcli` builds it in
+You never generate or check in the `.dsymmap` yourself — `ldcli` builds it in
 memory and uploads it. You only point it at the dSYM.
 
 ## Prerequisites
@@ -29,44 +29,67 @@ memory and uploads it. You only point it at the dSYM.
 - A LaunchDarkly **access token** and the **project key** for the environment
   receiving telemetry.
 
-## Step 1 — produce the dSYM (Release)
+## Step 1 — build the exact app + dSYM once (Release)
 
-### Option A: Xcode
-Product ▸ Archive. The dSYM is inside the archive at
-`…/TestApp.xcarchive/dSYMs/TestApp.app.dSYM`.
+Symbol maps are keyed strictly by **build UUID**. The one rule that matters for
+an end-to-end test: the running app's per-image UUID must equal the UUID of the
+dSYM you uploaded. The `.app` and its `.dSYM` come from the same link, so they
+share UUIDs — **as long as you build once and then upload and run that same
+product**. So build here once, to a fixed `-derivedDataPath`, and reuse that
+artifact for both Step 2 (upload its dSYM) and Step 4 (run that same `.app`).
 
-### Option B: command line
+> Do **not** just press ⌘R afterwards. A Debug run usually leaves symbols in the
+> binary (nothing to symbolicate) and, more importantly, relinks on each run, so
+> its UUID drifts away from the map you uploaded.
+
+A Release build emits both the `.app` and its `.dSYM` side by side.
+
+### Simulator (fastest)
 ```bash
 cd TestApp
-xcodebuild archive \
+xcodebuild build \
   -project TestApp.xcodeproj \
   -scheme TestApp \
   -configuration Release \
-  -destination 'generic/platform=iOS' \
-  -archivePath build/TestApp.xcarchive
-```
-The dSYM is written to `build/TestApp.xcarchive/dSYMs/TestApp.app.dSYM`.
+  -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath build/dd
 
-> A plain `xcodebuild build` in Release also produces the dSYM next to the app in
-> `DerivedData/.../Build/Products/Release-iphoneos/TestApp.app.dSYM`.
+APP="build/dd/Build/Products/Release-iphonesimulator/TestAppFruta.app"
+```
+
+### Physical device
+```bash
+cd TestApp
+xcodebuild build \
+  -project TestApp.xcodeproj -scheme TestApp -configuration Release \
+  -destination 'generic/platform=iOS' -derivedDataPath build/dd
+
+APP="build/dd/Build/Products/Release-iphoneos/TestAppFruta.app"
+```
+
+The dSYM you upload in Step 2 is `"$APP.dSYM"`.
 
 ## Step 2 — upload with ldcli
 
-Point `--path` at the archive's `dSYMs` folder (it can also be a single
+Point `--path` at the `$APP.dSYM` you built in Step 1 (it can also be a single
 `.dSYM` bundle, a directory tree containing several, or the inner DWARF file):
 
 ```bash
 ldcli symbols upload \
-  --type apple-dsym \
+  --type ios \
   --project <PROJECT_KEY> \
   --access-token <ACCESS_TOKEN> \
-  --path build/TestApp.xcarchive/dSYMs
+  --path "$APP.dSYM"
 ```
+
+> `--type ios` is a synonym for the canonical `apple-dsym`. Any Apple platform
+> acronym works: `ios`, `ipados`, `tvos`, `watchos`, `visionos`, `macos`, as well
+> as `apple` and `dsym` (all case-insensitive).
 
 Expected output:
 
 ```
-Starting to upload apple-dsym symbols from build/TestApp.xcarchive/dSYMs
+Starting to upload apple-dsym symbols from build/dd/Build/Products/Release-iphonesimulator/TestAppFruta.app.dSYM
 Built symbol map for BD1993CF2B693D1290F66439459E4E63 (arm64, 10240 bytes)
 [LaunchDarkly] Uploaded symbol map BD1993CF2B693D1290F66439459E4E63 (arm64)
 Successfully uploaded all symbols
@@ -79,12 +102,12 @@ environment):
 
 ```bash
 ldcli symbols upload \
-  --type apple-dsym \
+  --type ios \
   --project default \
   --access-token <STAGING_TOKEN> \
   --base-uri https://ld-stg.launchdarkly.com \
   --backend-url http://localhost:8082/private \
-  --path build/TestApp.xcarchive/dSYMs
+  --path "$APP.dSYM"
 ```
 
 ## Step 3 (recommended) — upload automatically on every build
@@ -102,7 +125,7 @@ if [ "${CONFIGURATION}" != "Release" ]; then
 fi
 
 /usr/local/bin/ldcli symbols upload \
-  --type apple-dsym \
+  --type ios \
   --project "$LD_PROJECT_KEY" \
   --access-token "$LD_ACCESS_TOKEN" \
   --path "${DWARF_DSYM_FOLDER_PATH}"
@@ -115,6 +138,39 @@ Notes:
   an `.xcconfig`, or your CI secrets — do not hard-code the token.
 - Uncheck **"Based on dependency analysis"** so the phase always runs.
 
+## Step 4 — install & launch the *exact* binary you uploaded the dSYM for
+
+Reuse the `$APP` you built in Step 1 — **do not rebuild** between uploading and
+running, or the UUID drifts away from the map you uploaded. TestApp's bundle id
+is `com.launchdarkly.TestApp`.
+
+First confirm the app and its dSYM share the same UUIDs:
+
+```bash
+dwarfdump --uuid "$APP/TestAppFruta"
+dwarfdump --uuid "$APP.dSYM/Contents/Resources/DWARF/TestAppFruta"
+```
+
+### Simulator (fastest)
+
+```bash
+xcrun simctl boot "iPhone 17" 2>/dev/null; open -a Simulator
+xcrun simctl install booted "$APP"
+xcrun simctl launch --console booted com.launchdarkly.TestApp
+```
+
+### Physical device (Xcode 15+, `devicectl`)
+
+```bash
+xcrun devicectl list devices                               # find your device UDID
+xcrun devicectl device install app    --device <UDID> "$APP"
+xcrun devicectl device process launch --device <UDID> com.launchdarkly.TestApp
+```
+
+Then tap an **Error dSYM** or **Crash** button. The `file:line` + inlined frames
+come from the uploaded symbol map, so a plain simulator build is a fully valid
+test.
+
 ## Verifying
 
 Re-run the same dSYM upload as often as you like — maps are keyed by UUID and
@@ -122,8 +178,9 @@ overwrite cleanly. Confirm the build UUIDs you uploaded match the app you're
 running:
 
 ```bash
-dwarfdump --uuid build/TestApp.xcarchive/dSYMs/TestApp.app.dSYM
+dwarfdump --uuid "$APP.dSYM"
 ```
 
-Those UUIDs (uppercased, no dashes) are the keys under `_sym/apple/id/…`, and
-are what the SDK reports per frame at crash time.
+Those UUIDs (uppercased, no dashes) form the keys under
+`_sym/apple/id/<UUID>.dsymmap`, and are what the SDK reports per frame at crash
+time.
