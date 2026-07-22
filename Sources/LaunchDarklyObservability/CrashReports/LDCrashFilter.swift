@@ -41,13 +41,16 @@ final class LDCrashFilter: NSObject, CrashReportFilter {
                     continue
                 }
                 let jsonData = try KSJSONCodec.encode(report.value, options: .sorted)
-                guard let crash = try AppleCrashPayloadBuilder.makeStructuredCrash(fromReportData: jsonData) else {
-                    continue
-                }
+                // Always emit fatal telemetry for a crash report, even when the
+                // structured backtrace can't be built — otherwise KSCrash treats
+                // the (silent) completion as success and discards the report.
+                let crash = try AppleCrashPayloadBuilder.makeStructuredCrash(fromReportData: jsonData)
 
                 var attributes = [String: AttributeValue]()
                 attributes["exception.type"] = .string(crash.exceptionType)
-                attributes["exception.stacktrace"] = .string(crash.stackTraceJSON)
+                if let stackTraceJSON = crash.stackTraceJSON {
+                    attributes["exception.stacktrace"] = .string(stackTraceJSON)
+                }
                 if let message = crash.exceptionMessage {
                     attributes["exception.message"] = .string(message)
                 }

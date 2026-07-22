@@ -190,32 +190,41 @@ struct KSCrashReportModel: Decodable {
 /// tested against JSON fixtures.
 enum AppleCrashPayloadBuilder {
     /// The exception attributes and structured stacktrace derived from one crash
-    /// report, ready to attach to a fatal log record.
+    /// report, ready to attach to a fatal log record. `stackTraceJSON` is nil when
+    /// the report carried no usable backtrace — the caller must still emit the
+    /// fatal log so the crash isn't dropped, just without the structured frames.
     struct StructuredCrash {
         let incidentIdentifier: String
         let exceptionType: String
         let exceptionMessage: String?
-        let stackTraceJSON: String
+        let stackTraceJSON: String?
     }
 
     /// Decodes a raw KSCrash report (JSON-encoded dictionary) and produces the
-    /// structured crash attributes. Returns nil when the report has no usable
-    /// backtrace so the caller can skip it.
-    static func makeStructuredCrash(fromReportData data: Data) throws -> StructuredCrash? {
+    /// structured crash attributes. Always returns a `StructuredCrash` for a
+    /// decodable report so the caller can always emit fatal telemetry; the
+    /// structured stacktrace is nil when there is no usable backtrace.
+    static func makeStructuredCrash(fromReportData data: Data) throws -> StructuredCrash {
         let report = try JSONDecoder().decode(KSCrashReportModel.self, from: data)
-        guard let payload = payload(from: report) else {
-            return nil
-        }
-        let encoded = try JSONEncoder().encode(payload)
-        guard let json = String(data: encoded, encoding: .utf8) else {
-            return nil
-        }
         return StructuredCrash(
             incidentIdentifier: incidentIdentifier(from: report),
             exceptionType: exceptionType(from: report),
             exceptionMessage: exceptionMessage(from: report),
-            stackTraceJSON: json
+            stackTraceJSON: stackTraceJSON(from: report)
         )
+    }
+
+    /// Encodes the crashed thread's backtrace as the "ld-apple-1" wire JSON, or
+    /// nil when the report has no usable backtrace (or encoding fails). A missing
+    /// stacktrace must not prevent the fatal log from being sent.
+    static func stackTraceJSON(from report: KSCrashReportModel) -> String? {
+        guard let payload = payload(from: report) else {
+            return nil
+        }
+        guard let encoded = try? JSONEncoder().encode(payload) else {
+            return nil
+        }
+        return String(data: encoded, encoding: .utf8)
     }
 
     /// Converts the crashed thread's backtrace into structured frames. Returns

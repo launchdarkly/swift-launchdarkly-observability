@@ -84,21 +84,44 @@ struct AppleCrashPayloadBuilderTests {
 
     @Test("Derives exception attributes and a valid wire JSON payload")
     func makesStructuredCrash() throws {
-        let crash = try #require(
-            try AppleCrashPayloadBuilder.makeStructuredCrash(fromReportData: Data(Self.fixture.utf8))
-        )
+        let crash = try AppleCrashPayloadBuilder.makeStructuredCrash(fromReportData: Data(Self.fixture.utf8))
 
         #expect(crash.incidentIdentifier == "ABC-123")
         #expect(crash.exceptionType == "SIGSEGV")
         #expect(crash.exceptionMessage == "SEGV_MAPERR")
-        #expect(crash.stackTraceJSON.contains("ld-apple-1"))
-        #expect(crash.stackTraceJSON.contains("image_uuid"))
-        #expect(crash.stackTraceJSON.contains("rel_offset"))
+        let stackTraceJSON = try #require(crash.stackTraceJSON)
+        #expect(stackTraceJSON.contains("ld-apple-1"))
+        #expect(stackTraceJSON.contains("image_uuid"))
+        #expect(stackTraceJSON.contains("rel_offset"))
 
         // The stacktrace must be valid JSON with the frozen shape.
-        let object = try JSONSerialization.jsonObject(with: Data(crash.stackTraceJSON.utf8)) as? [String: Any]
+        let object = try JSONSerialization.jsonObject(with: Data(stackTraceJSON.utf8)) as? [String: Any]
         #expect(object?["format"] as? String == "ld-apple-1")
         #expect((object?["frames"] as? [[String: Any]])?.count == 3)
+    }
+
+    @Test("Still produces exception attributes (no stacktrace) when there is no backtrace")
+    func makesStructuredCrashWithoutBacktrace() throws {
+        // No usable backtrace: the crash must not be dropped — we still surface
+        // the exception type/message, just without the structured stacktrace.
+        let json = """
+        {
+          "report": { "id": "NO-BT-1" },
+          "crash": {
+            "error": {
+              "type": "signal",
+              "signal": { "name": "SIGABRT", "code_name": "ABRT_TERMINATE" }
+            },
+            "threads": []
+          }
+        }
+        """
+        let crash = try AppleCrashPayloadBuilder.makeStructuredCrash(fromReportData: Data(json.utf8))
+
+        #expect(crash.incidentIdentifier == "NO-BT-1")
+        #expect(crash.exceptionType == "SIGABRT")
+        #expect(crash.exceptionMessage == "ABRT_TERMINATE")
+        #expect(crash.stackTraceJSON == nil)
     }
 
     @Test("Prefers NSException name/reason for the exception type and message")
