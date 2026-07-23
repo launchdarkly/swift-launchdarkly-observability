@@ -43,6 +43,7 @@ let package = Package(
                 "URLSessionInstrumentation",
                 "JSONExporters",
                 "SDKResourceExtension",
+                .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),

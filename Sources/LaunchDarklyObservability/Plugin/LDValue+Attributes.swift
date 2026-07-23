@@ -1,8 +1,5 @@
 import LaunchDarkly
 import OpenTelemetryApi
-#if !LD_COCOAPODS
-import Common
-#endif
 
 extension LDValue {
     /// Converts an object payload (e.g. a `track` event's `data`) into a flat

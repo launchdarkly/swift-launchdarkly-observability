@@ -79,6 +79,16 @@ struct KSCrashReportModel: Decodable {
     struct CrashInfo: Decodable {
         let threads: [Thread]?
         let error: CrashError?
+        /// The stack where an NSException / C++ exception was thrown. KSCrash
+        /// records this separately from `threads` because the crashed thread's
+        /// backtrace for an exception is the abort/handler stack, not the
+        /// throw site. When present it is the authoritative stack to symbolicate.
+        let lastExceptionBacktrace: Backtrace?
+
+        enum CodingKeys: String, CodingKey {
+            case threads, error
+            case lastExceptionBacktrace = "last_exception_backtrace"
+        }    
     }
 
     struct Thread: Decodable {
@@ -227,16 +237,27 @@ enum AppleCrashPayloadBuilder {
         return String(data: encoded, encoding: .utf8)
     }
 
-    /// Converts the crashed thread's backtrace into structured frames. Returns
-    /// nil when there is no thread with a backtrace to symbolicate.
-    static func payload(from report: KSCrashReportModel) -> AppleCrashPayload? {
-        guard let threads = report.crash?.threads, !threads.isEmpty else {
-            return nil
+    /// The authoritative crash backtrace to symbolicate, deepest-first.
+    ///
+    /// For NSException / C++ exception crashes KSCrash records the throw-site
+    /// stack in `last_exception_backtrace`; the crashed thread's own backtrace is
+    /// only the abort/handler stack, so it is not the stack we want. Prefer the
+    /// exception backtrace when present, then the crashed thread, then the first
+    /// thread (user-reported reports may not flag a crashed thread).
+    static func crashBacktrace(from report: KSCrashReportModel) -> [KSCrashReportModel.Frame] {
+        if let contents = report.crash?.lastExceptionBacktrace?.contents, !contents.isEmpty {
+            return contents
         }
-        // Prefer the crashed thread; fall back to the first thread for
-        // user-reported reports that don't flag one.
+        let threads = report.crash?.threads ?? []
         let thread = threads.first(where: { $0.crashed == true }) ?? threads.first
-        guard let contents = thread?.backtrace?.contents, !contents.isEmpty else {
+        return thread?.backtrace?.contents ?? []
+    }
+
+    /// Converts the authoritative crash backtrace into structured frames. Returns
+    /// nil when there is no backtrace to symbolicate.
+    static func payload(from report: KSCrashReportModel) -> AppleCrashPayload? {
+        let contents = crashBacktrace(from: report)
+        guard !contents.isEmpty else {
             return nil
         }
 
@@ -246,7 +267,14 @@ enum AppleCrashPayloadBuilder {
                 imagesByLoadAddress[addr] = image
             }
         }
-        let appExecutable = report.system?.processName ?? report.system?.executable
+        // KSCrash reports the app's name in both `process_name` and
+        // `CFBundleExecutable`, and these can differ (e.g. when the bundle
+        // display name and the executable filename don't match). A frame belongs
+        // to the main binary if its module matches either, so match against the
+        // full set instead of a single value.
+        let appExecutables = Set(
+            [report.system?.processName, report.system?.executable].compactMap(moduleName)
+        )
 
         var frames = [AppleCrashPayload.Frame]()
         frames.reserveCapacity(contents.count)
@@ -263,7 +291,7 @@ enum AppleCrashPayloadBuilder {
                 relOffset = 0
             }
             let module = moduleName(image?.name ?? frame.objectName)
-            let inApp = appExecutable != nil && module == appExecutable
+            let inApp = module.map(appExecutables.contains) ?? false
             let symbol = frame.symbolName.flatMap { $0.isEmpty ? nil : $0 }
             frames.append(
                 AppleCrashPayload.Frame(
@@ -343,7 +371,7 @@ enum AppleCrashPayloadBuilder {
 
     /// The Swift/Obj-C runtime crash message captured from an image's
     /// `__DATA,__crash_info` section. KSCrash records it per binary image (not
-    /// under `crash.error`), so prefer the crashed thread's frame images
+    /// under `crash.error`), so prefer the authoritative backtrace's frame images
     /// (innermost first) and fall back to any image that captured a message.
     static func crashInfoMessage(from report: KSCrashReportModel) -> String? {
         let images = report.binaryImages ?? []
@@ -358,9 +386,7 @@ enum AppleCrashPayloadBuilder {
             }
         }
 
-        let threads = report.crash?.threads ?? []
-        let thread = threads.first(where: { $0.crashed == true }) ?? threads.first
-        for frame in thread?.backtrace?.contents ?? [] {
+        for frame in crashBacktrace(from: report) {
             if let addr = frame.objectAddr,
                let message = byLoadAddress[addr]?.bestCrashInfo {
                 return message

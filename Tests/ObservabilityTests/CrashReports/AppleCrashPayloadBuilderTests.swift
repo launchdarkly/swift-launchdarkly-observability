@@ -204,6 +204,106 @@ struct AppleCrashPayloadBuilderTests {
         #expect(AppleCrashPayloadBuilder.exceptionMessage(from: report) == "EXC_BREAKPOINT (SIGTRAP)")
     }
 
+    @Test("Prefers last_exception_backtrace over the crashed thread's abort stack")
+    func prefersLastExceptionBacktrace() throws {
+        // NSException crash: the crashed thread only holds the abort/handler
+        // stack (SIGABRT), while the meaningful throw-site stack lives in
+        // `last_exception_backtrace`. The structured frames must come from the
+        // latter.
+        let json = """
+        {
+          "report": { "id": "EXC-1" },
+          "system": { "process_name": "TestApp" },
+          "crash": {
+            "error": {
+              "type": "nsexception",
+              "nsexception": { "name": "NSRangeException", "reason": "index out of bounds" }
+            },
+            "threads": [
+              { "crashed": true, "backtrace": { "contents": [
+                { "instruction_addr": 8589934672, "object_addr": 8589934592, "object_name": "/usr/lib/system/libsystem_kernel.dylib", "symbol_name": "__pthread_kill" }
+              ] } }
+            ],
+            "last_exception_backtrace": { "contents": [
+              { "instruction_addr": 4294971392, "object_addr": 4294967296, "object_name": "/private/var/containers/Bundle/Application/AAA/TestApp.app/TestApp", "symbol_name": "$s7TestApp5crashyyF" },
+              { "instruction_addr": 6442455296, "object_addr": 6442450944, "object_name": "/usr/lib/swift/libswiftCore.dylib" }
+            ] }
+          },
+          "binary_images": [
+            { "image_addr": 4294967296, "uuid": "A5121984-B70C-3CA0-BCC2-2FB671D75A20", "name": "/private/var/containers/Bundle/Application/AAA/TestApp.app/TestApp" },
+            { "image_addr": 6442450944, "uuid": "11111111-2222-3333-4444-555555555555", "name": "/usr/lib/swift/libswiftCore.dylib" }
+          ]
+        }
+        """
+        let report = try JSONDecoder().decode(KSCrashReportModel.self, from: Data(json.utf8))
+        let payload = try #require(AppleCrashPayloadBuilder.payload(from: report))
+
+        #expect(payload.frames.count == 2)
+        #expect(payload.frames[0].symbol == "$s7TestApp5crashyyF")
+        #expect(payload.frames[0].module == "TestApp")
+        #expect(payload.frames[0].inApp == true)
+        #expect(payload.frames[1].module == "libswiftCore.dylib")
+    }
+
+    @Test("Falls back to the crashed thread when last_exception_backtrace is empty")
+    func fallsBackWhenExceptionBacktraceEmpty() throws {
+        // An empty `last_exception_backtrace` must not shadow the crashed
+        // thread's usable backtrace.
+        let json = """
+        {
+          "crash": {
+            "error": { "type": "signal", "signal": { "name": "SIGSEGV" } },
+            "threads": [
+              { "crashed": true, "backtrace": { "contents": [
+                { "instruction_addr": 4294971392, "object_addr": 4294967296, "object_name": "TestApp", "symbol_name": "main" }
+              ] } }
+            ],
+            "last_exception_backtrace": { "contents": [] }
+          },
+          "binary_images": [
+            { "image_addr": 4294967296, "uuid": "AAAA-BBBB", "name": "TestApp" }
+          ]
+        }
+        """
+        let report = try JSONDecoder().decode(KSCrashReportModel.self, from: Data(json.utf8))
+        let payload = try #require(AppleCrashPayloadBuilder.payload(from: report))
+
+        #expect(payload.frames.count == 1)
+        #expect(payload.frames[0].symbol == "main")
+    }
+
+    @Test("Marks main-binary frames in_app when process_name and CFBundleExecutable differ")
+    func inAppMatchesEitherExecutableName() throws {
+        // The bundle display name (process_name) and the executable filename
+        // (CFBundleExecutable) can differ. A frame from the real main binary
+        // matches only one of them, but must still be flagged in_app.
+        let json = """
+        {
+          "system": { "process_name": "My App", "CFBundleExecutable": "MyApp" },
+          "crash": {
+            "error": { "type": "signal", "signal": { "name": "SIGSEGV" } },
+            "threads": [
+              { "crashed": true, "backtrace": { "contents": [
+                { "instruction_addr": 4294971392, "object_addr": 4294967296, "object_name": "/private/var/containers/Bundle/Application/AAA/My App.app/MyApp", "symbol_name": "main" },
+                { "instruction_addr": 6442455296, "object_addr": 6442450944, "object_name": "/usr/lib/swift/libswiftCore.dylib" }
+              ] } }
+            ]
+          },
+          "binary_images": [
+            { "image_addr": 4294967296, "uuid": "AAAA-BBBB", "name": "/private/var/containers/Bundle/Application/AAA/My App.app/MyApp" },
+            { "image_addr": 6442450944, "uuid": "CCCC-DDDD", "name": "/usr/lib/swift/libswiftCore.dylib" }
+          ]
+        }
+        """
+        let report = try JSONDecoder().decode(KSCrashReportModel.self, from: Data(json.utf8))
+        let payload = try #require(AppleCrashPayloadBuilder.payload(from: report))
+
+        #expect(payload.frames[0].module == "MyApp")
+        #expect(payload.frames[0].inApp == true)
+        #expect(payload.frames[1].module == "libswiftCore.dylib")
+        #expect(payload.frames[1].inApp == false)
+    }
+
     @Test("Returns nil when there is no thread with a backtrace")
     func noBacktraceReturnsNil() throws {
         let json = """
