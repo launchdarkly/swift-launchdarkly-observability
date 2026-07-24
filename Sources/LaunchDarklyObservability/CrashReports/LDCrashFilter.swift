@@ -9,13 +9,14 @@ import Foundation
 #endif
 
 // Reference: https://github.com/kstenerud/KSCrash/issues/187
+//
+// Consumes the raw (demangled) KSCrash report dictionary and emits a fatal log
+// record whose `exception.stacktrace` is the structured "ld-apple-1" payload
+// (per-frame image UUID + image-relative offset). The backend symbolicates these
+// frames against the .dsymmap maps uploaded via `ldcli symbols upload
+// --type apple-dsym`. Because this reads the raw report rather than the Apple
+// text format, the pipeline no longer includes CrashReportFilterAppleFmt.
 final class LDCrashFilter: NSObject, CrashReportFilter {
-    enum ReportSection: String {
-        case incidentIdentifier = "Incident Identifier:"
-        case exceptionType = "Exception Type:"
-        case process = "Process:"
-        case exceptionCodes = "Exception Codes:"
-    }
     enum LaunchDarklyCrashFilterError: Error {
         case flushFailed
         case underlyingError(Error)
@@ -32,40 +33,30 @@ final class LDCrashFilter: NSObject, CrashReportFilter {
         _ reports: [any CrashReport],
         onCompletion: (([any CrashReport]?, (any Error)?) -> Void)? = nil
     ) {
-        var jsonArray = [Any]()
-        for item in reports {
-            switch item {
-            case let report as CrashReportDictionary:
-                jsonArray.append(report.value)
-            case let report as CrashReportString:
-                jsonArray.append(report.value)
-            case _ as CrashReportData:
-//                "Unexpected non-dictionary/non-string report: \(report)"
-                break
-            default:
-                /// Defaults means, there is no KSCrash representation for item, then no-op
-                break
-            }
-        }
-
         do {
-            for crash in jsonArray {
-                let jsonData = try KSJSONCodec.encode(crash, options: .sorted)
-                guard let crashReportString = String(data: jsonData, encoding: .utf8) else {
+            for item in reports {
+                guard let report = item as? CrashReportDictionary else {
+                    // Non-dictionary reports (strings/data) carry no structured
+                    // fields to symbolicate; skip them.
                     continue
                 }
-                let reportSections = crashReportString.components(separatedBy: "\\n")
-                let incidentIdentifier = reportSections.first(where: { $0.contains(ReportSection.incidentIdentifier.rawValue) }) ?? ""
-                let exceptionType = reportSections.first(where: { $0.contains(ReportSection.exceptionType.rawValue) }) ?? ""
-                let exceptionCodes = reportSections.first(where: { $0.contains(ReportSection.exceptionCodes.rawValue) }) ?? ""
-                
+                let jsonData = try KSJSONCodec.encode(report.value, options: .sorted)
+                // Always emit fatal telemetry for a crash report, even when the
+                // structured backtrace can't be built — otherwise KSCrash treats
+                // the (silent) completion as success and discards the report.
+                let crash = try AppleCrashPayloadBuilder.makeStructuredCrash(fromReportData: jsonData)
+
                 var attributes = [String: AttributeValue]()
-                attributes["exception.type"] = .string(exceptionType.replacingOccurrences(of: "\"", with: ""))
-                attributes["exception.stacktrace"] = .string(crashReportString)
-                attributes["exception.message"] = .string(exceptionCodes)
-                
+                attributes["exception.type"] = .string(crash.exceptionType)
+                if let stackTraceJSON = crash.stackTraceJSON {
+                    attributes["exception.stacktrace"] = .string(stackTraceJSON)
+                }
+                if let message = crash.exceptionMessage {
+                    attributes["exception.message"] = .string(message)
+                }
+
                 logsApi.recordLog(
-                    message: incidentIdentifier.replacingOccurrences(of: "\"", with: ""),
+                    message: crash.incidentIdentifier,
                     severity: .fatal,
                     attributes: attributes
                 )

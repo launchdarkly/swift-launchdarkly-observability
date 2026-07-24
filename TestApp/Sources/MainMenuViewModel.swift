@@ -185,8 +185,172 @@ final class MainMenuViewModel: ObservableObject {
 		)
 	}
 
-	func crash() -> Never {
-		fatalError()
+	/// Produces the selected scenario. In `.error` mode a catchable scenario is
+	/// caught and reported via the SDK (returns normally); in `.crash` mode (or
+	/// for non-catchable scenarios) the failure terminates the process.
+	func trigger(scenario: CrashScenario, mode: CrashScenario.Mode) {
+		if mode != .crash, scenario.supportsHandled {
+			do {
+				try runCatchable(scenario)
+			} catch {
+				switch mode {
+				case .error:
+					// Report the original error; the structured wrapper only
+					// carries the throw-site backtrace for `.errorStructured`.
+					LDObserve.shared.recordError((error as? StructuredError)?.underlying ?? error, attributes: [:])
+				case .errorStructured:
+					recordStructuredError(error)
+				case .crash:
+					break
+				}
+			}
+			return
+		}
+
+		switch scenario {
+		case .throwingError:
+			_ = try! Self.alwaysThrows()
+		case .castFailure:
+			let anyValue: Any = "not an int"
+			_ = anyValue as! Int
+		case .decodingFailure:
+			_ = try! JSONDecoder().decode([Int].self, from: Data("not json".utf8))
+		case .fatalError:
+			fatalError("TestApp: intentional fatalError()")
+		case .forceUnwrapNil:
+			let value: String? = nil
+			_ = value!
+		case .arrayOutOfBounds:
+			let numbers = [1, 2, 3]
+			_ = numbers[numbers.count + 5]
+		case .preconditionFailure:
+			preconditionFailure("TestApp: intentional precondition failure")
+		case .assertionFailure:
+			assertionFailure("TestApp: intentional assertion failure")
+		case .integerOverflow:
+			// `Int.random` keeps the compiler from constant-folding (and rejecting)
+			// the overflow at build time; the trap happens at runtime instead.
+			var maxValue = Int.max
+			maxValue += Int.random(in: 1...1)
+			_ = maxValue
+		case .badMemoryAccess:
+			// A non-nil but unmapped address, so the force-unwrap succeeds and the
+			// write faults with EXC_BAD_ACCESS / SIGSEGV.
+			let pointer = UnsafeMutablePointer<Int>(bitPattern: 0x1)!
+			pointer.pointee = 42
+		case .abortSignal:
+			abort()
+		case .illegalInstruction:
+			raise(SIGILL)
+		case .nsException:
+			// Objective-C NSRangeException, captured by KSCrash's nsException monitor.
+			let empty = NSArray()
+			_ = empty.object(at: 5)
+		case .stackOverflow:
+			_ = Self.infiniteRecursion(0)
+
+		case .backgroundThreadCrash:
+			// Crashes on a background queue while the main thread stays alive, so
+			// the report contains multiple threads and the crashed one is not #0.
+			DispatchQueue.global(qos: .userInitiated).async {
+				fatalError("TestApp: intentional crash on a background thread")
+			}
+		case .backgroundBadAccess:
+			DispatchQueue.global(qos: .userInitiated).async {
+				let pointer = UnsafeMutablePointer<Int>(bitPattern: 0x1)!
+				pointer.pointee = 42
+			}
+		case .detachedTaskCrash:
+			Task.detached(priority: .high) {
+				fatalError("TestApp: intentional crash in a detached Task")
+			}
+		case .concurrentMutation:
+			// Unsynchronized concurrent access to a value-type Array from many
+			// threads. Best-effort: usually faults (bad access / malloc / index),
+			// occasionally survives — tap again if nothing happens.
+			var shared = [Int]()
+			DispatchQueue.concurrentPerform(iterations: 100_000) { index in
+				shared.append(index)
+				_ = shared.first
+			}
+			_ = shared
+		case .busyThreadsThenCrash:
+			// Spin up several long-lived busy threads so the crash report is rich
+			// with threads, then crash on a background thread shortly after.
+			for index in 0..<4 {
+				Thread.detachNewThread {
+					Thread.current.name = "ld-busy-\(index)"
+					while true { _ = (0..<10_000).reduce(0, +) }
+				}
+			}
+			DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.2) {
+				fatalError("TestApp: crash with many threads active")
+			}
+		}
+	}
+
+	/// The throwing form of each catchable scenario, shared by the handled-error
+	/// path. Its crash counterparts (`try!`, `as!`) live in `trigger`.
+	private func runCatchable(_ scenario: CrashScenario) throws {
+		switch scenario {
+		case .throwingError:
+			_ = try Self.alwaysThrows()
+		case .castFailure:
+			_ = try Self.cast("not an int", to: Int.self)
+		case .decodingFailure:
+			// JSONDecoder throws its own error, so capture the backtrace here (at
+			// the failing call) and rewrap before it unwinds past this frame.
+			do {
+				_ = try JSONDecoder().decode([Int].self, from: Data("not json".utf8))
+			} catch {
+				throw StructuredError(underlying: error, stackTraceJSON: LiveBacktrace.applePayloadJSON())
+			}
+		default:
+			break
+		}
+	}
+
+	/// Reports a handled error whose stacktrace is the structured `ld-apple-1`
+	/// payload from the live call stack, so the backend symbolicates it from the
+	/// uploaded dSYM — the non-fatal analog of a crash. Uses the same log +
+	/// `exception.*` attribute shape the crash reporter emits.
+	private func recordStructuredError(_ error: Error) {
+		let underlying = (error as? StructuredError)?.underlying ?? error
+		// Prefer the backtrace captured at the throw site. Fall back to a live
+		// capture only for errors that weren't wrapped — that trace reflects the
+		// reporting path, not the failure, but is better than none.
+		let stackTraceJSON = (error as? StructuredError)?.stackTraceJSON ?? LiveBacktrace.applePayloadJSON()
+		LDObserve.shared.recordLog(
+			message: underlying.localizedDescription,
+			severity: .error,
+			properties: [
+				"exception.type": String(describing: underlying),
+				"exception.message": underlying.localizedDescription,
+				"exception.stacktrace": stackTraceJSON,
+			]
+		)
+	}
+
+	private static func alwaysThrows() throws -> Int {
+		// Capture the backtrace here, at the throw site, so `.errorStructured`
+		// reports these frames rather than the unwound reporting path.
+		throw StructuredError(underlying: Failure.crash, stackTraceJSON: LiveBacktrace.applePayloadJSON())
+	}
+
+	private static func cast<T>(_ value: Any, to type: T.Type) throws -> T {
+		guard let result = value as? T else {
+			throw StructuredError(underlying: Failure.cast, stackTraceJSON: LiveBacktrace.applePayloadJSON())
+		}
+		return result
+	}
+
+	// The `+ depth` keeps the call from being tail-call optimized away, so the
+	// stack actually grows until it overflows. The `depth < 0` guard is never hit
+	// (depth only grows) but stops the compiler from flagging guaranteed infinite
+	// recursion.
+	private static func infiniteRecursion(_ depth: Int) -> Int {
+		if depth < 0 { return 0 }
+		return infiniteRecursion(depth + 1) + depth
 	}
 	
 	@MainActor

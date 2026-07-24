@@ -16,7 +16,7 @@
 
 /* Begin PBXFileReference section */
 		AA00000000000000000001 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Secrets.xcconfig; path = ../TestAppShared/Secrets.xcconfig; sourceTree = "<group>"; };
-		E7904AC42E6A523D00A15337 /* TestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E7904AC42E6A523D00A15337 /* TestAppFruta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestAppFruta.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -76,7 +76,7 @@
 		E7904AC52E6A523D00A15337 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E7904AC42E6A523D00A15337 /* TestApp.app */,
+				E7904AC42E6A523D00A15337 /* TestAppFruta.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,7 +108,7 @@
 				50FD5D652FCE26D7008B9E06 /* LaunchDarkly */,
 			);
 			productName = ExampleApp;
-			productReference = E7904AC42E6A523D00A15337 /* TestApp.app */;
+			productReference = E7904AC42E6A523D00A15337 /* TestAppFruta.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -314,7 +314,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.launchdarkly.TestApp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = TestAppFruta;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -348,7 +348,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.launchdarkly.TestApp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = TestAppFruta;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = LD_TESTAPP;

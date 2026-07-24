@@ -38,9 +38,10 @@ Pod::Spec.new do |s|
     ss.dependency "LaunchDarklyObservability/SDKResourceExtension"
     ss.dependency "LaunchDarklyObservability/OpenTelemetry"
     ss.dependency "LaunchDarklyObservability/Misc"
+    ss.dependency 'LaunchDarkly', '~> 11.2'
   end
 
-  # Common sources + LaunchDarkly SDK dependency
+  # Common sources + LaunchDarkly SDK dependency (used by GraphQLClient's ld_gzip)
   s.subspec "Common" do |ss|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
     ss.dependency 'LaunchDarkly', '~> 11.2'

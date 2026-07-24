@@ -6,6 +6,7 @@ import LaunchDarkly
 enum Failure: LocalizedError {
     case test
     case crash
+    case cast
     
     var errorDescription: String? {
         switch self {
@@ -13,6 +14,8 @@ enum Failure: LocalizedError {
             return "this is a test error"
         case .crash:
             return "this is a crash error"
+        case .cast:
+            return "failed to cast value to the expected type"
         }
     }
 }
@@ -24,6 +27,7 @@ struct MainMenuView: View {
     /// "Main Menu" on dismissal is just `activeSheet != nil`.
     @State private var activeSheet: MenuSheet?
     @State private var isSessionReplayEnabled: Bool = true
+    @State private var selectedScenario: CrashScenario = .throwingError
 
     @ViewBuilder
     private func sheetContent(_ sheet: MenuSheet) -> some View {
@@ -228,15 +232,6 @@ struct MainMenuView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(viewModel.isNetworkInProgress)
                 .ldClick("instrumentation.network_request")
-
-                Button {
-                    viewModel.crash()
-                } label: {
-                    Text("Crash")
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                .ldClick("instrumentation.crash")
             }
 
 #if os(iOS)
@@ -291,14 +286,44 @@ struct MainMenuView: View {
             Text("Error")
                 .fontWeight(.bold)
 
-            Button {
-                viewModel.recordError()
-            } label: {
-                Text("Error")
+            Picker("", selection: $selectedScenario) {
+                ForEach(CrashScenario.allCases) { scenario in
+                    Text(scenario.rawValue).tag(scenario)
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.red)
-            .ldClick("error.trigger")
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityIdentifier("error.scenario_picker")
+
+            HStack {
+                // Handled path (on-device text stacktrace). Only for catchable scenarios.
+                Button("Error") {
+                    viewModel.trigger(scenario: selectedScenario, mode: .error)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!selectedScenario.supportsHandled)
+                .ldClick("error.record")
+                .accessibilityIdentifier("error.record_button")
+
+                // Handled path (structured ld-apple-1, symbolicated from the dSYM).
+                Button("Error dSYM") {
+                    viewModel.trigger(scenario: selectedScenario, mode: .errorStructured)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!selectedScenario.supportsHandled)
+                .ldClick("error.record_structured")
+                .accessibilityIdentifier("error.record_structured_button")
+
+                // Fatal path: always available.
+                Button("Crash") {
+                    viewModel.trigger(scenario: selectedScenario, mode: .crash)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .ldClick("error.crash")
+                .accessibilityIdentifier("error.crash_button")
+            }
 
             Text("Logs")
                 .fontWeight(.bold)
