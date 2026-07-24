@@ -41,18 +41,25 @@ struct FlushableWorkerTests {
         }
     }
 
-    /// Suspends until `condition` holds, giving up after `polls` attempts.
+    /// Suspends until `condition` holds, failing the test if it never does within `polls` attempts.
     ///
     /// The give-up budget is counted in polls rather than wall-clock time on purpose. A deadline
     /// keeps running while the test is not running, so on a loaded CI machine - where the
     /// cooperative pool can stall for seconds at a time - it can expire without the worker or the
     /// poll ever being scheduled, and the test then reports as missing work that was simply never
     /// given a chance to run. A poll budget only shrinks when the test actually gets scheduled.
-    private func waitUntil(_ condition: () async -> Bool, polls: Int = 400) async throws {
+    ///
+    /// Exhausting the budget is reported here rather than left to the caller, so that a caller
+    /// whose remaining assertions would hold vacuously - an equality between two counts that are
+    /// both zero, say - still fails.
+    private func waitUntil(_ condition: () async -> Bool,
+                           polls: Int = 400,
+                           sourceLocation: SourceLocation = #_sourceLocation) async throws {
         for _ in 0 ..< polls {
             if await condition() { return }
             try await Task.sleep(nanoseconds: 25_000_000)
         }
+        Issue.record("Condition never held within \(polls) polls", sourceLocation: sourceLocation)
     }
 
     /// Time given to work that is expected *not* to happen, so the assertion that it didn't happen
@@ -169,6 +176,7 @@ struct FlushableWorkerTests {
         // After stop, there should be no further events
         try await Task.sleep(nanoseconds: settleTime)
         let ticksAfter = await recorder.tickCount
+        #expect(ticksAtStop >= 1, "Expected the worker to have ticked before stop(), otherwise the comparison below holds vacuously")
         #expect(ticksAfter == ticksAtStop, "No additional events after stop()")
     }
     
