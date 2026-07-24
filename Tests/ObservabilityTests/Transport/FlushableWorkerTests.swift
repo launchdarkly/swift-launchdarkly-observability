@@ -40,7 +40,25 @@ struct FlushableWorkerTests {
             pending.forEach { $0.resume() }
         }
     }
-    
+
+    /// Suspends until `condition` holds, giving up after `polls` attempts.
+    ///
+    /// The give-up budget is counted in polls rather than wall-clock time on purpose. A deadline
+    /// keeps running while the test is not running, so on a loaded CI machine - where the
+    /// cooperative pool can stall for seconds at a time - it can expire without the worker or the
+    /// poll ever being scheduled, and the test then reports as missing work that was simply never
+    /// given a chance to run. A poll budget only shrinks when the test actually gets scheduled.
+    private func waitUntil(polls: Int = 400, _ condition: () async -> Bool) async throws {
+        for _ in 0 ..< polls {
+            if await condition() { return }
+            try await Task.sleep(nanoseconds: 25_000_000)
+        }
+    }
+
+    /// Time given to work that is expected *not* to happen, so the assertion that it didn't happen
+    /// is meaningful.
+    private let settleTime: UInt64 = 200_000_000
+
     @Test
     func ticksOccurOnInterval() async throws {
         let recorder = Recorder()
@@ -50,18 +68,12 @@ struct FlushableWorkerTests {
         
         await worker.start()
         
-        // Wait until at least 1 tick is observed, with a generous timeout.
-        // Timeout is intentionally large to tolerate scheduler/thread-pool
-        // contention on busy CI machines, which is what made this test flaky.
-        let deadline = Date().addingTimeInterval(30)
-        while await recorder.tickCount < 1 && Date() < deadline {
-            try await Task.sleep(nanoseconds: 10_000_000) // 10ms poll
-        }
+        try await waitUntil { await recorder.tickCount >= 1 }
         
         await worker.stop()
         
         let ticks = await recorder.tickCount
-        #expect(ticks >= 1, "Expected at least a few tick executions")
+        #expect(ticks >= 1, "Expected at least one tick execution")
         let flushes = await recorder.flushCount
         #expect(flushes == 0, "No flushes expected without explicit flush call")
     }
@@ -74,9 +86,9 @@ struct FlushableWorkerTests {
         }
         
         await worker.start()
-        try await Task.sleep(nanoseconds: NSEC_PER_SEC) // allow processing
         await worker.flush()
-        try await Task.sleep(nanoseconds: NSEC_PER_SEC) // allow processing
+        try await waitUntil { await recorder.flushCount >= 1 }
+        try await Task.sleep(nanoseconds: settleTime) // let an unexpected second flush surface
         await worker.stop()
         
         let flushes = await recorder.flushCount
@@ -101,7 +113,8 @@ struct FlushableWorkerTests {
         await worker.flush()
         await worker.flush() // second flush while first is pending should coalesce
         await gate.open()     // release the first flush now that the second has been issued
-        try await Task.sleep(nanoseconds: NSEC_PER_SEC)
+        try await waitUntil { await recorder.flushCount >= 1 }
+        try await Task.sleep(nanoseconds: settleTime) // let a non-coalesced second flush surface
         await worker.stop()
         
         let flushes = await recorder.flushCount
@@ -118,14 +131,22 @@ struct FlushableWorkerTests {
             await recorder.add(isFlushing)
         }
         
+        let began = Date()
         await worker.start()
-        try await Task.sleep(nanoseconds: NSEC_PER_SEC) // allow processing
+        try await Task.sleep(nanoseconds: NSEC_PER_SEC / 2)
         await worker.start() // should be a no-op due to guard
-        try await Task.sleep(nanoseconds: NSEC_PER_SEC) // ~0.21s
+        try await Task.sleep(nanoseconds: NSEC_PER_SEC / 2)
         await worker.stop()
+        let observed = Date().timeIntervalSince(began)
         
+        // One ticking loop can emit at most one tick per interval over the observed window, so a
+        // second loop would roughly double the count. The bound is derived from the measured
+        // window rather than hard-coded because sleeps overshoot on a loaded machine, and a
+        // hard-coded bound turns that overshoot into a spurious failure.
+        let singleLoopTicks = Int(observed / interval) + 2
         let ticks = await recorder.tickCount
-        #expect(ticks <= 50, "Idempotent start should not create multiple ticking loops")
+        #expect(ticks <= singleLoopTicks,
+                "Idempotent start should not create multiple ticking loops (\(ticks) ticks in \(observed)s)")
     }
     
     @Test
@@ -136,12 +157,17 @@ struct FlushableWorkerTests {
         }
         
         await worker.start()
-        try await Task.sleep(nanoseconds: 120_000_000)
+        try await waitUntil { await recorder.tickCount >= 1 }
         await worker.stop()
+        
+        // Sample the baseline only after work that was already in flight when stop() landed has
+        // had a chance to record: cancelling the processing task does not interrupt a unit of work
+        // that has already started, and counting such a tick as post-stop would be a false alarm.
+        try await Task.sleep(nanoseconds: settleTime)
         let ticksAtStop = await recorder.tickCount
         
         // After stop, there should be no further events
-        try await Task.sleep(nanoseconds: 150_000_000)
+        try await Task.sleep(nanoseconds: settleTime)
         let ticksAfter = await recorder.tickCount
         #expect(ticksAfter == ticksAtStop, "No additional events after stop()")
     }
@@ -155,7 +181,8 @@ struct FlushableWorkerTests {
         
         await worker.start()
         await worker.flush() // immediate flush should not be dropped
-        try await Task.sleep(nanoseconds: 200_000_000) // allow processing
+        try await waitUntil { await recorder.flushCount >= 1 }
+        try await Task.sleep(nanoseconds: settleTime) // let a duplicate flush surface
         await worker.stop()
         
         let flushes = await recorder.flushCount
