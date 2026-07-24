@@ -48,7 +48,7 @@ struct FlushableWorkerTests {
     /// cooperative pool can stall for seconds at a time - it can expire without the worker or the
     /// poll ever being scheduled, and the test then reports as missing work that was simply never
     /// given a chance to run. A poll budget only shrinks when the test actually gets scheduled.
-    private func waitUntil(polls: Int = 400, _ condition: () async -> Bool) async throws {
+    private func waitUntil(_ condition: () async -> Bool, polls: Int = 400) async throws {
         for _ in 0 ..< polls {
             if await condition() { return }
             try await Task.sleep(nanoseconds: 25_000_000)
