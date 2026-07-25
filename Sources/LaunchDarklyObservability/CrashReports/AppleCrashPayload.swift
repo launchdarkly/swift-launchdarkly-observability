@@ -16,10 +16,26 @@ struct AppleCrashPayload: Encodable, Equatable {
 
     let format: String
     let frames: [Frame]
+    /// Descriptors for the threads `frames` came from, present only when the
+    /// report carried more than the crashed thread. Omitted otherwise, which
+    /// keeps single-thread payloads byte-identical to those sent before threads
+    /// were reported at all.
+    let threads: [ThreadInfo]?
 
-    init(frames: [Frame]) {
+    init(frames: [Frame], threads: [ThreadInfo]? = nil) {
         self.format = AppleCrashPayload.formatIdentifier
         self.frames = frames
+        self.threads = threads
+    }
+
+    /// One thread in the report. Apple gives no stable thread id in a crash
+    /// report, so the identity is KSCrash's `index`, and the name and dispatch
+    /// queue label are what actually tell a reader which thread this was.
+    struct ThreadInfo: Encodable, Equatable {
+        let index: Int
+        let name: String?
+        let queue: String?
+        let crashed: Bool
     }
 
     struct Frame: Encodable, Equatable {
@@ -36,6 +52,18 @@ struct AppleCrashPayload: Encodable, Equatable {
         let symbol: String?
         /// Whether the frame belongs to the app's main executable image.
         let inApp: Bool
+        /// Index of the thread this frame was captured on, matching a
+        /// `ThreadInfo.index`. Nil in single-thread payloads.
+        let thread: Int?
+
+        init(imageUUID: String, relOffset: UInt64, module: String?, symbol: String?, inApp: Bool, thread: Int? = nil) {
+            self.imageUUID = imageUUID
+            self.relOffset = relOffset
+            self.module = module
+            self.symbol = symbol
+            self.inApp = inApp
+            self.thread = thread
+        }
 
         enum CodingKeys: String, CodingKey {
             case imageUUID = "image_uuid"
@@ -43,6 +71,7 @@ struct AppleCrashPayload: Encodable, Equatable {
             case module
             case symbol
             case inApp = "in_app"
+            case thread
         }
     }
 }
@@ -95,6 +124,20 @@ struct KSCrashReportModel: Decodable {
         let index: Int?
         let crashed: Bool?
         let backtrace: Backtrace?
+        /// pthread name, when the thread was given one.
+        let name: String?
+        /// Label of the dispatch queue running on the thread, e.g.
+        /// "com.apple.main-thread". Usually more recognizable than the name.
+        let dispatchQueue: String?
+        /// Set on the thread that was executing the crash handler. Used as a
+        /// fallback when no thread is flagged `crashed` (user-reported reports).
+        let currentThread: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case index, crashed, backtrace, name
+            case dispatchQueue = "dispatch_queue"
+            case currentThread = "current_thread"
+        }
     }
 
     struct Backtrace: Decodable {
@@ -242,22 +285,39 @@ enum AppleCrashPayloadBuilder {
     /// For NSException / C++ exception crashes KSCrash records the throw-site
     /// stack in `last_exception_backtrace`; the crashed thread's own backtrace is
     /// only the abort/handler stack, so it is not the stack we want. Prefer the
-    /// exception backtrace when present, then the crashed thread, then the first
-    /// thread (user-reported reports may not flag a crashed thread).
+    /// exception backtrace when present, otherwise the crashed thread's own.
+    ///
+    /// Thread selection goes through `crashedThread(in:)` so the frames returned
+    /// here and the thread they get attributed to can never disagree.
     static func crashBacktrace(from report: KSCrashReportModel) -> [KSCrashReportModel.Frame] {
         if let contents = report.crash?.lastExceptionBacktrace?.contents, !contents.isEmpty {
             return contents
         }
-        let threads = report.crash?.threads ?? []
-        let thread = threads.first(where: { $0.crashed == true }) ?? threads.first
-        return thread?.backtrace?.contents ?? []
+        return crashedThread(in: report.crash?.threads ?? [])?.backtrace?.contents ?? []
     }
 
-    /// Converts the authoritative crash backtrace into structured frames. Returns
-    /// nil when there is no backtrace to symbolicate.
+    /// Upper bound on threads reported besides the crashed one. A busy app can
+    /// have dozens of idle worker threads whose stacks are all the same handful
+    /// of scheduler frames; past a few dozen they cost payload and symbolication
+    /// without telling a reader anything.
+    static let maxBackgroundThreads = 31
+
+    /// Upper bound on frames kept per background thread. The crashed thread is
+    /// never truncated -- it is the stack being investigated -- but a background
+    /// thread's story is told by its top frames.
+    static let maxFramesPerBackgroundThread = 64
+
+    /// Converts the report's backtraces into structured frames. Returns nil when
+    /// there is no crash backtrace to symbolicate.
+    ///
+    /// The crashed thread comes first and in full, so a consumer that ignores
+    /// thread grouping still reads the crash stack exactly as before. Background
+    /// threads follow in index order, each tagged with its thread index, and the
+    /// payload gains a `threads` descriptor list. A report with nothing but the
+    /// crashed thread produces the same single-thread payload it always did.
     static func payload(from report: KSCrashReportModel) -> AppleCrashPayload? {
-        let contents = crashBacktrace(from: report)
-        guard !contents.isEmpty else {
+        let crashContents = crashBacktrace(from: report)
+        guard !crashContents.isEmpty else {
             return nil
         }
 
@@ -275,7 +335,90 @@ enum AppleCrashPayloadBuilder {
         let appExecutables = Set(
             [report.system?.processName, report.system?.executable].compactMap(moduleName)
         )
+        let convert: ([KSCrashReportModel.Frame], Int?) -> [AppleCrashPayload.Frame] = { contents, threadIndex in
+            structuredFrames(
+                from: contents,
+                imagesByLoadAddress: imagesByLoadAddress,
+                appExecutables: appExecutables,
+                threadIndex: threadIndex
+            )
+        }
 
+        let allThreads = report.crash?.threads ?? []
+        let crashedThread = crashedThread(in: allThreads)
+        let background = backgroundThreads(in: allThreads, crashed: crashedThread)
+
+        // Only tag frames with a thread once there is more than one thread to
+        // tell apart; a lone index on every frame would be noise.
+        guard let crashedIndex = crashedThread?.index, !background.isEmpty else {
+            let frames = convert(crashContents, nil)
+            return frames.isEmpty ? nil : AppleCrashPayload(frames: frames)
+        }
+
+        var frames = convert(crashContents, crashedIndex)
+        guard !frames.isEmpty else {
+            return nil
+        }
+        var descriptors = [describe(crashedThread, crashed: true)].compactMap { $0 }
+
+        for thread in background {
+            let contents = Array((thread.backtrace?.contents ?? []).prefix(maxFramesPerBackgroundThread))
+            let threadFrames = convert(contents, thread.index)
+            guard !threadFrames.isEmpty, let descriptor = describe(thread, crashed: false) else {
+                continue
+            }
+            frames.append(contentsOf: threadFrames)
+            descriptors.append(descriptor)
+        }
+
+        return AppleCrashPayload(frames: frames, threads: descriptors.count > 1 ? descriptors : nil)
+    }
+
+    /// The thread the crash is attributed to: the one KSCrash flagged `crashed`,
+    /// else the one running the crash handler (user-reported reports flag no
+    /// crashed thread), else the first.
+    static func crashedThread(in threads: [KSCrashReportModel.Thread]) -> KSCrashReportModel.Thread? {
+        threads.first(where: { $0.crashed == true })
+            ?? threads.first(where: { $0.currentThread == true })
+            ?? threads.first
+    }
+
+    /// Every other thread with a backtrace, in index order, capped.
+    static func backgroundThreads(
+        in threads: [KSCrashReportModel.Thread],
+        crashed: KSCrashReportModel.Thread?
+    ) -> [KSCrashReportModel.Thread] {
+        threads
+            .filter { $0.index != nil && $0.index != crashed?.index }
+            .filter { !($0.backtrace?.contents ?? []).isEmpty }
+            .sorted { ($0.index ?? 0) < ($1.index ?? 0) }
+            .prefix(maxBackgroundThreads)
+            .map { $0 }
+    }
+
+    static func describe(
+        _ thread: KSCrashReportModel.Thread?,
+        crashed: Bool
+    ) -> AppleCrashPayload.ThreadInfo? {
+        guard let thread, let index = thread.index else {
+            return nil
+        }
+        return AppleCrashPayload.ThreadInfo(
+            index: index,
+            name: thread.name.flatMap { $0.isEmpty ? nil : $0 },
+            queue: thread.dispatchQueue.flatMap { $0.isEmpty ? nil : $0 },
+            crashed: crashed
+        )
+    }
+
+    /// Converts one thread's raw KSCrash frames into wire frames, resolving each
+    /// to its image so the backend can look up a symbol map.
+    static func structuredFrames(
+        from contents: [KSCrashReportModel.Frame],
+        imagesByLoadAddress: [UInt64: KSCrashReportModel.BinaryImage],
+        appExecutables: Set<String>,
+        threadIndex: Int?
+    ) -> [AppleCrashPayload.Frame] {
         var frames = [AppleCrashPayload.Frame]()
         frames.reserveCapacity(contents.count)
         for frame in contents {
@@ -299,14 +442,12 @@ enum AppleCrashPayloadBuilder {
                     relOffset: relOffset,
                     module: module,
                     symbol: symbol,
-                    inApp: inApp
+                    inApp: inApp,
+                    thread: threadIndex
                 )
             )
         }
-        guard !frames.isEmpty else {
-            return nil
-        }
-        return AppleCrashPayload(frames: frames)
+        return frames
     }
 
     /// Derives a human-readable exception type, preferring the most specific

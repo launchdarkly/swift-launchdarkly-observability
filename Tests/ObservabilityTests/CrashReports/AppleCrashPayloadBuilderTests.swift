@@ -23,6 +23,7 @@ struct AppleCrashPayloadBuilderTests {
           {
             "index": 0,
             "crashed": false,
+            "name": "com.apple.uikit.eventfetch-thread",
             "backtrace": { "contents": [
               { "instruction_addr": 999, "object_addr": 999, "object_name": "/usr/lib/dyld" }
             ] }
@@ -30,6 +31,7 @@ struct AppleCrashPayloadBuilderTests {
           {
             "index": 1,
             "crashed": true,
+            "dispatch_queue": "com.apple.main-thread",
             "backtrace": { "contents": [
               { "instruction_addr": 4294971392, "object_addr": 4294967296, "object_name": "/private/var/containers/Bundle/Application/AAA/TestApp.app/TestApp", "symbol_name": "$s7TestApp5crashyyF" },
               { "instruction_addr": 6442455296, "object_addr": 6442450944, "object_name": "/usr/lib/swift/libswiftCore.dylib" },
@@ -55,7 +57,9 @@ struct AppleCrashPayloadBuilderTests {
         let payload = try #require(AppleCrashPayloadBuilder.payload(from: report))
 
         #expect(payload.format == "ld-apple-1")
-        #expect(payload.frames.count == 3)
+        // The crashed thread's three frames come first, then the one background
+        // thread's frame.
+        #expect(payload.frames.count == 4)
 
         // App frame: full metadata, dashes stripped + upper-cased UUID, in_app.
         let app = payload.frames[0]
@@ -97,7 +101,160 @@ struct AppleCrashPayloadBuilderTests {
         // The stacktrace must be valid JSON with the frozen shape.
         let object = try JSONSerialization.jsonObject(with: Data(stackTraceJSON.utf8)) as? [String: Any]
         #expect(object?["format"] as? String == "ld-apple-1")
-        #expect((object?["frames"] as? [[String: Any]])?.count == 3)
+        #expect((object?["frames"] as? [[String: Any]])?.count == 4)
+        #expect((object?["threads"] as? [[String: Any]])?.count == 2)
+    }
+
+    @Test("Groups every thread's frames, crashed thread first")
+    func groupsThreads() throws {
+        let report = try decodeFixture()
+        let payload = try #require(AppleCrashPayloadBuilder.payload(from: report))
+
+        // Thread 1 crashed, so its frames lead even though thread 0 is first in
+        // the report -- a consumer ignoring thread grouping still reads the
+        // crash stack exactly as before.
+        #expect(payload.frames.prefix(3).allSatisfy { $0.thread == 1 })
+        #expect(payload.frames[3].thread == 0)
+        #expect(payload.frames[3].module == "dyld")
+
+        let threads = try #require(payload.threads)
+        #expect(threads.count == 2)
+        #expect(threads[0] == AppleCrashPayload.ThreadInfo(
+            index: 1, name: nil, queue: "com.apple.main-thread", crashed: true
+        ))
+        #expect(threads[1] == AppleCrashPayload.ThreadInfo(
+            index: 0, name: "com.apple.uikit.eventfetch-thread", queue: nil, crashed: false
+        ))
+    }
+
+    @Test("A report with only the crashed thread is unchanged")
+    func singleThreadPayloadCarriesNoThreadFields() throws {
+        // Backward compatibility: the payload a single-thread report produces
+        // must be exactly what it was before threads were reported, so nothing
+        // downstream sees a new shape it doesn't need.
+        let json = """
+        {
+          "crash": {
+            "error": { "type": "signal", "signal": { "name": "SIGSEGV" } },
+            "threads": [
+              { "index": 0, "crashed": true, "backtrace": { "contents": [
+                { "instruction_addr": 4294971392, "object_addr": 4294967296, "object_name": "TestApp", "symbol_name": "main" }
+              ] } }
+            ]
+          },
+          "binary_images": [
+            { "image_addr": 4294967296, "uuid": "AAAA-BBBB", "name": "TestApp" }
+          ]
+        }
+        """
+        let report = try JSONDecoder().decode(KSCrashReportModel.self, from: Data(json.utf8))
+        let payload = try #require(AppleCrashPayloadBuilder.payload(from: report))
+
+        #expect(payload.threads == nil)
+        #expect(payload.frames.allSatisfy { $0.thread == nil })
+
+        // And the encoded JSON carries neither key.
+        let encoded = String(decoding: try JSONEncoder().encode(payload), as: UTF8.self)
+        #expect(!encoded.contains("\"threads\""))
+        #expect(!encoded.contains("\"thread\""))
+    }
+
+    @Test("Skips threads with no backtrace and orders the rest by index")
+    func skipsEmptyThreadsAndOrdersByIndex() throws {
+        let json = """
+        {
+          "crash": {
+            "error": { "type": "signal", "signal": { "name": "SIGSEGV" } },
+            "threads": [
+              { "index": 5, "backtrace": { "contents": [
+                { "instruction_addr": 4294967300, "object_addr": 4294967296, "object_name": "TestApp" }
+              ] } },
+              { "index": 3, "backtrace": { "contents": [] } },
+              { "index": 2, "crashed": true, "backtrace": { "contents": [
+                { "instruction_addr": 4294971392, "object_addr": 4294967296, "object_name": "TestApp", "symbol_name": "main" }
+              ] } },
+              { "index": 4, "backtrace": { "contents": [
+                { "instruction_addr": 4294967400, "object_addr": 4294967296, "object_name": "TestApp" }
+              ] } }
+            ]
+          },
+          "binary_images": [
+            { "image_addr": 4294967296, "uuid": "AAAA-BBBB", "name": "TestApp" }
+          ]
+        }
+        """
+        let report = try JSONDecoder().decode(KSCrashReportModel.self, from: Data(json.utf8))
+        let payload = try #require(AppleCrashPayloadBuilder.payload(from: report))
+
+        // Crashed (2) first, then background threads by index; 3 contributed no
+        // frames so it isn't described at all.
+        #expect(try #require(payload.threads).map(\.index) == [2, 4, 5])
+        #expect(payload.frames.map(\.thread) == [2, 4, 5])
+    }
+
+    @Test("Treats the crash-handler thread as crashed when none is flagged")
+    func fallsBackToCurrentThread() throws {
+        // User-reported (non-fatal) KSCrash reports flag no crashed thread.
+        let json = """
+        {
+          "crash": {
+            "error": { "type": "user" },
+            "threads": [
+              { "index": 0, "backtrace": { "contents": [
+                { "instruction_addr": 4294967300, "object_addr": 4294967296, "object_name": "TestApp" }
+              ] } },
+              { "index": 1, "current_thread": true, "backtrace": { "contents": [
+                { "instruction_addr": 4294971392, "object_addr": 4294967296, "object_name": "TestApp", "symbol_name": "report" }
+              ] } }
+            ]
+          },
+          "binary_images": [
+            { "image_addr": 4294967296, "uuid": "AAAA-BBBB", "name": "TestApp" }
+          ]
+        }
+        """
+        let report = try JSONDecoder().decode(KSCrashReportModel.self, from: Data(json.utf8))
+        let payload = try #require(AppleCrashPayloadBuilder.payload(from: report))
+
+        #expect(payload.frames[0].symbol == "report")
+        #expect(payload.frames[0].thread == 1)
+        #expect(try #require(payload.threads).first?.crashed == true)
+    }
+
+    @Test("Caps background threads and their depth, never the crashed thread")
+    func capsBackgroundThreads() throws {
+        // A busy app can have dozens of idle workers with near-identical stacks;
+        // they must not crowd out the stack being investigated.
+        let deepCrashedStack = (0..<200).map {
+            "{ \"instruction_addr\": \(4_294_967_296 + $0), \"object_addr\": 4294967296, \"object_name\": \"TestApp\" }"
+        }.joined(separator: ",")
+        let deepBackgroundStack = (0..<200).map {
+            "{ \"instruction_addr\": \(4_294_967_296 + $0), \"object_addr\": 4294967296, \"object_name\": \"TestApp\" }"
+        }.joined(separator: ",")
+        let background = (1...50).map {
+            "{ \"index\": \($0), \"backtrace\": { \"contents\": [\(deepBackgroundStack)] } }"
+        }.joined(separator: ",")
+        let json = """
+        {
+          "crash": {
+            "error": { "type": "signal", "signal": { "name": "SIGSEGV" } },
+            "threads": [
+              { "index": 0, "crashed": true, "backtrace": { "contents": [\(deepCrashedStack)] } },
+              \(background)
+            ]
+          },
+          "binary_images": [
+            { "image_addr": 4294967296, "uuid": "AAAA-BBBB", "name": "TestApp" }
+          ]
+        }
+        """
+        let report = try JSONDecoder().decode(KSCrashReportModel.self, from: Data(json.utf8))
+        let payload = try #require(AppleCrashPayloadBuilder.payload(from: report))
+
+        let threads = try #require(payload.threads)
+        #expect(threads.count == AppleCrashPayloadBuilder.maxBackgroundThreads + 1)
+        #expect(payload.frames.filter { $0.thread == 0 }.count == 200, "the crashed thread is never truncated")
+        #expect(payload.frames.filter { $0.thread == 1 }.count == AppleCrashPayloadBuilder.maxFramesPerBackgroundThread)
     }
 
     @Test("Still produces exception attributes (no stacktrace) when there is no backtrace")
