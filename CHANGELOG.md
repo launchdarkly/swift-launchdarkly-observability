@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.48.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.47.0...0.48.0) (2026-07-27)
+
+
+### Features
+
+* **crash:** structured Apple crash payload for symbolication ([#247](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/247)) ([544086e](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/544086e9dd8ec3a4bf78af1c309c1a8ffe115935))
+
+
+### Bug Fixes
+
+* de-flake FlushableWorker tests and scale timer leeway to interval ([#250](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/250)) ([24b4ade](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/24b4ade4dff8a215dfb47804794ca802283c345b))
+
 ## [0.47.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.46.3...0.47.0) (2026-07-21)
 
 
