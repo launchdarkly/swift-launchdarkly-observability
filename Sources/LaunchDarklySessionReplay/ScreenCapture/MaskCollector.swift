@@ -45,7 +45,31 @@ final class MaskCollector {
         var offsetRects = [OffsettedArea]()
 
         let root = rootView.layer
-        let rPresentation = root.presentation() ?? root
+
+        // Masks have to line up with what the render server is drawing.
+        // Presentation layers carry the live value of every running
+        // animation (transform, position, opacity); model layers only hold
+        // the final state, and a rotation driven purely by a CAAnimation
+        // never touches the model at all. Building masks from model layers
+        // therefore drops the rotation entirely and leaves an axis-aligned
+        // rectangle at the view's resting frame.
+        //
+        // The exception is a tree containing private CameraUI layers
+        // (iOS 26+): they don't implement `init(layer:)` and trap as soon as
+        // Core Animation builds a presentation copy anywhere in their
+        // ancestry. When one is present we fall back to model geometry for
+        // the whole pass — animation accuracy for camera chrome is a fair
+        // trade against a fatal crash.
+        let usePresentationGeometry = !containsUnsafeLayer(root)
+        let rPresentation = usePresentationGeometry ? (root.presentation() ?? root) : root
+
+        // Presentation copy of a model layer, used for all geometry reads.
+        // `presentation()` returns nil when the layer isn't animating, and
+        // then the model layer is exact.
+        func geometryLayer(for modelLayer: CALayer) -> CALayer {
+            guard usePresentationGeometry else { return modelLayer }
+            return modelLayer.presentation() ?? modelLayer
+        }
 
         // Pre-pass: find every SwiftUI marker view in the subtree and
         // record its frame in root coordinates plus its explicit state.
@@ -69,7 +93,11 @@ final class MaskCollector {
         let markerAreas: [MarkerScanner.MarkerArea]
         let overlayBranchViews: Set<ObjectIdentifier>
         if SessionReplayViewRepresentable.MaskView.hasLiveMarkers {
-            (markerAreas, overlayBranchViews) = markerScanner.scan(in: rootView, rPresentation: rPresentation)
+            (markerAreas, overlayBranchViews) = markerScanner.scan(
+                in: rootView,
+                rPresentation: rPresentation,
+                usePresentationGeometry: usePresentationGeometry
+            )
         } else {
             markerAreas = []
             overlayBranchViews = []
@@ -211,20 +239,20 @@ final class MaskCollector {
 
             // Recurse into sublayers in z-order.
             //
-            // Use model sublayers and pass them directly to visit() — do NOT call
-            // .presentation() on each sublayer. On iOS 26+, calling .presentation()
-            // on any ancestor of CameraUI.ModeLoupeLayer eagerly builds presentation
-            // copies for the entire descendant tree, which calls init(layer:) on
-            // ModeLoupeLayer and crashes with a fatal EXC_BREAKPOINT. Traversing model
-            // layers avoids this. Mask positions may be slightly off during active
-            // animations, but correctness under normal (non-animating) state is preserved.
+            // Enumerate the *model* sublayers: reading `.sublayers` on a
+            // presentation layer makes Core Animation build presentation copies
+            // of every child eagerly, which crashes on iOS 26+ when a child is
+            // CameraUI.ModeLoupeLayer. Each child is then mapped to its own
+            // presentation copy for geometry, which is safe because
+            // `usePresentationGeometry` already ruled out CameraUI layers in
+            // this tree.
             guard let modelSublayers = layer.model().sublayers, !modelSublayers.isEmpty else { return }
             var safeSublayers: [(CALayer, String)] = []
             safeSublayers.reserveCapacity(modelSublayers.count)
             for sublayer in modelSublayers {
                 let sublayerClassName = NSStringFromClass(type(of: sublayer))
                 if !policy.shouldSkipLayer(className: sublayerClassName) {
-                    safeSublayers.append((sublayer, sublayerClassName))
+                    safeSublayers.append((geometryLayer(for: sublayer), sublayerClassName))
                 }
             }
             guard !safeSublayers.isEmpty else { return }
@@ -236,16 +264,14 @@ final class MaskCollector {
             }
         }
 
-        // Use model sublayers at the root level for the same reason: .sublayers on a
-        // presentation layer creates presentation copies of all children, crashing on
-        // iOS 26 if any child is or contains CameraUI.ModeLoupeLayer.
+        // Enumerate model sublayers at the root level for the same reason.
         let rootModelSublayers = rPresentation.model().sublayers ?? []
         var safeRootSublayers: [(CALayer, String)] = []
         safeRootSublayers.reserveCapacity(rootModelSublayers.count)
         for sublayer in rootModelSublayers {
             let sublayerClassName = NSStringFromClass(type(of: sublayer))
             if !policy.shouldSkipLayer(className: sublayerClassName) {
-                safeRootSublayers.append((sublayer, sublayerClassName))
+                safeRootSublayers.append((geometryLayer(for: sublayer), sublayerClassName))
             }
         }
         if !safeRootSublayers.isEmpty {
@@ -258,6 +284,34 @@ final class MaskCollector {
         }
 
         return (operations, offsetRects)
+    }
+
+    /// `true` when the model tree rooted at `root` contains a layer type that
+    /// traps while Core Animation builds its presentation copy (the private
+    /// `CameraUI` classes on iOS 26+). Only class identities and model
+    /// sublayers are read, so the scan itself never asks for a presentation
+    /// copy. The per-class memo keeps this to one `NSStringFromClass` per
+    /// distinct layer class instead of one per layer.
+    private func containsUnsafeLayer(_ root: CALayer) -> Bool {
+        var unsafeByClass: [ObjectIdentifier: Bool] = [:]
+        var stack: [CALayer] = [root.model()]
+        stack.reserveCapacity(64)
+        while let layer = stack.popLast() {
+            let layerClass: AnyClass = type(of: layer)
+            let key = ObjectIdentifier(layerClass)
+            let isUnsafe: Bool
+            if let cached = unsafeByClass[key] {
+                isUnsafe = cached
+            } else {
+                isUnsafe = policy.shouldSkipLayer(className: NSStringFromClass(layerClass))
+                unsafeByClass[key] = isUnsafe
+            }
+            if isUnsafe { return true }
+            if let sublayers = layer.sublayers {
+                stack.append(contentsOf: sublayers)
+            }
+        }
+        return false
     }
 
     // this method should be biased into transparency
