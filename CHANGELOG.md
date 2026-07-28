@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.48.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.48.0...0.48.1) (2026-07-28)
+
+
+### Bug Fixes
+
+* **session-replay:** build masks from presentation layers again ([#253](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/253)) ([7a4a886](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/7a4a886bddd42a41f16a98a4f22e28087e5e5867))
+
 ## [0.48.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.47.0...0.48.0) (2026-07-27)
 
 
