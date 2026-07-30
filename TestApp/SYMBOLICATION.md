@@ -86,6 +86,42 @@ ldcli symbols upload \
 > acronym works: `ios`, `ipados`, `tvos`, `watchos`, `visionos`, `macos`, as well
 > as `apple` and `dsym` (all case-insensitive).
 
+### Optional — also upload your sources (`--include-sources`)
+
+Symbolication alone gets you `MainMenuViewModel.swift:222`. Adding
+`--include-sources` also uploads the source files the dSYM's debug info
+references, so the errors page shows the **code around each frame** instead of
+just the location:
+
+```bash
+ldcli symbols upload \
+  --type ios \
+  --project <PROJECT_KEY> \
+  --access-token <ACCESS_TOKEN> \
+  --path "$APP.dSYM" \
+  --include-sources
+```
+
+```
+Built symbol map for BD1993CF2B693D1290F66439459E4E63 (arm64, 10240 bytes)
+Built source bundle for BD1993CF2B693D1290F66439459E4E63 (arm64, 37 files, 48512 bytes)
+```
+
+This packs the files into a `.srcbundle` uploaded next to the `.dsymmap` under
+the same UUID, so it is matched to a build exactly as the symbol map is.
+
+- **Off by default, because it stores your source code in LaunchDarkly.**
+- Run it on the machine that built the app — files the dSYM names but that aren't
+  on disk (SDK and system sources, or a dSYM copied from CI) are simply skipped.
+- Only `.swift`, `.m`, `.mm`, `.c`, `.cpp`, `.cc`, `.h`, `.hh` and `.hpp` files
+  are packed; individual files over 2 MiB and a bundle over 64 MiB are skipped.
+- If no sources are found locally it says so and uploads the symbol map alone, so
+  this flag can't break an upload that would otherwise work.
+
+Frames that resolve to `<compiler-generated>` (optimizer-produced thunks,
+outlined helpers, specialization glue) have no source line in DWARF at all, so
+they show module + offset no matter what you upload.
+
 Expected output:
 
 ```

@@ -51,8 +51,11 @@ actor FlushableWorker {
         // enqueued even when that pool is briefly saturated (e.g. on a busy CI
         // machine). This is what made the interval test flaky.
         let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .utility))
-        // leeway is big for performance, non need super precision in production (if tests flakey decrease just for test)
-        timer.schedule(deadline: .now() + interval, repeating: interval, leeway: .milliseconds(300))
+        // Leeway is coarse on purpose - the flush cadence doesn't need precision and loose timers
+        // coalesce wake-ups - but it scales with the interval and is capped at 300ms, so a short
+        // interval never gets a leeway larger than the interval it is supposed to honour.
+        let leeway = min(interval / 10, 0.3)
+        timer.schedule(deadline: .now() + interval, repeating: interval, leeway: .milliseconds(Int(leeway * 1000)))
         timer.setEventHandler { [weak self] in
             guard let self else { return }
             Task { await self.enqueueTick() }
