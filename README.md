@@ -218,6 +218,9 @@ case .started, .alreadyStarted:
     // Session Replay is running.
 case .sampledOut:
     // Session Replay is enabled, but this session was not selected by sampleRate.
+case .unrecoverableError:
+    // The backend refused this launch (for example Session Replay is not available for this
+    // project or region). Recording is attempted again on the next launch.
 case .unavailable:
     // Session Replay has not been registered.
 }

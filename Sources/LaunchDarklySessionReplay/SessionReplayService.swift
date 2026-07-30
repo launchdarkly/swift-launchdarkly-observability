@@ -57,6 +57,10 @@ final class SessionReplayService: SessionReplayServicing {
     let log: OSLog
     let sampleRate: Double
     var observabilityContext: ObservabilityContext
+    private let initializationStore: SessionReplayInitializationStore
+    /// Decides whether screenshots may be taken, from this launch's verdicts and the failure cached from
+    /// a previous launch. Main-thread only.
+    private var recordingGate: SessionReplayRecordingGate
     
     @MainActor
     private var _isEnabled = false
@@ -74,9 +78,10 @@ final class SessionReplayService: SessionReplayServicing {
         }
         set {
             guard _isEnabled != newValue else { return }
-            _isEnabled = newValue
             if newValue {
-                _ = start(ignoreSampling: false)
+                // `start` owns `_isEnabled`, except when it refuses: a launch the backend has already
+                // rejected cannot record again, so enabling must not report itself as enabled.
+                _isEnabled = start(ignoreSampling: false) != .unrecoverableError
             } else {
                 stop()
             }
@@ -108,6 +113,10 @@ final class SessionReplayService: SessionReplayServicing {
         self.observabilityContext = observabilityContext
         self.log = observabilityContext.options.log
         self.sampleRate = sessonReplayOptions.sampleRate
+        let initializationStore = SessionReplayInitializationStore(sdkKey: observabilityContext.sdkKey)
+        let cachedFailure = initializationStore.loadFailure()
+        self.initializationStore = initializationStore
+        self.recordingGate = SessionReplayRecordingGate(hasCachedFailure: cachedFailure != nil)
         let graphQLClient = GraphQLClient(endpoint: url, defaultHeaders: ["User-Agent": ObservabilitySDKInfo.userAgent()])
         let captureService = imageCaptureService
             ?? ImageCaptureService(options: sessonReplayOptions)
@@ -140,9 +149,20 @@ final class SessionReplayService: SessionReplayServicing {
                                                           appLaunchSignal: observabilityContext.appLaunchSignal)
         self.sessionReplayExporter = sessionReplayExporter
         
+        let initializationHandler: @Sendable @MainActor (SessionReplayInitializationVerdict) -> Void = { [weak self] verdict in
+            self?.handleInitializationVerdict(verdict)
+        }
         Task {
+            await sessionReplayExporter.setInitializationHandler(initializationHandler)
             await transportService.batchWorker.addExporter(sessionReplayExporter)
             transportService.start()
+        }
+
+        if let cachedFailure {
+            os_log("%{public}@",
+                   log: log,
+                   type: .info,
+                   "Session Replay is holding screenshots until initializeSession succeeds, previous launch failed with:\n\(cachedFailure.reason)")
         }
 
         // Subscribe synchronously here (not in `internalStart`, which is enabled via an async task and
@@ -161,6 +181,12 @@ final class SessionReplayService: SessionReplayServicing {
     /// is never queued here. Subsequent transitions are queued as `Foreground`/`Background`
     /// breadcrumbs, but only while recording so a sampled-out session isn't initialized.
     private func handleAppLifecycleSignal(_ signal: AppLifecycleSignal) {
+        if signal.kind == .foreground {
+            Task { @MainActor [weak self] in
+                self?.retryInitializationIfWithheld()
+            }
+        }
+
         if signal.kind == .foreground, !hasHandledInitialForeground {
             hasHandledInitialForeground = true
             let exporter = sessionReplayExporter
@@ -224,6 +250,13 @@ final class SessionReplayService: SessionReplayServicing {
     
     @MainActor
     func start(ignoreSampling: Bool = false) -> SessionReplayStartResult {
+        // The exporter stops talking to the backend after an unrecoverable refusal, so starting would
+        // only subscribe to events that can never be pushed. The next launch tries again.
+        guard recordingGate.canStartRecording else {
+            os_log("LaunchDarkly Session Replay cannot start, the backend refused this launch.", log: log, type: .info)
+            return .unrecoverableError
+        }
+
         _isEnabled = true
         guard !_isRunning else { return .alreadyStarted }
 
@@ -293,7 +326,51 @@ final class SessionReplayService: SessionReplayServicing {
         // wake-up export batch.
         lifecycleQueueingEnabled = true
 
-        captureManager.isEnabled = true
+        // Ask the backend up front instead of waiting for the first export batch, so a refusal can
+        // stop (or keep withholding) screenshots at the very start of the launch.
+        let exporter = sessionReplayExporter
+        Task { await exporter.prepareSession() }
+
+        // Input events keep flowing into the event queue meanwhile: they buffer there until the queue
+        // overflows, and are pushed as soon as the session is accepted.
+        captureManager.isEnabled = recordingGate.isScreenCaptureAllowed
+    }
+
+    /// Asks the backend again while screenshots are withheld by a failure cached from a previous launch.
+    /// A launch that starts in the background often probes with no network, or is suspended mid-request,
+    /// and becoming visible is the moment worth retrying: with capture withheld there are no frames to
+    /// export, so nothing else would trigger an attempt until the user happens to tap or navigate.
+    @MainActor
+    private func retryInitializationIfWithheld() {
+        guard _isRunning, recordingGate.isAwaitingVerdict else { return }
+
+        let exporter = sessionReplayExporter
+        Task { await exporter.prepareSession() }
+    }
+
+    /// Applies a recording verdict from the exporter: an accepted session releases screen capture (and
+    /// clears any cached failure), a refused one ends recording for this launch and is remembered so the
+    /// next launch does not take screenshots before the backend has answered.
+    @MainActor
+    private func handleInitializationVerdict(_ verdict: SessionReplayInitializationVerdict) {
+        switch recordingGate.apply(verdict) {
+        case .none:
+            break
+        case .releaseScreenCapture:
+            initializationStore.clearFailure()
+            os_log("LaunchDarkly Session Replay recovered, resuming screenshots.", log: log, type: .info)
+            if _isRunning {
+                captureManager.isEnabled = true
+            }
+        case .stopRecording(let reason):
+            initializationStore.store(reason: reason)
+            // Recording is over for this launch, so report Session Replay as disabled rather than
+            // leaving `isEnabled` claiming otherwise.
+            _isEnabled = false
+            guard _isRunning else { return }
+            _isRunning = false
+            internalStop()
+        }
     }
     
     @MainActor
