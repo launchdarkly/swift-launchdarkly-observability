@@ -176,6 +176,18 @@ actor SessionReplayExporter: EventExporting {
         // the items would only keep the buffer full.
         guard !hasFailedUnrecoverably else { return }
 
+        do {
+            try await performExport(items: items)
+        } catch {
+            // The refusal that just ended recording is not a retryable export failure: rethrowing it
+            // would have the worker back off (up to a minute) still holding a batch nothing accepts
+            // any more, so the drain above would only start once that backoff expires.
+            guard !hasFailedUnrecoverably else { return }
+            throw error
+        }
+    }
+
+    private func performExport(items: [EventQueueItem]) async throws {
         try await initializeSessionIfNeeded()
         guard let initializedSession else { return }
 
