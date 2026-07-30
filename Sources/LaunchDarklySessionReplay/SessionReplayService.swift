@@ -239,7 +239,16 @@ final class SessionReplayService: SessionReplayServicing {
         }
     }
     
+    @MainActor
     func scheduleIdentifySession(identifyPayload: IdentifyItemPayload) async {
+        // Nothing is being recorded, so the backend is left alone: the identify hook stays registered
+        // after `stop()`, and an unrecoverable answer here would refuse a launch the caller has already
+        // turned off. The payload is kept for the initialization a later `start()` performs.
+        guard _isRunning else {
+            await sessionReplayExporter.cacheIdentify(identifyPayload: identifyPayload)
+            return
+        }
+
         do {
             try await sessionReplayExporter.identifySession(identifyPayload: identifyPayload)
             await transportService.eventQueue.send(identifyPayload)
