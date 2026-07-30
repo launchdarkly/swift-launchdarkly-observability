@@ -127,7 +127,9 @@ actor SessionReplayExporter: EventExporting {
     /// and identifies the session.
     private func performInitialization() async throws {
         do {
-            guard let sessionInfo else {
+            // Re-checked because starting this task is itself a suspension point, so a refusal can
+            // arrive between the caller's check and this body.
+            guard !hasFailedUnrecoverably, let sessionInfo else {
                 return
             }
             
@@ -232,6 +234,10 @@ actor SessionReplayExporter: EventExporting {
     
     private func pushPayload(initializedSession: InitializeSessionResponse, events: [Event]) async throws {
         guard events.isNotEmpty else { return }
+        // Every `await` in `export` releases the actor, so a refusal can land between generating a
+        // payload and pushing it — from the startup probe, or from an identify. A refused session
+        // accepts no payloads, and the batch is dropped rather than retried, like any after a refusal.
+        guard !hasFailedUnrecoverably else { return }
         
         let input = PushPayloadVariables(sessionSecureId: initializedSession.secureId, payloadId: "\(nextPayloadId)", events: events)
 
@@ -253,6 +259,8 @@ actor SessionReplayExporter: EventExporting {
     }
     
     private func identifySession(sessionSecureId: String, userObject: [String: String]) async throws {
+        guard !hasFailedUnrecoverably else { return }
+
         try await replayApiService.identifySession(
             sessionSecureId: sessionSecureId,
             userIdentifier: userObject["key"] ?? "unknown",
