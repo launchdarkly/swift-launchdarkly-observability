@@ -12,7 +12,10 @@ actor SessionReplayExporter: EventExporting {
     private let replayApiService: SessionReplayAPIService
     private let context: SessionReplayContext
     private let sessionManager: SessionManaging
-    private var isInitializing = false
+    /// The initialization attempt in flight, if any. Concurrent callers join it instead of carrying on
+    /// without a session: the startup probe and the first export batch do overlap, and an export that
+    /// returns without pushing is treated as a success, which drops its items from the queue.
+    private var initializationTask: Task<Void, Error>?
     private var eventGenerator: RRWebEventGenerator
     private var log: OSLog
     private var initializedSession: InitializeSessionResponse?
@@ -105,13 +108,24 @@ actor SessionReplayExporter: EventExporting {
     private func initializeSessionIfNeeded() async throws {
         guard !hasFailedUnrecoverably else { return }
         guard initializedSession == nil else { return }
-      
-        guard !isInitializing else { return }
-        isInitializing = true
-        defer {
-            isInitializing = false
+
+        if let initializationTask {
+            // Await the attempt already running, so this caller ends up with the same session, or the
+            // same error to retry on.
+            try await initializationTask.value
+            return
         }
-        
+
+        let task = Task { try await performInitialization() }
+        initializationTask = task
+        defer { initializationTask = nil }
+
+        try await task.value
+    }
+
+    /// One initialization attempt: accepts the session with the backend, reports the recording verdict,
+    /// and identifies the session.
+    private func performInitialization() async throws {
         do {
             guard let sessionInfo else {
                 return
