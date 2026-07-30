@@ -1,7 +1,8 @@
 import CryptoKit
 import Foundation
 
-/// Outcome of an `initializeSession` / `pushPayload` attempt as far as recording is concerned.
+/// Outcome of a Session Replay request as far as recording is concerned. Any of them can refuse the
+/// launch, including the `identifySession` that follows a successful `initializeSession`.
 enum SessionReplayInitializationVerdict: Equatable {
     /// The backend accepted the session, so recording may run.
     case allowed

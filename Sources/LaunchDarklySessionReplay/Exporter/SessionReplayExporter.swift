@@ -134,6 +134,7 @@ actor SessionReplayExporter: EventExporting {
             let session = try await initializeSession(sessionSecureId: sessionInfo.id)
             // Accepting the session is the recording verdict on its own: releasing it here rather than
             // after `identifySession` keeps a transient identify failure from withholding screenshots.
+            // An unrecoverable identify failure still refuses the launch, through the catch below.
             report(.allowed)
 
             var identifyPayload = self.identifyPayload
