@@ -247,6 +247,10 @@ actor SessionReplayExporter: EventExporting {
     }
 
     func identifySession(identifyPayload: IdentifyItemPayload) async throws {
+        // The identify hook stays registered after recording ends, and `initializedSession` outlives the
+        // refusal, so without this the abandoned session would keep receiving identify calls.
+        guard !hasFailedUnrecoverably else { return }
+
         self.identifyPayload = identifyPayload
 
         guard let initializedSession else { return }
