@@ -267,10 +267,17 @@ actor SessionReplayExporter: EventExporting {
         self.identifyPayload = identifyPayload
 
         guard let initializedSession else { return }
-        
-        try await identifySession(
-            sessionSecureId: initializedSession.secureId,
-            userObject: identifyPayload.attributes)
+
+        do {
+            try await identifySession(
+                sessionSecureId: initializedSession.secureId,
+                userObject: identifyPayload.attributes)
+        } catch {
+            // The caller has nothing to retry an identify with and only logs this, but a refusal ends
+            // recording here like it does for any other request.
+            reportIfUnrecoverable(error)
+            throw error
+        }
     }
 
     /// Safely assigns the cold-launch `Foreground` signal into actor-isolated state (mirroring
