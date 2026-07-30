@@ -45,6 +45,27 @@ struct SessionReplayInitializationStoreTests {
         #expect(SessionReplayInitializationStore(sdkKey: "mob-staging", defaults: defaults).loadFailure() != nil)
     }
 
+    @Test("One environment's failure does not displace another's")
+    func failuresDoNotOverwriteEachOther() {
+        let (defaults, cleanUp) = makeDefaults()
+        defer { cleanUp() }
+
+        let staging = SessionReplayInitializationStore(sdkKey: "mob-staging", defaults: defaults)
+        let production = SessionReplayInitializationStore(sdkKey: "mob-production", defaults: defaults)
+
+        staging.store(reason: "unauthorized", timestamp: 1)
+        production.store(reason: "blocked in region", timestamp: 2)
+
+        #expect(staging.loadFailure()?.reason == "unauthorized")
+        #expect(production.loadFailure()?.reason == "blocked in region")
+
+        // Clearing is scoped the same way: recovering in one environment leaves the other withheld.
+        production.clearFailure()
+
+        #expect(staging.loadFailure()?.reason == "unauthorized")
+        #expect(production.loadFailure() == nil)
+    }
+
     @Test("Clearing removes the stored failure")
     func clearingRemovesFailure() {
         let (defaults, cleanUp) = makeDefaults()
@@ -75,8 +96,11 @@ struct SessionReplayInitializationStoreTests {
 
         SessionReplayInitializationStore(sdkKey: "mob-secret-key", defaults: defaults).store(reason: "unauthorized")
 
-        let data = try #require(defaults.data(forKey: SessionReplayInitializationStore.failureKey))
+        let key = SessionReplayInitializationStore.failureKey(for: "mob-secret-key")
+        let data = try #require(defaults.data(forKey: key))
         let json = try #require(String(data: data, encoding: .utf8))
         #expect(json.contains("mob-secret-key") == false)
+        // The environment is part of the key name now, so that has to stay a fingerprint too.
+        #expect(key.contains("mob-secret-key") == false)
     }
 }

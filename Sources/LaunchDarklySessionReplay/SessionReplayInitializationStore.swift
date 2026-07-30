@@ -14,9 +14,6 @@ enum SessionReplayInitializationVerdict: Equatable {
 struct SessionReplayInitializationFailure: Codable, Equatable {
     let reason: String
     let timestamp: TimeInterval
-    /// Fingerprint of the SDK key the failure was produced for. Entitlements differ per environment,
-    /// so a verdict from one must not gate another.
-    let environment: String
 }
 
 /// Disk cache of the last unrecoverable Session Replay initialization failure, so the next launch can
@@ -25,39 +22,40 @@ struct SessionReplayInitializationFailure: Codable, Equatable {
 /// Only failures are stored: no record means "record immediately", which keeps the common path free of
 /// a startup read/write.
 struct SessionReplayInitializationStore {
-    static let failureKey = "com.launchdarkly.observability.sessionReplay.lastUnrecoverableFailure"
+    static let failureKeyPrefix = "com.launchdarkly.observability.sessionReplay.lastUnrecoverableFailure"
     /// The reason is diagnostic only, and an error description can carry a whole response body, so it
     /// is kept short enough to stay cheap to read at every launch.
     static let maxReasonLength = 512
 
     private let defaults: UserDefaults
-    private let environment: String
+    private let failureKey: String
 
     init(sdkKey: String, defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        self.environment = Self.fingerprint(of: sdkKey)
+        self.failureKey = Self.failureKey(for: sdkKey)
     }
 
-    /// The stored failure, or `nil` when there is none or it belongs to a different environment.
+    /// The stored failure for this environment, or `nil` when there is none.
     func loadFailure() -> SessionReplayInitializationFailure? {
-        guard let data = defaults.data(forKey: Self.failureKey),
-              let failure = try? JSONDecoder().decode(SessionReplayInitializationFailure.self, from: data),
-              failure.environment == environment else {
-            return nil
-        }
-        return failure
+        guard let data = defaults.data(forKey: failureKey) else { return nil }
+        return try? JSONDecoder().decode(SessionReplayInitializationFailure.self, from: data)
     }
 
     func store(reason: String, timestamp: TimeInterval = Date().timeIntervalSince1970) {
         let failure = SessionReplayInitializationFailure(reason: String(reason.prefix(Self.maxReasonLength)),
-                                                        timestamp: timestamp,
-                                                        environment: environment)
+                                                        timestamp: timestamp)
         guard let data = try? JSONEncoder().encode(failure) else { return }
-        defaults.set(data, forKey: Self.failureKey)
+        defaults.set(data, forKey: failureKey)
     }
 
     func clearFailure() {
-        defaults.removeObject(forKey: Self.failureKey)
+        defaults.removeObject(forKey: failureKey)
+    }
+
+    /// Entitlements differ per environment, so a verdict from one must neither gate another nor
+    /// overwrite what is cached for it — hence a key per SDK key rather than a shared one.
+    static func failureKey(for sdkKey: String) -> String {
+        "\(failureKeyPrefix).\(fingerprint(of: sdkKey))"
     }
 
     /// Distinguishes environments without writing the SDK key itself to disk. Only equality matters,
