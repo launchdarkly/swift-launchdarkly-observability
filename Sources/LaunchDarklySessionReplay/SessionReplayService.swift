@@ -99,6 +99,9 @@ final class SessionReplayService: SessionReplayServicing {
     private var lifecycleCancellable: AnyCancellable?
     /// Whether the one-shot cold-launch foreground has been forwarded to the exporter. Main-thread only.
     private var hasHandledInitialForeground = false
+    /// The most recent identify that arrived while recording was off, delivered by the next `start()`.
+    /// Main-thread only.
+    private var pendingIdentify: IdentifyItemPayload?
     /// Gates queuing of lifecycle breadcrumbs to the recording window so a sampled-out session is not
     /// initialized by a stray transition. Toggled in `internalStart`/`internalStop`. Main-thread only.
     private var lifecycleQueueingEnabled = false
@@ -243,9 +246,10 @@ final class SessionReplayService: SessionReplayServicing {
     func scheduleIdentifySession(identifyPayload: IdentifyItemPayload) async {
         // Nothing is being recorded, so the backend is left alone: the identify hook stays registered
         // after `stop()`, and an unrecoverable answer here would refuse a launch the caller has already
-        // turned off. The payload is kept for the initialization a later `start()` performs.
+        // turned off. The payload waits for the next `start()`, which delivers it. Only the most recent
+        // one is kept: an older identity is stale by then.
         guard _isRunning else {
-            await sessionReplayExporter.cacheIdentify(identifyPayload: identifyPayload)
+            pendingIdentify = identifyPayload
             return
         }
 
@@ -336,13 +340,34 @@ final class SessionReplayService: SessionReplayServicing {
         lifecycleQueueingEnabled = true
 
         // Ask the backend up front instead of waiting for the first export batch, so a refusal can
-        // stop (or keep withholding) screenshots at the very start of the launch.
+        // stop (or keep withholding) screenshots at the very start of the launch. An identify held while
+        // recording was off goes first: initialization no-ops for a session that is still accepted, so
+        // nothing else would deliver it, and going first also means a session accepted from here on is
+        // initialized with the current identity rather than identified twice.
+        let pending = takePendingIdentify()
         let exporter = sessionReplayExporter
-        Task { await exporter.prepareSession() }
+        Task { [weak self] in
+            if let pending {
+                await self?.scheduleIdentifySession(identifyPayload: pending)
+            }
+            await exporter.prepareSession()
+        }
 
         // Input events keep flowing into the event queue meanwhile: they buffer there until the queue
         // overflows, and are pushed as soon as the session is accepted.
         captureManager.isEnabled = recordingGate.isScreenCaptureAllowed
+    }
+
+    /// Consumes the identify held while recording was off, restamped with the session being recorded now:
+    /// the session can have rotated in the meantime, and the timeline event has to land on the current one.
+    @MainActor
+    private func takePendingIdentify() -> IdentifyItemPayload? {
+        guard let pending = pendingIdentify else { return nil }
+        pendingIdentify = nil
+
+        return IdentifyItemPayload(attributes: pending.attributes,
+                                   timestamp: pending.timestamp,
+                                   sessionId: observabilityContext.sessionManager.sessionInfo.id)
     }
 
     /// Asks the backend again while screenshots are withheld by a failure cached from a previous launch.

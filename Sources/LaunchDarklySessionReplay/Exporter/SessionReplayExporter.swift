@@ -267,12 +267,6 @@ actor SessionReplayExporter: EventExporting {
             userObject: userObject)
     }
 
-    /// Keeps the latest identify without contacting the backend, for the initialization a later `start()`
-    /// performs. Used while Session Replay is not recording.
-    func cacheIdentify(identifyPayload: IdentifyItemPayload) {
-        self.identifyPayload = identifyPayload
-    }
-
     func identifySession(identifyPayload: IdentifyItemPayload) async throws {
         // The identify hook stays registered after recording ends, and `initializedSession` outlives the
         // refusal, so without this the abandoned session would keep receiving identify calls.
