@@ -25,6 +25,7 @@ struct SessionReplaySamplingTests {
         #expect(SessionReplayStartResult.alreadyStarted.isRunning)
         #expect(SessionReplayStartResult.sampledOut.isRunning == false)
         #expect(SessionReplayStartResult.unavailable.isRunning == false)
+        #expect(SessionReplayStartResult.unrecoverableError.isRunning == false)
     }
 
     @Test("sampling decision is not re-evaluated after sampled out")

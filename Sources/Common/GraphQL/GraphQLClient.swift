@@ -134,7 +134,33 @@ public enum GraphQLClientError: Error, CustomStringConvertible {
 }
 
 public struct GraphQLError: Decodable {
+    public struct Extensions: Decodable {
+        /// Machine-readable error identifier, e.g. `SESSION_REPLAY_BLOCKED_IN_REGION`.
+        public let code: String?
+        /// The server's own verdict on whether retrying the operation can succeed. Takes precedence
+        /// over any status-code based classification when present.
+        public let retryable: Bool?
+
+        public init(code: String? = nil, retryable: Bool? = nil) {
+            self.code = code
+            self.retryable = retryable
+        }
+    }
+
     public let message: String
+    public let extensions: Extensions?
+
+    public init(message: String, extensions: Extensions? = nil) {
+        self.message = message
+        self.extensions = extensions
+    }
+}
+
+/// Errors-only view of the GraphQL envelope. The public graph also returns this shape alongside a
+/// non-2xx status, where the generic decode has already failed, so error metadata can still be read
+/// from the raw body.
+public struct GraphQLErrorEnvelope: Decodable {
+    public let errors: [GraphQLError]?
 }
 
 public struct GraphQLEmptyData: Decodable {}
