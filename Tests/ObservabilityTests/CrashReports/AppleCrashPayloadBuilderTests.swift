@@ -159,6 +159,37 @@ struct AppleCrashPayloadBuilderTests {
         #expect(!encoded.contains("\"thread\""))
     }
 
+    @Test("Falls back to the single-thread shape when no background thread survives")
+    func dropsThreadTagsWhenEveryBackgroundThreadIsSkipped() throws {
+        // The only background thread has frames, but none of them are usable,
+        // so it contributes nothing. The payload is then back to just the
+        // crashed thread and must not tag frames with an index no `threads`
+        // list explains.
+        let json = """
+        {
+          "crash": {
+            "error": { "type": "signal", "signal": { "name": "SIGSEGV" } },
+            "threads": [
+              { "index": 0, "crashed": true, "backtrace": { "contents": [
+                { "instruction_addr": 4294971392, "object_addr": 4294967296, "object_name": "TestApp", "symbol_name": "main" }
+              ] } },
+              { "index": 1, "backtrace": { "contents": [
+                { "object_addr": 4294967296, "object_name": "TestApp" }
+              ] } }
+            ]
+          },
+          "binary_images": [
+            { "image_addr": 4294967296, "uuid": "AAAA-BBBB", "name": "TestApp" }
+          ]
+        }
+        """
+        let report = try JSONDecoder().decode(KSCrashReportModel.self, from: Data(json.utf8))
+        let payload = try #require(AppleCrashPayloadBuilder.payload(from: report))
+
+        #expect(payload.threads == nil)
+        #expect(payload.frames.allSatisfy { $0.thread == nil })
+    }
+
     @Test("Skips threads with no backtrace and orders the rest by index")
     func skipsEmptyThreadsAndOrdersByIndex() throws {
         let json = """
