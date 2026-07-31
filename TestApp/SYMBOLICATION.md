@@ -17,7 +17,12 @@ function names, `file:line`, and inlined call frames instead of raw addresses.
    loads the matching map to symbolicate.
 
 You never generate or check in the `.dsymmap` yourself — `ldcli` builds it in
-memory and uploads it. You only point it at the dSYM.
+memory and uploads it. You only point it at the dSYM, and from a build phase not
+even that (Step 3).
+
+Nothing has to be kept in step by hand. The UUID is the binary's own, so what
+identifies a build is produced by the same link that produced the code, and there
+is no version, id, or file to stamp anywhere.
 
 ## Prerequisites
 
@@ -86,6 +91,10 @@ ldcli symbols upload \
 > acronym works: `ios`, `ipados`, `tvos`, `watchos`, `visionos`, `macos`, as well
 > as `apple` and `dsym` (all case-insensitive).
 
+`--path` is what makes this exact: it names the dSYM built in Step 1, so nothing
+else on disk can be picked up instead. From inside an Xcode build phase you can
+leave it out and the build says where its dSYMs are — see Step 3.
+
 ### Optional — also upload your sources (`--include-sources`)
 
 Symbolication alone gets you `MainMenuViewModel.swift:222`. Adding
@@ -148,31 +157,46 @@ ldcli symbols upload \
 
 ## Step 3 (recommended) — upload automatically on every build
 
-Add a **Run Script** build phase so symbol maps upload as part of archiving —
-the same pattern Firebase Crashlytics, Sentry, and Bugsnag use. In Xcode:
-select the **TestApp** target ▸ **Build Phases** ▸ **+ ▸ New Run Script Phase**,
-place it after **Compile Sources**, and use:
+Add a **Run Script** build phase so symbol maps upload as part of the build that
+produced them — the same pattern Firebase Crashlytics, Sentry, and Bugsnag use.
+In Xcode: select the **TestApp** target ▸ **Build Phases** ▸ **+ ▸ New Run
+Script Phase**, place it after **Compile Sources**, and use:
 
 ```bash
-# Only upload for Release builds that actually generate a dSYM.
-if [ "${CONFIGURATION}" != "Release" ]; then
-  echo "Skipping symbol upload for ${CONFIGURATION}"
-  exit 0
-fi
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+ldcli symbols upload --type ios --project default
+```
 
-/usr/local/bin/ldcli symbols upload \
-  --type ios \
-  --project "$LD_PROJECT_KEY" \
-  --access-token "$LD_ACCESS_TOKEN" \
-  --path "${DWARF_DSYM_FOLDER_PATH}"
+That is the whole phase. With no `--path`, `ldcli` reads
+`DWARF_DSYM_FOLDER_PATH` — which Xcode sets to the folder this build wrote its
+dSYMs to — so there is no path to keep in step with the project, and the phase
+uploads the dSYMs of whatever it just built rather than whatever it last found:
+
+```
+Using the dSYMs this Xcode build produced, from .../Build/Products/Release-iphonesimulator
+Built symbol map for D582767F6C6F37B9ACB6EF4401A1B1D7 (arm64, 5754975 bytes)
+[LaunchDarkly] Uploaded symbol map D582767F6C6F37B9ACB6EF4401A1B1D7 (arm64) (5.5 MB gzipped to 1004.2 KB)
+```
+
+A Debug build sets that variable too and produces no dSYM, since its debug
+information stays in the binary. That is not an error — the phase says so and
+succeeds — so it needs no `if [ "${CONFIGURATION}" != "Release" ]` guard:
+
+```
+This build produced no dSYM, so there is nothing to upload. Set Debug Information Format to "DWARF with dSYM File" for the configurations you ship.
 ```
 
 Notes:
-- `${DWARF_DSYM_FOLDER_PATH}` is set by Xcode to the folder holding the built
-  dSYM(s), so no path juggling is needed.
-- Provide `LD_PROJECT_KEY` / `LD_ACCESS_TOKEN` via the scheme's environment,
-  an `.xcconfig`, or your CI secrets — do not hard-code the token.
+- The `PATH` line is there because a build phase does not inherit your shell's
+  PATH; point it at wherever `ldcli` is installed.
+- The access token must not be checked in. Locally, `ldcli login` stores one in
+  `~/.config/ldcli/config.yml` and the phase picks it up; in CI, set
+  `LD_ACCESS_TOKEN` in the job environment. `LD_PROJECT` works in place of
+  `--project`, and any build setting — including a User-Defined one — reaches
+  the phase as an environment variable.
 - Uncheck **"Based on dependency analysis"** so the phase always runs.
+- Frameworks built alongside the app land in the same folder, so their dSYMs go
+  up too and their frames symbolicate as well.
 
 ## Step 4 — install & launch the *exact* binary you uploaded the dSYM for
 
@@ -209,9 +233,10 @@ test.
 
 ## Verifying
 
-Re-run the same dSYM upload as often as you like — maps are keyed by UUID and
-overwrite cleanly. Confirm the build UUIDs you uploaded match the app you're
-running:
+Re-run the same dSYM upload as often as you like: a UUID LaunchDarkly already has
+can only mean the same binary, so the second run reports `Skipping …, already
+uploaded` and sends nothing (`--no-skip-existing` forces it). Confirm the build
+UUIDs you uploaded match the app you're running:
 
 ```bash
 dwarfdump --uuid "$APP.dSYM"
