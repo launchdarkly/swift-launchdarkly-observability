@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.49.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.48.1...0.49.0) (2026-07-30)
+
+
+### Features
+
+* **crash:** report every thread, not just the crashed one ([#251](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/251)) ([965b458](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/965b45845ba5bffa33baf9a070441aed6cf701d0))
+* **session-replay:** stop recording on unrecoverable initialization errors ([#255](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/255)) ([a08d9c7](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/a08d9c7681f85a29a4bcd9fb579bb572d28ce174))
+
 ## [0.48.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.48.0...0.48.1) (2026-07-28)
 
 
