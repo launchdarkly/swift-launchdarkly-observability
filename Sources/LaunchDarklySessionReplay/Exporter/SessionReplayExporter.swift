@@ -12,7 +12,10 @@ actor SessionReplayExporter: EventExporting {
     private let replayApiService: SessionReplayAPIService
     private let context: SessionReplayContext
     private let sessionManager: SessionManaging
-    private var isInitializing = false
+    /// The initialization attempt in flight, if any. Concurrent callers join it instead of carrying on
+    /// without a session: the startup probe and the first export batch do overlap, and an export that
+    /// returns without pushing is treated as a success, which drops its items from the queue.
+    private var initializationTask: Task<Void, Error>?
     private var eventGenerator: RRWebEventGenerator
     private var log: OSLog
     private var initializedSession: InitializeSessionResponse?
@@ -37,6 +40,14 @@ actor SessionReplayExporter: EventExporting {
         return payloadId
     }
     private var identifyPayload: IdentifyItemPayload?
+    /// Set once the backend rejects the session unrecoverably. Recording cannot come back within this
+    /// process — a new attempt is made only on a fresh launch — so no further requests are made and
+    /// queued items are drained instead of retried.
+    private var hasFailedUnrecoverably = false
+    private var initializationHandler: (@Sendable @MainActor (SessionReplayInitializationVerdict) -> Void)?
+    /// A verdict reached before the handler was attached. The handler is installed from an unordered
+    /// task, so the first verdict is held here rather than dropped.
+    private var pendingVerdict: SessionReplayInitializationVerdict?
     
     init(context: SessionReplayContext,
          replayApiService: SessionReplayAPIService,
@@ -76,22 +87,58 @@ actor SessionReplayExporter: EventExporting {
         self.eventGenerator = RRWebEventGenerator(log: log, title: title, method: context.compression)
         self.initializedSession = nil
     }
+
+    /// Receives every recording verdict. Attached after construction because the observer owns this
+    /// exporter; any verdict reached in the meantime is replayed immediately.
+    func setInitializationHandler(_ handler: @escaping @Sendable @MainActor (SessionReplayInitializationVerdict) -> Void) {
+        initializationHandler = handler
+        if let pendingVerdict {
+            self.pendingVerdict = nil
+            Task { @MainActor in handler(pendingVerdict) }
+        }
+    }
+
+    /// Initializes the session without waiting for the first export batch, so an unrecoverable
+    /// rejection can stop capture at the very start of the launch. Errors are reported through the
+    /// verdict handler, so they are not rethrown here.
+    func prepareSession() async {
+        try? await initializeSessionIfNeeded()
+    }
     
     private func initializeSessionIfNeeded() async throws {
+        guard !hasFailedUnrecoverably else { return }
         guard initializedSession == nil else { return }
-      
-        guard !isInitializing else { return }
-        isInitializing = true
-        defer {
-            isInitializing = false
+
+        if let initializationTask {
+            // Await the attempt already running, so this caller ends up with the same session, or the
+            // same error to retry on.
+            try await initializationTask.value
+            return
         }
-        
+
+        let task = Task { try await performInitialization() }
+        initializationTask = task
+        defer { initializationTask = nil }
+
+        try await task.value
+    }
+
+    /// One initialization attempt: accepts the session with the backend, reports the recording verdict,
+    /// and identifies the session.
+    private func performInitialization() async throws {
         do {
-            guard let sessionInfo else {
+            // Re-checked because starting this task is itself a suspension point, so a refusal can
+            // arrive between the caller's check and this body.
+            guard !hasFailedUnrecoverably, let sessionInfo else {
                 return
             }
             
             let session = try await initializeSession(sessionSecureId: sessionInfo.id)
+            // Accepting the session is the recording verdict on its own: releasing it here rather than
+            // after `identifySession` keeps a transient identify failure from withholding screenshots.
+            // An unrecoverable identify failure still refuses the launch, through the catch below.
+            report(.allowed)
+
             var identifyPayload = self.identifyPayload
             if identifyPayload == nil {
                 identifyPayload = await IdentifyItemPayload(options: context.observabilityContext.options, sessionAttributes: context.observabilityContext.sessionAttributes, timestamp: Date().timeIntervalSince1970, sessionId: sessionInfo.id)
@@ -103,11 +150,47 @@ actor SessionReplayExporter: EventExporting {
         } catch {
             initializedSession = nil
             os_log("%{public}@", log: log, type: .error, "Failed to initialize Session Replay:\n\(error)")
+            reportIfUnrecoverable(error)
             throw error
         }
     }
+
+    /// Classifies a failed request: recoverable errors are left to the export retry loop (items stay
+    /// buffered until the queue overflows), while an unrecoverable one ends recording for this launch.
+    private func reportIfUnrecoverable(_ error: Error) {
+        guard !ErrorRecoverability.isErrorRecoverable(error) else { return }
+
+        hasFailedUnrecoverably = true
+        let reason = String(describing: error)
+        os_log("%{public}@", log: log, type: .error, "Session Replay stopped, unrecoverable error:\n\(reason)")
+        report(.unrecoverable(reason: reason))
+    }
+
+    private func report(_ verdict: SessionReplayInitializationVerdict) {
+        guard let initializationHandler else {
+            pendingVerdict = verdict
+            return
+        }
+        Task { @MainActor in initializationHandler(verdict) }
+    }
     
     func export(items: [EventQueueItem]) async throws {
+        // Return without pushing so the queue drains: recording is over for this launch, and holding
+        // the items would only keep the buffer full.
+        guard !hasFailedUnrecoverably else { return }
+
+        do {
+            try await performExport(items: items)
+        } catch {
+            // The refusal that just ended recording is not a retryable export failure: rethrowing it
+            // would have the worker back off (up to a minute) still holding a batch nothing accepts
+            // any more, so the drain above would only start once that backoff expires.
+            guard !hasFailedUnrecoverably else { return }
+            throw error
+        }
+    }
+
+    private func performExport(items: [EventQueueItem]) async throws {
         try await initializeSessionIfNeeded()
         guard let initializedSession else { return }
 
@@ -151,10 +234,19 @@ actor SessionReplayExporter: EventExporting {
     
     private func pushPayload(initializedSession: InitializeSessionResponse, events: [Event]) async throws {
         guard events.isNotEmpty else { return }
+        // Every `await` in `export` releases the actor, so a refusal can land between generating a
+        // payload and pushing it — from the startup probe, or from an identify. A refused session
+        // accepts no payloads, and the batch is dropped rather than retried, like any after a refusal.
+        guard !hasFailedUnrecoverably else { return }
         
         let input = PushPayloadVariables(sessionSecureId: initializedSession.secureId, payloadId: "\(nextPayloadId)", events: events)
-                
-        try await replayApiService.pushPayload(input)
+
+        do {
+            try await replayApiService.pushPayload(input)
+        } catch {
+            reportIfUnrecoverable(error)
+            throw error
+        }
         
         // flushes generating canvas size into pushedCanvasSize
         await eventGenerator.updatePushedCanvasSize()
@@ -167,6 +259,8 @@ actor SessionReplayExporter: EventExporting {
     }
     
     private func identifySession(sessionSecureId: String, userObject: [String: String]) async throws {
+        guard !hasFailedUnrecoverably else { return }
+
         try await replayApiService.identifySession(
             sessionSecureId: sessionSecureId,
             userIdentifier: userObject["key"] ?? "unknown",
@@ -174,13 +268,24 @@ actor SessionReplayExporter: EventExporting {
     }
 
     func identifySession(identifyPayload: IdentifyItemPayload) async throws {
+        // The identify hook stays registered after recording ends, and `initializedSession` outlives the
+        // refusal, so without this the abandoned session would keep receiving identify calls.
+        guard !hasFailedUnrecoverably else { return }
+
         self.identifyPayload = identifyPayload
 
         guard let initializedSession else { return }
-        
-        try await identifySession(
-            sessionSecureId: initializedSession.secureId,
-            userObject: identifyPayload.attributes)
+
+        do {
+            try await identifySession(
+                sessionSecureId: initializedSession.secureId,
+                userObject: identifyPayload.attributes)
+        } catch {
+            // The caller has nothing to retry an identify with and only logs this, but a refusal ends
+            // recording here like it does for any other request.
+            reportIfUnrecoverable(error)
+            throw error
+        }
     }
 
     /// Safely assigns the cold-launch `Foreground` signal into actor-isolated state (mirroring

@@ -7,12 +7,15 @@ public enum SessionReplayStartResult: Equatable {
     case alreadyStarted
     /// Session Replay stayed stopped because the session was sampled out.
     case sampledOut
+    /// Session Replay stayed stopped because the backend refused this launch in a way retrying cannot
+    /// fix. Recording is only attempted again on the next launch, so starting again has no effect.
+    case unrecoverableError
 
     public var isRunning: Bool {
         switch self {
         case .started, .alreadyStarted:
             return true
-        case .unavailable, .sampledOut:
+        case .unavailable, .sampledOut, .unrecoverableError:
             return false
         }
     }

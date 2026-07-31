@@ -1,2 +1,2 @@
 // This file is automatically updated by release-please. Do not edit manually.
-public let sdkVersion = "0.47.0" // x-release-please-version
+public let sdkVersion = "0.48.1" // x-release-please-version

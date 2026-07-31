@@ -52,7 +52,7 @@ struct SessionReplayModifierPropagationTests {
         let (window, _, mask) = makeOverlayHierarchy()
         SessionReplayAssociatedObjects.maskUIView(mask, isEnabled: false)
 
-        let (areas, overlayBranchViews) = MarkerScanner().scan(in: window, rPresentation: window.layer)
+        let (areas, overlayBranchViews) = MarkerScanner().scan(in: window, rPresentation: window.layer, usePresentationGeometry: false)
         #expect(areas.count == 1)
         #expect(areas.first?.mask == false)
         #expect(areas.first?.ignore == nil)
@@ -67,7 +67,7 @@ struct SessionReplayModifierPropagationTests {
         let (window, _, mask) = makeOverlayHierarchy()
         SessionReplayAssociatedObjects.ignoreUIView(mask, isEnabled: true)
 
-        let (areas, _) = MarkerScanner().scan(in: window, rPresentation: window.layer)
+        let (areas, _) = MarkerScanner().scan(in: window, rPresentation: window.layer, usePresentationGeometry: false)
         #expect(areas.count == 1)
         #expect(areas.first?.ignore == true)
     }
@@ -85,7 +85,7 @@ struct SessionReplayModifierPropagationTests {
         window.isHidden = false
         window.layoutIfNeeded()
 
-        let (areas, _) = MarkerScanner().scan(in: window, rPresentation: window.layer)
+        let (areas, _) = MarkerScanner().scan(in: window, rPresentation: window.layer, usePresentationGeometry: false)
         #expect(areas.isEmpty)
     }
 
@@ -125,7 +125,7 @@ struct SessionReplayModifierPropagationTests {
 
         SessionReplayAssociatedObjects.maskUIView(mask, isEnabled: true)
 
-        let (_, overlayBranchViews) = MarkerScanner().scan(in: window, rPresentation: window.layer)
+        let (_, overlayBranchViews) = MarkerScanner().scan(in: window, rPresentation: window.layer, usePresentationGeometry: false)
 
         // Overlay-branch chain stops at the marker wrapper because
         // `cellContent` is much larger than the marker.
@@ -205,7 +205,7 @@ struct SessionReplayModifierPropagationTests {
 
         SessionReplayAssociatedObjects.maskUIView(mask, isEnabled: true)
 
-        let (_, overlayBranchViews) = MarkerScanner().scan(in: window, rPresentation: window.layer)
+        let (_, overlayBranchViews) = MarkerScanner().scan(in: window, rPresentation: window.layer, usePresentationGeometry: false)
 
         #expect(overlayBranchViews.contains(ObjectIdentifier(mask)))
         #expect(overlayBranchViews.contains(ObjectIdentifier(innerWrapper)))

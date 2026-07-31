@@ -68,9 +68,14 @@ final class MarkerScanner {
     /// modifier governs — regardless of whether SwiftUI flattens that
     /// content into a UIView sibling, a deeply nested UIView, or a pure
     /// CALayer (iOS 26 Liquid Glass).
+    ///
+    /// `usePresentationGeometry` must match the mode `MaskCollector` is
+    /// traversing in, so marker areas and visited frames live in the same
+    /// coordinate space.
     func scan(
         in rootView: UIView,
-        rPresentation: CALayer
+        rPresentation: CALayer,
+        usePresentationGeometry: Bool
     ) -> (areas: [MarkerArea], overlayBranchViews: Set<ObjectIdentifier>) {
         var areas: [MarkerArea] = []
         var overlayBranchViews: Set<ObjectIdentifier> = []
@@ -89,23 +94,20 @@ final class MarkerScanner {
                 let mask = SessionReplayAssociatedObjects.shouldMaskUIView(marker)
                 let ignore = SessionReplayAssociatedObjects.shouldIgnoreUIView(marker)
                 if mask != nil || ignore != nil {
-                    // `MaskCollector.collectViewMasks` recurses through
-                    // `rPresentation.sublayers`, so every `effectiveFrame`
-                    // it later compares against is computed in pure
-                    // presentation coordinates. We must project the
-                    // marker through its own presentation layer too —
-                    // otherwise during an active animation (e.g. a
-                    // horizontal navigation push/pop) the `from:` chain
-                    // reads model `transform`/`position` while the
-                    // receiver `rPresentation` is mid-animation, the
-                    // resulting `frameInRoot` lands in the wrong
-                    // coordinate system, and `frameContains` checks fail
-                    // for every visited layer until the animation
-                    // finishes. `presentation()` returns nil when the
-                    // layer isn't animating, in which case model and
-                    // presentation are identical and the fallback is
-                    // exact.
-                    let markerLayer = marker.layer.presentation() ?? marker.layer
+                    // Every `effectiveFrame` these areas are later compared
+                    // against is computed in the coordinate space
+                    // `MaskCollector` traverses in, so the marker has to be
+                    // projected through the same kind of layer. Mixing the
+                    // two makes `frameInRoot` land in the wrong coordinate
+                    // system during an active animation (e.g. a horizontal
+                    // navigation push/pop) and every `frameContains` check
+                    // fails until the animation finishes.
+                    // `presentation()` returns nil when the layer isn't
+                    // animating, in which case model and presentation are
+                    // identical and the fallback is exact.
+                    let markerLayer = usePresentationGeometry
+                        ? (marker.layer.presentation() ?? marker.layer)
+                        : marker.layer
                     let frameInRoot = rPresentation.convert(markerLayer.bounds, from: markerLayer)
                     if frameInRoot.width > 0, frameInRoot.height > 0 {
                         areas.append(MarkerArea(frameInRoot: frameInRoot, mask: mask, ignore: ignore))
