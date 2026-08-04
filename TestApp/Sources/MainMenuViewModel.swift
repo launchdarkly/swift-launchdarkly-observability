@@ -216,7 +216,7 @@ final class MainMenuViewModel: ObservableObject {
 		case .decodingFailure:
 			_ = try! JSONDecoder().decode([Int].self, from: Data("not json".utf8))
 		case .fatalError:
-			fatalError("TestApp: intentional fatalError()")
+			fatalError("iOS: Crash - intentional fatalError()")
 		case .forceUnwrapNil:
 			let value: String? = nil
 			_ = value!
@@ -224,9 +224,9 @@ final class MainMenuViewModel: ObservableObject {
 			let numbers = [1, 2, 3]
 			_ = numbers[numbers.count + 5]
 		case .preconditionFailure:
-			preconditionFailure("TestApp: intentional precondition failure")
+			preconditionFailure("iOS: Crash - intentional precondition failure")
 		case .assertionFailure:
-			assertionFailure("TestApp: intentional assertion failure")
+			assertionFailure("iOS: Crash - intentional assertion failure")
 		case .integerOverflow:
 			// `Int.random` keeps the compiler from constant-folding (and rejecting)
 			// the overflow at build time; the trap happens at runtime instead.
@@ -253,7 +253,7 @@ final class MainMenuViewModel: ObservableObject {
 			// Crashes on a background queue while the main thread stays alive, so
 			// the report contains multiple threads and the crashed one is not #0.
 			DispatchQueue.global(qos: .userInitiated).async {
-				fatalError("TestApp: intentional crash on a background thread")
+				fatalError("iOS: Crash - intentional crash on a background thread")
 			}
 		case .backgroundBadAccess:
 			DispatchQueue.global(qos: .userInitiated).async {
@@ -262,7 +262,7 @@ final class MainMenuViewModel: ObservableObject {
 			}
 		case .detachedTaskCrash:
 			Task.detached(priority: .high) {
-				fatalError("TestApp: intentional crash in a detached Task")
+				fatalError("iOS: Crash - intentional crash in a detached Task")
 			}
 		case .concurrentMutation:
 			// Unsynchronized concurrent access to a value-type Array from many
@@ -284,7 +284,7 @@ final class MainMenuViewModel: ObservableObject {
 				}
 			}
 			DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.2) {
-				fatalError("TestApp: crash with many threads active")
+				fatalError("iOS: Crash - crash with many threads active")
 			}
 		}
 	}

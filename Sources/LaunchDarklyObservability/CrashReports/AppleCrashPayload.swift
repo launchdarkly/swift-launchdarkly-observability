@@ -355,11 +355,12 @@ enum AppleCrashPayloadBuilder {
             return frames.isEmpty ? nil : AppleCrashPayload(frames: frames)
         }
 
-        var frames = convert(crashContents, crashedIndex)
-        guard !frames.isEmpty else {
+        let crashedFrames = convert(crashContents, crashedIndex)
+        guard !crashedFrames.isEmpty else {
             return nil
         }
         var descriptors = [describe(crashedThread, crashed: true)].compactMap { $0 }
+        var backgroundFrames = [AppleCrashPayload.Frame]()
 
         for thread in background {
             let contents = Array((thread.backtrace?.contents ?? []).prefix(maxFramesPerBackgroundThread))
@@ -367,11 +368,18 @@ enum AppleCrashPayloadBuilder {
             guard !threadFrames.isEmpty, let descriptor = describe(thread, crashed: false) else {
                 continue
             }
-            frames.append(contentsOf: threadFrames)
+            backgroundFrames.append(contentsOf: threadFrames)
             descriptors.append(descriptor)
         }
 
-        return AppleCrashPayload(frames: frames, threads: descriptors.count > 1 ? descriptors : nil)
+        // Every background thread dropped out, so the crashed thread is again
+        // the only one in the payload: re-convert it untagged rather than ship
+        // per-frame thread indices with no `threads` list to resolve them.
+        guard descriptors.count > 1 else {
+            return AppleCrashPayload(frames: convert(crashContents, nil))
+        }
+
+        return AppleCrashPayload(frames: crashedFrames + backgroundFrames, threads: descriptors)
     }
 
     /// The thread the crash is attributed to: the one KSCrash flagged `crashed`,

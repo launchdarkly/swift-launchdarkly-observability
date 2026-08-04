@@ -11,11 +11,11 @@ enum Failure: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .test:
-            return "this is a test error"
+            return "iOS: Manual error - this is a test error"
         case .crash:
-            return "this is a crash error"
+            return "iOS: Manual error - this is a crash error"
         case .cast:
-            return "failed to cast value to the expected type"
+            return "iOS: Cast failure - failed to cast value to the expected type"
         }
     }
 }

@@ -8,9 +8,9 @@ enum SampleError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .error1:
-            return "Something wrong happened, this is error1"
+            return "iOS: Manual error - something wrong happened, this is error1"
         case .error2:
-            return "Something wrong happened, this is error2"
+            return "iOS: Manual error - something wrong happened, this is error2"
         }
     }
 }

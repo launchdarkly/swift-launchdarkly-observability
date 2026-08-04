@@ -13,7 +13,7 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 32) {
             Button {
-                fatalError()
+                fatalError("iOS: Crash - intentional fatalError()")
             } label: {
                 Text("Crash")
             }

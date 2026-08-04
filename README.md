@@ -11,7 +11,7 @@ LaunchDarkly Observability SDK for Swift
 The iOS observability plugin automatically instruments:
 - **Activity Lifecycle**: `app_foreground` / `app_background` spans on lifecycle transitions, plus matching Session Replay `Foreground` / `Background` breadcrumbs
 - **HTTP Requests**: URLSession requests
-- **Crash Reporting**: Automatic crash reporting
+- **Crash Reporting**: Automatic crash reporting, symbolicated for released builds (see [Symbolicating Crashes](#symbolicating-crashes))
 - **Feature Flag Evaluations**: Evaluation events added to your spans.
 - **Session Management**: User session tracking and background timeout handling
 - **Taps**: A `click` span for each tap interaction
@@ -558,6 +558,76 @@ LDObserve.shared.trackScreenView(name: "Profile", category: "Account", propertie
 ```
 
 Manual `trackScreenView(...)` calls work even when automatic detection (`instrumentation.screens`) is disabled. The emitted `screen_view` span is still gated by `analytics.screenViews`.
+
+### Symbolicating Crashes
+
+A crash in a released build reports each frame as a binary and an address, because
+the names and line numbers live in the dSYM Xcode set aside at build time and never
+ship with the app. Upload that dSYM and LaunchDarkly turns those addresses back into
+functions, `file:line`, and the frames the optimizer inlined away.
+
+Nothing is needed in your code: crash reporting is on by default, and a frame is
+matched to its dSYM by the binary's build UUID, so there is no version or identifier
+to keep in step. What is needed is that the dSYM gets uploaded, which is worth doing
+from the build that produced it.
+
+#### Upload from the build
+
+Add a **Run Script** phase to your app target (**Build Phases ▸ + ▸ New Run Script
+Phase**), after **Compile Sources**:
+
+```bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+ldcli symbols upload --type ios --project my-project-key
+```
+
+That is the whole phase. [`ldcli`](https://github.com/launchdarkly/ldcli) takes the
+dSYMs from `DWARF_DSYM_FOLDER_PATH`, which Xcode sets to the folder the build just
+wrote them to, so there is no path to keep in step with your project. A configuration
+that produces no dSYM is not an error — the phase says so and succeeds — so it needs
+no guard around Debug builds.
+
+Three things about the environment a build phase runs in:
+
+- It does not inherit your shell's `PATH`, hence the first line. Point it at wherever
+  `ldcli` is installed.
+- The access token must not be checked into the project. Locally, `ldcli login`
+  stores one in `~/.config/ldcli/config.yml` and the phase picks it up; in CI, set
+  `LD_ACCESS_TOKEN` in the job environment. `LD_PROJECT` works in place of
+  `--project` the same way.
+- Uncheck **"Based on dependency analysis"** so the phase runs on every build.
+
+Uploading the same build twice sends nothing the second time, since a UUID that
+LaunchDarkly already has can only mean the same binary.
+
+#### Uploading a dSYM by hand
+
+For a dSYM you already have — from an archive, or downloaded from App Store Connect
+after Apple re-signed the build — point `--path` at it:
+
+```bash
+ldcli symbols upload --type ios --project my-project-key \
+  --path ~/Library/Developer/Xcode/Archives/2026-07-31/MyApp.xcarchive/dSYMs
+```
+
+#### Check that a dSYM is being produced
+
+Symbolication needs **Build Settings ▸ Debug Information Format** to be `DWARF with
+dSYM File` for the configurations you ship. Xcode sets that for Release in its app
+templates; Debug is `DWARF` and produces nothing to upload, which is why a debug
+build's traces already carry names.
+
+#### Source context (optional)
+
+Adding `--include-sources` also uploads the source files the dSYM's debug info
+references, so the errors page shows the code around each frame instead of just the
+location. It is off by default because it stores your source in LaunchDarkly, and it
+has to run on the machine that compiled the app — files the dSYM names but that
+aren't on disk are skipped.
+
+Frames that resolve to `<compiler-generated>` — thunks, outlined helpers,
+specialization glue — have no source location in the debug info at all, so they show
+the binary and an offset no matter what you upload.
 
 ## Contributing
 
