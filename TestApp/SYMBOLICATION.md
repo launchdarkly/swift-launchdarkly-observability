@@ -149,10 +149,11 @@ environment):
 ldcli symbols upload \
   --type ios \
   --project default \
+  --path "$APP.dSYM" \
   --access-token <STAGING_TOKEN> \
   --base-uri https://ld-stg.launchdarkly.com \
-  --backend-url http://localhost:8082/private \
-  --path "$APP.dSYM"
+  --backend-url http://localhost:8082/private
+\
 ```
 
 ## Step 3 (recommended) — upload automatically on every build
