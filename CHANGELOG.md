@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.50.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.49.0...0.50.0) (2026-08-04)
+
+
+### Features
+
+* Cut the dSYM upload build phase down to one line, and document symbolication ([#257](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/257)) ([9958dbc](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/9958dbcefc98ce036a2219cac3486620cb361429))
+
 ## [0.49.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.48.1...0.49.0) (2026-07-30)
 
 
