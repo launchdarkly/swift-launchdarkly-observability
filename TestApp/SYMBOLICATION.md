@@ -140,10 +140,23 @@ Built symbol map for BD1993CF2B693D1290F66439459E4E63 (arm64, 10240 bytes)
 Successfully uploaded all symbols
 ```
 
-### Local / self-hosted backend
-When testing against a local observability backend, target the private GraphQL
-endpoint and the matching control-plane base URI (use a token from that same
-environment):
+### Another instance, or a local backend
+Uploading to an instance other than production takes one flag: name it with
+`--base-uri` and the upload endpoint follows from it (use a token from that same
+instance):
+
+```bash
+ldcli symbols upload \
+  --type ios \
+  --project default \
+  --path "$APP.dSYM" \
+  --access-token <STAGING_TOKEN> \
+  --base-uri https://ld-stg.launchdarkly.com
+```
+
+`--backend-url` is only for a backend running on your own machine. Point it at the
+private GraphQL endpoint, and keep the base URI of the instance the token belongs
+to, since that is where the project is looked up:
 
 ```bash
 ldcli symbols upload \
@@ -153,7 +166,6 @@ ldcli symbols upload \
   --access-token <STAGING_TOKEN> \
   --base-uri https://ld-stg.launchdarkly.com \
   --backend-url http://localhost:8082/private
-\
 ```
 
 ## Step 3 (recommended) — upload automatically on every build
