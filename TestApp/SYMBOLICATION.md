@@ -231,6 +231,47 @@ Then tap an **Error dSYM** or **Crash** button. The `file:line` + inlined frames
 come from the uploaded symbol map, so a plain simulator build is a fully valid
 test.
 
+## CI — download a ready-made simulator build
+
+The [TestApp Simulator Artifact](../.github/workflows/testapp-simulator-artifact.yml)
+workflow builds TestApp for the simulator in Release with a dSYM, uploads that
+dSYM and its sources, and publishes the `.app`. The simulator is deliberate: a
+device IPA would need a signing identity in CI, and symbolication only needs the
+dSYM's UUIDs to match the binary that crashed — both come from the same job.
+
+It runs on pull requests that touch TestApp (or the workflow itself), and via
+**Actions → TestApp Simulator Artifact → Run workflow**. Download the
+`testapp-simulator-<N>` artifact from the run page, or:
+
+```bash
+gh run list --repo launchdarkly/swift-launchdarkly-observability --workflow testapp-simulator-artifact.yml --limit 5
+gh run download <run-id> --repo launchdarkly/swift-launchdarkly-observability -n testapp-simulator-<N>
+```
+
+Unpack and install (bundle id `com.launchdarkly.TestApp`; the product is
+`TestAppFruta.app`):
+
+```bash
+ditto -x -k TestApp-simulator.zip .
+# optional: ditto -x -k TestApp-simulator-dSYM.zip .   # to inspect UUIDs
+
+xcrun simctl boot "iPhone 16" 2>/dev/null || true
+open -a Simulator
+xcrun simctl install booted TestAppFruta.app
+xcrun simctl launch booted com.launchdarkly.TestApp
+```
+
+Then tap an **Error dSYM** or **Crash** button and check the LaunchDarkly errors
+view. To confirm the downloaded app matches the uploaded maps:
+
+```bash
+dwarfdump --uuid TestAppFruta.app/TestAppFruta
+```
+
+Those UUIDs (uppercased, no dashes) are the keys under
+`_sym/apple/id/<UUID>.dsymmap`. The app is configured for staging from repo
+secrets; you do not need `Secrets.xcconfig` for a downloaded build.
+
 ## Verifying
 
 Re-run the same dSYM upload as often as you like: a UUID LaunchDarkly already has

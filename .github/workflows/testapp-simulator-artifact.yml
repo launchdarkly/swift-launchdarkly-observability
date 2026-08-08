@@ -1,0 +1,124 @@
+name: TestApp Simulator Artifact
+
+# Builds TestApp for the simulator with a dSYM, uploads that dSYM and the sources
+# behind it, and publishes the .app for download, so symbolication can be
+# exercised against a real build rather than a locally produced one.
+#
+# The simulator is deliberate: a device build would need a signing identity in CI,
+# and symbolication does not care. What matters is that the dSYM's UUIDs match the
+# binary that crashed, which holds as long as both come out of this one job.
+#
+# Requires, for the upload step only:
+#   secrets.LD_TESTAPP_MOBILE_KEY    mobile key the app initializes with
+#   secrets.LD_SYMBOLS_ACCESS_TOKEN  API token for the instance below
+#   vars.LD_SYMBOLS_PROJECT          project key the symbols belong to
+# Without them the app still builds; only the upload is skipped, which is what
+# makes this safe to run on a fork's pull request.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base-uri:
+        description: 'LaunchDarkly instance to upload symbols to'
+        default: 'https://ld-stg.launchdarkly.com'
+        required: true
+  pull_request:
+    paths:
+      - 'TestApp/**'
+      - 'TestAppShared/**'
+      - 'Sources/**'
+      - '.github/workflows/testapp-simulator-artifact.yml'
+
+permissions:
+  contents: read
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+env:
+  # 3.10.0 is the first release that takes the dSYM path from the Xcode build
+  # environment, and that derives the upload endpoint from --base-uri.
+  LDCLI_VERSION: '3.10.0'
+  BUILD_DIR: TestApp/build/ci
+  PRODUCTS_DIR: TestApp/build/ci/Build/Products/Release-iphonesimulator
+
+jobs:
+  build:
+    name: Build TestApp and upload its dSYM
+    runs-on: macos-15
+    env:
+      LD_BASE_URI: ${{ inputs.base-uri || 'https://ld-stg.launchdarkly.com' }}
+      LD_ACCESS_TOKEN: ${{ secrets.LD_SYMBOLS_ACCESS_TOKEN }}
+      LD_PROJECT: ${{ vars.LD_SYMBOLS_PROJECT }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      # The project reads these through Secrets.xcconfig, which is gitignored, so
+      # it has to exist before xcodebuild runs. The $() breaks up the // so the
+      # xcconfig parser does not read the rest of the line as a comment.
+      - name: Configure the app
+        run: |
+          cat > TestAppShared/Secrets.xcconfig <<EOF
+          mobileKey = ${{ secrets.LD_TESTAPP_MOBILE_KEY }}
+          otlpEndpoint = https:/\$()/otel.observability.ld-stg.launchdarkly.com:4318
+          backendUrl = https:/\$()/pub.observability.ld-stg.launchdarkly.com/
+          EOF
+
+      # Release so the binary is optimized like a shipped one, which is what makes
+      # symbolication worth testing; dwarf-with-dsym is already the Release default
+      # in the project, and is repeated here so a project change cannot silently
+      # leave the build without symbols to upload.
+      - name: Build for the simulator
+        run: |
+          xcodebuild build \
+            -project TestApp/TestApp.xcodeproj \
+            -scheme TestApp \
+            -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$BUILD_DIR" \
+            -skipPackagePluginValidation \
+            DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY= \
+            | xcpretty && exit ${PIPESTATUS[0]}
+
+      - name: Install ldcli
+        if: env.LD_ACCESS_TOKEN != '' && env.LD_PROJECT != ''
+        run: |
+          curl -fsSL "https://github.com/launchdarkly/ldcli/releases/download/v${LDCLI_VERSION}/ldcli_${LDCLI_VERSION}_darwin_arm64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin ldcli
+          ldcli --version
+
+      # --path takes the folder the dSYMs sit in, the same shape Xcode hands the
+      # CLI through DWARF_DSYM_FOLDER_PATH during a build phase.
+      - name: Upload the dSYM and sources
+        if: env.LD_ACCESS_TOKEN != '' && env.LD_PROJECT != ''
+        run: |
+          ldcli symbols upload \
+            --type ios \
+            --path "$PRODUCTS_DIR" \
+            --include-sources
+
+      # upload-artifact does not preserve the executable bit, which would leave the
+      # downloaded .app unable to launch, so the bundle is zipped by ditto first and
+      # the artifact carries that one file. The bundle is found rather than named
+      # because the TestApp scheme's product is TestAppFruta.app.
+      - name: Package the app and its dSYM
+        run: |
+          set -euo pipefail
+          app=$(find "$PRODUCTS_DIR" -maxdepth 1 -name '*.app' | head -1)
+          if [ -z "$app" ]; then
+            echo "no .app in $PRODUCTS_DIR" >&2
+            exit 1
+          fi
+          ditto -c -k --sequesterRsrc --keepParent "$app" TestApp-simulator.zip
+          ditto -c -k --sequesterRsrc --keepParent "$app.dSYM" TestApp-simulator-dSYM.zip
+
+      - name: Publish the app and its dSYM
+        uses: actions/upload-artifact@v4
+        with:
+          name: testapp-simulator-${{ github.run_number }}
+          path: |
+            TestApp-simulator.zip
+            TestApp-simulator-dSYM.zip
+          if-no-files-found: error
+          retention-days: 14
