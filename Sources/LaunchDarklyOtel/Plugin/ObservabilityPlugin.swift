@@ -30,14 +30,14 @@ open class ObservabilityPlugin: Plugin {
     /// - Parameters:
     ///   - options: Pipeline configuration. The `instrumentation` and `crashReporting`
     ///     sections have no effect unless an instrumentation provider is supplied.
-    ///   - instrumenting: Supplies the automatic instrumentation. `nil` installs nothing into
-    ///     the host app, leaving only the manual recording API.
     ///   - distroName: Value reported as `telemetry.distro.name`, identifying which
     ///     distribution produced the telemetry.
+    ///   - instrumenting: Supplies the automatic instrumentation. `nil` installs nothing into
+    ///     the host app, leaving only the manual recording API.
     public init(
         options: ObservabilityOptions,
-        instrumenting: ObservabilityInstrumenting? = nil,
-        distroName: String
+        distroName: String,
+        instrumenting: ObservabilityInstrumenting? = nil
     ) {
         self.options = options
         self.instrumenting = instrumenting

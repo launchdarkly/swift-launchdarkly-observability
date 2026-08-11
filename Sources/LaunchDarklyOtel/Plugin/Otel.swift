@@ -24,6 +24,6 @@ public final class Otel: ObservabilityPlugin {
     /// - Parameter options: Pipeline configuration. The `instrumentation` and
     ///   `crashReporting` sections are ignored: this plugin installs no instrumentation.
     public init(options: ObservabilityOptions) {
-        super.init(options: options, instrumenting: nil, distroName: Otel.SDK_NAME)
+        super.init(options: options, distroName: Otel.SDK_NAME, instrumenting: nil)
     }
 }

@@ -26,8 +26,8 @@ public final class Observability: ObservabilityPlugin {
         }
         super.init(
             options: options,
-            instrumenting: DefaultInstrumentation(),
-            distroName: Observability.SDK_NAME
+            distroName: Observability.SDK_NAME,
+            instrumenting: DefaultInstrumentation()
         )
     }
 }
