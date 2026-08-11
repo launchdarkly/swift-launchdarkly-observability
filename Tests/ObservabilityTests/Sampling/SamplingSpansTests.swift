@@ -1,6 +1,7 @@
 import Testing
 import Common
 import OpenTelemetrySdk
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 struct SamplingSpansTests {

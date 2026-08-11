@@ -1,5 +1,6 @@
 import Testing
 import OpenTelemetryApi
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 /// Unit tests for the shared `click` attribute builder used by the manual `trackClick` API

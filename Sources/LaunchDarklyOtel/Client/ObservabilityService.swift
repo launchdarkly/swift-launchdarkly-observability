@@ -7,40 +7,45 @@ import LaunchDarkly
     import Common
 #endif
 
-final class ObservabilityService: InternalObserve {
-    var logClient: InternalLogsApi { loggerClient }
+/// The OpenTelemetry pipeline: sampling, session stamping, batching and OTLP export for
+/// logs, metrics and traces, plus the manual recording API and the analytics taxonomy
+/// emitters (`track`, `screen_view`, `click`, `app_launch`, app lifecycle).
+///
+/// It installs no hooks into the host app on its own. Everything that swizzles, handles
+/// signals or samples the process comes from an ``ObservabilityInstrumenting`` supplied to
+/// ``install(instrumenting:)``; with none supplied the SDK only emits what the app records
+/// explicitly, so it can coexist with another observability SDK.
+public final class ObservabilityService: InternalObserve {
+    var logClient: LogRecording { loggerClient }
     var customerLogClient: LogsApi { logger }
     var traceClient: TracesApi { _traceClient }
     private let logger: LogsApi
     private let meter: MetricsApi
-    private let tracer: TracesApi
-    private let options: ObservabilityOptions
+    private let appTracer: TracesApi
+    public let options: ObservabilityOptions
     public var context: ObservabilityContext?
-    
-    private let autoInstrumentationSamplingInterval: TimeInterval = 5.0
-    /// Uptime captured at the earliest SDK entry point. Swift evaluates stored-property defaults
-    /// during `init`, before any of the service's setup work (transport, crash-report flushing,
-    /// instrument wiring) runs, so using this as the end of the cold/warm startup window keeps the
-    /// `app.start` `start.duration_ms` from being inflated by the SDK's own initialization time.
-    private let appStartEndUptime: TimeInterval = ProcessInfo.processInfo.systemUptime
+
     private let transportService: TransportService
     private let sessionManager: SessionManager
-    private let eventQueue: EventQueue
+    public let eventQueue: EventQueue
     private let appLogBuilder: AppLogBuilder
     private let appLifecycleManager: AppLifecycleManager
-    
+
     private let loggerClient: LogClient
-    
+
     private let metricsClient: MetricsApi
-    
+
     private let _traceClient: TraceClient
     let tracerDecorator: TracerDecorator
-    
-    private var instruments = [AutoInstrumentation]()
-    
-    private let userInteractionManager: UserInteractionManager
+
+    /// Supplies the automatic instrumentation. `nil` when the SDK is used as a plain OTel
+    /// pipeline, in which case nothing hooks into the host app.
+    private var instrumenting: ObservabilityInstrumenting?
+    private var instruments = [Instrumentation]()
+    private var screenViewCapture: ScreenViewCapturing?
+    private var crashReporting: CrashReporting?
+
     private let screenStack: ScreenStack
-    private var screenViewManager: ScreenViewManager?
     /// Broadcasts each recorded screen view so Session Replay can emit `Navigate` events.
     private let screenViewSubject = PassthroughSubject<ScreenViewEvent, Never>()
     /// Broadcasts each `track` event so Session Replay can emit a `Track` event regardless of the
@@ -49,39 +54,38 @@ final class ObservabilityService: InternalObserve {
     /// Broadcasts each app-lifecycle signal so Session Replay can emit an `Open`/`Foreground`/
     /// `Background` breadcrumb, independent of the `analytics.appLifecycle` span flag.
     private let appLifecycleSubject = PassthroughSubject<AppLifecycleSignal, Never>()
-    /// The one-shot process-launch signal, resolved at the earliest point in `init` (persisting the
-    /// app version exactly once). Handed to `ObservabilityContext` as an immutable setup value and
-    /// emitted as the `app_launch` span during `start()`.
-    private let appLaunchSignal: AppLaunchSignal?
-    private var crashReporting: CrashReporting?
+    /// The one-shot process-launch signal, resolved by the instrumentation provider during
+    /// ``install(instrumenting:)``. Handed to `ObservabilityContext` as an immutable setup value
+    /// and emitted as the `app_launch` span during `start()`.
+    private var appLaunchSignal: AppLaunchSignal?
     private var cancellables = Set<AnyCancellable>()
-    
+
     let hookExporter: ObservabilityHookExporter
-    
+
     private let startQueue = DispatchQueue(label: "com.launchdarkly.observability.service.start")
     private var task: Task<Void, Never>?
-    
+
     private let contextKeysQueue = DispatchQueue(label: "com.launchdarkly.observability.service.contextKeys")
     private var _cachedContextKeyAttributes: [String: AttributeValue] = [:]
     private var cachedContextKeyAttributes: [String: AttributeValue] {
         get { contextKeysQueue.sync { _cachedContextKeyAttributes } }
         set { contextKeysQueue.sync { _cachedContextKeyAttributes = newValue } }
     }
-    
-    init(
+
+    public init(
         options: ObservabilityOptions,
         mobileKey: String,
         sessionAttributes: [String: AttributeValue]
     ) throws {
         self.options = options
-        
+
         // MARK: - Sampling
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
         guard let url = URL(string: options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
         }
         let graphQLClient = GraphQLClient(endpoint: url, defaultHeaders: ["User-Agent": ObservabilitySDKInfo.userAgent()])
-        
+
         Task {
             do {
                 let samplingConfigClient = DefaultSamplingConfigClient(client: graphQLClient)
@@ -91,11 +95,11 @@ final class ObservabilityService: InternalObserve {
                 os_log("%{public}@", log: options.log, type: .error, "getSamplingConfig failed with error: \(error)")
             }
         }
-        
+
         // MARK: - AppLifecycleManager
         let appLifecycleManager = AppLifecycleManager()
         self.appLifecycleManager = appLifecycleManager
-        
+
         let sessionManager = SessionManager(
             options: .init(
                 timeout: options.sessionBackgroundTimeout,
@@ -104,26 +108,26 @@ final class ObservabilityService: InternalObserve {
             appLifecycleManager: appLifecycleManager
         )
         self.sessionManager = sessionManager
-        
+
         // MARK: - EventQueue
         let eventQueue = EventQueue()
         self.eventQueue = eventQueue
-        
+
         // MARK: - BatchWorker
         let batchWorker = BatchWorker(eventQueue: eventQueue, log: options.log)
-        
+
         // MARK: - Transport Service
         let transportService = TransportService(eventQueue: eventQueue,
                                                 batchWorker: batchWorker,
                                                 sessionManager: sessionManager,
                                                 appLifecycleManager: appLifecycleManager)
         self.transportService = transportService
-        
+
         // MARK: - Logging
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.logsPath) else {
             throw InstrumentationError.invalidLogExporterUrl
         }
-        
+
         let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
         let logClient = LogClient(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
         self.loggerClient = logClient
@@ -132,15 +136,15 @@ final class ObservabilityService: InternalObserve {
         Task {
             await batchWorker.addExporter(logExporter)
         }
-        
+
         self.appLogBuilder = appLogBuilder
         self.logger = appLogClient
-        
+
         // MARK: - Metrics
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.metricsPath) else {
             throw InstrumentationError.invalidMetricExporterUrl
         }
-        
+
         let metricsEventExporter = OtlpMetricEventExporter(
             endpoint: url,
             config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
@@ -158,18 +162,18 @@ final class ObservabilityService: InternalObserve {
             reader: reader
         )
         self.metricsClient = metricsClient
-        
+
         let appMetricsClient = AppMetricsClient(
             options: options.metricsApi,
             metricsApiClient: metricsClient
         )
         self.meter = appMetricsClient
-        
+
         // MARK: - Tracing
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.tracesPath) else {
             throw InstrumentationError.invalidTraceExporterUrl
         }
-        
+
         // MARK: - OtlpTraceEventExporter
         let traceEventExporter = OtlpTraceEventExporter(
             endpoint: url,
@@ -178,7 +182,7 @@ final class ObservabilityService: InternalObserve {
         Task {
             await batchWorker.addExporter(traceEventExporter)
         }
-        
+
         let tracerDecorator = TracerDecorator(
             options: options,
             sessionManager: sessionManager,
@@ -191,60 +195,28 @@ final class ObservabilityService: InternalObserve {
             tracer: tracerDecorator
         )
         self._traceClient = traceClient
-        
+
         let appTraceClient = AppTraceClient(
             options: options.tracesApi,
             tracingApiClient: traceClient
         )
-        self.tracer = appTraceClient
-        
-        // `instrumentation.userTaps` enables the tap-detection machinery (issuing tap
-        // events); `analytics.taps` governs whether a detected tap is published as an OTel
-        // `click` span. Capture still flows to Session Replay regardless of either flag.
-        let userTapsEnabled = options.instrumentation.userTaps.isEnabled
-        let publishTaps = options.analytics.taps.isEnabled
-        // Created as a local so the tap closure can read the current screen id without
-        // capturing `self` (which isn't fully initialized yet at this point in `init`).
-        let screenStack = ScreenStack()
-        self.screenStack = screenStack
-        let userInteractionManager = UserInteractionManager(
-            options: options,
-            sessionManaging: sessionManager,
-            // The active screen is read once at tap time and stamped onto the interaction, so the
-            // OTel span here and the Session Replay click event report the identical screen.
-            screenInfoProvider: { (screenStack.currentId, screenStack.current) }
-        ) { interaction in
-            guard userTapsEnabled else { return }
-            guard publishTaps else { return }
-            // Correlate the tap with the active screen (taxonomy §4.1 `event.screen_id`).
-            interaction.startEndSpan(tracer: tracerDecorator, screenId: interaction.screenId, screenName: interaction.screenName)
-        }
-        self.userInteractionManager = userInteractionManager
+        self.appTracer = appTraceClient
 
-        // Resolve the one-shot launch signal at the earliest point so it can be handed to the
-        // context as an immutable setup value (Session Replay injects it into the exporter at
-        // construction). Resolved synchronously here via a local closure — no `self` capture and
-        // no cross-thread mailbox — and persists the app version exactly once. The `app_launch`
-        // span is emitted later in `start()` once the tracer and cached context keys are ready.
-        var resolvedLaunchSignal: AppLaunchSignal?
-        AppLaunchTracker(appStartEndUptime: appStartEndUptime) { resolvedLaunchSignal = $0 }.start()
-        self.appLaunchSignal = resolvedLaunchSignal
-        
+        self.screenStack = ScreenStack()
+
         let context = ObservabilityContext(
             sdkKey: mobileKey,
             options: options,
             appLifecycleManager: appLifecycleManager,
             sessionManager: sessionManager,
             transportService: transportService,
-            userInteractionManager: userInteractionManager,
             sessionAttributes: sessionAttributes,
             screenViews: screenViewSubject.eraseToAnyPublisher(),
             tracks: trackSubject.eraseToAnyPublisher(),
-            appLifecycleEvents: appLifecycleSubject.eraseToAnyPublisher(),
-            appLaunchSignal: appLaunchSignal
+            appLifecycleEvents: appLifecycleSubject.eraseToAnyPublisher()
         )
         self.context = context
-        
+
         self.hookExporter = ObservabilityHookExporter(
             traceClient: traceClient,
             logClient: loggerClient,
@@ -255,19 +227,27 @@ final class ObservabilityService: InternalObserve {
         // Route the afterTrack hook and identify context keys back into this service,
         // so it remains the single emitter of track spans.
         self.hookExporter.trackEmitter = self
+    }
 
-        // Automatic screen_view capture routes appearing screens back through the
-        // same single emitter used by the manual `trackScreenView` API.
-        self.screenViewManager = ScreenViewManager { [weak self] screen in
-            self?.emitScreenView(screen)
-        }
+    /// Attaches the automatic instrumentation. Must be called before ``start()``, and before
+    /// any other plugin reads ``context``: the touch-capture pipeline and the launch signal it
+    /// provides are setup values that Session Replay reads once at construction.
+    /// - Parameter appStartEndUptime: uptime marking the end of the startup window. Capture it
+    ///   at the earliest SDK entry point so `start.duration_ms` measures app startup rather
+    ///   than SDK initialization.
+    public func install(instrumenting: ObservabilityInstrumenting, appStartEndUptime: TimeInterval) {
+        self.instrumenting = instrumenting
+        let launchSignal = instrumenting.resolveAppLaunchSignal(appStartEndUptime: appStartEndUptime)
+        self.appLaunchSignal = launchSignal
+        context?.attach(
+            userInteractionManager: instrumenting.makeUserInteractionManager(runtime: self),
+            appLaunchSignal: launchSignal
+        )
     }
 }
 
 extension ObservabilityService {
     private func start() async throws {
-        let options = self.options
-        
         transportService.start()
 
         // A new session (e.g. after a background timeout) must start with a fresh navigation
@@ -288,116 +268,43 @@ extension ObservabilityService {
                 // Re-seed the new session with the screen the user is still viewing. UIKit won't
                 // fire `viewDidAppear` for an already-visible controller, so without this the new
                 // session would have no opening `screen_view` span or `Navigate` event.
-                self.screenViewManager?.captureCurrentScreen()
+                self.screenViewCapture?.captureCurrentScreen()
             }
             .store(in: &cancellables)
-        
-        // MARK: - Network
-        if options.instrumentation.urlSession.isEnabled {
-            instruments.append(
-                NetworkInstrumentationManager(
-                    options: options,
-                    tracer: tracerDecorator,
-                    session: sessionManager
-                )
-            )
-        }
-        
-        // The touch-capture hook (UIWindow.sendEvent swizzle + hit-testing) is invasive, so it is
-        // only installed when something needs it: tap detection here (gated by
-        // `instrumentation.userTaps`) or Session Replay, which starts the same shared manager
-        // itself. With both off, no swizzle or hit-testing is installed.
-        if options.instrumentation.userTaps.isEnabled {
-            userInteractionManager.start()
-        }
+
+        guard let instrumenting else { return }
+
+        instruments = instrumenting.makeInstrumentation(runtime: self)
 
         if options.instrumentation.screens.isEnabled {
-            screenViewManager?.start()
+            let capture = instrumenting.makeScreenViewCapture(runtime: self)
+            screenViewCapture = capture
+            capture?.start()
         }
-        
-        if options.instrumentation.memory.isEnabled {
-            instruments.append(
-                MeasurementTask(metricsApi: metricsClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
-                    guard let report = MemoryUseManager.memoryReport(log: options.log) else { return }
-                    api.recordMetric(
-                        metric: .init(name: SemanticConvention.systemMemoryAppUsageBytes, value: Double(report.appMemoryBytes))
-                    )
-                    api.recordMetric(
-                        metric: .init(name: SemanticConvention.systemMemoryAppTotalBytes, value: Double(report.systemTotalBytes))
-                    )
-                }
-            )
-        }
-        
-        if options.instrumentation.cpu.isEnabled {
-            instruments.append(
-                MeasurementTask(metricsApi: metricsClient, samplingInterval: autoInstrumentationSamplingInterval) { api in
-                    guard let value = CpuUtilizationManager.currentCPUUsage() else { return }
-                    api.recordMetric(
-                        metric: .init(name: SemanticConvention.systemCpuUtilization, value: value)
-                    )
-                }
-            )
-        }
-        
-        if options.instrumentation.memoryWarnings.isEnabled {
-            let memoryWarningMonitor = MemoryPressureMonitor(options: options, appLogBuilder: appLogBuilder) { [weak self] log in
-                guard let self else { return }
-                await eventQueue.send(LogItem(log: log))
-            }
-            instruments.append(memoryWarningMonitor)
-        }
-        
-        // Always track lifecycle so the Session Replay breadcrumb broadcast fires; the
-        // `app_foreground`/`app_background` span is gated separately below.
-        let appLifecycleTracker = AppLifecycleTracker(appLifecycleManager: appLifecycleManager) { [weak self] signal in
-            self?.handleAppLifecycleSignal(signal)
-        }
-        instruments.append(appLifecycleTracker)
 
-        let crashReporting: CrashReporting
-        if options.crashReporting.source == .KSCrash {
-            crashReporting = try KSCrashReportService(logsApi: logClient, log: options.log)
-            crashReporting.logPendingCrashReports()
-        } else if options.crashReporting.source == .metricKit {
-            #if os(iOS)
-            if #available(iOS 15.0, *) {
-                let reporter = MetricKitCrashReporter(logsApi: logClient, logger: options.log)
-                crashReporting = reporter
-                crashReporting.logPendingCrashReports()
-                instruments.append(reporter)
-            } else {
-                crashReporting = NoOpCrashReport()
-                os_log("Crash reporting is disabled, MetricKit is not available on this platform version.", log: options.log, type: .info)
-            }
-            #else
-            crashReporting = NoOpCrashReport()
-            os_log("Crash reporting is disabled, MetricKit is not available on this platform.", log: options.log, type: .info)
-            #endif
-        } else {
-            crashReporting = NoOpCrashReport()
-        }
+        let crashReporting = instrumenting.makeCrashReporting(runtime: self)
         self.crashReporting = crashReporting
+        crashReporting?.logPendingCrashReports()
 
         for instrument in instruments {
             instrument.start()
         }
 
-        // Emit the `app_launch` span (and its `app.start` performance event) from the signal resolved
-        // at the earliest point in `init`. Done here, after the tracer and cached context keys are
+        // Emit the `app_launch` span (and its `app.start` performance event) from the signal
+        // resolved during `install`. Done here, after the tracer and cached context keys are
         // ready, so attributes are populated; gated by `analytics.appLaunch` inside the handler.
         if let appLaunchSignal {
-            handleAppLaunchSignal(appLaunchSignal)
+            recordAppLaunchSignal(appLaunchSignal)
         }
     }
 }
 
 extension ObservabilityService {
-    func start(sessionId: String) {
+    public func start(sessionId: String) {
         startSession(sessionId: sessionId, isCustomSession: true)
     }
 
-    func start() {
+    public func start() {
         startSession(sessionId: SecureIDGenerator.generateSecureID(), isCustomSession: false)
     }
 
@@ -419,8 +326,33 @@ extension ObservabilityService {
     }
 }
 
+// MARK: - ObservabilityRuntime
+
+extension ObservabilityService: ObservabilityRuntime {
+    public var session: SessionManaging { sessionManager }
+    public var appLifecycle: AppLifecycleManaging { appLifecycleManager }
+    public var tracer: Tracer { tracerDecorator }
+    /// The ungated meter: `options.metricsApi` only governs the customer-facing API.
+    public var metrics: MetricsApi { metricsClient }
+    /// The ungated log recorder: `options.logsApiLevel` only governs the customer-facing API.
+    public var logs: LogRecording { loggerClient }
+
+    public var currentScreen: (id: String?, name: String?) {
+        (screenStack.currentId, screenStack.current)
+    }
+
+    public func buildLogRecord(
+        message: String,
+        severity: Severity,
+        attributes: [String: AttributeValue],
+        spanContext: SpanContext?
+    ) -> ReadableLogRecord? {
+        appLogBuilder.buildLog(message: message, severity: severity, attributes: attributes, spanContext: spanContext)
+    }
+}
+
 extension ObservabilityService: Observe {
-    func recordLog(
+    public func recordLog(
         message: String,
         severity: Severity,
         attributes: [String: AttributeValue],
@@ -429,49 +361,49 @@ extension ObservabilityService: Observe {
         logger.recordLog(message: message, severity: severity, attributes: attributes, spanContext: spanContext)
     }
 
-    func recordMetric(metric: Metric) {
+    public func recordMetric(metric: Metric) {
         meter.recordMetric(metric: metric)
     }
 
-    func recordCount(metric: Metric) {
+    public func recordCount(metric: Metric) {
         meter.recordCount(metric: metric)
     }
 
-    func recordIncr(metric: Metric) {
+    public func recordIncr(metric: Metric) {
         meter.recordIncr(metric: metric)
     }
 
-    func recordHistogram(metric: Metric) {
+    public func recordHistogram(metric: Metric) {
         meter.recordHistogram(metric: metric)
     }
 
-    func recordUpDownCounter(metric: Metric) {
+    public func recordUpDownCounter(metric: Metric) {
         meter.recordUpDownCounter(metric: metric)
     }
 
-    func recordError(
+    public func recordError(
         _ error: any Error,
         attributes: [String: AttributeValue]
     ) {
-        tracer.recordError(error, attributes: attributes)
+        appTracer.recordError(error, attributes: attributes)
     }
 
-    func startSpan(
+    public func startSpan(
         name: String,
         attributes: [String: AttributeValue]
     ) -> any Span {
-        tracer.startSpan(name: name, attributes: attributes)
+        appTracer.startSpan(name: name, attributes: attributes)
     }
 
-    func track(key: String, properties: [String: Any]?, metricValue: Double?) {
+    public func track(key: String, properties: [String: Any]?, metricValue: Double?) {
         track(name: key,
               metricValue: metricValue,
               attributes: properties?.toOtelAttributes() ?? [:],
               contextKeyAttributes: nil)
     }
 
-    func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {
-        emitScreenView(
+    public func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {
+        recordScreenView(
             ScreenView(
                 name: name,
                 screenClass: screenClass,
@@ -491,7 +423,7 @@ extension ObservabilityService: Observe {
     /// (its name is unknown here) to avoid pairing one screen's id with another's name. Reserved
     /// `event.*` fields take precedence over caller `properties`, matching the `screen_view`/`track`
     /// precedence model.
-    func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?) {
+    public func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?) {
         guard options.analytics.taps.isEnabled else { return }
 
         // Default to the current screen so the click correlates with the active `screen_view`. Only
@@ -532,7 +464,7 @@ extension ObservabilityService: TrackEmitting {
         contextKeyAttributes: [String: AttributeValue]?
     ) {
         // Broadcast so Session Replay can record a `Track` event for every track path, independent
-        // of the trackEvents span flag below (mirrors the `Navigate` broadcast in emitScreenView).
+        // of the trackEvents span flag below (mirrors the `Navigate` broadcast in recordScreenView).
         // Carries only user-supplied track data, matching the previous SessionReplayHook payload.
         trackSubject.send(
             TrackEvent(
@@ -571,16 +503,15 @@ extension ObservabilityService: TrackEmitting {
         builder.startSpan().end()
     }
 
-    /// Single funnel for screen changes. Both the automatic
-    /// `ViewControllerScreenSource` capture and the manual `trackScreenView` API
-    /// route through here so `previous_screen` resolution and context-key
-    /// merging stay consistent.
+    /// Single funnel for screen changes. Both automatic capture and the manual
+    /// `trackScreenView` API route through here so `previous_screen` resolution and
+    /// context-key merging stay consistent.
     ///
     /// Screen detection itself is gated by ``ObservabilityOptions/Instrumentation/screens``
     /// (auto capture) or the explicit manual call. The `screen_view` span is gated
     /// separately by ``ObservabilityOptions/Analytics/screenViews``; the navigation
     /// broadcast (Session Replay `Navigate`) always fires once a screen is recorded.
-    func emitScreenView(_ screen: ScreenView) {
+    public func recordScreenView(_ screen: ScreenView) {
         // Resolve previous_screen against the shared stack before recording this one.
         // Identity is keyed on screenId (when present) so distinct screens sharing a
         // display name aren't collapsed into a re-appearance of one another.
@@ -624,7 +555,7 @@ extension ObservabilityService: TrackEmitting {
             spanAttributes[SemanticConvention.eventCategory] = .string(category)
         }
 
-        let span = tracer.startSpan(name: SemanticConvention.screenViewSpanName, attributes: spanAttributes)
+        let span = appTracer.startSpan(name: SemanticConvention.screenViewSpanName, attributes: spanAttributes)
         span.end()
     }
 
@@ -632,7 +563,7 @@ extension ObservabilityService: TrackEmitting {
     /// Replay can record an `Open`/`Foreground`/`Background` breadcrumb (always,
     /// mirroring the `Navigate`/`Track` broadcasts), then emits the taxonomy span
     /// only when gated on by `analytics.appLifecycle`.
-    func handleAppLifecycleSignal(_ signal: AppLifecycleSignal) {
+    public func recordAppLifecycleSignal(_ signal: AppLifecycleSignal) {
         // Broadcast every transition (including the cold-launch foreground). Session Replay's
         // lifetime subscription captures the first foreground and forwards it to the exporter via
         // `setInitialForeground`, emitting it on the first wake-up batch; later transitions become
@@ -663,14 +594,14 @@ extension ObservabilityService: TrackEmitting {
             spanAttributes[SemanticConvention.eventLifecycleState] = .string(state)
         }
 
-        let span = tracer.startSpan(name: spanName, attributes: spanAttributes)
+        let span = appTracer.startSpan(name: spanName, attributes: spanAttributes)
         span.end()
     }
 
     /// Emits the taxonomy `app_launch` span when gated on by `analytics.appLaunch`. The Session
     /// Replay `Launch` breadcrumb is delivered separately: the signal is handed to the exporter at
     /// construction (via `ObservabilityContext.appLaunchSignal`), not broadcast from here.
-    func handleAppLaunchSignal(_ signal: AppLaunchSignal) {
+    public func recordAppLaunchSignal(_ signal: AppLaunchSignal) {
         guard options.analytics.appLaunch.isEnabled else { return }
         emitAppLaunchSpan(signal)
     }
@@ -696,18 +627,18 @@ extension ObservabilityService: TrackEmitting {
         }
 
         // The span is emitted at the end of `start()` (after async startup instrumentation), but it
-        // represents the launch itself. Anchor it to the process-start instant captured at dylib
-        // load (`AppStartTime`) and end it at the launch-detection time carried by the signal, so
-        // analytics timestamps reflect the real startup window and aren't skewed by SDK init work.
+        // represents the launch itself. Anchor it to the process-start instant carried by the
+        // signal and end it at the launch-detection time, so analytics timestamps reflect the real
+        // startup window and aren't skewed by SDK init work.
         let launchTime = Date(timeIntervalSince1970: signal.timestamp)
         // The startup-performance dimension (cold/warm `start.type` + `start.duration_ms`) is gated by
         // `instrumentation.launchTimes`. When it is off we also anchor the span at the launch-detection
         // time instead of back-dating it to process start, so the span window carries no startup
         // duration and `start.duration_ms` can't be recovered from it.
         let includeLaunchTime = options.instrumentation.launchTimes.isEnabled
-        let spanStart = includeLaunchTime ? min(AppStartTime.stats.startDate, launchTime) : launchTime
+        let spanStart = includeLaunchTime ? min(signal.processStartDate ?? launchTime, launchTime) : launchTime
 
-        let span = tracer.startSpan(name: SemanticConvention.appLaunchSpanName, attributes: spanAttributes, startTime: spanStart)
+        let span = appTracer.startSpan(name: SemanticConvention.appLaunchSpanName, attributes: spanAttributes, startTime: spanStart)
         // Taxonomy §4.6: cold/warm lives on the `app.start` span event (orthogonal to
         // `event.launch_type`), attached under `analytics.appLaunch` and gated by
         // `instrumentation.launchTimes`.

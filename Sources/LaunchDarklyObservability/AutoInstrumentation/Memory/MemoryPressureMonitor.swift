@@ -1,16 +1,19 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 import OpenTelemetryApi
 import OpenTelemetrySdk
 
-final class MemoryPressureMonitor: AutoInstrumentation {
+final class MemoryPressureMonitor: Instrumentation {
     private let options: ObservabilityOptions
-    private let appLogBuilder: AppLogBuilder
+    private let runtime: ObservabilityRuntime
     private let yield: (ReadableLogRecord) async -> Void
     private var source: DispatchSourceMemoryPressure?
     
-    init(options: ObservabilityOptions, appLogBuilder: AppLogBuilder, yield: @escaping (ReadableLogRecord) async -> Void) {
+    init(options: ObservabilityOptions, runtime: ObservabilityRuntime, yield: @escaping (ReadableLogRecord) async -> Void) {
         self.options = options
-        self.appLogBuilder = appLogBuilder
+        self.runtime = runtime
         self.yield = yield
     }
     
@@ -39,7 +42,7 @@ final class MemoryPressureMonitor: AutoInstrumentation {
                     return
                 }
                 
-                guard let log = self.appLogBuilder.buildLog(message: "applicationDidReceiveMemoryWarning",
+                guard let log = self.runtime.buildLogRecord(message: "applicationDidReceiveMemoryWarning",
                                                             severity: .warn,
                                                             attributes: [SemanticConvention.systemMemoryWarning: .string(event.name)],
                                                             spanContext: spanContext) else {

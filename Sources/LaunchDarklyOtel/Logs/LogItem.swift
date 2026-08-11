@@ -7,6 +7,11 @@ public struct LogItem: EventQueueItemPayload {
     }
     
     public let log: ReadableLogRecord
+
+    public init(log: ReadableLogRecord) {
+        self.log = log
+    }
+
     
     public func cost() -> Int {
         300 + log.attributes.count * 100

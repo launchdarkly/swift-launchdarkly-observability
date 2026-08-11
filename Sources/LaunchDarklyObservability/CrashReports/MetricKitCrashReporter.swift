@@ -1,3 +1,6 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 #if os(iOS)
 import Foundation
 import MetricKit
@@ -121,13 +124,13 @@ fileprivate let formatter: ISO8601DateFormatter = {
 }()
 
 @available(iOS 15.0, *)
-final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashReporting, AutoInstrumentation {
-    private let logsApi: InternalLogsApi
+final class MetricKitCrashReporter: NSObject, MXMetricManagerSubscriber, CrashReporting, Instrumentation {
+    private let logsApi: LogRecording
     private let log: OSLog
     private var _isStarted: Bool = false
     private let isStartedQueue = DispatchQueue(label: "com.launchdarkly.swift.MetricKitCrashReporter.isStartedQueue")
     
-    init(logsApi: InternalLogsApi, logger log: OSLog) {
+    init(logsApi: LogRecording, logger log: OSLog) {
         self.logsApi = logsApi
         self.log = log
         super.init()

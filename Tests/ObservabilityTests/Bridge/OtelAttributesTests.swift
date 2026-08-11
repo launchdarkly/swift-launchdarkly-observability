@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import OpenTelemetryApi
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 /// Exercises the `[String: Any].toOtelAttributes()` mapping used by the `track`

@@ -1,10 +1,13 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 #if !LD_COCOAPODS
     import URLSessionInstrumentation
 #endif
 
 
-final class NetworkInstrumentationManager: AutoInstrumentation {
+final class NetworkInstrumentationManager: Instrumentation {
     private let uRLSessionInstrumentation: URLSessionInstrumentation
     
     func start() {}

@@ -3,6 +3,7 @@ import Foundation
 import Testing
 @testable import OpenTelemetrySdk
 import OpenTelemetryApi
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 struct ClickSpanTests {

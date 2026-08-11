@@ -1,4 +1,5 @@
 import Testing
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 struct AppLogsClientTests {
@@ -123,7 +124,7 @@ fileprivate let OTelSeverities = [
     .fatal3,
     .fatal4
 ]
-final class LogsApiSpy: InternalLogsApi {
+final class LogsApiSpy: LogRecording {
     var invokeCount = 0
     var invokeCountByLevel = ObservabilityOptions.LogLevel.allCases.reduce([ObservabilityOptions.LogLevel: Int]()) { table, level in
         guard level != .none else { return table }

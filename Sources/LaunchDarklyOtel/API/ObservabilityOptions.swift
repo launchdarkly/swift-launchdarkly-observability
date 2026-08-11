@@ -137,7 +137,7 @@ public struct ObservabilityOptions {
         case enabled
         case disabled
         
-        var isEnabled: Bool {
+        public var isEnabled: Bool {
             switch self {
             case .enabled: return true
             case .disabled: return false
@@ -150,15 +150,15 @@ public struct ObservabilityOptions {
         case disabled
     }
     public struct Instrumentation {
-        let urlSession: FeatureFlag
+        public let urlSession: FeatureFlag
         /// Whether to run the user-tap detection machinery (issuing tap events from the
         /// captured touch stream). Publishing those taps as OpenTelemetry `click` spans is
         /// governed separately by ``Analytics/taps``; Session Replay capture is unaffected
         /// by either flag.
-        let userTaps: FeatureFlag
-        let memory: FeatureFlag
-        let memoryWarnings: FeatureFlag
-        let cpu: FeatureFlag
+        public let userTaps: FeatureFlag
+        public let memory: FeatureFlag
+        public let memoryWarnings: FeatureFlag
+        public let cpu: FeatureFlag
         /// Whether to emit launch-time performance telemetry. On Android this also gates the legacy
         /// TTID/TTFD histograms. On both platforms it gates the `app.start` span event on `app_launch`
         /// (cold/warm via `start.type`, with `start.duration_ms`): when this flag is disabled the
@@ -166,12 +166,12 @@ public struct ObservabilityOptions {
         /// time (rather than back-dated to process start) so it carries no startup duration. The
         /// `app_launch` span itself (with `event.launch_type` and version fields) is still emitted when
         /// ``Analytics/appLaunch`` is enabled. Defaults to `.disabled`.
-        let launchTimes: FeatureFlag
+        public let launchTimes: FeatureFlag
         /// Whether to automatically detect screen changes by swizzling
         /// `UIViewController`. This drives both the `screen_view` span (gated
         /// separately by ``Analytics/screenViews``) and Session Replay `Navigate`
         /// events. Defaults to `.enabled`.
-        let screens: FeatureFlag
+        public let screens: FeatureFlag
         
         /// Every automatic instrumentation feature enabled.
         public static var enabled: Self {
@@ -211,10 +211,10 @@ public struct ObservabilityOptions {
         /// is governed by ``Instrumentation/userTaps``; if that is disabled no taps are
         /// issued and this flag has no effect. Capture for Session Replay is unaffected
         /// by either flag.
-        let taps: FeatureFlag
+        public let taps: FeatureFlag
         /// Whether to emit a `track` span when a custom event is tracked
         /// (via the LD `afterTrack` hook or ``LDObserve/track(key:properties:metricValue:)``).
-        let trackEvents: FeatureFlag
+        public let trackEvents: FeatureFlag
         /// Whether to emit a `screen_view` span when a screen is shown
         /// (automatically via the `UIViewController` swizzle or manually via
         /// ``LDObserve/trackScreenView(name:screenClass:screenId:category:)``).
@@ -222,17 +222,17 @@ public struct ObservabilityOptions {
         /// This only gates the span. Automatic screen *detection* (and therefore
         /// Session Replay `Navigate` events) is controlled by
         /// ``Instrumentation/screens``.
-        let screenViews: FeatureFlag
+        public let screenViews: FeatureFlag
         /// Whether to emit app-lifecycle spans (`app_foreground`, `app_background`)
         /// as the app moves between foreground and background states. Maps to the
         /// analytics taxonomy app-lifecycle events.
-        let appLifecycle: FeatureFlag
+        public let appLifecycle: FeatureFlag
         /// Whether to emit an `app_launch` span (with `event.launch_type` and version
         /// fields) once per process launch. Maps to the analytics taxonomy `app_launch`
         /// event. The cold/warm startup dimension (`app.start` span event with
         /// `start.type`/`start.duration_ms`) is attached only when
         /// ``Instrumentation/launchTimes`` is also enabled.
-        let appLaunch: FeatureFlag
+        public let appLaunch: FeatureFlag
         
         public static var enabled: Self {
             .init(taps: .enabled, trackEvents: .enabled, screenViews: .enabled, appLifecycle: .enabled, appLaunch: .enabled)

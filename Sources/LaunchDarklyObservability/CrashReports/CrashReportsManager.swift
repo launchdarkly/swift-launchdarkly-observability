@@ -1,3 +1,6 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 import OSLog
 #if canImport(KSCrashRecording)
@@ -9,16 +12,12 @@ import OSLog
     import KSCrash
 #endif
 
-public protocol CrashReporting {
-    func logPendingCrashReports()
-}
-
 final class KSCrashReportService {
-    private let logsApi: InternalLogsApi
+    private let logsApi: LogRecording
     private let log: OSLog
     private let reportStore: CrashReportStore
     
-    init(logsApi: InternalLogsApi, log: OSLog) throws {
+    init(logsApi: LogRecording, log: OSLog) throws {
         let reporter = KSCrash.shared
         
         guard let reportStore = reporter.reportStore else {

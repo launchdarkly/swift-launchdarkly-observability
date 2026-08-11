@@ -53,7 +53,9 @@ final class SessionReplayService: SessionReplayServicing {
     let captureManager: CaptureManager
     var transportService: TransportServicing
     var sessionReplayExporter: SessionReplayExporter
-    let userInteractionManager: UserInteractionManager
+    /// `nil` when Observability was configured without automatic instrumentation, in which
+    /// case no touch stream exists to record.
+    let userInteractionManager: UserInteractionManager?
     let log: OSLog
     let sampleRate: Double
     var observabilityContext: ObservabilityContext
@@ -131,7 +133,7 @@ final class SessionReplayService: SessionReplayServicing {
                                              appLifecycleManager: observabilityContext.appLifecycleManager,
                                              eventQueue: transportService.eventQueue,
                                              sessionIdProvider: observabilityContext.sessionManager.sessionIdProvider)
-        self.userInteractionManager = observabilityContext.userInteractionManager
+        self.userInteractionManager = observabilityContext.userInteractions
         
         let sessionReplayContext = SessionReplayContext(
             sdkKey: observabilityContext.sdkKey,
@@ -288,9 +290,9 @@ final class SessionReplayService: SessionReplayServicing {
         // Session Replay needs the touch stream regardless of `instrumentation.userTaps`. The
         // capture hook is shared with Observability and idempotent, so start it here too: if tap
         // detection already started it this is a no-op, otherwise SR installs it on its own.
-        userInteractionManager.start()
+        userInteractionManager?.start()
 
-        userInteractionManager.interactionEvents
+        userInteractionManager?.interactionEvents
             .sink { [transportService] event in
                 Task {
                     switch event {

@@ -1,26 +1,20 @@
 import OSLog
 @_exported import LaunchDarkly
-import OpenTelemetrySdk
 #if !LD_COCOAPODS
-import SDKResourceExtension
-#endif
-#if !os(macOS)
-import UIKit
+@_exported import LaunchDarklyOtel
 #endif
 
-public final class Observability: Plugin {
+/// The full LaunchDarkly observability plugin: the OpenTelemetry pipeline plus automatic
+/// instrumentation — URLSession tracing, tap and screen capture, resource sampling and
+/// crash reporting.
+///
+/// The instrumentation installs process-wide hooks (method swizzling, crash handlers), so
+/// this plugin can collide with another observability SDK doing the same. Use `Otel` from
+/// the `LaunchDarklyOtel` product for a pipeline that records only what the app asks it to.
+public final class Observability: ObservabilityPlugin {
     static let SDK_NAME = "swift-launchdarkly-observability"
 
-    private let options: ObservabilityOptions
-    let observabilityHook = ObservabilityHook()
-    var observabilityService: InternalObserve?
-    public var distroAttributes: [String: String] = [
-        SemanticConvention.telemetryDistroName: Observability.SDK_NAME,
-        SemanticConvention.telemetryDistroVersion: sdkVersion
-    ]
-    
     public init(options: ObservabilityOptions) {
-        self.options = options
         if options.crashReporting.source == .KSCrash {
             /// Very first thing to do, if crash reporting is enabled and it is KSCrash
             /// Then, try to install before doing anything else
@@ -30,77 +24,18 @@ public final class Observability: Plugin {
                 os_log("%{public}@", log: options.log, type: .error, "Observability crash reporting service initialization failed with error: \(error)")
             }
         }
-    }
-    
-    public func getMetadata() -> PluginMetadata {
-        .init(name: options.serviceName)
-    }
-    
-    public func register(client: LDClient, metadata: EnvironmentMetadata) {
-        let mobileKey = metadata.credential
-        
-        var options = options
-        var resourceAttributes = options.resourceAttributes
-        var customHeaders = options.customHeaders
-        
-        add(metadata: metadata, into: &resourceAttributes)
-        let sessionAttributes = makeSessionAttributes()
-
-        customHeaders[SemanticConvention.highlightProjectId] = mobileKey
-        
-        options.resourceAttributes = resourceAttributes
-        options.customHeaders = customHeaders
-        
-        do {
-            guard LDObserve.shared.client === NoOpObservabilityService.shared else {
-                throw PluginError.observabilityInstanceAlreadyExist
-            }
-            let service = try ObservabilityService(
-                options: options,
-                mobileKey: mobileKey,
-                sessionAttributes: sessionAttributes
-            )
-            observabilityService = service
-            LDObserve.shared.client = service
-            LDObserve.shared.context = service.context
-            
-            observabilityHook.delegate = service.hookExporter
-            
-            if options.isEnabled {
-                service.start()
-            }
-        } catch {
-            os_log("%{public}@", log: options.log, type: .error, "Observability client initialization failed with error: \(error)")
-        }
-    }
-    
-    public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        return [observabilityHook]
+        super.init(
+            options: options,
+            instrumenting: DefaultInstrumentation(),
+            distroName: Observability.SDK_NAME
+        )
     }
 }
 
-extension Observability {
-    func makeSessionAttributes() -> [String: AttributeValue] {
-        var sessionAttributes = [String: AttributeValue]()
-        // Device attributes
-        let deviceDataSource = DeviceDataSource()
-        #if !os(macOS)
-        sessionAttributes[SemanticConvention.deviceModelName] = .string(UIDevice.current.model)
-        #endif
-        if let deviceModelIdentifier = deviceDataSource.model {
-            sessionAttributes[SemanticConvention.deviceModelIdentifier] = .string(deviceModelIdentifier)
-        }
-        return sessionAttributes
-    }
-    
-    func add(metadata: EnvironmentMetadata, into resourceAttributes: inout [String: AttributeValue]) {
-        resourceAttributes[SemanticConvention.serviceName] = .string(options.serviceName)
-        resourceAttributes[SemanticConvention.serviceVersion] = .string(options.serviceVersion)
-        resourceAttributes[SemanticConvention.launchdarklySdkVersion] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
-        resourceAttributes[SemanticConvention.highlightProjectId] = .string(metadata.credential)
-        resourceAttributes[SemanticConvention.telemetrySdkName] = .string("opentelemetry")
-        for (key, value) in distroAttributes {
-            resourceAttributes[key] = .string(value)
-        }
+extension ObservabilityContext {
+    /// The touch-capture pipeline, downcast to the concrete manager owned by this package.
+    /// `nil` when the pipeline was configured without automatic instrumentation.
+    public var userInteractions: UserInteractionManager? {
+        userInteractionManager as? UserInteractionManager
     }
 }

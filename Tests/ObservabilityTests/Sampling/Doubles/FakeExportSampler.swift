@@ -1,4 +1,5 @@
 import OpenTelemetrySdk
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 final class FakeExportSampler: ExportSampler {

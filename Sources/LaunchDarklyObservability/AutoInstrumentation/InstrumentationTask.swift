@@ -1,6 +1,9 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 
-final class InstrumentationTask<Instrument>: AutoInstrumentation {
+final class InstrumentationTask<Instrument>: Instrumentation {
     private let instrument: Instrument
     private let samplingInterval: TimeInterval
     private let operation: (Instrument) async -> Void

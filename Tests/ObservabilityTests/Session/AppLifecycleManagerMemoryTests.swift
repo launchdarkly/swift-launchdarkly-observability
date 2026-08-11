@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import Testing
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 struct AppLifecycleManagerMemoryTests {

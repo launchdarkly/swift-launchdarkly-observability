@@ -26,8 +26,13 @@ Pod::Spec.new do |s|
   s.user_target_xcconfig = { 'ENABLE_USER_SCRIPT_SANDBOXING' => 'NO' }
 
   # --- LaunchDarklyObservability (main target) ---
+  # CocoaPods builds the OTel pipeline and the instrumentation as one module (the
+  # `import LaunchDarklyOtel` lines are compiled out under LD_COCOAPODS), so both source
+  # trees belong to this subspec. Depend on the LaunchDarklyOtel pod instead for the
+  # pipeline on its own, without the instrumentation.
   s.subspec "LaunchDarklyObservability" do |ss|
     ss.source_files = [
+      "Sources/LaunchDarklyOtel/**/*.{swift,h,m}",
       "Sources/LaunchDarklyObservability/**/*.{swift,h,m}",
       "Sources/ObjCBridge/**/*.{h,m}"
     ]
