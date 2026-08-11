@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.51.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.50.0...0.51.0) (2026-08-11)
+
+
+### Features
+
+* lite otel core ([#261](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/261)) ([15a2957](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/15a2957320c627956f01dcc0b7fd3e97c2f27aef))
+
 ## [0.50.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.49.0...0.50.0) (2026-08-04)
 
 
