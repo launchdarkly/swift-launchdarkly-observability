@@ -20,7 +20,6 @@ struct ActivityEntry: Identifiable {
 
 final class OtelMenuViewModel: ObservableObject {
     @Published private(set) var activity: [ActivityEntry] = []
-    @Published var isNetworkInProgress = false
 
     private var screenViewCounter = 0
     private var clickCounter = 0
@@ -224,20 +223,6 @@ final class OtelMenuViewModel: ObservableObject {
         guard let context = try? result.get() else { return }
         LDClient.get()?.identify(context: context) { _ in }
         note("identify(\(description))")
-    }
-
-    // MARK: - Absence of automatic instrumentation
-
-    /// Nothing should be recorded for this request. The OTel-only plugin does not swizzle
-    /// `URLSession`, so the only telemetry here is the note below.
-    @MainActor
-    func performNetworkRequest() async {
-        guard !isNetworkInProgress else { return }
-        isNetworkInProgress = true
-        defer { isNetworkInProgress = false }
-
-        _ = try? await URLSession.shared.data(from: URL(string: "https://launchdarkly.com/")!)
-        note("GET launchdarkly.com — expect no span")
     }
 
     func clearActivity() {

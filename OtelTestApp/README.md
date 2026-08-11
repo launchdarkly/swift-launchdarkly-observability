@@ -22,19 +22,12 @@ cp TestAppShared/Secrets.xcconfig.example TestAppShared/Secrets.xcconfig
 
 Then fill in `mobileKey`. Open `OtelTestApp.xcodeproj` and run.
 
-## What should *not* happen
+## What is and isn't active
 
-The last section of the menu covers the automatic instrumentation this product deliberately omits,
-which is what makes it safe to run alongside another observability SDK. None of these should
-produce telemetry:
-
-- **Network Request** — `URLSession` is not swizzled, so no HTTP span.
-- **Push a Screen** — `UIViewController` is not swizzled, so no `screen_view` until you record one
-  by hand.
-- **Force Crash** — no crash handlers are installed, so no crash report on the next launch.
-
-Taps are not captured either, so no `click` spans appear except from the Click button, which calls
-`trackClick` directly.
+Nothing is instrumented automatically: no HTTP spans, no `screen_view` on navigation, no `click`
+spans on tap, and no crash reports. Everything this app records comes from a button that calls
+`LDObserve` directly, which is what makes the product safe to run alongside another observability
+SDK.
 
 What *is* still active, because it comes from the plugin rather than from instrumentation: flag
 evaluation and identify hooks, `track` events recorded through `LDClient`, and session management

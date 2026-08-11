@@ -1,5 +1,4 @@
 import SwiftUI
-import LaunchDarklyOtel
 
 /// Every button here drives one call on `LDObserve`. There is nothing to exercise automatically,
 /// which is the point: this app is the manual counterpart to `TestApp`, for the OTel-only product.
@@ -15,7 +14,6 @@ struct OtelMenuView: View {
                 metricsSection
                 analyticsSection
                 identifySection
-                noInstrumentationSection
                 activitySection
             }
             .navigationTitle("LaunchDarkly OTel")
@@ -99,34 +97,6 @@ struct OtelMenuView: View {
         }
     }
 
-    private var noInstrumentationSection: some View {
-        Section {
-            Button {
-                Task { await viewModel.performNetworkRequest() }
-            } label: {
-                if viewModel.isNetworkInProgress {
-                    ProgressView { Text("GET launchdarkly.com…") }
-                } else {
-                    Text("Network Request")
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(viewModel.isNetworkInProgress)
-
-            NavigationLink("Push a Screen") { PushedScreen() }
-
-            Button("Force Crash") {
-                fatalError("iOS: intentional crash, with no crash reporter installed")
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.red)
-        } header: {
-            Text("Nothing should be recorded")
-        } footer: {
-            Text("The OTel-only plugin installs no URLSession, screen or crash instrumentation, so none of these should produce telemetry. Taps are not captured either — use the Click button above to record one by hand.")
-        }
-    }
-
     private var activitySection: some View {
         Section {
             if viewModel.activity.isEmpty {
@@ -150,23 +120,6 @@ struct OtelMenuView: View {
                     .disabled(viewModel.activity.isEmpty)
             }
         }
-    }
-}
-
-/// A plain pushed screen. Automatic screen capture is absent here, so reaching it should emit
-/// nothing until `trackScreenView` is called by hand.
-private struct PushedScreen: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Text("No screen_view was recorded for this screen.")
-                .multilineTextAlignment(.center)
-            Button("Track This Screen") {
-                LDObserve.shared.trackScreenView(name: "Pushed Screen", category: "Demo")
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding()
-        .navigationTitle("Pushed Screen")
     }
 }
 
