@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import UIKit
 import Testing
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 @MainActor

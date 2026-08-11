@@ -70,9 +70,11 @@ extension TracerDecorator: TracesApi {
     }
 }
 
-/// Internal method used to set span start date
+/// Starts a span for a window that closed before emit time (e.g. a tap, which is only
+/// complete once the finger lifts), so the span carries the real interval rather than the
+/// instant it was recorded.
 extension Tracer {
-    func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date, spanKind: SpanKind = .client) -> any Span {
+    public func startSpan(name: String, attributes: [String : AttributeValue], startTime: Date, spanKind: SpanKind = .client) -> any Span {
         let builder = spanBuilder(spanName: name)
         builder.setSpanKind(spanKind: spanKind)
         attributes.forEach {

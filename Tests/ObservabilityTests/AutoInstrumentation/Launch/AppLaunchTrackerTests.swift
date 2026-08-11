@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import Foundation
 import Testing
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 @Suite

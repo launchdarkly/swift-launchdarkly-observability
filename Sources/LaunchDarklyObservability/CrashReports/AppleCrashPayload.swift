@@ -1,3 +1,6 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 
 /// `AppleCrashPayload` is the structured crash representation ("ld-apple-1") the

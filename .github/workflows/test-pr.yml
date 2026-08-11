@@ -23,6 +23,9 @@ jobs:
 
       # Lint against the local sources (pod lib lint) rather than the remote
       # tag (pod spec lint), since a PR's version tag isn't published yet.
+      - name: Lint LaunchDarklyOtel podspec
+        run: pod lib lint LaunchDarklyOtel.podspec --allow-warnings
+
       - name: Lint LaunchDarklyObservability podspec
         run: pod lib lint LaunchDarklyObservability.podspec --allow-warnings
 

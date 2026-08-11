@@ -9,14 +9,14 @@ import OpenTelemetryApi
 /// event pipeline.
 ///
 /// Holds two loggers:
-/// - ``internalLogger`` (``InternalLogsApi``): bypasses level-gating, supports span context.
+/// - ``internalLogger`` (``LogRecording``): bypasses level-gating, supports span context.
 /// - ``customerLogger`` (``LogsApi``): level-gated, customer-facing.
 @objc(ObjcLogger)
 public final class ObjcLogger: NSObject {
-    private let internalLogger: InternalLogsApi
+    private let internalLogger: LogRecording
     private let customerLogger: LogsApi
 
-    init(internalLogger: InternalLogsApi, customerLogger: LogsApi) {
+    init(internalLogger: LogRecording, customerLogger: LogsApi) {
         self.internalLogger = internalLogger
         self.customerLogger = customerLogger
         super.init()

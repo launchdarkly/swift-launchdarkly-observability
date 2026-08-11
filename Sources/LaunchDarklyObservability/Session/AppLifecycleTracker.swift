@@ -1,3 +1,6 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 import Combine
 
@@ -11,7 +14,7 @@ enum AppLifecycleState: String {
     case background
 }
 
-protocol AppLifecycleTracking: AutoInstrumentation {}
+protocol AppLifecycleTracking: Instrumentation {}
 
 /// Derives app-lifecycle analytics events (`AppLifecycleSignal`) from UIKit
 /// lifecycle notifications, replacing the previous log-based reporting with

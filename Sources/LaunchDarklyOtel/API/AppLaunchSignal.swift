@@ -40,6 +40,10 @@ public struct AppLaunchSignal: Sendable, Equatable {
     public let startDurationMs: Double?
     /// Event time, in seconds since 1970.
     public let timestamp: TimeInterval
+    /// Instant the process started, when the launch instrumentation could measure it. The
+    /// `app_launch` span is back-dated to this so its window covers the real startup rather
+    /// than the moment the SDK noticed the launch.
+    public let processStartDate: Date?
 
     public init(
         launchType: LaunchType,
@@ -48,7 +52,8 @@ public struct AppLaunchSignal: Sendable, Equatable {
         previousVersion: String? = nil,
         startType: StartType? = nil,
         startDurationMs: Double? = nil,
-        timestamp: TimeInterval = Date().timeIntervalSince1970
+        timestamp: TimeInterval = Date().timeIntervalSince1970,
+        processStartDate: Date? = nil
     ) {
         self.launchType = launchType
         self.version = version
@@ -57,5 +62,6 @@ public struct AppLaunchSignal: Sendable, Equatable {
         self.startType = startType
         self.startDurationMs = startDurationMs
         self.timestamp = timestamp
+        self.processStartDate = processStartDate
     }
 }

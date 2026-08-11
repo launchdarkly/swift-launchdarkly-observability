@@ -1,3 +1,6 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 struct MemoryReport {
     // System-wide memory
     let systemUsedBytes: Double

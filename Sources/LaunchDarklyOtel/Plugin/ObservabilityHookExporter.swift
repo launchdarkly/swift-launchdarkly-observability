@@ -25,12 +25,12 @@ final class ObservabilityHookExporter {
     private let withSpans: Bool
     private let withValue: Bool
     private let traceClient: TracesApi
-    private let logClient: InternalLogsApi
+    private let logClient: LogRecording
     /// The single track-span emitter. Set by `ObservabilityService` after construction.
     weak var trackEmitter: TrackEmitting?
 
     init(traceClient: TracesApi,
-         logClient: InternalLogsApi,
+         logClient: LogRecording,
          withSpans: Bool,
          withValue: Bool,
          options: ObservabilityOptions,

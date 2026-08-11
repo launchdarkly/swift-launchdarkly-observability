@@ -1,5 +1,6 @@
 import Foundation.NSURLError
 import Testing
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 struct AppTracingClientTests {

@@ -1,3 +1,6 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 import Combine
 
@@ -5,11 +8,20 @@ import Combine
     import Common
 #endif
 
-public final class UserInteractionManager {
+public final class UserInteractionManager: UserInteractionManaging, Instrumentation {
     private var inputCaptureCoordinator: InputCaptureCoordinator
     private let interactionEventSubject = PassthroughSubject<InteractionEvent, Never>()
     private let startLock = NSLock()
     private var isStarted = false
+
+    /// Whether the touch-capture hook has been installed. `false` until something explicitly
+    /// starts capture, which is what keeps merely constructing the manager side-effect free.
+    public var isCapturing: Bool {
+        startLock.lock()
+        defer { startLock.unlock() }
+        return isStarted
+    }
+
     
     /// Ordered stream of touches (``TouchInteraction``) and non-spatial ``PressInteraction``.
     public var interactionEvents: AnyPublisher<InteractionEvent, Never> {
@@ -57,6 +69,6 @@ public final class UserInteractionManager {
         inputCaptureCoordinator.start()
     }
     
-    func stop() {
+    public func stop() {
     }
 }

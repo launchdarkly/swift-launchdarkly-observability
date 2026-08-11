@@ -1,5 +1,6 @@
 import Testing
 @testable import LaunchDarklySessionReplay
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 import OSLog
 import CoreGraphics

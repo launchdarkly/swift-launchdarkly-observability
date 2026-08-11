@@ -1,3 +1,6 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 #if canImport(KSCrashRecording)
     import KSCrashInstallations
@@ -21,10 +24,10 @@ final class LDCrashFilter: NSObject, CrashReportFilter {
         case flushFailed
         case underlyingError(Error)
     }
-    private let logsApi: InternalLogsApi
+    private let logsApi: LogRecording
     
     init(
-        logsApi: InternalLogsApi
+        logsApi: LogRecording
     ) {
         self.logsApi = logsApi
     }

@@ -8,7 +8,8 @@
 			"versioning": "default",
 			"bump-minor-pre-major": true,
 			"extra-files": [
-				"Sources/LaunchDarklyObservability/Version.swift",
+				"Sources/LaunchDarklyOtel/Version.swift",
+				"LaunchDarklyOtel.podspec",
 				"LaunchDarklyObservability.podspec",
 				"LaunchDarklySessionReplay.podspec"
 			]

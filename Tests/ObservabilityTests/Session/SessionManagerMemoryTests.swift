@@ -1,6 +1,7 @@
 import Testing
 import Combine
 import OSLog
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 private final class TestLifecycleManager: AppLifecycleManaging {

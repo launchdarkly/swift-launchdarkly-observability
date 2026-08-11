@@ -1,3 +1,6 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 
 /// Drives automatic `screen_view` capture by starting the `UIViewController`
@@ -6,7 +9,7 @@ import Foundation
 /// Mirrors `UserInteractionManager`: construction wires the source, and `start()`
 /// activates the swizzle. The callback is invoked on the main thread (UIKit's
 /// `viewDidAppear` runs on the main thread).
-final class ScreenViewManager {
+final class ScreenViewManager: ScreenViewCapturing {
     private let onScreenView: (ScreenView) -> Void
     #if canImport(UIKit)
     private let source = ViewControllerScreenSource()

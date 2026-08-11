@@ -2,23 +2,6 @@ import Foundation
 import OpenTelemetryApi
 import OpenTelemetrySdk
 
-protocol InternalLogsApi {
-    func recordLog(message: String,
-                   severity: OpenTelemetryApi.Severity,
-                   attributes: [String : OpenTelemetryApi.AttributeValue],
-                   spanContext: SpanContext?)
-}
-
-extension InternalLogsApi {
-    public func recordLog(
-        message: String,
-        severity: Severity,
-        attributes: [String: AttributeValue],
-    ) {
-        recordLog(message: message, severity: severity, attributes: attributes, spanContext: nil)
-    }
-}
-
 final class AppLogBuilder {
     private let options: ObservabilityOptions
     private let sessionManager: SessionManager
@@ -62,7 +45,7 @@ final class AppLogBuilder {
     }
 }
 
-final class LogClient: InternalLogsApi {
+final class LogClient: LogRecording {
     private let eventQueue: EventQueue
     private let appLogBuilder: AppLogBuilder
     

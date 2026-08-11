@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import UIKit
 import Testing
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 /// Tests for [TargetResolver]'s React Native `nativeID` resolution, which supplies `event.id` for

@@ -1,4 +1,5 @@
 import Testing
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 import Foundation
 

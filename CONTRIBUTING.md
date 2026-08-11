@@ -92,9 +92,12 @@ Or use Xcode's test runner (⌘+U).
 The library's structure is as follows:
 
 * `Sources/` - Contains all SDK source code
-  * `LaunchDarklyObservability/` - Main plugin implementation
+  * `LaunchDarklyOtel/` - The OpenTelemetry pipeline and the `LDObserve` API
+  * `LaunchDarklyObservability/` - Automatic instrumentation layered on top of it
 * `Tests/` - Unit tests
 * `ExampleApp/` - Example application demonstrating SDK usage
+* `TestApp/` - Manual test app for the full SDK
+* `OtelTestApp/` - Manual test app for the OpenTelemetry-only product
 
 ## Documenting types and methods
 

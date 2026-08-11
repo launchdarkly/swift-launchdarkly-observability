@@ -1,6 +1,9 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 
-final class MeasurementTask: AutoInstrumentation {
+final class MeasurementTask: Instrumentation {
     private let metricsApi: MetricsApi
     private let samplingInterval: TimeInterval
     private let operation: (MetricsApi) async -> Void

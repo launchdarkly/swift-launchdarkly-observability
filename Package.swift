@@ -8,6 +8,12 @@ let package = Package(
         .tvOS(.v13)
     ],
     products: [
+        // OpenTelemetry pipeline only: records what the app asks it to and exports it,
+        // installing no swizzles or crash handlers, so it can run beside another
+        // observability SDK.
+        .library(
+            name: "LaunchDarklyOtel",
+            targets: ["LaunchDarklyOtel"]),
         .library(
             name: "LaunchDarklyObservability",
             targets: ["LaunchDarklyObservability"]),
@@ -36,8 +42,20 @@ let package = Package(
         .target(name: "Common",
                 dependencies: [.product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS]))]),
         .target(
+            name: "LaunchDarklyOtel",
+            dependencies: [
+                "Common",
+                "JSONExporters",
+                "SDKResourceExtension",
+                .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS])),
+                .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
+                .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
+            ]
+        ),
+        .target(
             name: "LaunchDarklyObservability",
             dependencies: [
+                "LaunchDarklyOtel",
                 "Common",
                 "ObjCBridge",
                 "URLSessionInstrumentation",
@@ -52,6 +70,7 @@ let package = Package(
         .testTarget(
             name: "ObservabilityTests",
             dependencies: [
+                "LaunchDarklyOtel",
                 "LaunchDarklyObservability",
                 "JSONExporters"
             ]
@@ -60,6 +79,7 @@ let package = Package(
             name: "LaunchDarklySessionReplay",
             dependencies: [
                 "Common",
+                "LaunchDarklyOtel",
                 "LaunchDarklyObservability",
                 "SessionReplayC",
             ],
@@ -106,6 +126,7 @@ let package = Package(
             name: "SessionReplayTests",
             dependencies: [
                 "LaunchDarklySessionReplay",
+                "LaunchDarklyOtel",
                 "LaunchDarklyObservability",
                 "SessionReplayC",
             ]

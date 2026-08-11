@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import OpenTelemetryApi
+@testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
 struct AttributeConverterTests {

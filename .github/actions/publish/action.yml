@@ -1,5 +1,5 @@
 name: Publish Pods
-description: 'Publish both podspecs to CocoaPods trunk in dependency order'
+description: 'Publish the podspecs to CocoaPods trunk in dependency order'
 inputs:
   dry_run:
     description: 'Is this a dry run. If so no package will be published.'
@@ -7,6 +7,13 @@ inputs:
 runs:
   using: composite
   steps:
+    # LaunchDarklyOtel stands alone: LaunchDarklyObservability vendors the same sources
+    # rather than depending on the pod, so the two can be pushed independently.
+    - name: Push LaunchDarklyOtel to CocoaPods
+      if: ${{ inputs.dry_run == 'false' }}
+      shell: bash
+      run: pod trunk push LaunchDarklyOtel.podspec --allow-warnings --synchronous
+
     - name: Push LaunchDarklyObservability to CocoaPods
       if: ${{ inputs.dry_run == 'false' }}
       shell: bash

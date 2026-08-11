@@ -4,6 +4,26 @@ LaunchDarkly Observability SDK for Swift
 ## Early Access Preview️
 **NB: APIs are subject to change until a 1.x version is released.**
 
+## Choosing a product
+
+This repository ships two observability plugins. They share the same `LDObserve` API and the
+same OTLP pipeline, and differ only in how much they hook into your app.
+
+| | `LaunchDarklyObservability` | `LaunchDarklyOtel` |
+| --- | --- | --- |
+| Plugin type | `Observability` | `Otel` |
+| `LDObserve` recording API | yes | yes |
+| Flag evaluation, identify and track hooks | yes | yes |
+| Session management | yes | yes |
+| Automatic instrumentation | yes | none |
+| Crash reporting (KSCrash / MetricKit) | yes | none |
+
+Pick `LaunchDarklyOtel` when your app already runs another observability SDK. It installs no
+method swizzling and no crash handlers, so the two can't fight over the same hooks — it records
+only what you ask it to. See [OpenTelemetry-only setup](#opentelemetry-only-setup).
+
+Pick `LaunchDarklyObservability` otherwise, for the automatic instrumentation below.
+
 ## Features
 
 ### Automatic Instrumentation
@@ -112,6 +132,41 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     }
 }
 ```
+
+### OpenTelemetry-only setup
+
+Swap the `Observability` plugin for `Otel` to get the recording API and OTLP export without any
+automatic instrumentation. Everything else — `LDObserve`, `ObservabilityOptions`, the evaluation
+hooks, session management — behaves identically.
+
+```swift
+import LaunchDarkly
+import LaunchDarklyOtel
+
+var config = LDConfig(mobileKey: mobileKey, autoEnvAttributes: .enabled)
+config.plugins = [
+    Otel(options: .init())
+]
+```
+
+Install it on its own, without the instrumentation package:
+
+```swift
+// Swift Package Manager
+.product(name: "LaunchDarklyOtel", package: "swift-launchdarkly-observability")
+```
+
+```ruby
+# CocoaPods
+pod 'LaunchDarklyOtel'
+```
+
+Because this plugin installs no hooks, nothing is captured automatically: no HTTP spans, taps,
+screen views, crashes, app-lifecycle events or resource metrics. The `instrumentation` and
+`crashReporting` sections of `ObservabilityOptions` are ignored. Record what you need through
+[`LDObserve`](#recording-observability-data), and call
+[`trackScreenView`](#tracking-screen-views) for navigation. Session Replay requires the
+`Observability` plugin.
 
 ### Configure Session Replay
 

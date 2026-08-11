@@ -1,3 +1,6 @@
+#if !LD_COCOAPODS
+import LaunchDarklyOtel
+#endif
 import Foundation
 
 /// Resolves the product-milestone of a launch (`install` / `update` / `relaunch`,
@@ -100,7 +103,8 @@ final class AppLaunchTracker: AppLifecycleTracking {
             previousVersion: previousVersion,
             startType: startType,
             startDurationMs: startDurationMs,
-            timestamp: timestamp
+            timestamp: timestamp,
+            processStartDate: AppStartTime.stats.startDate
         )
     }
 }
