@@ -40,7 +40,7 @@ final class MaskCollector {
         self.policy = MaskingPolicy(privacySettings: privacySettings)
     }
 
-    func collectViewMasks(in rootView: UIView, window: UIWindow, scale: CGFloat) -> (maskOperations: [MaskOperation], offsetRects: [OffsettedArea]) {
+    func collectViewMasks(in rootView: UIView, window: UIWindow) -> (maskOperations: [MaskOperation], offsetRects: [OffsettedArea]) {
         var operations = [MaskOperation]()
         var offsetRects = [OffsettedArea]()
 
@@ -132,7 +132,7 @@ final class MaskCollector {
         func emitViewMask(view: UIView, layer: CALayer, viewType: AnyClass, className: String, effectiveFrame: CGRect, resolvedExplicitMask: Bool?) -> Bool {
             let shouldMask = policy.shouldMask(view, viewType: viewType, className: className, resolvedExplicitMask: resolvedExplicitMask)
 
-            if shouldMask, let mask = MaskGeometry.createMask(rPresentation: rPresentation, layer: layer, scale: scale) {
+            if shouldMask, let mask = MaskGeometry.createMask(rPresentation: rPresentation, layer: layer) {
                 var operation = MaskOperation(mask: mask, effectiveFrame: effectiveFrame)
 #if DEBUG
                 operation.accessibilityIdentifier = view.accessibilityIdentifier
@@ -163,7 +163,7 @@ final class MaskCollector {
         // Returns `true` if a mask was emitted (the caller should stop recursing).
         func emitLayerOnlyMask(layerClassName: String, layer: CALayer, effectiveFrame: CGRect, resolvedExplicitMask: Bool?) -> Bool {
             let shouldMask = resolvedExplicitMask ?? policy.shouldMaskLayer(className: layerClassName)
-            guard shouldMask, let mask = MaskGeometry.createMask(rPresentation: rPresentation, layer: layer, scale: scale) else {
+            guard shouldMask, let mask = MaskGeometry.createMask(rPresentation: rPresentation, layer: layer) else {
                 return false
             }
             operations.append(MaskOperation(mask: mask, effectiveFrame: effectiveFrame))

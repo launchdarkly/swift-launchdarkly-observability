@@ -64,6 +64,10 @@ public struct SessionReplayOptions {
     /// Render scale applied when capturing frames. Usually from 1-4, where
     /// `1` = 160 DPI. Higher values capture at greater resolution. Defaults to `1.0`.
     public var scale: CGFloat
+    /// JPEG encoding quality from `0.0` (lowest quality, smallest payload) to `1.0`
+    /// (highest quality, largest payload). Values outside this range are clamped.
+    /// Defaults to `0.3`.
+    public var imageQuality: CGFloat
     public var renderStrategy: RenderStrategy
     public var serviceName: String
     public var privacy = PrivacyOptions()
@@ -76,6 +80,7 @@ public struct SessionReplayOptions {
                 compression: CompressionMethod = .overlayTiles(),
                 frameRate: Double = 1.0,
                 scale: CGFloat = 1.0,
+                imageQuality: CGFloat = 0.3,
                 renderStrategy: RenderStrategy = .drawHierarchy,
                 log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklySessionReplayPlugin")) {
         self.isEnabled = isEnabled
@@ -85,6 +90,7 @@ public struct SessionReplayOptions {
         self.compression = compression
         self.frameRate = frameRate
         self.scale = scale
+        self.imageQuality = imageQuality
         self.renderStrategy = renderStrategy
         self.log = log
     }
