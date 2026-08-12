@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.52.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.51.0...0.52.0) (2026-08-12)
+
+
+### Features
+
+* fix double-scaled masks and add imageQuality option ([#263](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/263)) ([dfb14be](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/dfb14beea7902dff53fdaf66be184ef675cbc1c2))
+
 ## [0.51.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.50.0...0.51.0) (2026-08-11)
 
 
