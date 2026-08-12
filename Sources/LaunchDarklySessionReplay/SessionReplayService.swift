@@ -130,6 +130,7 @@ final class SessionReplayService: SessionReplayServicing {
                                              compression: sessonReplayOptions.compression,
                                              frameRate: sessonReplayOptions.frameRate,
                                              scale: sessonReplayOptions.scale,
+                                             imageQuality: sessonReplayOptions.imageQuality,
                                              appLifecycleManager: observabilityContext.appLifecycleManager,
                                              eventQueue: transportService.eventQueue,
                                              sessionIdProvider: observabilityContext.sessionManager.sessionIdProvider)

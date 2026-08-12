@@ -18,4 +18,14 @@ struct SessionReplayOptionsTests {
         #expect(options.frameRate == 2.0)
         #expect(options.renderStrategy == .drawLayers)
     }
+
+    @Test("imageQuality defaults to thirty percent")
+    func imageQualityDefaultsToThirtyPercent() {
+        #expect(SessionReplayOptions().imageQuality == 0.3)
+    }
+
+    @Test("imageQuality can be configured")
+    func imageQualityIsConfigurable() {
+        #expect(SessionReplayOptions(imageQuality: 0.75).imageQuality == 0.75)
+    }
 }

@@ -39,12 +39,13 @@ final class CaptureManager: EventSource {
          compression: SessionReplayOptions.CompressionMethod,
          frameRate: Double,
          scale: CGFloat,
+         imageQuality: CGFloat,
          appLifecycleManager: AppLifecycleManaging,
          eventQueue: EventQueue,
          sessionIdProvider: @Sendable @escaping () -> String) {
         self.captureService = captureService
         self.frameInterval = frameRate > 0 ? 1.0 / frameRate : .infinity
-        self.exportDiffManager = ExportDiffManager(compression: compression, scale: scale)
+        self.exportDiffManager = ExportDiffManager(compression: compression, scale: scale, imageQuality: imageQuality)
         self.eventQueue = eventQueue
         self.appLifecycleManager = appLifecycleManager
         self.rawFrameWriter = debugFrameWriter ? (try? RawFrameWriter()) : nil
