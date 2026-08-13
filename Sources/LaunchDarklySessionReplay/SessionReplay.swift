@@ -58,9 +58,7 @@ public final class SessionReplay: Plugin {
     }
     
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        // Deduplicate repeated identical evaluations (default 10-minute window).
-        // Resets after identify or when the evaluation result changes.
-        return [DedupingHook(sessionReplayHook)]
+        return [sessionReplayHook]
     }
     
     /// Starts Session Replay. Set `ignoreSampling` to `true` to force start for debugging.
