@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklyObservability"
-  s.version          = "0.52.0" # x-release-please-version
+  s.version          = "0.52.1" # x-release-please-version
   s.summary          = "iOS Observability Plugin for LaunchDarkly."
   s.description      = <<-DESC
                         LaunchDarkly is the feature management platform that software teams use to build better software, faster.
@@ -43,13 +43,13 @@ Pod::Spec.new do |s|
     ss.dependency "LaunchDarklyObservability/SDKResourceExtension"
     ss.dependency "LaunchDarklyObservability/OpenTelemetry"
     ss.dependency "LaunchDarklyObservability/Misc"
-    ss.dependency 'LaunchDarkly', '~> 11.2'
+    ss.dependency 'LaunchDarkly', '~> 11.4'
   end
 
   # Common sources + LaunchDarkly SDK dependency (used by GraphQLClient's ld_gzip)
   s.subspec "Common" do |ss|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
-    ss.dependency 'LaunchDarkly', '~> 11.2'
+    ss.dependency 'LaunchDarkly', '~> 11.4'
   end
 
   # JSONExporters subspec — OTLP/JSON wire-format models and adapters

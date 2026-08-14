@@ -12,14 +12,14 @@ runs:
     - name: Push LaunchDarklyOtel to CocoaPods
       if: ${{ inputs.dry_run == 'false' }}
       shell: bash
-      run: pod trunk push LaunchDarklyOtel.podspec --allow-warnings --synchronous
+      run: ${{ github.action_path }}/publish-pod.sh LaunchDarklyOtel.podspec
 
     - name: Push LaunchDarklyObservability to CocoaPods
       if: ${{ inputs.dry_run == 'false' }}
       shell: bash
-      run: pod trunk push LaunchDarklyObservability.podspec --allow-warnings --synchronous
+      run: ${{ github.action_path }}/publish-pod.sh LaunchDarklyObservability.podspec
 
     - name: Push LaunchDarklySessionReplay to CocoaPods
       if: ${{ inputs.dry_run == 'false' }}
       shell: bash
-      run: pod trunk push LaunchDarklySessionReplay.podspec --allow-warnings --synchronous
+      run: ${{ github.action_path }}/publish-pod.sh LaunchDarklySessionReplay.podspec
