@@ -29,13 +29,13 @@ Pod::Spec.new do |s|
     ss.dependency "LaunchDarklyOtel/JSONExporters"
     ss.dependency "LaunchDarklyOtel/SDKResourceExtension"
     ss.dependency "LaunchDarklyOtel/OpenTelemetry"
-    ss.dependency 'LaunchDarkly', '~> 11.4'
+    ss.dependency 'LaunchDarkly', '~> 11.5'
   end
 
   # Common sources + LaunchDarkly SDK dependency (used by GraphQLClient's ld_gzip)
   s.subspec "Common" do |ss|
     ss.source_files = "Sources/Common/**/*.{swift,h,m}"
-    ss.dependency 'LaunchDarkly', '~> 11.4'
+    ss.dependency 'LaunchDarkly', '~> 11.5'
   end
 
   # JSONExporters subspec — OTLP/JSON wire-format models and adapters
