@@ -23,7 +23,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", exact: "2.3.0"),
-        .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "11.5.0-beta.1"),
+        .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "11.5.0"),
         // Pinned to 2.6.0-beta.3 for iOS 26+ __crash_info parsing (so Swift
         // runtime trap messages like "Fatal error: Index out of range" are
         // captured). SwiftPM ignores pre-releases with `from:`, so pin exactly.
