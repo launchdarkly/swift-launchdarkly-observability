@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.53.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.52.1...0.53.0) (2026-08-14)
+
+
+### Features
+
+* deduplicate flag evaluation telemetry with SDK DedupingHook ([#266](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/266)) ([eb1ac9b](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/eb1ac9b8b467a41371b9a6740ed1b2cc27d7df47))
+
 ## [0.52.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.52.0...0.52.1) (2026-08-14)
 
 

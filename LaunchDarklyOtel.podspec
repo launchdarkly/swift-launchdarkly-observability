@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklyOtel"
-  s.version          = "0.52.1" # x-release-please-version
+  s.version          = "0.53.0" # x-release-please-version
   s.summary          = "iOS OpenTelemetry Plugin for LaunchDarkly."
   s.description      = <<-DESC
                         Records logs, spans, metrics and track events through LDObserve and exports
