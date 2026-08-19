@@ -26,6 +26,9 @@ struct MainMenuView: View {
     /// Single source of truth for the presented sheet. `nil` means none — so tracking back to
     /// "Main Menu" on dismissal is just `activeSheet != nil`.
     @State private var activeSheet: MenuSheet?
+    /// The number pad fades in instead of sliding, so it is presented separately from `activeSheet`.
+    @State private var isNumberPadPresented = false
+    @State private var numberPadOpacity: Double = 1
     @State private var isSessionReplayEnabled: Bool = true
     @State private var selectedScenario: CrashScenario = .throwingError
 
@@ -35,7 +38,6 @@ struct MainMenuView: View {
         case .maskingOneFieldUIKit: MaskingElementsSimpleUIKitView()
         case .maskPropagationSwiftUI: NestedMaskingPropagationView()
         case .maskPropagationUIKit: NestedMaskingPropagationUIKitView()
-        case .numberPad: NumberPadView()
         case .storyboard: StoryboardRootView()
         #if os(iOS)
         case .creditCardUIKit: MaskingCreditCardUIKitView()
@@ -83,7 +85,7 @@ struct MainMenuView: View {
         .trackScreenStack(path, root: "Main Menu") { $0 == "fruta" ? nil : $0 }
         // Re-emit "Main Menu" when the presented sheet is dismissed (SwiftUI does not re-run the
         // presenter's `.onAppear` after a sheet closes).
-        .trackScreenReturn("Main Menu", isPresented: activeSheet != nil)
+        .trackScreenReturn("Main Menu", isPresented: activeSheet != nil || isNumberPadPresented)
         #if os(iOS)
         .onChange(of: path) { newValue in
             if !newValue.contains("fruta") {
@@ -93,6 +95,9 @@ struct MainMenuView: View {
                     }
                 }
             }
+        }
+        .crossDissolveCover(isPresented: $isNumberPadPresented, opacity: numberPadOpacity) {
+            NumberPadView(onClose: { isNumberPadPresented = false })
         }
         #endif
         .sheet(item: $activeSheet) { sheet in
@@ -115,8 +120,18 @@ struct MainMenuView: View {
                 activeSheet = .creditCardSwiftUI
             }
             MaskingGridRow(title: "Number Pad", uikitAction: nil) {
-                activeSheet = .numberPad
+                isNumberPadPresented = true
             }
+            HStack(spacing: 12) {
+                Text("Fade to")
+                // Not down to 0: the number pad still swallows touches when invisible, and its close
+                // button would be impossible to find.
+                Slider(value: $numberPadOpacity, in: 0.1...1)
+                    .accessibilityIdentifier("number_pad.opacity_slider")
+                Text(numberPadOpacity, format: .number.precision(.fractionLength(2)))
+                    .monospacedDigit()
+            }
+            .font(.footnote)
             MaskingGridRow(title: "Mask Propagation", uikitAction: {
                 activeSheet = .maskPropagationUIKit
             }) {
@@ -377,7 +392,6 @@ private enum MenuSheet: Identifiable {
     case maskingOneFieldUIKit
     case maskPropagationSwiftUI
     case maskPropagationUIKit
-    case numberPad
     case storyboard
     #if os(iOS)
     case creditCardUIKit

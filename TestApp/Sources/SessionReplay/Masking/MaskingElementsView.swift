@@ -33,7 +33,6 @@ struct MaskingElementsView: View {
                 } label: {
                     Image(systemName: "checkmark")
                 }
-                SnapshotButton()
             }
         }
         .trackScreen("Masking Elements (UIKit)")
