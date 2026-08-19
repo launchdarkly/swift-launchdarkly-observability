@@ -702,7 +702,6 @@ struct MaskingCreditCardUIKitView: View {
                     } label: {
                         Image(systemName: "checkmark")
                     }
-                    SnapshotButton()
                 }
         }
     }

@@ -67,7 +67,6 @@ struct NestedMaskingPropagationView: View {
                 } label: {
                     Image(systemName: "checkmark")
                 }
-                SnapshotButton()
             }
         }
         .trackScreen("Nested Masking Propagation")
