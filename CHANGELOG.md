@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.53.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.53.0...0.53.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* keep masks behind views whose opacity is animating ([#270](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/270)) ([1841421](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/184142124dabf208d83655a0c961629b3c308f71))
+
 ## [0.53.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.52.1...0.53.0) (2026-08-14)
 
 
