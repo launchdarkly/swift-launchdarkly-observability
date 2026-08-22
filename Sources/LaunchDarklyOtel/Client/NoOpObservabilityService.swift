@@ -24,6 +24,8 @@ final class NoOpObservabilityService: Observe {
 
     func track(key: String, properties: [String: Any]?, metricValue: Double?) {}
 
+    func identify(contextKeys: [String: String], canonicalKey: String, attributes: [String: Any]?) {}
+
     func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {}
 
     func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?) {}

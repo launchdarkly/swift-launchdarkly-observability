@@ -34,6 +34,9 @@ struct OtelPublicAPITests {
         observe.recordHistogram(metric: Metric(name: "h", value: 1))
         observe.recordUpDownCounter(metric: Metric(name: "u", value: 1))
         observe.track(key: "purchase", properties: ["sku": "abc"], metricValue: 9.99)
+        observe.identify(key: "user-1")
+        observe.identify(key: "user-1", attributes: ["plan": "pro"])
+        observe.identify(contextKeys: ["user": "user-1"], canonicalKey: "user-1")
         observe.trackScreenView(name: "Home")
         observe.trackClick(id: "cta")
 
