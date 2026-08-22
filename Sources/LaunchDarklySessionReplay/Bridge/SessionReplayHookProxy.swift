@@ -18,6 +18,9 @@ public final class SessionReplayHookProxy: NSObject {
         super.init()
     }
 
+    /// Identifies the replay session. A host that also forwards `afterIdentify` to
+    /// `ObservabilityHookProxy` need not stop: that reaches Session Replay too, and identifying the
+    /// same user on the same session twice is dropped rather than sent again.
     @objc(afterIdentifyWithContextKeys:canonicalKey:completed:)
     public func afterIdentify(contextKeys: NSDictionary, canonicalKey: String, completed: Bool) {
         var keys = [String: String]()

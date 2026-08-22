@@ -26,6 +26,16 @@ protocol SessionReplayServicing: AnyObject {
     func afterTrack(name: String, metricValue: Double?, attributes: [String: AttributeValue])
 }
 
+private extension IdentifyItemPayload {
+    /// Whether this identify delivers the identity `other` already delivered: the same user object,
+    /// on the same session. Timestamps are ignored, so a repeat of an unchanged identity compares
+    /// equal while a session rotation does not — the fresh session needs identifying again.
+    func isSameIdentity(as other: IdentifyItemPayload?) -> Bool {
+        guard let other else { return false }
+        return attributes == other.attributes && sessionId == other.sessionId
+    }
+}
+
 struct SessionReplayContext {
     public var sdkKey: String
     public var serviceName: String
@@ -99,18 +109,22 @@ final class SessionReplayService: SessionReplayServicing {
     /// App-lifecycle subscription, attached at init and kept for the service's lifetime (not torn
     /// down with `internalStop`) so the cold-launch foreground is never missed.
     private var lifecycleCancellable: AnyCancellable?
+    /// Identify subscription, attached at init and kept for the service's lifetime (not torn down
+    /// with `internalStop`) so an identify that arrives before recording starts is still applied.
+    private var identifyCancellable: AnyCancellable?
     /// Whether the one-shot cold-launch foreground has been forwarded to the exporter. Main-thread only.
     private var hasHandledInitialForeground = false
     /// The most recent identify that arrived while recording was off, delivered by the next `start()`.
     /// Main-thread only.
     private var pendingIdentify: IdentifyItemPayload?
+    /// The identify last delivered to the backend, used to drop a redundant repeat. Main-thread only.
+    private var lastAppliedIdentify: IdentifyItemPayload?
     /// Gates queuing of lifecycle breadcrumbs to the recording window so a sampled-out session is not
     /// initialized by a stray transition. Toggled in `internalStart`/`internalStop`. Main-thread only.
     private var lifecycleQueueingEnabled = false
     
     init(observabilityContext: ObservabilityContext,
          sessonReplayOptions: SessionReplayOptions,
-         metadata: LaunchDarkly.EnvironmentMetadata,
          imageCaptureService: ImageCaptureServicing? = nil) throws {
         guard let url = URL(string: observabilityContext.options.backendUrl) else {
             throw InstrumentationError.invalidGraphQLUrl
@@ -179,6 +193,21 @@ final class SessionReplayService: SessionReplayServicing {
             .sink { [weak self] signal in
                 self?.handleAppLifecycleSignal(signal)
             }
+
+        // Identify the session for every identify path (`LDClient.identify` and the manual
+        // `LDObserve.identify` API, including standalone init without `LDClient`). Attached for the
+        // service's lifetime rather than in `internalStart`: an identify that arrives before
+        // recording begins is held by `scheduleIdentifySession` and delivered by the next `start()`,
+        // so dropping it here would lose the identity of a session that starts later.
+        identifyCancellable = observabilityContext.identifies
+            .sink { [weak self] identify in
+                self?.recordIdentify(
+                    contextKeys: identify.contextKeys,
+                    canonicalKey: identify.canonicalKey,
+                    userAttributes: identify.attributes,
+                    timestamp: identify.timestamp
+                )
+            }
         os_log("LaunchDarkly Session Replay started, version: %{public}@", log: log, type: .info, sdkVersion)
     }
 
@@ -210,14 +239,27 @@ final class SessionReplayService: SessionReplayServicing {
     
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool) {
         guard completed else { return }
+        recordIdentify(contextKeys: contextKeys,
+                       canonicalKey: canonicalKey,
+                       userAttributes: [:],
+                       timestamp: Date().timeIntervalSince1970)
+    }
+
+    /// Identifies the session. Shared by the cross-platform bridge (`SessionReplayHookProxy`) and
+    /// the in-process identify subscription fed by Observability's single identify funnel.
+    private func recordIdentify(contextKeys: [String: String],
+                                canonicalKey: String,
+                                userAttributes: [String: AttributeValue],
+                                timestamp: TimeInterval) {
         let sessionId = observabilityContext.sessionManager.sessionInfo.id
         Task {
             let identifyPayload = IdentifyItemPayload(
                 options: observabilityContext.options,
                 sessionAttributes: observabilityContext.sessionAttributes,
+                userAttributes: userAttributes,
                 contextKeys: contextKeys,
                 canonicalKey: canonicalKey,
-                timestamp: Date().timeIntervalSince1970,
+                timestamp: timestamp,
                 sessionId: sessionId
             )
             await scheduleIdentifySession(identifyPayload: identifyPayload)
@@ -256,8 +298,17 @@ final class SessionReplayService: SessionReplayServicing {
             return
         }
 
+        // The same identity can arrive twice: a cross-platform host forwards `afterIdentify` to both
+        // the observability and the replay bridge, and `configure` identifies the context the client
+        // was started with just before the app may identify that same user itself. Re-identifying an
+        // unchanged user on the session already carrying it is redundant, so it is dropped instead of
+        // costing a second request and a duplicate timeline event.
+        guard !identifyPayload.isSameIdentity(as: lastAppliedIdentify) else { return }
+
         do {
             try await sessionReplayExporter.identifySession(identifyPayload: identifyPayload)
+            // Recorded only once accepted, so a failed identify can be retried by an identical one.
+            lastAppliedIdentify = identifyPayload
             await transportService.eventQueue.send(identifyPayload)
         } catch {
             os_log("%{public}@", log: log, type: .error, "Failed to identifySession:\n\(error)")

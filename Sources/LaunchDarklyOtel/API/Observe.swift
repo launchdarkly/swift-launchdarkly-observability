@@ -21,6 +21,23 @@ public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveConte
     ///   - metricValue: A numeric value used by LaunchDarkly experimentation for
     ///     numeric custom metrics, if any.
     func track(key: String, properties: [String: Any]?, metricValue: Double?)
+    /// Identify the context telemetry belongs to.
+    ///
+    /// Mirrors `LDClient.identify(context:)` so the same identity reaches observability and Session
+    /// Replay whether it comes from the LaunchDarkly client (via the `afterIdentify` hook) or from
+    /// this API — which is the only route when the SDK is set up without an `LDClient`. Takes plain
+    /// types so callers need not depend on `LDContext`.
+    ///
+    /// The context keys are attributed to every `track`, `screen_view` and `click` recorded
+    /// afterwards, and Session Replay identifies the session (a session already being recorded is
+    /// re-identified; otherwise the identity is applied when recording starts).
+    /// - Parameters:
+    ///   - contextKeys: Context kind -> key pairs, e.g. `["user": "user-123", "org": "org-9"]`.
+    ///   - canonicalKey: The fully qualified key identifying this context as a whole. Used as the
+    ///     session's user identifier.
+    ///   - attributes: Optional identity attributes (name, email, plan, ...). Recorded with the
+    ///     identify and attached to the replay session's user, but not stamped onto later events.
+    func identify(contextKeys: [String: String], canonicalKey: String, attributes: [String: Any]?)
     /// Manually record a `screen_view` event as a `screen_view` span.
     ///
     /// Use this for screens that automatic capture cannot observe (e.g. pure
@@ -56,6 +73,14 @@ public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveConte
 }
 
 extension Observe {
+    /// Identify a single-kind user context by key — the common case when the SDK runs without an
+    /// `LDClient`. Matches `LDClient.identify` with a context of the default `user` kind, whose
+    /// fully qualified key is the key itself. See
+    /// ``Observe/identify(contextKeys:canonicalKey:attributes:)`` for multi-kind contexts.
+    public func identify(key: String, attributes: [String: Any]? = nil) {
+        identify(contextKeys: ["user": key], canonicalKey: key, attributes: attributes)
+    }
+
     public func trackScreenView(name: String) {
         trackScreenView(name: name, screenClass: nil, screenId: nil, category: nil, properties: nil)
     }

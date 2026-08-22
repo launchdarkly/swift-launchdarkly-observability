@@ -21,13 +21,16 @@ extension IdentifyItemPayload {
     private static func buildAttributes(
         options: ObservabilityOptions,
         sessionAttributes: [String: AttributeValue]?,
+        userAttributes: [String: AttributeValue],
         contextKeys: [String: String],
         canonicalKey: String
     ) -> [String: String] {
         // Keep the existing value from ObservabilityOptions if duplicate key is found;
-        // client has precedence over session attribute.
+        // client has precedence over session attribute. Attributes supplied with the identify
+        // itself describe the user, so they outrank both.
         var attributes: [String: String] = options.resourceAttributes
             .merging(sessionAttributes ?? [:], uniquingKeysWith: { (current, _) in current })
+            .merging(userAttributes, uniquingKeysWith: { (_, identify) in identify })
             .compactMapValues {
             switch $0 {
             case .array, .set, .boolArray, .intArray, .doubleArray, .stringArray:
@@ -67,6 +70,7 @@ extension IdentifyItemPayload {
         self.attributes = Self.buildAttributes(
             options: options,
             sessionAttributes: sessionAttributes,
+            userAttributes: [:],
             contextKeys: contextKeys,
             canonicalKey: canonicalKey
         )
@@ -76,10 +80,11 @@ extension IdentifyItemPayload {
 
     /// Proxy-friendly initialiser that accepts pre-extracted context keys
     /// instead of LDContext, so the MAUI bridge can call it with simple types.
-    init(options: ObservabilityOptions, sessionAttributes: [String: AttributeValue]?, contextKeys: [String: String], canonicalKey: String, timestamp: TimeInterval, sessionId: String) {
+    init(options: ObservabilityOptions, sessionAttributes: [String: AttributeValue]?, userAttributes: [String: AttributeValue] = [:], contextKeys: [String: String], canonicalKey: String, timestamp: TimeInterval, sessionId: String) {
         self.attributes = Self.buildAttributes(
             options: options,
             sessionAttributes: sessionAttributes,
+            userAttributes: userAttributes,
             contextKeys: contextKeys,
             canonicalKey: canonicalKey
         )

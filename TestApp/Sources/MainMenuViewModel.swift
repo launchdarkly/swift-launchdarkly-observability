@@ -428,5 +428,53 @@ final class MainMenuViewModel: ObservableObject {
             print(error)
         }
     }
+
+    // MARK: - Identify via LDObserve
+
+    /// Identifies a single `user` context directly through the observability API, which is the only
+    /// identify path available when observability runs without `LDClient`.
+    func identifyUserViaLDObserve() {
+        LDObserve.shared.identify(
+            key: "single-userkey-observe",
+            attributes: ["firstName": "Bob", "lastName": "Bobberson"]
+        )
+    }
+
+    /// Identifies a multi-kind context. `canonicalKey` follows `LDContext` semantics: sub-context
+    /// keys sorted by kind, joined as `kind:key`.
+    func identifyMultiViaLDObserve() {
+        LDObserve.shared.identify(
+            contextKeys: ["user": "multi-username-observe", "device": "iphone"],
+            canonicalKey: "device:iphone:user:multi-username-observe",
+            attributes: ["email": "multi@multi.com", "platform": "ios"]
+        )
+    }
+
+    /// Identifies an anonymous context, imitating what the client SDK does for one.
+    ///
+    /// A keyless `LDContextBuilder()` takes a UUID the SDK generates once and persists per context
+    /// kind, forcing `anonymous` to true, so the device keeps a single anonymous identity across
+    /// launches — Android does the same under `generateAnonymousKeys(true)`. That generation belongs
+    /// to the client SDK, so with observability on its own the app holds the key itself and passes
+    /// `anonymous` through, the way the client SDK sends it as a context attribute.
+    func identifyAnonymousViaLDObserve() {
+        LDObserve.shared.identify(
+            key: anonymousKey(kind: "user"),
+            attributes: ["anonymous": true]
+        )
+    }
+
+    /// The anonymous key for `kind`, generated on first use and reused afterwards. Kept under the
+    /// app's own `UserDefaults` name rather than the client SDK's (`ldDeviceIdentifier` for the user
+    /// kind), which is private to it.
+    private func anonymousKey(kind: String) -> String {
+        let storageKey = "anonKey:\(kind)"
+        if let stored = UserDefaults.standard.string(forKey: storageKey) {
+            return stored
+        }
+        let generated = UUID().uuidString
+        UserDefaults.standard.set(generated, forKey: storageKey)
+        return generated
+    }
 }
 

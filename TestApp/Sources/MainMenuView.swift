@@ -29,6 +29,10 @@ struct MainMenuView: View {
     @State private var isSessionReplayEnabled: Bool = true
     @State private var selectedScenario: CrashScenario = .throwingError
 
+    /// Whether the app was launched with the flagging SDK wired into observability. Fixed for the
+    /// lifetime of the process, so it is read once rather than observed.
+    private let isFlagClientInitialized = LDObserve.shared.isFlagClientInitialized
+
     @ViewBuilder
     private func sheetContent(_ sheet: MenuSheet) -> some View {
         switch sheet {
@@ -180,36 +184,72 @@ struct MainMenuView: View {
 
     private var observabilitySection: some View {
         Section("Observability") {
-            Text("Identify")
+            // Hidden when observability runs standalone: with no client to call, these would do
+            // nothing. Only the LDObserve row below works in that setup.
+            if isFlagClientInitialized {
+                Text("Identify (LDClient)")
+                    .fontWeight(.bold)
+
+                HStack {
+                    Button {
+                        viewModel.identifyUser()
+                    } label: {
+                        Text("User").foregroundStyle(Colors.identifyTextColor)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Colors.identifyBgColor)
+                    .ldClick("identify.user")
+
+                    Button {
+                        viewModel.identifyMulti()
+                    } label: {
+                        Text("Multi").foregroundStyle(Colors.identifyTextColor)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Colors.identifyBgColor)
+                    .ldClick("identify.multi")
+
+                    Button {
+                        viewModel.identifyAnonymous()
+                    } label: {
+                        Text("Anon").foregroundStyle(Colors.identifyTextColor)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Colors.identifyBgColor)
+                    .ldClick("identify.anonymous")
+                }
+            }
+
+            Text("Identify (LDObserve)")
                 .fontWeight(.bold)
 
             HStack {
                 Button {
-                    viewModel.identifyUser()
+                    viewModel.identifyUserViaLDObserve()
                 } label: {
                     Text("User").foregroundStyle(Colors.identifyTextColor)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Colors.identifyBgColor)
-                .ldClick("identify.user")
+                .ldClick("identify.observe.user")
 
                 Button {
-                    viewModel.identifyMulti()
+                    viewModel.identifyMultiViaLDObserve()
                 } label: {
                     Text("Multi").foregroundStyle(Colors.identifyTextColor)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Colors.identifyBgColor)
-                .ldClick("identify.multi")
+                .ldClick("identify.observe.multi")
 
                 Button {
-                    viewModel.identifyAnonymous()
+                    viewModel.identifyAnonymousViaLDObserve()
                 } label: {
                     Text("Anon").foregroundStyle(Colors.identifyTextColor)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Colors.identifyBgColor)
-                .ldClick("identify.anonymous")
+                .ldClick("identify.observe.anonymous")
             }
 
             Text("Instrumentation")
@@ -267,9 +307,11 @@ struct MainMenuView: View {
                 .fontWeight(.bold)
 
             HStack {
-                Button("Track (LDClient)") { viewModel.trackViaLDClient() }
-                    .buttonStyle(.borderedProminent)
-                    .ldClick("track.ld_client")
+                if isFlagClientInitialized {
+                    Button("Track (LDClient)") { viewModel.trackViaLDClient() }
+                        .buttonStyle(.borderedProminent)
+                        .ldClick("track.ld_client")
+                }
                 Button("Track (LDObserve)") { viewModel.trackViaLDObserve() }
                     .buttonStyle(.borderedProminent)
                     .ldClick("track.ld_observe")

@@ -19,8 +19,29 @@ public final class LDObserve  {
     public static let shared = LDObserve()
     public var context: ObservabilityContext?
 
+    private var _isFlagClientInitialized = false
+
+    /// Whether observability is attached to an initialized `LDClient`, which is the case when the
+    /// plugin was registered with one — through `LDObserve.configure(ldClient:context:...)` or
+    /// `LDConfig.plugins`.
+    ///
+    /// `false` after a standalone setup, where no feature-flag SDK is present: nothing can be
+    /// evaluated, `LDClient.identify` and `LDClient.track` are unavailable, and telemetry is
+    /// attributed through `identify(key:attributes:)` instead. Hosts that support both setups can
+    /// read this to hide what the flagging SDK would drive.
+    public var isFlagClientInitialized: Bool {
+        clientQueue.sync { _isFlagClientInitialized }
+    }
+
     init(client: Observe = NoOpObservabilityService.shared) {
         self._client = client
+    }
+
+    /// Records that a feature-flag client registered the plugin.
+    func markFlagClientInitialized() {
+        clientQueue.sync(flags: .barrier) {
+            _isFlagClientInitialized = true
+        }
     }
 }
 
@@ -70,6 +91,10 @@ extension LDObserve: Observe {
 
     public func track(key: String, properties: [String: Any]? = nil, metricValue: Double? = nil) {
         client.track(key: key, properties: properties, metricValue: metricValue)
+    }
+
+    public func identify(contextKeys: [String: String], canonicalKey: String, attributes: [String: Any]? = nil) {
+        client.identify(contextKeys: contextKeys, canonicalKey: canonicalKey, attributes: attributes)
     }
 
     public func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {
