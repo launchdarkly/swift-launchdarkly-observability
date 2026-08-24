@@ -40,7 +40,10 @@ final class MaskCollector {
         self.policy = MaskingPolicy(privacySettings: privacySettings)
     }
 
-    func collectViewMasks(in rootView: UIView, window: UIWindow) -> (maskOperations: [MaskOperation], offsetRects: [OffsettedArea]) {
+    func collectViewMasks(
+        in rootView: UIView,
+        window: UIWindow
+    ) -> (maskOperations: [MaskOperation], offsetRects: [OffsettedArea]) {
         var operations = [MaskOperation]()
         var offsetRects = [OffsettedArea]()
 
@@ -129,7 +132,15 @@ final class MaskCollector {
         }
 
         // Returns `true` if a mask was emitted for this view (the caller should stop recursing).
-        func emitViewMask(view: UIView, layer: CALayer, viewType: AnyClass, className: String, effectiveFrame: CGRect, resolvedExplicitMask: Bool?) -> Bool {
+        func emitViewMask(
+            view: UIView,
+            layer: CALayer,
+            viewType: AnyClass,
+            className: String,
+            effectiveFrame: CGRect,
+            cumulativeOpacity: Float,
+            resolvedExplicitMask: Bool?
+        ) -> Bool {
             let shouldMask = policy.shouldMask(view, viewType: viewType, className: className, resolvedExplicitMask: resolvedExplicitMask)
 
             if shouldMask, let mask = MaskGeometry.createMask(rPresentation: rPresentation, layer: layer) {
@@ -148,9 +159,10 @@ final class MaskCollector {
                 }
             }
 
+        
             // An opaque container fully covers any masks we already emitted inside it,
             // so those masks become redundant and can be dropped.
-            if operations.isNotEmpty, !isTransparent(view: view, pLayer: layer) {
+            if operations.isNotEmpty, !isTransparent(view: view, cumulativeOpacity: cumulativeOpacity) {
                 operations.removeAll { effectiveFrame.contains($0.effectiveFrame) }
             }
 
@@ -161,7 +173,12 @@ final class MaskCollector {
         // backing UIView, so the UIView-based path can't see them. Match by layer class name
         // while still honouring an inherited or marker-area explicit state.
         // Returns `true` if a mask was emitted (the caller should stop recursing).
-        func emitLayerOnlyMask(layerClassName: String, layer: CALayer, effectiveFrame: CGRect, resolvedExplicitMask: Bool?) -> Bool {
+        func emitLayerOnlyMask(
+            layerClassName: String,
+            layer: CALayer,
+            effectiveFrame: CGRect,
+            resolvedExplicitMask: Bool?
+        ) -> Bool {
             let shouldMask = resolvedExplicitMask ?? policy.shouldMaskLayer(className: layerClassName)
             guard shouldMask, let mask = MaskGeometry.createMask(rPresentation: rPresentation, layer: layer) else {
                 return false
@@ -170,7 +187,7 @@ final class MaskCollector {
             return true
         }
 
-        func visit(layer: CALayer, layerClassName: String, inheritedExplicitMask: Bool?) {
+        func visit(layer: CALayer, layerClassName: String, inheritedOpacity: Float, inheritedExplicitMask: Bool?) {
             // On iOS 26+, CameraUI private CALayer subclasses (e.g. ModeLoupeLayer) do not
             // implement init(layer:). Guard at the very top — before ANY property access —
             // because even isHidden/opacity access can trigger CA::Layer::presentation_layer()
@@ -179,6 +196,8 @@ final class MaskCollector {
             if policy.shouldSkipLayer(className: layerClassName) { return }
 
             guard !layer.isHidden, layer.opacity >= policy.minimumAlpha else { return }
+
+            let cumulativeOpacity = inheritedOpacity * effectiveOpacity(of: layer)
 
             // Frame in root coords is needed both for marker-area lookup
             // and for `effectiveFrame`/`MaskOperation`. Compute it once.
@@ -218,6 +237,7 @@ final class MaskCollector {
                                 viewType: viewType,
                                 className: viewClassName,
                                 effectiveFrame: effectiveFrame,
+                                cumulativeOpacity: cumulativeOpacity,
                                 resolvedExplicitMask: resolvedExplicitMask) {
                     return
                 }
@@ -257,10 +277,10 @@ final class MaskCollector {
             }
             guard !safeSublayers.isEmpty else { return }
             if safeSublayers.count == 1 {
-                visit(layer: safeSublayers[0].0, layerClassName: safeSublayers[0].1, inheritedExplicitMask: childInheritedMask)
+                visit(layer: safeSublayers[0].0, layerClassName: safeSublayers[0].1, inheritedOpacity: cumulativeOpacity, inheritedExplicitMask: childInheritedMask)
             } else {
                 safeSublayers.sorted { $0.0.zPosition < $1.0.zPosition }
-                    .forEach { visit(layer: $0.0, layerClassName: $0.1, inheritedExplicitMask: childInheritedMask) }
+                    .forEach { visit(layer: $0.0, layerClassName: $0.1, inheritedOpacity: cumulativeOpacity, inheritedExplicitMask: childInheritedMask) }
             }
         }
 
@@ -275,11 +295,12 @@ final class MaskCollector {
             }
         }
         if !safeRootSublayers.isEmpty {
+            let rootOpacity = effectiveOpacity(of: rPresentation)
             if safeRootSublayers.count == 1 {
-                visit(layer: safeRootSublayers[0].0, layerClassName: safeRootSublayers[0].1, inheritedExplicitMask: nil)
+                visit(layer: safeRootSublayers[0].0, layerClassName: safeRootSublayers[0].1, inheritedOpacity: rootOpacity, inheritedExplicitMask: nil)
             } else {
                 safeRootSublayers.sorted { $0.0.zPosition < $1.0.zPosition }
-                    .forEach { visit(layer: $0.0, layerClassName: $0.1, inheritedExplicitMask: nil) }
+                    .forEach { visit(layer: $0.0, layerClassName: $0.1, inheritedOpacity: rootOpacity, inheritedExplicitMask: nil) }
             }
         }
 
@@ -315,10 +336,32 @@ final class MaskCollector {
     }
 
     // this method should be biased into transparency
-    private func isTransparent(view: UIView, pLayer: CALayer) -> Bool {
-        pLayer.opacity < policy.maximumAlpha
+    private func isTransparent(view: UIView, cumulativeOpacity: Float) -> Bool {
+        cumulativeOpacity < policy.maximumAlpha
         || view.backgroundColor == nil
         || (view.backgroundColor?.cgColor.alpha ?? 0) < CGFloat(policy.maximumAlpha)
+    }
+
+    /// The opacity this layer is being composited with, biased toward transparency: a layer whose
+    /// opacity is animating counts as fully transparent for as long as the animation runs.
+    private func effectiveOpacity(of geometryLayer: CALayer) -> Float {
+        isAnimatingOpacity(geometryLayer.model()) ? 0 : geometryLayer.opacity
+    }
+
+    private func isAnimatingOpacity(_ modelLayer: CALayer) -> Bool {
+        guard let keys = modelLayer.animationKeys(), !keys.isEmpty else { return false }
+        guard !keys.contains("opacity") else { return true }
+
+        return keys.contains { key in
+            guard let animation = modelLayer.animation(forKey: key) else { return false }
+            if let property = animation as? CAPropertyAnimation {
+                return property.keyPath == "opacity"
+            }
+            if let group = animation as? CAAnimationGroup {
+                return group.animations?.contains { ($0 as? CAPropertyAnimation)?.keyPath == "opacity" } ?? false
+            }
+            return false
+        }
     }
 
     func rectFromPresentation(_ rPresentation: CALayer, root: CALayer, layer: CALayer) -> CGRect {

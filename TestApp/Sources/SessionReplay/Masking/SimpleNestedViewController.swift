@@ -115,7 +115,6 @@ struct MaskingElementsSimpleUIKitView: View {
                     } label: {
                         Image(systemName: "checkmark")
                     }
-                    SnapshotButton()
                 }
         }
         .trackScreen("Masking Simple View (UIKit)")

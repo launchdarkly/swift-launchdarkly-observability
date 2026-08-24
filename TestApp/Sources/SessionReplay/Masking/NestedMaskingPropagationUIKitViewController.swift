@@ -164,7 +164,6 @@ struct NestedMaskingPropagationUIKitView: View {
                     } label: {
                         Image(systemName: "checkmark")
                     }
-                    SnapshotButton()
                 }
         }
     }

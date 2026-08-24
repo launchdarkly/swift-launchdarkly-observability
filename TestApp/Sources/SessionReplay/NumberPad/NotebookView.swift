@@ -47,7 +47,6 @@ struct NotebookView: View {
                 } label: {
                     Image(systemName: "checkmark")
                 }
-                SnapshotButton()
             }
         }
         .trackScreen("Notebook (SwiftUI)")
