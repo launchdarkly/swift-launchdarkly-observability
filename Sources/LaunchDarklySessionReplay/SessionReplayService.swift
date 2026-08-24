@@ -256,11 +256,11 @@ final class SessionReplayService: SessionReplayServicing {
             let identifyPayload = IdentifyItemPayload(
                 options: observabilityContext.options,
                 sessionAttributes: observabilityContext.sessionAttributes,
-                userAttributes: userAttributes,
                 contextKeys: contextKeys,
                 canonicalKey: canonicalKey,
                 timestamp: timestamp,
-                sessionId: sessionId
+                sessionId: sessionId,
+                userAttributes: userAttributes
             )
             await scheduleIdentifySession(identifyPayload: identifyPayload)
         }
@@ -305,12 +305,20 @@ final class SessionReplayService: SessionReplayServicing {
         // costing a second request and a duplicate timeline event.
         guard !identifyPayload.isSameIdentity(as: lastAppliedIdentify) else { return }
 
+        // Claimed before the request rather than after it: the main actor is released while the
+        // request is in flight, so a duplicate arriving meanwhile would otherwise pass the check
+        // above and be sent again. Released if the request fails, so an identical identify can
+        // still retry it — unless a newer identity took over in the meantime.
+        let previous = lastAppliedIdentify
+        lastAppliedIdentify = identifyPayload
+
         do {
             try await sessionReplayExporter.identifySession(identifyPayload: identifyPayload)
-            // Recorded only once accepted, so a failed identify can be retried by an identical one.
-            lastAppliedIdentify = identifyPayload
             await transportService.eventQueue.send(identifyPayload)
         } catch {
+            if lastAppliedIdentify?.isSameIdentity(as: identifyPayload) == true {
+                lastAppliedIdentify = previous
+            }
             os_log("%{public}@", log: log, type: .error, "Failed to identifySession:\n\(error)")
         }
     }

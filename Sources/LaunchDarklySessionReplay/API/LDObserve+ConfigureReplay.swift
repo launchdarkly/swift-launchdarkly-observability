@@ -14,16 +14,16 @@ public extension LDObserve {
     ///
     /// - Parameters:
     ///   - mobileKey: Credential for the LaunchDarkly environment telemetry is sent to.
-    ///   - observability: Pipeline and instrumentation configuration.
     ///   - replay: Session Replay configuration.
+    ///   - observability: Pipeline and instrumentation configuration.
     ///   - imageCaptureService: Capture implementation for Session Replay. `nil` uses the built-in
     ///     screenshot capture.
     ///   - customSessionId: Session id to adopt instead of generating one, so this instance can
     ///     share a single `session.id` with another LaunchDarkly SDK on the device.
     static func configure(
         mobileKey: String,
-        observability: ObservabilityOptions = ObservabilityOptions(),
         replay: SessionReplayOptions,
+        observability: ObservabilityOptions = ObservabilityOptions(),
         imageCaptureService: ImageCaptureServicing? = nil,
         customSessionId: String? = nil
     ) {
@@ -41,8 +41,8 @@ public extension LDObserve {
     ///   - context: The context `ldClient` was started with. The client identifies it before this
     ///     call can attach a hook, so it is identified here instead; without it the session would
     ///     be recorded as `unknown` until the app's next `identify`.
-    ///   - observability: Pipeline and instrumentation configuration.
     ///   - replay: Session Replay configuration.
+    ///   - observability: Pipeline and instrumentation configuration.
     ///   - imageCaptureService: Capture implementation for Session Replay. `nil` uses the built-in
     ///     screenshot capture.
     ///   - customSessionId: Session id to adopt instead of generating one, so this instance can
@@ -50,8 +50,8 @@ public extension LDObserve {
     static func configure(
         ldClient: LDClient,
         context: LDContext,
-        observability: ObservabilityOptions = ObservabilityOptions(),
         replay: SessionReplayOptions,
+        observability: ObservabilityOptions = ObservabilityOptions(),
         imageCaptureService: ImageCaptureServicing? = nil,
         customSessionId: String? = nil
     ) {

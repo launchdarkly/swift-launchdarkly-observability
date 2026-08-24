@@ -80,7 +80,7 @@ extension IdentifyItemPayload {
 
     /// Proxy-friendly initialiser that accepts pre-extracted context keys
     /// instead of LDContext, so the MAUI bridge can call it with simple types.
-    init(options: ObservabilityOptions, sessionAttributes: [String: AttributeValue]?, userAttributes: [String: AttributeValue] = [:], contextKeys: [String: String], canonicalKey: String, timestamp: TimeInterval, sessionId: String) {
+    init(options: ObservabilityOptions, sessionAttributes: [String: AttributeValue]?, contextKeys: [String: String], canonicalKey: String, timestamp: TimeInterval, sessionId: String, userAttributes: [String: AttributeValue] = [:]) {
         self.attributes = Self.buildAttributes(
             options: options,
             sessionAttributes: sessionAttributes,

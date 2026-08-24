@@ -413,7 +413,6 @@ extension ObservabilityService: Observe {
             attributes: attributes?.toOtelAttributes() ?? [:]
         )
     }
-
     public func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {
         recordScreenView(
             ScreenView(

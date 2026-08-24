@@ -85,8 +85,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         LDObserve.configure(
             ldClient: ldClient,
             context: context,
-            observability: observabilityOptions,
-            replay: replayOptions
+            replay: replayOptions,
+            observability: observabilityOptions
         )
 
         flagEvaluation()
@@ -96,8 +96,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     func initIndependently() {
         LDObserve.configure(
             mobileKey: mobileKey,
-            observability: observabilityOptions,
-            replay: replayOptions
+            replay: replayOptions,
+            observability: observabilityOptions
         )
 
         // No client to identify the user, so telemetry and the replay session are attributed here.
