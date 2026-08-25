@@ -12,7 +12,7 @@ struct RawFramesRRWebEventGeneratorTests {
     @Test("Converts three raw frames into expected colored images")
     func convertsRawFramesIntoExpectedColors() async {
         let method: SessionReplayOptions.CompressionMethod = .overlayTiles(layers: 15, backtracking: false)
-        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0)
+        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0, imageQuality: 0.3)
         let eventGenerator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
             title: "Benchmark",
@@ -55,7 +55,7 @@ struct RawFramesRRWebEventGeneratorTests {
     @Test("Backtracking emits smaller add and remove-only rollback")
     func backtrackingEmitsSmallerAddAndRemoveOnlyRollback() async {
         let method: SessionReplayOptions.CompressionMethod = .overlayTiles(layers: 15, backtracking: true)
-        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0)
+        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0, imageQuality: 0.3)
         let eventGenerator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
             title: "Benchmark",
@@ -109,7 +109,7 @@ struct RawFramesRRWebEventGeneratorTests {
     @Test("Backtracking across top and bottom bars supports two rollbacks")
     func backtrackingAcrossTopAndBottomBarsSupportsTwoRollbacks() async {
         let method: SessionReplayOptions.CompressionMethod = .overlayTiles(layers: 15, backtracking: true)
-        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0)
+        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0, imageQuality: 0.3)
         let eventGenerator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
             title: "Benchmark",
@@ -188,7 +188,7 @@ struct RawFramesRRWebEventGeneratorTests {
     @Test("Keyframe resets backtracking when layer limit is reached")
     func keyframeResetsBacktrackingWhenLayerLimitReached() async {
         let method: SessionReplayOptions.CompressionMethod = .overlayTiles(layers: 3, backtracking: true)
-        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0)
+        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0, imageQuality: 0.3)
         let eventGenerator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
             title: "Benchmark",

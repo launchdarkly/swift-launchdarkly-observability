@@ -57,6 +57,10 @@ public final class SessionReplay: Plugin {
         }
     }
     
+    // Note: this hook is intentionally not wrapped in DedupingHook. Deduplication only
+    // suppresses evaluation stages, and SessionReplayHook implements identify only, which
+    // DedupingHook always forwards. Evaluation spans come from ObservabilityHook, which is
+    // wrapped there instead.
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
         return [sessionReplayHook]
     }

@@ -9,10 +9,12 @@ import UIKit
 /// visit loop.
 enum MaskGeometry {
     /// Builds a `Mask` describing where `layer` lands inside
-    /// `rPresentation` when drawn at the given `scale`. Returns `nil`
-    /// when the layer has zero area or uses a non-affine transform we
-    /// don't yet handle.
-    static func createMask(rPresentation: CALayer, layer: CALayer, scale: CGFloat) -> Mask? {
+    /// `rPresentation`, in points. The capture context already carries
+    /// the render scale in its CTM (`UIGraphicsImageRendererFormat.scale`),
+    /// so masks must stay in point space or they'd be scaled twice.
+    /// Returns `nil` when the layer has zero area or uses a non-affine
+    /// transform we don't yet handle.
+    static func createMask(rPresentation: CALayer, layer: CALayer) -> Mask? {
         let lBounds = layer.bounds
         guard lBounds.width > 0, lBounds.height > 0 else { return nil }
 
@@ -27,7 +29,7 @@ enum MaskGeometry {
                                                     c: (corner3.x - tx) / max(lBounds.height, 0.0001),
                                                     d: (corner3.y - ty) / max(lBounds.height, 0.0001),
                                                     tx: tx,
-                                                    ty: ty).scaledBy(x: scale, y: scale)
+                                                    ty: ty)
             return Mask.affine(rect: lBounds, transform: affineTransform)
         } else {
             // 3D / perspective transform: the projected shape is a general
@@ -36,12 +38,11 @@ enum MaskGeometry {
             // quad. `convert(_:to:)` walks the full layer chain and applies the
             // perspective projection, so a view that is flipping or tilting in
             // 3D is still covered instead of being left unmasked.
-            let scaleTransform = CGAffineTransform(scaleX: scale, y: scale)
             let quad = Quad(
-                p0: layer.convert(CGPoint(x: lBounds.minX, y: lBounds.minY), to: rPresentation).applying(scaleTransform),
-                p1: layer.convert(CGPoint(x: lBounds.maxX, y: lBounds.minY), to: rPresentation).applying(scaleTransform),
-                p2: layer.convert(CGPoint(x: lBounds.maxX, y: lBounds.maxY), to: rPresentation).applying(scaleTransform),
-                p3: layer.convert(CGPoint(x: lBounds.minX, y: lBounds.maxY), to: rPresentation).applying(scaleTransform)
+                p0: layer.convert(CGPoint(x: lBounds.minX, y: lBounds.minY), to: rPresentation),
+                p1: layer.convert(CGPoint(x: lBounds.maxX, y: lBounds.minY), to: rPresentation),
+                p2: layer.convert(CGPoint(x: lBounds.maxX, y: lBounds.maxY), to: rPresentation),
+                p3: layer.convert(CGPoint(x: lBounds.minX, y: lBounds.maxY), to: rPresentation)
             )
             return Mask.quad(quad)
         }

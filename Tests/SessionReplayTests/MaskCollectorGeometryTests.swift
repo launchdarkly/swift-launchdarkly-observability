@@ -48,7 +48,7 @@ struct MaskCollectorGeometryTests {
 
     private func collect(in window: UIWindow) -> [MaskOperation] {
         let collector = MaskCollector(privacySettings: .init(maskTextInputs: false, maskLabels: true))
-        return collector.collectViewMasks(in: window, window: window, scale: 1).maskOperations
+        return collector.collectViewMasks(in: window, window: window).maskOperations
     }
 
     private func affineTransform(of operation: MaskOperation) throws -> CGAffineTransform {
@@ -100,6 +100,26 @@ struct MaskCollectorGeometryTests {
         let operations = collect(in: hierarchy.window)
         let transform = try affineTransform(of: try #require(operations.first))
         #expect(abs(transform.tx - 170) < 0.01)
+    }
+
+    @Test("the mask covers the view's frame in points, without any render-scale factor")
+    func maskGeometryIsInPointSpace() async throws {
+        let hierarchy = makeHierarchy()
+        await waitForRenderCommit()
+
+        let operations = collect(in: hierarchy.window)
+        let operation = try #require(operations.first)
+        guard case let .affine(rect, transform) = operation.mask else {
+            throw MaskShapeError.notAffine
+        }
+
+        // The capture context already carries the render scale in its CTM, so
+        // the mask must land exactly on the label's point frame.
+        let masked = rect.applying(transform)
+        #expect(abs(masked.minX - hierarchy.label.frame.minX) < 0.01)
+        #expect(abs(masked.minY - hierarchy.label.frame.minY) < 0.01)
+        #expect(abs(masked.width - hierarchy.label.frame.width) < 0.01)
+        #expect(abs(masked.height - hierarchy.label.frame.height) < 0.01)
     }
 
     @Test("a CameraUI layer in the tree forces model geometry instead of crashing")

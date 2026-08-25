@@ -235,6 +235,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 }
 ```
 
+#### Image Quality
+
+Use `SessionReplayOptions.imageQuality` to control JPEG encoding quality. It accepts values from `0.0` (lowest quality and smallest payload) to `1.0` (highest quality and largest payload), defaults to `0.3`, and clamps values outside that range.
+
+```swift
+SessionReplay(options: .init(imageQuality: 0.75))
+```
+
 ### Manual Start
 
 By default, Session Replay attempts to start recording as soon as the SDK is initialized if `isEnabled` is set to `true`. The `sampleRate` option controls whether that attempt actually starts recording. Use a value from `0.0` to `1.0`, where `0.0` never records and `1.0` always records.

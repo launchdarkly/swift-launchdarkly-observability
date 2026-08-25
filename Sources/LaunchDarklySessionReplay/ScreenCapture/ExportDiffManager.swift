@@ -6,13 +6,14 @@ final class ExportDiffManager {
     private let tileDiffManager: TileDiffManager
     private var currentImages = [ExportFrame.RemoveImage]()
     private var currentImagesIndex: [ImageSignature: Int] = [:]
-    private let format = ExportFormat.jpeg(quality: 0.3)
+    private let format: ExportFormat
     private let compression: SessionReplayOptions.CompressionMethod
     private let lock = NSLock()
     private var keyFrameId: Int = 0
     
-    init(compression: SessionReplayOptions.CompressionMethod, scale: CGFloat) {
+    init(compression: SessionReplayOptions.CompressionMethod, scale: CGFloat, imageQuality: CGFloat) {
         self.compression = compression
+        self.format = .jpeg(quality: imageQuality)
         self.tileDiffManager = TileDiffManager(compression: compression, scale: scale)
     }
 

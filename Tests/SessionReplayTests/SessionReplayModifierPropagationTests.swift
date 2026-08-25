@@ -174,7 +174,7 @@ struct SessionReplayModifierPropagationTests {
         SessionReplayAssociatedObjects.maskUIView(mask, isEnabled: true)
 
         let collector = MaskCollector(privacySettings: .init(maskTextInputs: false, maskLabels: false))
-        let result = collector.collectViewMasks(in: window, window: window, scale: 1)
+        let result = collector.collectViewMasks(in: window, window: window)
 
         // Exactly one mask op covering the label — the cell, content
         // wrapper, and host must remain unmasked even though they sit
@@ -240,7 +240,7 @@ struct SessionReplayModifierPropagationTests {
         window.layoutIfNeeded()
 
         let collector = MaskCollector(privacySettings: .init(maskTextInputs: true))
-        let result = collector.collectViewMasks(in: window, window: window, scale: 1)
+        let result = collector.collectViewMasks(in: window, window: window)
 
         // Without propagation, `maskTextInputs=true` would have masked
         // the text field. The marker's `unmask` area covers the text
@@ -273,7 +273,7 @@ struct SessionReplayModifierPropagationTests {
         SessionReplayAssociatedObjects.maskUIView(mask, isEnabled: false)
 
         let collector = MaskCollector(privacySettings: .init(maskTextInputs: true))
-        let result = collector.collectViewMasks(in: window, window: window, scale: 1)
+        let result = collector.collectViewMasks(in: window, window: window)
 
         // The text field's frame in root coords (24, 191, 354, 34) is
         // inside the marker's area (16, 183, 370, 50), so it inherits
@@ -316,7 +316,7 @@ struct SessionReplayModifierPropagationTests {
         SessionReplayAssociatedObjects.maskUIView(mask, isEnabled: true)
 
         let collector = MaskCollector(privacySettings: .init(maskTextInputs: false, maskLabels: false))
-        let result = collector.collectViewMasks(in: window, window: window, scale: 1)
+        let result = collector.collectViewMasks(in: window, window: window)
 
         // Exactly one mask op covering the label — the cell background
         // (much larger than the marker area) must remain unmasked.
@@ -355,7 +355,7 @@ struct SessionReplayModifierPropagationTests {
         SessionReplayAssociatedObjects.maskUIView(mask, isEnabled: true)
 
         let collector = MaskCollector(privacySettings: .init(maskTextInputs: false, maskLabels: false))
-        let result = collector.collectViewMasks(in: window, window: window, scale: 1)
+        let result = collector.collectViewMasks(in: window, window: window)
 
         #expect(result.maskOperations.count == 1)
         if let op = result.maskOperations.first {
@@ -374,7 +374,7 @@ struct SessionReplayModifierPropagationTests {
         window.layoutIfNeeded()
 
         let collector = MaskCollector(privacySettings: .init(maskTextInputs: false, maskLabels: false))
-        let result = collector.collectViewMasks(in: window, window: window, scale: 1)
+        let result = collector.collectViewMasks(in: window, window: window)
 
         // The marker's `mask` area covers the content sibling, so the
         // label inside it is masked.
@@ -392,7 +392,7 @@ struct SessionReplayModifierPropagationTests {
         window.layoutIfNeeded()
 
         let collector = MaskCollector(privacySettings: .init(maskTextInputs: true))
-        let result = collector.collectViewMasks(in: window, window: window, scale: 1)
+        let result = collector.collectViewMasks(in: window, window: window)
 
         // The marker's `ignore` area covers the text field; visit
         // skips it entirely.
@@ -410,7 +410,7 @@ struct SessionReplayModifierPropagationTests {
         window.layoutIfNeeded()
 
         let collector = MaskCollector(privacySettings: .init(maskTextInputs: true))
-        let result = collector.collectViewMasks(in: window, window: window, scale: 1)
+        let result = collector.collectViewMasks(in: window, window: window)
 
         // Sanity baseline: when no SwiftUI marker is present,
         // `maskTextInputs` still masks the field.

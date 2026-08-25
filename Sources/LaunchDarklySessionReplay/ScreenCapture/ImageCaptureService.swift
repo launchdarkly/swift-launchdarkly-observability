@@ -65,7 +65,7 @@ public final class ImageCaptureService: ImageCaptureServicing {
         let enclosingBounds = windowCaptureManager.minimalBoundsEnclosingWindows(windows)
         let renderer = windowCaptureManager.makeRenderer(size: enclosingBounds.size, scale: scale)
         
-        let maskOperationsBefore = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: scale)  }
+        let maskOperationsBefore = windows.map { maskCollector.collectViewMasks(in: $0, window: $0)  }
         let image = renderer.image { ctx in
             windowCaptureManager.drawWindows(windows, into: ctx.cgContext, bounds: enclosingBounds, afterScreenUpdates: false, renderStrategy: renderStrategy)
         }
@@ -84,7 +84,7 @@ public final class ImageCaptureService: ImageCaptureServicing {
                 CATransaction.flush()
             }
 
-            let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0, scale: self.scale)  }
+            let maskOperationsAfter = windows.map { maskCollector.collectViewMasks(in: $0, window: $0)  }
             
             Task {
                 guard maskOperationsBefore.count == maskOperationsAfter.count else {

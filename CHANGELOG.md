@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.53.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.53.0...0.53.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* keep masks behind views whose opacity is animating ([#270](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/270)) ([1841421](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/184142124dabf208d83655a0c961629b3c308f71))
+
+## [0.53.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.52.1...0.53.0) (2026-08-14)
+
+
+### Features
+
+* deduplicate flag evaluation telemetry with SDK DedupingHook ([#266](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/266)) ([eb1ac9b](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/eb1ac9b8b467a41371b9a6740ed1b2cc27d7df47))
+
+## [0.52.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.52.0...0.52.1) (2026-08-14)
+
+
+### Bug Fixes
+
+* **deps:** bump iOS Client SDK to 11.4.0 ([#267](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/267)) ([f26514e](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/f26514e40ae6710e0d153ff9a962e820404c8e25))
+
+## [0.52.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.51.0...0.52.0) (2026-08-12)
+
+
+### Features
+
+* fix double-scaled masks and add imageQuality option ([#263](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/263)) ([dfb14be](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/dfb14beea7902dff53fdaf66be184ef675cbc1c2))
+
+## [0.51.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.50.0...0.51.0) (2026-08-11)
+
+
+### Features
+
+* lite otel core ([#261](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/261)) ([15a2957](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/15a2957320c627956f01dcc0b7fd3e97c2f27aef))
+
 ## [0.50.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.49.0...0.50.0) (2026-08-04)
 
 

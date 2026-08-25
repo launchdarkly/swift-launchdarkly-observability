@@ -95,7 +95,9 @@ open class ObservabilityPlugin: Plugin {
     }
 
     open func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        return [observabilityHook]
+        // Deduplicate repeated identical evaluations (default 10-minute window).
+        // Resets after identify or when the evaluation result changes.
+        return [DedupingHook(observabilityHook)]
     }
 }
 

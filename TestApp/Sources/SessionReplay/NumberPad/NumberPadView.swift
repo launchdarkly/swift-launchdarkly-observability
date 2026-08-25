@@ -10,6 +10,8 @@ import SwiftUI
 import LaunchDarklyObservability
 
 struct NumberPadView: View {
+    /// Set when the screen is presented outside of a SwiftUI presentation, where `dismiss` has no effect.
+    var onClose: (() -> Void)?
     @State var text = ""
     @Environment(\.dismiss) var dismiss
     
@@ -28,11 +30,14 @@ struct NumberPadView: View {
             .navigationTitle("Number Pad (SwiftUI)")
             .toolbar {
                 Button {
-                    dismiss()
+                    if let onClose {
+                        onClose()
+                    } else {
+                        dismiss()
+                    }
                 } label: {
                     Image(systemName: "checkmark")
                 }
-                SnapshotButton()
             }
         }
         .trackScreen("Number Pad (SwiftUI)")

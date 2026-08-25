@@ -10,8 +10,10 @@ public final class CompressionBenchmarkRunner {
 
     public init() {}
 
-    public func run(method: SessionReplayOptions.CompressionMethod, frames: [RawFrame]) async -> Result {
-        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0)
+    public func run(method: SessionReplayOptions.CompressionMethod,
+                    frames: [RawFrame],
+                    imageQuality: CGFloat = 0.3) async -> Result {
+        let exportDiffManager = ExportDiffManager(compression: method, scale: 1.0, imageQuality: imageQuality)
         let eventGenerator = RRWebEventGenerator(log: OSLog.default, title: "Benchmark", method: method)
         let encoder = JSONEncoder()
         var bytes = 0

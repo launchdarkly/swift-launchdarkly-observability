@@ -10,6 +10,7 @@ struct ExampleAppApp: App {
             TVMainMenuView()
             #else
             MainMenuView()
+                .floatingSnapshotButton()
             #endif
         }
     }

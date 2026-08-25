@@ -147,7 +147,6 @@ struct MaskingCreditCardSwiftUIView: View {
                 } label: {
                     Image(systemName: "checkmark")
                 }
-                SnapshotButton()
             }
         }
         .trackScreen("Masking Credit Card (SwiftUI)")

@@ -15,9 +15,7 @@ struct FrutaAppView: View {
     
     var body: some View {
        // WindowGroup {
-            FruitContentView().overlay(alignment: .topTrailing) {
-                SnapshotButton()
-            }
+            FruitContentView()
                 .environmentObject(model)
         //}
        // .commands {
