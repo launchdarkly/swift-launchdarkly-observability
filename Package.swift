@@ -27,7 +27,7 @@ let package = Package(
         // Pinned to 2.6.0-beta.3 for iOS 26+ __crash_info parsing (so Swift
         // runtime trap messages like "Fatal error: Index out of range" are
         // captured). SwiftPM ignores pre-releases with `from:`, so pin exactly.
-        .package(url: "https://github.com/kstenerud/KSCrash.git", exact: "2.6.0-beta.3"),
+        .package(url: "https://github.com/kstenerud/KSCrash.git", exact: "2.6.0"),
     ],
     targets: [
         // C target (no Swift files here)
