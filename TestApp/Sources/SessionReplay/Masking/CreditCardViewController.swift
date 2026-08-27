@@ -62,8 +62,8 @@ public final class CreditCardViewController: UIViewController {
     var hidingType: HidingType = .isHidden {
         didSet {
             updateHidingTypeUI()
-            applyHidingType(to: slidingCover, isHidden: true)
-            applyHidingType(to: blinkingCover, isHidden: true)
+            applyHidingType(to: fullCover, isHidden: true)
+            applyHidingType(to: maskedCover, isHidden: true)
         }
     }
 
@@ -89,22 +89,22 @@ public final class CreditCardViewController: UIViewController {
                 cvvContainer?.layer.removeAllAnimations()
             }
             
-            blinkingCover.layer.removeAllAnimations()
+            maskedCover.layer.removeAllAnimations()
             
             switch testAnimation  {
             case .slideInFromBottom:
-                applyHidingType(to: blinkingCover, isHidden: true)
-                applyHidingType(to: slidingCover, isHidden: false)
-                slidingCover.backgroundColor = .blue
-                startSlidingFromBottom(view: slidingCover)
+                applyHidingType(to: maskedCover, isHidden: true)
+                applyHidingType(to: fullCover, isHidden: false)
+                fullCover.backgroundColor = .blue
+                startSlidingFromBottom(view: fullCover)
             case .slideInFromRight:
-                applyHidingType(to: blinkingCover, isHidden: true)
-                applyHidingType(to: slidingCover, isHidden: false)
-                slidingCover.backgroundColor = .blue
-                startSlidingFromRight(view: slidingCover)
+                applyHidingType(to: maskedCover, isHidden: true)
+                applyHidingType(to: fullCover, isHidden: false)
+                fullCover.backgroundColor = .blue
+                startSlidingFromRight(view: fullCover)
             case .rotate:
-                applyHidingType(to: slidingCover, isHidden: true)
-                applyHidingType(to: blinkingCover, isHidden: true)
+                applyHidingType(to: fullCover, isHidden: true)
+                applyHidingType(to: maskedCover, isHidden: true)
                 if let rotatingContentContainer = self.stack.arrangedSubviews.first(where: { $0 !== self.hidingBarContainerRef }) {
                     startRotating(view: rotatingContentContainer)
                 } else {
@@ -114,13 +114,19 @@ public final class CreditCardViewController: UIViewController {
                     startRotating(view: cvvContainer)
                 }
             case .none:
-                applyHidingType(to: slidingCover, isHidden: true)
-                applyHidingType(to: blinkingCover, isHidden: true)
+                applyHidingType(to: fullCover, isHidden: true)
+                applyHidingType(to: maskedCover, isHidden: true)
             case .blink:
-                applyHidingType(to: slidingCover, isHidden: true)
-                applyHidingType(to: blinkingCover, isHidden: false)
-                blinkingCover.backgroundColor = .green
-                blink(view: blinkingCover)
+                applyHidingType(to: fullCover, isHidden: true)
+                applyHidingType(to: maskedCover, isHidden: false)
+                maskedCover.backgroundColor = .green
+                blink(view: maskedCover)
+            case .blinkCover:
+                applyHidingType(to: maskedCover, isHidden: true)
+                applyHidingType(to: fullCover, isHidden: false)
+                fullCover.backgroundColor = .blue
+                startSlidingFromBottom(view: fullCover)
+                blink(view: fullCover)
             }
         }
     }
@@ -140,13 +146,13 @@ public final class CreditCardViewController: UIViewController {
     private let saveButton  = UIButton(type: .system)
     
     
-    private lazy var slidingCover: UIView = {
+    private lazy var fullCover: UIView = {
         let view = CoverView()
         view.tag = 99999
         return view
     }()
     
-    private lazy var blinkingCover: UIView = {
+    private lazy var maskedCover: UIView = {
         let view = CoverView()
         view.tag = 99998
         return view
@@ -175,8 +181,8 @@ public final class CreditCardViewController: UIViewController {
         updateSaveButton()
         
         updateHidingTypeUI()
-        applyHidingType(to: slidingCover, isHidden: true)
-        applyHidingType(to: blinkingCover, isHidden: true)
+        applyHidingType(to: fullCover, isHidden: true)
+        applyHidingType(to: maskedCover, isHidden: true)
         
         nameField.ldUnmask()
         brandChip.accessibilityIdentifier = "card-brand-chip"
@@ -185,12 +191,12 @@ public final class CreditCardViewController: UIViewController {
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        slidingCover.frame = view.bounds
-        blinkingCover.frame = view.bounds.insetBy(dx: +50, dy: +80)
-        blinkingCover.ldMask()
+        fullCover.frame = view.bounds
+        maskedCover.frame = view.bounds.insetBy(dx: +50, dy: +80)
+        maskedCover.ldMask()
         
-        applyHidingType(to: slidingCover, isHidden: true)
-        applyHidingType(to: blinkingCover, isHidden: true)
+        applyHidingType(to: fullCover, isHidden: true)
+        applyHidingType(to: maskedCover, isHidden: true)
     }
     
     // MARK: - Public prefill (optional)
@@ -340,11 +346,11 @@ public final class CreditCardViewController: UIViewController {
         rotatingContentContainer.addArrangedSubview(saveButton)
         
         
-        slidingCover.backgroundColor = .clear
-        view.addSubview(slidingCover)
+        fullCover.backgroundColor = .clear
+        view.addSubview(fullCover)
        
-        blinkingCover.backgroundColor = .clear
-        view.addSubview(blinkingCover)
+        maskedCover.backgroundColor = .clear
+        view.addSubview(maskedCover)
         
 //        NSLayoutConstraint.activate([
 //            cover.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -404,11 +410,11 @@ public final class CreditCardViewController: UIViewController {
         case .isHidden:
             view.isHidden = isHidden
             view.alpha = 1.0
-            view.backgroundColor = (view === blinkingCover || view === slidingCover) ? .clear : view.backgroundColor
+            view.backgroundColor = (view === maskedCover || view === fullCover) ? .clear : view.backgroundColor
         case .alpha:
             view.isHidden = false
             view.alpha = isHidden ? 0.0 : 1.0
-            view.backgroundColor = (view === blinkingCover || view === slidingCover) ? .clear : view.backgroundColor
+            view.backgroundColor = (view === maskedCover || view === fullCover) ? .clear : view.backgroundColor
         case .clearBackroundColor:
             view.isHidden = false
             view.alpha = 1.0
@@ -638,6 +644,7 @@ import SwiftUI
 
 enum TestAnimation {
     case blink
+    case blinkCover
     case slideInFromBottom
     case slideInFromRight
     case rotate
@@ -691,6 +698,11 @@ struct MaskingCreditCardUIKitView: View {
                         testAnimation = (testAnimation == .rotate) ? .blink : .rotate
                     } label: {
                         Image(systemName: "eye")
+                    }
+                    Button {
+                        testAnimation = (testAnimation == .rotate) ? .blinkCover : .rotate
+                    } label: {
+                        Image(systemName: "eye.fill")
                     }
                     Button {
                         testAnimation = (testAnimation == .rotate) ? .slideInFromBottom : .rotate
