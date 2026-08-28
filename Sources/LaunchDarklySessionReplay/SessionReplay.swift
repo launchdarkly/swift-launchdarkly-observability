@@ -31,9 +31,10 @@ public final class SessionReplay: Plugin {
     /// Builds the replay service against the installed observability pipeline and publishes it
     /// through ``LDReplay``.
     ///
-    /// Registering this plugin with a ``LDClient`` calls this for you. Call it directly to run
-    /// replay with no feature-flag SDK in the app. Observability must be installed first: replay
-    /// records against its pipeline and shares its session.
+    /// ``LDObserve/configure(mobileKey:observability:replay:imageCaptureService:customSessionId:)``
+    /// and its `ldClient` counterpart call this for you, as does registering this plugin with a
+    /// ``LDClient``. Observability must be installed first: replay records against its pipeline and
+    /// shares its session.
     public func install() {
         guard let context = LDObserve.shared.context else {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service could not find Observability Service")

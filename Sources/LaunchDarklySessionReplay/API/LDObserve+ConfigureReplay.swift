@@ -14,16 +14,16 @@ public extension LDObserve {
     ///
     /// - Parameters:
     ///   - mobileKey: Credential for the LaunchDarkly environment telemetry is sent to.
-    ///   - replay: Session Replay configuration.
     ///   - observability: Pipeline and instrumentation configuration.
+    ///   - replay: Session Replay configuration.
     ///   - imageCaptureService: Capture implementation for Session Replay. `nil` uses the built-in
     ///     screenshot capture.
     ///   - customSessionId: Session id to adopt instead of generating one, so this instance can
     ///     share a single `session.id` with another LaunchDarkly SDK on the device.
     static func configure(
         mobileKey: String,
-        replay: SessionReplayOptions,
         observability: ObservabilityOptions = ObservabilityOptions(),
+        replay: SessionReplayOptions,
         imageCaptureService: ImageCaptureServicing? = nil,
         customSessionId: String? = nil
     ) {
@@ -41,8 +41,8 @@ public extension LDObserve {
     ///   - context: The context `ldClient` was started with. The client identifies it before this
     ///     call can attach a hook, so it is identified here instead; without it the session would
     ///     be recorded as `unknown` until the app's next `identify`.
-    ///   - replay: Session Replay configuration.
     ///   - observability: Pipeline and instrumentation configuration.
+    ///   - replay: Session Replay configuration.
     ///   - imageCaptureService: Capture implementation for Session Replay. `nil` uses the built-in
     ///     screenshot capture.
     ///   - customSessionId: Session id to adopt instead of generating one, so this instance can
@@ -50,14 +50,16 @@ public extension LDObserve {
     static func configure(
         ldClient: LDClient,
         context: LDContext,
-        replay: SessionReplayOptions,
         observability: ObservabilityOptions = ObservabilityOptions(),
+        replay: SessionReplayOptions,
         imageCaptureService: ImageCaptureServicing? = nil,
         customSessionId: String? = nil
     ) {
         ldClient.registerPlugin(Observability(options: observability, customSessionId: customSessionId))
-        ldClient.registerPlugin(SessionReplay(options: replay, imageCaptureService: imageCaptureService))
-        // Seeded only once replay is registered: the identify is broadcast, not buffered, so a
+        // Replay contributes no hooks and reads nothing off the client, so registering it as a
+        // plugin would do no more than forward to this install. Both paths install it the same way.
+        SessionReplay(options: replay, imageCaptureService: imageCaptureService).install()
+        // Seeded only once replay is installed: the identify is broadcast, not buffered, so a
         // replay service that does not exist yet would never see it.
         LDObserve.shared.identify(seeding: context)
     }
