@@ -128,6 +128,9 @@ public struct ObservabilityOptions {
         public static var enabled: Self {
             .init()
         }
+        public static var disabled: Self {
+            .init(source: .none)
+        }
         
         public init(source: CrashReportingSource = .KSCrash) {
             self.source = source
@@ -334,7 +337,7 @@ public struct ObservabilityOptions {
         tracesApi: AppTracing = .enabled,
         metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
-        crashReporting: CrashReporting = .enabled,
+        crashReporting: CrashReporting = .disabled,
         instrumentation: Instrumentation = .init(),
         analytics: Analytics = .init()
     ) {
