@@ -10,12 +10,14 @@ import Common
 /// Takes only simple Swift types — no Hook protocol, no @objc.
 /// Both ObservabilityHook (native Swift) and ObservabilityHookProxy (C# bridge)
 /// delegate here so the tracing logic is written exactly once.
-/// Receives track events and identify context keys so the single span emitter
-/// (`ObservabilityService`) can produce `track` spans and cache context keys.
+/// Receives track events and identified contexts so the single span emitter
+/// (`ObservabilityService`) can produce `track` spans, cache context keys, and broadcast
+/// identifies to in-process consumers.
 protocol TrackEmitting: AnyObject {
     func track(name: String, metricValue: Double?, attributes: [String: AttributeValue],
                contextKeyAttributes: [String: AttributeValue]?)
-    func updateCachedContextKeys(_ contextKeys: [String: String])
+    func recordIdentify(contextKeys: [String: String], canonicalKey: String,
+                        attributes: [String: AttributeValue])
 }
 
 final class ObservabilityHookExporter {
@@ -138,22 +140,33 @@ extension ObservabilityHookExporter: ObservabilityHookExporting {
 
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool) {
         guard completed else { return }
-        // Cache context keys so the manual track path can attribute events.
-        trackEmitter?.updateCachedContextKeys(contextKeys)
+        sendAfterIdentify(contextKeys: contextKeys, canonicalKey: canonicalKey, attributes: [:])
+    }
 
-        var attributes = [String: AttributeValue]()
+    /// Shared identify implementation. The `afterIdentify` hook reaches it with the context it was
+    /// given, and the manual `LDObserve.identify` API reaches it directly, so an identify is
+    /// recorded the same way whether or not an `LDClient` produced it.
+    /// - Parameter attributes: caller-supplied identity attributes. Only the manual API carries
+    ///   these; they annotate the identify log but are not cached onto later spans.
+    func sendAfterIdentify(contextKeys: [String: String], canonicalKey: String,
+                           attributes: [String: AttributeValue]) {
+        // Cache the context keys (so the manual track path can attribute events) and broadcast, so
+        // in-process consumers such as Session Replay see every identify path.
+        trackEmitter?.recordIdentify(contextKeys: contextKeys, canonicalKey: canonicalKey, attributes: attributes)
+
+        var logAttributes = attributes
         for (k, v) in contextKeys {
-            attributes[k] = .string(v)
+            logAttributes[k] = .string(v)
         }
         let friendlyName = options.contextFriendlyName ?? canonicalKey
-        attributes["key"] = .string(friendlyName)
-        attributes["canonicalKey"] = .string(canonicalKey)
-        attributes[Self.IDENTIFY_RESULT_STATUS] = .string("completed")
+        logAttributes["key"] = .string(friendlyName)
+        logAttributes["canonicalKey"] = .string(canonicalKey)
+        logAttributes[Self.IDENTIFY_RESULT_STATUS] = .string("completed")
 
         logClient.recordLog(
             message: "LD.identify",
             severity: .info,
-            attributes: attributes
+            attributes: logAttributes
         )
     }
 

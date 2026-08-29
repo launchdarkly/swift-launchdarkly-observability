@@ -4,7 +4,8 @@ import LaunchDarkly
 public final class LDReplay {
     public static var shared = LDReplay()
 
-    /// Hook proxy for the C# / MAUI bridge. Set by the SessionReplay plugin during getHooks().
+    /// Hook proxy for the C# / MAUI bridge, whose LaunchDarkly client lives outside this SDK and so
+    /// reaches Session Replay through here rather than through an in-process hook.
     public var hookProxy: SessionReplayHookProxy? {
         client.map { SessionReplayHookProxy(sessionReplayService: $0) }
     }

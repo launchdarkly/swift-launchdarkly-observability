@@ -5,73 +5,63 @@ import LaunchDarklySessionReplay
 
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
+
+    /// Which setup launch runs: standalone observability (``initIndependently()``) or observability
+    /// attached to an initialized `LDClient` (``initWithFlagClient()``). Flip it to exercise the app
+    /// without the flagging SDK, which also hides the menu's LDClient-driven controls.
+    var isIndependent = false
+
+    private let secrets = Bundle.main.infoDictionary ?? [:]
+
+    private lazy var mobileKey: String = {
+        guard let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
+            fatalError("Missing mobileKey in Info.plist. See Secrets.xcconfig.example.")
+        }
+        return mobileKey
+    }()
+
+    private lazy var observabilityOptions = ObservabilityOptions(
+        isEnabled: true,
+        serviceName: "observability-ios-test-app",
+        otlpEndpoint: secrets["otlpEndpoint"] as? String,
+        backendUrl: secrets["backendUrl"] as? String,
+        resourceAttributes: ["test-options-attribute": .string("ios-test-app")],
+        sessionBackgroundTimeout: 3,
+        crashReporting: .enabled
+    )
+
+    private let replayOptions = SessionReplayOptions(
+        isEnabled: true,
+        privacy: .init(
+            maskTextInputs: true,
+            maskWebViews: true,
+            maskLabels: false,
+            maskImages: false,
+            maskAccessibilityIdentifiers: ["email-field", "password-field", "card-brand-chip", "10"]
+        )
+    )
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
-    ) -> Bool {        
-        guard let secrets = Bundle.main.infoDictionary,
-              let mobileKey = secrets["mobileKey"] as? String, !mobileKey.isEmpty else {
-            fatalError("Missing mobileKey in Info.plist. See Secrets.xcconfig.example.")
+    ) -> Bool {
+        if isIndependent {
+            initIndependently()
+        } else {
+            initWithFlagClient()
         }
-        let otlpEndpoint = secrets["otlpEndpoint"] as? String
-        let backendUrl = secrets["backendUrl"] as? String
-        let config = { () -> LDConfig in
-            var config = LDConfig(
-                    mobileKey: mobileKey,
-                    autoEnvAttributes: .enabled
-                )
-            config.plugins = [
-                Observability(options: .init(
-                    isEnabled: true,
-                    serviceName: "observability-ios-test-app",
-                    otlpEndpoint: otlpEndpoint,
-                    backendUrl: backendUrl,
-                    resourceAttributes: ["test-options-attribute": .string("ios-test-app")],
-                    sessionBackgroundTimeout: 3,
-                    crashReporting: .enabled
-                   )),
-                SessionReplay(options: .init(
-                    isEnabled: true,
-                    privacy: .init(
-                        maskTextInputs: true,
-                        maskWebViews: true,
-                        maskLabels: false,
-                        maskImages: false,
-                        maskAccessibilityIdentifiers: ["email-field", "password-field", "card-brand-chip", "10"],
-                    )
-                ))
-            ]
-            
-            return config
-        }()
-//        
-//        let config = { () -> LDConfig in
-//            var config = LDConfig(
-//                    mobileKey: mobileKey,
-//                    autoEnvAttributes: .enabled
-//                )
-//            config.plugins = [
-//                Observability(options: .init(
-//                    isEnabled: true,
-//                    serviceName: "observability-ios-test-app",
-//                    instrumentation: .disabled,
-//                   )),
-//            ]
-//            return config
-//        }()
-        
-        let context = { () -> LDContext in
-            var contextBuilder = LDContextBuilder(
-                key: "12345"
-            )
-            contextBuilder.kind("user")
-            do {
-                return try contextBuilder.build().get()
-            } catch {
-                abort()
-            }
-        }()
-        
+
+        return true
+    }
+
+    // example on creating OBS/SR with flagging sdk
+    func initWithFlagClient() {
+        let config = LDConfig(
+            mobileKey: mobileKey,
+            autoEnvAttributes: .enabled
+        )
+
+        let context = makeContext()
 
         let completion = { (timedOut: Bool) -> Void in
             if timedOut {
@@ -86,17 +76,50 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             startWaitSeconds: 5.0,
             completion: completion
         )
-        
-        flagEvaluation()
 
-        return true
+        guard let ldClient = LDClient.get() else {
+            fatalError("LDClient.start did not produce a client.")
+        }
+
+        // Set up before any flag is evaluated below, so the evaluation is instrumented.
+        LDObserve.configure(
+            ldClient: ldClient,
+            context: context,
+            observability: observabilityOptions,
+            replay: replayOptions
+        )
+
+        flagEvaluation()
     }
-    
-  
+
+    // example on creating OBS/SR without flagging
+    func initIndependently() {
+        LDObserve.configure(
+            mobileKey: mobileKey,
+            observability: observabilityOptions,
+            replay: replayOptions
+        )
+
+        // No client to identify the user, so telemetry and the replay session are attributed here.
+        LDObserve.shared.identify(key: "12345")
+    }
+
+    private func makeContext() -> LDContext {
+        var contextBuilder = LDContextBuilder(
+            key: "12345"
+        )
+        contextBuilder.kind("user")
+        do {
+            return try contextBuilder.build().get()
+        } catch {
+            abort()
+        }
+    }
+
     lazy var client = LDClient.get()!
     let flagKey = "feature1"
     lazy var flagObserverOwner = flagKey as LDObserverOwner
-  
+
     func flagEvaluation() {
         let key = flagKey
         let value = client.boolVariation(forKey: key, defaultValue: false)

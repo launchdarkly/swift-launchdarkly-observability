@@ -23,6 +23,7 @@ open class ObservabilityPlugin: Plugin {
 
     private let options: ObservabilityOptions
     private let instrumenting: ObservabilityInstrumenting?
+    private let customSessionId: String?
     let observabilityHook = ObservabilityHook()
     public private(set) var observabilityService: ObservabilityService?
     public var distroAttributes: [String: String]
@@ -34,13 +35,18 @@ open class ObservabilityPlugin: Plugin {
     ///     distribution produced the telemetry.
     ///   - instrumenting: Supplies the automatic instrumentation. `nil` installs nothing into
     ///     the host app, leaving only the manual recording API.
+    ///   - customSessionId: Session id to adopt instead of generating one, so this instance can
+    ///     share a single `session.id` with another LaunchDarkly SDK on the device. `nil`
+    ///     generates one.
     public init(
         options: ObservabilityOptions,
         distroName: String,
-        instrumenting: ObservabilityInstrumenting? = nil
+        instrumenting: ObservabilityInstrumenting? = nil,
+        customSessionId: String? = nil
     ) {
         self.options = options
         self.instrumenting = instrumenting
+        self.customSessionId = customSessionId
         self.distroAttributes = [
             SemanticConvention.telemetryDistroName: distroName,
             SemanticConvention.telemetryDistroVersion: sdkVersion
@@ -52,13 +58,29 @@ open class ObservabilityPlugin: Plugin {
     }
 
     open func register(client: LDClient, metadata: EnvironmentMetadata) {
-        let mobileKey = metadata.credential
+        // Only this path has a client, so it is what distinguishes an installation that instruments
+        // the flagging SDK from a standalone one.
+        LDObserve.shared.markFlagClientInitialized()
+        install(mobileKey: metadata.credential, sdkMetadata: metadata.sdkMetadata)
+    }
 
+    /// Builds the pipeline and publishes it through ``LDObserve``, so the recording API starts
+    /// working.
+    ///
+    /// Registering this plugin with a ``LDClient`` calls this for you. Call it directly to run
+    /// observability on its own, with no feature-flag SDK in the app.
+    ///
+    /// - Parameters:
+    ///   - mobileKey: Credential for the LaunchDarkly environment telemetry is sent to.
+    ///   - sdkMetadata: The feature-flag SDK this pipeline is attached to, reported as
+    ///     `launchdarkly.sdk.version`. `nil` omits that attribute, which is what an app running
+    ///     without the flagging SDK should report.
+    public func install(mobileKey: String, sdkMetadata: SdkMetadata? = nil) {
         var options = options
         var resourceAttributes = options.resourceAttributes
         var customHeaders = options.customHeaders
 
-        add(metadata: metadata, into: &resourceAttributes)
+        add(mobileKey: mobileKey, sdkMetadata: sdkMetadata, into: &resourceAttributes)
         let sessionAttributes = makeSessionAttributes()
 
         customHeaders[SemanticConvention.highlightProjectId] = mobileKey
@@ -87,7 +109,11 @@ open class ObservabilityPlugin: Plugin {
             observabilityHook.delegate = service.hookExporter
 
             if options.isEnabled {
-                service.start()
+                if let customSessionId {
+                    service.start(sessionId: customSessionId)
+                } else {
+                    service.start()
+                }
             }
         } catch {
             os_log("%{public}@", log: options.log, type: .error, "Observability client initialization failed with error: \(error)")
@@ -115,11 +141,13 @@ extension ObservabilityPlugin {
         return sessionAttributes
     }
 
-    func add(metadata: EnvironmentMetadata, into resourceAttributes: inout [String: AttributeValue]) {
+    func add(mobileKey: String, sdkMetadata: SdkMetadata?, into resourceAttributes: inout [String: AttributeValue]) {
         resourceAttributes[SemanticConvention.serviceName] = .string(options.serviceName)
         resourceAttributes[SemanticConvention.serviceVersion] = .string(options.serviceVersion)
-        resourceAttributes[SemanticConvention.launchdarklySdkVersion] = .string(String(format: "%@/%@", metadata.sdkMetadata.name, metadata.sdkMetadata.version))
-        resourceAttributes[SemanticConvention.highlightProjectId] = .string(metadata.credential)
+        if let sdkMetadata {
+            resourceAttributes[SemanticConvention.launchdarklySdkVersion] = .string(String(format: "%@/%@", sdkMetadata.name, sdkMetadata.version))
+        }
+        resourceAttributes[SemanticConvention.highlightProjectId] = .string(mobileKey)
         resourceAttributes[SemanticConvention.telemetrySdkName] = .string("opentelemetry")
         for (key, value) in distroAttributes {
             resourceAttributes[key] = .string(value)
