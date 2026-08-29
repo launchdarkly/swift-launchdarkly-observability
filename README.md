@@ -16,7 +16,7 @@ same OTLP pipeline, and differ only in how much they hook into your app.
 | Flag evaluation, identify and track hooks | yes | yes |
 | Session management | yes | yes |
 | Automatic instrumentation | yes | none |
-| Crash reporting (KSCrash / MetricKit) | yes | none |
+| Crash reporting (KSCrash / MetricKit) | opt-in | none |
 
 Pick `LaunchDarklyOtel` when your app already runs another observability SDK. It installs no
 method swizzling and no crash handlers, so the two can't fight over the same hooks — it records
@@ -31,7 +31,7 @@ Pick `LaunchDarklyObservability` otherwise, for the automatic instrumentation be
 The iOS observability plugin automatically instruments:
 - **Activity Lifecycle**: `app_foreground` / `app_background` spans on lifecycle transitions, plus matching Session Replay `Foreground` / `Background` breadcrumbs
 - **HTTP Requests**: URLSession requests
-- **Crash Reporting**: Automatic crash reporting, symbolicated for released builds (see [Symbolicating Crashes](#symbolicating-crashes))
+- **Crash Reporting**: Opt-in through `crashReporting`, symbolicated for released builds (see [Symbolicating Crashes](#symbolicating-crashes))
 - **Feature Flag Evaluations**: Evaluation events added to your spans.
 - **Session Management**: User session tracking and background timeout handling
 - **Taps**: A `click` span for each tap interaction
@@ -629,7 +629,8 @@ the names and line numbers live in the dSYM Xcode set aside at build time and ne
 ship with the app. Upload that dSYM and LaunchDarkly turns those addresses back into
 functions, `file:line`, and the frames the optimizer inlined away.
 
-Nothing is needed in your code: crash reporting is on by default, and a frame is
+Crash reporting is off by default, so set `crashReporting: .enabled` on
+`ObservabilityOptions` to install KSCrash. Nothing else is needed: a frame is
 matched to its dSYM by the binary's build UUID, so there is no version or identifier
 to keep in step. What is needed is that the dSYM gets uploaded, which is worth doing
 from the build that produced it.
