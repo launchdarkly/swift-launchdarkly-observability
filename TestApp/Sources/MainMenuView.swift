@@ -297,6 +297,11 @@ struct MainMenuView: View {
                     .buttonStyle(.borderedProminent)
                     .ldClick("track.nested")
             }
+            Button("Eval+Track+Kill (5s)") { viewModel.evalTrackFlushThenKill() }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .ldClick("track.eval_track_kill")
+                .accessibilityIdentifier("track.eval_track_kill_button")
 
             Text("Error")
                 .fontWeight(.bold)

@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import LaunchDarkly
 import LaunchDarklyObservability
@@ -117,6 +118,19 @@ final class MainMenuViewModel: ObservableObject {
 		)
 	}
 	
+	/// Reproduces in-memory event loss: evaluate (exposure) and track (stand-in
+	/// for an error), flush, wait 65s, then SIGKILL. Backgrounding the app would
+	/// run the SDK's background flush, so this kills the process instead.
+	func evalTrackFlushThenKill() {
+		let client = LDClient.get()
+		_ = client?.boolVariation(forKey: "kill-flag", defaultValue: false)
+		client?.track(key: "$ld:telemetry:error")
+		client?.flush()
+		DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+			kill(getpid(), SIGKILL)
+		}
+	}
+
 	func trackViaLDClient() {
 		// Records a track span automatically via the Observability afterTrack hook.
 		LDClient.get()?.track(
