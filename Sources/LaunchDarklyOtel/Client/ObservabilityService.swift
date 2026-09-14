@@ -52,6 +52,11 @@ public final class ObservabilityService: InternalObserve {
     /// entry path (automatic tap detection or the manual `trackClick` API, which embedders such as
     /// Flutter use to report taps they resolved in their own widget tree).
     private let clickSubject = PassthroughSubject<ClickEvent, Never>()
+    /// Serializes sends on [clickSubject]. Clicks are the one broadcast with two routine producers on
+    /// different threads - automatic taps arrive from the background touch interpreter while an
+    /// embedder's `trackClick` lands on the main thread - so their sends are funneled here instead of
+    /// relying on whatever ordering two concurrent callers happen to get.
+    private let clickBroadcastQueue = DispatchQueue(label: "com.launchdarkly.observability.service.click")
     /// Broadcasts each `track` event so Session Replay can emit a `Track` event regardless of the
     /// entry path (`LDClient.track` or the manual `LDObserve.track` API).
     private let trackSubject = PassthroughSubject<TrackEvent, Never>()
@@ -485,8 +490,12 @@ extension ObservabilityService: Observe {
     /// the reserved `event.*` fields so they can never clobber the taxonomy.
     public func recordClick(_ click: ClickEvent, properties: [String: AttributeValue]) {
         // Broadcast so Session Replay can record a `Click` event for every click path, independent
-        // of the span flags below (mirrors the `Navigate` broadcast in recordScreenView).
-        clickSubject.send(click)
+        // of the span flags below (mirrors the `Navigate` broadcast in recordScreenView). Serialized
+        // because both click producers run on their own threads; subscribers only enqueue work, so
+        // delivering them from here can't re-enter this queue.
+        clickBroadcastQueue.sync {
+            clickSubject.send(click)
+        }
 
         guard options.analytics.taps.isEnabled else { return }
         guard options.tracesApi.includeSpans else { return }
