@@ -42,8 +42,8 @@ public final class UserInteractionManager: UserInteractionManaging, Instrumentat
     init(
         options: ObservabilityOptions,
         sessionManaging: SessionManaging,
+        resolveTouchTargets: Bool,
         screenInfoProvider: @escaping ScreenInfoProvider = { (nil, nil) },
-        resolveTouchTargets: Bool = true,
         yield: @escaping TouchInteractionYield
     ) {
         let targetResolver = TargetResolver()

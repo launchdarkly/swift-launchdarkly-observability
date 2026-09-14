@@ -35,15 +35,15 @@ final class DefaultInstrumentation: ObservabilityInstrumenting {
         let manager = UserInteractionManager(
             options: options,
             sessionManaging: runtime.session,
+            // Tap detection is the only consumer of the resolved target, so don't hit-test the view
+            // hierarchy on every touch just to record pointer trails for Session Replay.
+            resolveTouchTargets: userTapsEnabled,
             // The active screen is read once at tap time and stamped onto the interaction, so the
             // OTel span here and the Session Replay click event report the identical screen.
             screenInfoProvider: { [weak runtime] in
                 let screen = runtime?.currentScreen
                 return (screen?.id, screen?.name)
-            },
-            // Tap detection is the only consumer of the resolved target, so don't hit-test the view
-            // hierarchy on every touch just to record pointer trails for Session Replay.
-            resolveTouchTargets: userTapsEnabled
+            }
         ) { [weak runtime] interaction in
             guard userTapsEnabled else { return }
             // Correlate the tap with the active screen (taxonomy §4.1 `event.screen_id`), then hand

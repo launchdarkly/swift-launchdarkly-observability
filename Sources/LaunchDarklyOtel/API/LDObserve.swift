@@ -4,6 +4,10 @@ import LaunchDarkly
 public final class LDObserve  {
     private let clientQueue = DispatchQueue(label: "com.launchdarkly.LDObserve.client")
     private var _client: Observe
+    /// Latest ``setEmbedderClickHandling(_:)`` request, retained because the embedder installs its
+    /// click detection independently of - and typically before - observability initialization. Guarded
+    /// by `clientQueue`, like the client it is applied to.
+    private var _embedderHandlesClicks = false
     var client: Observe {
         get {
             clientQueue.sync {
@@ -14,6 +18,10 @@ public final class LDObserve  {
             clientQueue.sync(flags: .barrier) {
                 _client = newValue
             }
+            // Store the client before applying, so a concurrent `setEmbedderClickHandling` either sees
+            // it and writes through itself or records its value before the read below: both orderings
+            // leave the manager agreeing with the last request rather than with whoever raced last.
+            applyEmbedderClickHandling(to: newValue.context)
         }
     }
     public static let shared = LDObserve()
@@ -44,8 +52,23 @@ extension LDObserve {
     /// Called by the embedder's plugin when its click detection is installed, and again with `false`
     /// when it is torn down: until then native keeps reporting its own coarse clicks, so a missing
     /// embedder integration degrades rather than silently dropping every click.
+    ///
+    /// Safe to call before observability is initialized - the embedder's plugin usually boots first -
+    /// because the request is retained and applied once a client is installed. Without that, an early
+    /// handshake would be lost and every tap would be reported twice: once coarsely by native
+    /// detection and once by the embedder.
     public func setEmbedderClickHandling(_ enabled: Bool) {
-        (context ?? client.context)?.userInteractionManager?.embedderHandlesClicks = enabled
+        clientQueue.sync(flags: .barrier) {
+            _embedderHandlesClicks = enabled
+        }
+        applyEmbedderClickHandling(to: context ?? client.context)
+    }
+
+    /// Applies the retained ``setEmbedderClickHandling(_:)`` request to [context]'s tap detection, if
+    /// there is any yet. Re-reads the request so the manager always ends up with the newest value.
+    private func applyEmbedderClickHandling(to context: ObservabilityContext?) {
+        guard let userInteractionManager = context?.userInteractionManager else { return }
+        userInteractionManager.embedderHandlesClicks = clientQueue.sync { _embedderHandlesClicks }
     }
 }
 
