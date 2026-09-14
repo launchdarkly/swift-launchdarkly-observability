@@ -5,8 +5,12 @@ public final class LDObserve  {
     private let clientQueue = DispatchQueue(label: "com.launchdarkly.LDObserve.client")
     private var _client: Observe
     /// Latest ``setEmbedderClickHandling(_:)`` request, retained because the embedder installs its
-    /// click detection independently of - and typically before - observability initialization. Guarded
-    /// by `clientQueue`, like the client it is applied to.
+    /// click detection independently of - and typically before - observability initialization.
+    ///
+    /// Guarded by `clientQueue` together with the copy onto the tap detection it configures: reading
+    /// the request and writing it through have to be one step, or a request arriving between the two
+    /// would be applied and then immediately overwritten by the older value for the rest of the
+    /// session.
     private var _embedderHandlesClicks = false
     var client: Observe {
         get {
@@ -17,11 +21,8 @@ public final class LDObserve  {
         set {
             clientQueue.sync(flags: .barrier) {
                 _client = newValue
+                newValue.context?.userInteractionManager?.embedderHandlesClicks = _embedderHandlesClicks
             }
-            // Store the client before applying, so a concurrent `setEmbedderClickHandling` either sees
-            // it and writes through itself or records its value before the read below: both orderings
-            // leave the manager agreeing with the last request rather than with whoever raced last.
-            applyEmbedderClickHandling(to: newValue.context)
         }
     }
     public static let shared = LDObserve()
@@ -58,17 +59,13 @@ extension LDObserve {
     /// handshake would be lost and every tap would be reported twice: once coarsely by native
     /// detection and once by the embedder.
     public func setEmbedderClickHandling(_ enabled: Bool) {
+        // Read the published context outside the queue; `_client` is read inside it, since going
+        // through `client` there would re-enter the same serial queue and deadlock.
+        let publishedContext = context
         clientQueue.sync(flags: .barrier) {
             _embedderHandlesClicks = enabled
+            (publishedContext ?? _client.context)?.userInteractionManager?.embedderHandlesClicks = enabled
         }
-        applyEmbedderClickHandling(to: context ?? client.context)
-    }
-
-    /// Applies the retained ``setEmbedderClickHandling(_:)`` request to [context]'s tap detection, if
-    /// there is any yet. Re-reads the request so the manager always ends up with the newest value.
-    private func applyEmbedderClickHandling(to context: ObservabilityContext?) {
-        guard let userInteractionManager = context?.userInteractionManager else { return }
-        userInteractionManager.embedderHandlesClicks = clientQueue.sync { _embedderHandlesClicks }
     }
 }
 
