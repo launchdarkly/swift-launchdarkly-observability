@@ -65,14 +65,27 @@ final class InputCaptureCoordinator {
     private let receiverChecker: UIEventReceiverChecker
     private let sessionIdProvider: @Sendable () -> String
     private let screenInfoProvider: ScreenInfoProvider
+    /// Whether to describe the view under each tracked-window touch. Resolution hit-tests the view
+    /// hierarchy on the main thread, so it is only worth doing when something reads the result: tap
+    /// detection is the sole consumer, while Session Replay needs only the coordinates for its pointer
+    /// trails.
+    private let resolveTouchTargets: Bool
     var onTouch: TouchInteractionYield?
     var onPress: PressInteractionYield?
+
+    /// See ``UserInteractionManaging/embedderHandlesClicks``.
+    var embedderHandlesClicks: Bool {
+        get { targetResolver.embedderHandlesClicks }
+        set { targetResolver.embedderHandlesClicks = newValue }
+    }
 
     init(targetResolver: TargetResolving = TargetResolver(),
          receiverChecker: UIEventReceiverChecker = UIEventReceiverChecker(),
          sessionIdProvider: @Sendable @escaping () -> String,
-         screenInfoProvider: @escaping ScreenInfoProvider = { (nil, nil) }) {
+         screenInfoProvider: @escaping ScreenInfoProvider = { (nil, nil) },
+         resolveTouchTargets: Bool = true) {
         self.targetResolver = targetResolver
+        self.resolveTouchTargets = resolveTouchTargets
         self.touchInterpreter = TouchInterpreter()
         self.pressInterpreter = PressInterpreter()
         self.source = UIWindowSwizzleSource()
@@ -170,7 +183,7 @@ final class InputCaptureCoordinator {
         // during dispatch.
         for touch in touches {
             let target: TouchTarget?
-            if touch.phase == .began || touch.phase == .ended {
+            if resolveTouchTargets, touch.phase == .began || touch.phase == .ended {
                 target = targetResolver.resolve(view: touch.view, window: window, event: event)
             } else {
                 target = nil

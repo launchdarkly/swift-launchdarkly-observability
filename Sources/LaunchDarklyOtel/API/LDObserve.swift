@@ -32,6 +32,21 @@ extension LDObserve {
     public func start() {
         client.start()
     }
+
+    /// Declares whether an embedder (Flutter) resolves clicks for its own views and reports them
+    /// through ``trackClick(id:tag:classname:text:xpath:screenId:x:y:timestamp:properties:)``.
+    ///
+    /// While enabled, automatic tap detection skips taps landing on the embedder's render surface, so
+    /// each tap is reported once — by the embedder, which is the only side able to describe the element
+    /// that was actually pressed. Taps on native views elsewhere in the app (an add-to-app host's own
+    /// screens) are unaffected.
+    ///
+    /// Called by the embedder's plugin when its click detection is installed, and again with `false`
+    /// when it is torn down: until then native keeps reporting its own coarse clicks, so a missing
+    /// embedder integration degrades rather than silently dropping every click.
+    public func setEmbedderClickHandling(_ enabled: Bool) {
+        (context ?? client.context)?.userInteractionManager?.embedderHandlesClicks = enabled
+    }
 }
 
 extension LDObserve: Observe {
@@ -76,7 +91,29 @@ extension LDObserve: Observe {
         client.trackScreenView(name: name, screenClass: screenClass, screenId: screenId, category: category, properties: properties)
     }
 
-    public func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?) {
-        client.trackClick(id: id, tag: tag, text: text, screenId: screenId, x: x, y: y, properties: properties)
+    public func trackClick(
+        id: String?,
+        tag: String?,
+        classname: String?,
+        text: String?,
+        xpath: String?,
+        screenId: String?,
+        x: Int?,
+        y: Int?,
+        timestamp: TimeInterval?,
+        properties: [String: Any]?
+    ) {
+        client.trackClick(
+            id: id,
+            tag: tag,
+            classname: classname,
+            text: text,
+            xpath: xpath,
+            screenId: screenId,
+            x: x,
+            y: y,
+            timestamp: timestamp,
+            properties: properties
+        )
     }
 }

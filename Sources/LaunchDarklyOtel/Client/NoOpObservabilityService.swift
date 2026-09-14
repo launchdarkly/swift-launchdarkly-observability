@@ -1,3 +1,4 @@
+import Foundation
 import LaunchDarkly
 
 // Lightweight no-op implementation of Observe used as the default before the Observability plugin is installed.
@@ -26,7 +27,18 @@ final class NoOpObservabilityService: Observe {
 
     func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {}
 
-    func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?) {}
+    func trackClick(
+        id: String?,
+        tag: String?,
+        classname: String?,
+        text: String?,
+        xpath: String?,
+        screenId: String?,
+        x: Int?,
+        y: Int?,
+        timestamp: TimeInterval?,
+        properties: [String: Any]?
+    ) {}
 }
 
 extension NoOpObservabilityService {
