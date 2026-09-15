@@ -48,6 +48,15 @@ public final class ObservabilityService: InternalObserve {
     private let screenStack: ScreenStack
     /// Broadcasts each recorded screen view so Session Replay can emit `Navigate` events.
     private let screenViewSubject = PassthroughSubject<ScreenViewEvent, Never>()
+    /// Broadcasts each recorded click so Session Replay can emit `Click` events regardless of the
+    /// entry path (automatic tap detection or the manual `trackClick` API, which embedders such as
+    /// Flutter use to report taps they resolved in their own widget tree).
+    private let clickSubject = PassthroughSubject<ClickEvent, Never>()
+    /// Serializes sends on [clickSubject]. Clicks are the one broadcast with two routine producers on
+    /// different threads - automatic taps arrive from the background touch interpreter while an
+    /// embedder's `trackClick` lands on the main thread - so their sends are funneled here instead of
+    /// relying on whatever ordering two concurrent callers happen to get.
+    private let clickBroadcastQueue = DispatchQueue(label: "com.launchdarkly.observability.service.click")
     /// Broadcasts each `track` event so Session Replay can emit a `Track` event regardless of the
     /// entry path (`LDClient.track` or the manual `LDObserve.track` API).
     private let trackSubject = PassthroughSubject<TrackEvent, Never>()
@@ -212,6 +221,7 @@ public final class ObservabilityService: InternalObserve {
             transportService: transportService,
             sessionAttributes: sessionAttributes,
             screenViews: screenViewSubject.eraseToAnyPublisher(),
+            clicks: clickSubject.eraseToAnyPublisher(),
             tracks: trackSubject.eraseToAnyPublisher(),
             appLifecycleEvents: appLifecycleSubject.eraseToAnyPublisher()
         )
@@ -414,43 +424,98 @@ extension ObservabilityService: Observe {
         )
     }
 
-    /// Manually emit a `click` span, mirroring the automatic tap instrumentation. Use this
-    /// to reproduce the taxonomy `click` event for interactions automatic capture can't observe.
+    /// Manually record a `click`, mirroring the automatic tap instrumentation. Use this to reproduce
+    /// the taxonomy `click` event for interactions automatic capture can't observe — including
+    /// embedders such as Flutter, which resolve the tapped element in their own UI tree because a
+    /// native hit-test only ever finds their single render surface.
     ///
-    /// Gated by `analytics.taps` (the same flag as automatic click spans). When `screenId` is
-    /// `nil`, the current tracked screen's id and name are used so the click correlates with the
-    /// active `screen_view`; when an explicit `screenId` is supplied, `event.screen_name` is omitted
-    /// (its name is unknown here) to avoid pairing one screen's id with another's name. Reserved
-    /// `event.*` fields take precedence over caller `properties`, matching the `screen_view`/`track`
-    /// precedence model.
-    public func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?) {
-        guard options.analytics.taps.isEnabled else { return }
-
+    /// Routes through ``recordClick(_:)``, so the click also reaches Session Replay. The span is
+    /// gated by `analytics.taps` (the same flag as automatic click spans); the replay event is not.
+    /// When `screenId` is `nil`, the current tracked screen's id and name are used so the click
+    /// correlates with the active `screen_view`; when an explicit `screenId` is supplied,
+    /// `event.screen_name` is omitted (its name is unknown here) to avoid pairing one screen's id
+    /// with another's name. Reserved `event.*` fields take precedence over caller `properties`,
+    /// matching the `screen_view`/`track` precedence model.
+    ///
+    /// - Parameter timestamp: When the click happened, in seconds since 1970. Pass this when the
+    ///   click is reported across an asynchronous boundary (an embedder bridge), so the Session
+    ///   Replay event orders with the touch samples of the gesture it belongs to rather than wherever
+    ///   the call happens to arrive. Defaults to the time of the call.
+    public func trackClick(
+        id: String?,
+        tag: String?,
+        classname: String?,
+        text: String?,
+        xpath: String?,
+        screenId: String?,
+        x: Int?,
+        y: Int?,
+        timestamp: TimeInterval?,
+        properties: [String: Any]?
+    ) {
         // Default to the current screen so the click correlates with the active `screen_view`. Only
         // pair the current screen's name when we actually defaulted to it; for a caller-supplied
         // `screenId` the matching name is unknown here, so omit `screen_name` rather than mismatch a
         // different screen's name with that id.
         let resolvedScreenName = screenId == nil ? screenStack.current : nil
 
-        let spanAttributes = ClickAttributes.build(
-            id: id,
-            tag: tag,
-            text: text,
-            screenId: screenId ?? screenStack.currentId,
-            screenName: resolvedScreenName,
-            x: x,
-            y: y,
-            contextKeyAttributes: cachedContextKeyAttributes,
+        recordClick(
+            ClickEvent(
+                tag: tag,
+                classname: classname,
+                id: id,
+                text: text,
+                xpath: xpath,
+                screenId: screenId ?? screenStack.currentId,
+                screenName: resolvedScreenName,
+                x: x,
+                y: y,
+                timestamp: timestamp ?? Date().timeIntervalSince1970
+            ),
             properties: properties?.toOtelAttributes() ?? [:]
         )
+    }
 
-        // Mirror the automatic tap span: a CLIENT-kind `click` span built via the decorator.
+    /// Single funnel for clicks. Both automatic tap detection and the manual `trackClick` API — the
+    /// path embedders such as Flutter use to report taps they resolved in their own widget tree —
+    /// route through here.
+    ///
+    /// The click broadcast (Session Replay `Click`) always fires; the `click` span is gated by
+    /// `analytics.taps`, mirroring the navigation/track/lifecycle emitters.
+    public func recordClick(_ click: ClickEvent) {
+        recordClick(click, properties: [:])
+    }
+
+    /// ``recordClick(_:)`` with caller-supplied custom attributes, applied at lower precedence than
+    /// the reserved `event.*` fields so they can never clobber the taxonomy.
+    public func recordClick(_ click: ClickEvent, properties: [String: AttributeValue]) {
+        // Broadcast so Session Replay can record a `Click` event for every click path, independent
+        // of the span flags below (mirrors the `Navigate` broadcast in recordScreenView). Serialized
+        // because both click producers run on their own threads; subscribers only enqueue work, so
+        // delivering them from here can't re-enter this queue.
+        clickBroadcastQueue.sync {
+            clickSubject.send(click)
+        }
+
+        guard options.analytics.taps.isEnabled else { return }
+        guard options.tracesApi.includeSpans else { return }
+
+        let spanAttributes = ClickAttributes.build(
+            click: click,
+            contextKeyAttributes: cachedContextKeyAttributes,
+            properties: properties
+        )
+
+        // A CLIENT-kind `click` span, built via the decorator so the span kind can be set.
         let builder = tracerDecorator.spanBuilder(spanName: SemanticConvention.clickSpanName)
         builder.setSpanKind(spanKind: .client)
         for (key, value) in spanAttributes {
             builder.setAttribute(key: key, value: value)
         }
-        builder.startSpan().end()
+        // A click reported without a gesture start is instantaneous, so anchor both ends at its own
+        // timestamp rather than letting the span start "now" and end in the past.
+        builder.setStartTime(time: Date(timeIntervalSince1970: click.startTimestamp ?? click.timestamp))
+        builder.startSpan().end(time: Date(timeIntervalSince1970: click.timestamp))
     }
 }
 

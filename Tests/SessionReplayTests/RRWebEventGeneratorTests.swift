@@ -219,38 +219,69 @@ struct RRWebEventGeneratorTests {
         #expect(payload?["pressType"] == nil)
     }
 
-    @Test("Click custom event carries screen_id and screen_name from the interaction")
+    @Test("Click custom event carries screen_id and screen_name from the click funnel")
     func appendsClickEventWithScreenIdAndName() async throws {
         let generator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
             title: "Test",
             method: .overlayTiles()
         )
-        let interaction = TouchInteraction(
-            id: 1,
-            kind: .touchUp(CGPoint(x: 10, y: 20)),
-            startTimestamp: 1.0,
+        let payload = ClickItemPayload(
+            click: ClickEvent(
+                tag: "UIButton",
+                id: "profile.save",
+                text: "Save",
+                screenId: "MyApp.ProfileViewController",
+                screenName: "Profile",
+                timestamp: 1.0
+            ),
             timestamp: 1.0,
-            target: nil,
-            sessionId: "test-session",
-            screenId: "MyApp.ProfileViewController",
-            screenName: "Profile"
+            sessionId: "test-session"
         )
-        let items: [EventQueueItem] = [EventQueueItem(payload: interaction)]
+        let items: [EventQueueItem] = [EventQueueItem(payload: payload)]
         let events = await generator.generateEvents(items: items)
-        // touchEnd IncrementalSnapshot + Click custom event
         let clickEvent = try #require(events.first { $0.type == .Custom })
         let encoded = try JSONEncoder().encode(clickEvent)
         let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
         let data = json?["data"] as? [String: Any]
         #expect(data?["tag"] as? String == "Click")
-        let payload = data?["payload"] as? [String: Any]
-        #expect(payload?["screenId"] as? String == "MyApp.ProfileViewController")
-        #expect(payload?["screenName"] as? String == "Profile")
+        let clickPayload = data?["payload"] as? [String: Any]
+        #expect(clickPayload?["clickTarget"] as? String == "UIButton")
+        #expect(clickPayload?["clickTextContent"] as? String == "Save")
+        // `clickSelector` prefers the stable id, mirroring web's `#id` else tag.
+        #expect(clickPayload?["clickSelector"] as? String == "profile.save")
+        #expect(clickPayload?["screenId"] as? String == "MyApp.ProfileViewController")
+        #expect(clickPayload?["screenName"] as? String == "Profile")
     }
 
-    @Test("Click custom event omits screen fields when the interaction has none")
+    @Test("Click custom event omits screen fields when the click has none")
     func appendsClickEventWithoutScreenInfo() async throws {
+        let generator = RRWebEventGenerator(
+            log: OSLog(subsystem: "test", category: "test"),
+            title: "Test",
+            method: .overlayTiles()
+        )
+        let payload = ClickItemPayload(
+            click: ClickEvent(tag: "UIButton", timestamp: 1.0),
+            timestamp: 1.0,
+            sessionId: "test-session"
+        )
+        let items: [EventQueueItem] = [EventQueueItem(payload: payload)]
+        let events = await generator.generateEvents(items: items)
+        let clickEvent = try #require(events.first { $0.type == .Custom })
+        let encoded = try JSONEncoder().encode(clickEvent)
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = json?["data"] as? [String: Any]
+        #expect(data?["tag"] as? String == "Click")
+        let clickPayload = data?["payload"] as? [String: Any]
+        // No id resolved, so the selector falls back to the tag.
+        #expect(clickPayload?["clickSelector"] as? String == "UIButton")
+        #expect(clickPayload?["screenId"] == nil)
+        #expect(clickPayload?["screenName"] == nil)
+    }
+
+    @Test("A touch interaction alone produces no Click event")
+    func touchInteractionEmitsNoClick() async throws {
         let generator = RRWebEventGenerator(
             log: OSLog(subsystem: "test", category: "test"),
             title: "Test",
@@ -266,14 +297,9 @@ struct RRWebEventGeneratorTests {
         )
         let items: [EventQueueItem] = [EventQueueItem(payload: interaction)]
         let events = await generator.generateEvents(items: items)
-        let clickEvent = try #require(events.first { $0.type == .Custom })
-        let encoded = try JSONEncoder().encode(clickEvent)
-        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
-        let data = json?["data"] as? [String: Any]
-        #expect(data?["tag"] as? String == "Click")
-        let payload = data?["payload"] as? [String: Any]
-        #expect(payload?["screenId"] == nil)
-        #expect(payload?["screenName"] == nil)
+        // Only the touchEnd pointer snapshot: clicks come from the funnel, so replay still draws the
+        // pointer trail but never invents a click from a raw touch.
+        #expect(events.allSatisfy { $0.type == .IncrementalSnapshot })
     }
 
     @Test("Appends Track custom event mirroring the web payload shape")

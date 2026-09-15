@@ -31,9 +31,18 @@ public final class UserInteractionManager: UserInteractionManaging, Instrumentat
     /// Resolves the active screen (`event.screen_id` / `event.screen_name`) at the instant of a tap.
     public typealias ScreenInfoProvider = @Sendable () -> (screenId: String?, screenName: String?)
 
+    public var embedderHandlesClicks: Bool {
+        get { inputCaptureCoordinator.embedderHandlesClicks }
+        set { inputCaptureCoordinator.embedderHandlesClicks = newValue }
+    }
+
+    /// - Parameter resolveTouchTargets: Whether to describe the view under each touch. Tap detection
+    ///   is the only consumer, so this follows ``ObservabilityOptions/Instrumentation/userTaps``;
+    ///   Session Replay needs only the coordinates and leaves the main-thread hit-testing off.
     init(
         options: ObservabilityOptions,
         sessionManaging: SessionManaging,
+        resolveTouchTargets: Bool,
         screenInfoProvider: @escaping ScreenInfoProvider = { (nil, nil) },
         yield: @escaping TouchInteractionYield
     ) {
@@ -43,7 +52,8 @@ public final class UserInteractionManager: UserInteractionManaging, Instrumentat
             sessionIdProvider: sessionManaging.sessionIdProvider,
             // Resolve the screen on the main thread at touch-capture time (inside the coordinator), so
             // it can't drift to a later screen by the time the background interpreter runs `onTouch`.
-            screenInfoProvider: screenInfoProvider
+            screenInfoProvider: screenInfoProvider,
+            resolveTouchTargets: resolveTouchTargets
         )
         self.inputCaptureCoordinator.onTouch = { [interactionEventSubject] interaction in
             // `interaction` already carries the screen captured on the main thread, so both the OTel

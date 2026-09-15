@@ -36,23 +36,47 @@ public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveConte
     ///     attached at lower precedence than the reserved `event.*` fields, so
     ///     they can never clobber the taxonomy.
     func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?)
-    /// Manually record a `click` event as a `click` span.
+    /// Manually record a `click` event.
     ///
     /// Use this to reproduce the taxonomy `click` event for interactions that automatic
-    /// tap capture cannot observe. Emitted through the same `analytics.taps` gate as
-    /// automatic click spans.
+    /// tap capture cannot observe — including embedders such as Flutter, which resolve the
+    /// tapped element in their own UI tree because a native hit-test only ever finds their
+    /// single render surface.
+    ///
+    /// The `click` span goes through the same `analytics.taps` gate as automatic click spans;
+    /// the matching Session Replay `Click` event is emitted regardless, so a click reported
+    /// here appears in replay exactly like an automatically detected tap.
     /// - Parameters:
     ///   - id: Stable element identifier (`event.id`).
     ///   - tag: Element tag/class (`event.tag`), e.g. `UIButton`.
+    ///   - classname: Fully-qualified element class name (`event.classname`), when the caller
+    ///     has one that is more specific than `tag`.
     ///   - text: Visible label/text of the element (`event.text`).
+    ///   - xpath: Path of the element within its UI hierarchy (`event.xpath`), e.g.
+    ///     `Scaffold/Column/ElevatedButton#checkout`.
     ///   - screenId: Stable screen id (`event.screen_id`). When `nil`, the current tracked
     ///     screen id is used so the click correlates with the active `screen_view`.
     ///   - x: Tap x coordinate in screen pixels (`event.x`).
     ///   - y: Tap y coordinate in screen pixels (`event.y`).
+    ///   - timestamp: When the click happened, in seconds since 1970. Pass this when reporting
+    ///     across an asynchronous boundary (an embedder bridge) so the Session Replay event
+    ///     orders with the touch samples of the gesture it belongs to. Defaults to the time of
+    ///     the call.
     ///   - properties: Optional custom attributes (same conversion rules as a `track`
     ///     event's `properties`). Attached at lower precedence than the reserved `event.*`
     ///     fields, so they can never clobber the taxonomy.
-    func trackClick(id: String?, tag: String?, text: String?, screenId: String?, x: Int?, y: Int?, properties: [String: Any]?)
+    func trackClick(
+        id: String?,
+        tag: String?,
+        classname: String?,
+        text: String?,
+        xpath: String?,
+        screenId: String?,
+        x: Int?,
+        y: Int?,
+        timestamp: TimeInterval?,
+        properties: [String: Any]?
+    )
 }
 
 extension Observe {
@@ -78,7 +102,42 @@ extension Observe {
     /// Convenience: record a `click` with the common element fields. The current screen id
     /// is used unless `screenId` is supplied.
     public func trackClick(id: String?, tag: String? = nil, text: String? = nil, screenId: String? = nil) {
-        trackClick(id: id, tag: tag, text: text, screenId: screenId, x: nil, y: nil, properties: nil)
+        trackClick(
+            id: id,
+            tag: tag,
+            classname: nil,
+            text: text,
+            xpath: nil,
+            screenId: screenId,
+            x: nil,
+            y: nil,
+            timestamp: nil,
+            properties: nil
+        )
+    }
+
+    /// Convenience overload preserving the pre-`classname`/`xpath` call shape.
+    public func trackClick(
+        id: String?,
+        tag: String?,
+        text: String?,
+        screenId: String?,
+        x: Int?,
+        y: Int?,
+        properties: [String: Any]?
+    ) {
+        trackClick(
+            id: id,
+            tag: tag,
+            classname: nil,
+            text: text,
+            xpath: nil,
+            screenId: screenId,
+            x: x,
+            y: y,
+            timestamp: nil,
+            properties: properties
+        )
     }
 }
 

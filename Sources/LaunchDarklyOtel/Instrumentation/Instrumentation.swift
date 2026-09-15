@@ -30,4 +30,19 @@ public protocol CrashReporting {
 public protocol UserInteractionManaging: AnyObject {
     func start()
     func stop()
+
+    /// Whether an embedder resolves clicks for its own views, in which case tap detection must stop
+    /// describing taps that land on an embedder surface.
+    ///
+    /// Flutter draws its entire UI into one `FlutterView`, so a native hit-test bottoms out there for
+    /// every tap no matter which widget was pressed. Only Dart can see the widget tree, so the Flutter
+    /// plugin resolves the target itself and reports it through `trackClick`. This flag is the
+    /// embedder's half of that handshake: it is set only once Dart's click detection is actually
+    /// installed, so an app that never installs it keeps the coarse native clicks rather than silently
+    /// reporting none.
+    ///
+    /// Scoped to the touched view rather than switching off tap detection globally, because the
+    /// embedder is not always the whole app: in an add-to-app host, native screens sit alongside a
+    /// `FlutterViewController` and must keep reporting their real targets.
+    var embedderHandlesClicks: Bool { get set }
 }
