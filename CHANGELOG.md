@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.54.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.53.1...0.54.0) (2026-09-15)
+
+
+### Features
+
+* emit every click through one funnel and let embedders report their own targets ([#274](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/274)) ([c991330](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/c9913304ac45d4eae6ffbe50b9661b6f4c6ac05f))
+
 ## [0.53.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.53.0...0.53.1) (2026-08-19)
 
 

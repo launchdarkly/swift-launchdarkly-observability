@@ -16,8 +16,12 @@ public struct TouchTarget: Sendable {
     public let rectOnScreen: CGRect
     public let rowIndex: IndexPath?
     public let sceneId: String?
-    
-    public init(className: String?, accessibilityIdentifier: String?, ldId: String? = nil, text: String? = nil, isAccessibilityElement: Bool?, rectInWindow: CGRect, rectOnScreen: CGRect, rowIndex: IndexPath?, sceneId: String?) {
+    /// True when the touch landed on an embedder surface whose contents this SDK cannot describe, so
+    /// consumers must skip the tap rather than report the surface itself. Distinct from a `nil`
+    /// `TouchTarget`, which only means resolution failed.
+    public let embedderOwned: Bool
+
+    public init(className: String?, accessibilityIdentifier: String?, ldId: String? = nil, text: String? = nil, isAccessibilityElement: Bool?, rectInWindow: CGRect, rectOnScreen: CGRect, rowIndex: IndexPath?, sceneId: String?, embedderOwned: Bool = false) {
         // Make sure we have Swift string not NSString to transer struct between threads
         self.className = className.map { String($0) }
         self.accessibilityIdentifier = accessibilityIdentifier.map { String($0) }
@@ -28,15 +32,31 @@ public struct TouchTarget: Sendable {
         self.rectOnScreen = rectOnScreen
         self.rowIndex = rowIndex
         self.sceneId = sceneId
+        self.embedderOwned = embedderOwned
     }
 }
 
-protocol TargetResolving {
+protocol TargetResolving: AnyObject {
+    /// Whether an embedder resolves clicks for its own views. See
+    /// ``UserInteractionManaging/embedderHandlesClicks``.
+    var embedderHandlesClicks: Bool { get set }
+
     func resolve(view: UIView?, window: UIWindow, event: UIEvent) -> TouchTarget?
     func resolve(press: UIPress, window: UIWindow) -> TouchTarget?
 }
 
 final class TargetResolver: TargetResolving {
+    /// Flutter's view classes. `FlutterView` is the render surface in the modern embedding; the legacy
+    /// `FlutterViewController`-hosted view and the `FlutterTextureRegistry`-era name are included so
+    /// add-to-app hosts on older embeddings are covered too.
+    private static let embedderSurfaceClassNames: Set<String> = [
+        "FlutterView",
+        "FlutterViewController",
+        "FlutterTextureView",
+    ]
+
+    var embedderHandlesClicks: Bool = false
+
     init() {
         
     }
@@ -50,7 +70,22 @@ final class TargetResolver: TargetResolving {
         guard let hitView = window.hitTest(point, with: nil) ?? view else {
             return nil
         }
-        
+
+        // A tap on an embedder surface (Flutter) is resolved by the embedder itself, so hand it off
+        // rather than describing the surface view - see `embedderHandlesClicks`.
+        if embedderHandlesClicks, isEmbedderSurface(hitView) {
+            return TouchTarget(
+                className: nil,
+                accessibilityIdentifier: nil,
+                isAccessibilityElement: nil,
+                rectInWindow: .zero,
+                rectOnScreen: .zero,
+                rowIndex: nil,
+                sceneId: window.windowScene?.session.persistentIdentifier,
+                embedderOwned: true
+            )
+        }
+
         let semanticView = nearestSemanticView(view: hitView)
         // `.ldClick` records its location in SwiftUI `.global`, which equals window coordinates for a
         // full-screen window but is screen-relative otherwise (iPad Split View / Slide Over / Stage
@@ -152,6 +187,23 @@ final class TargetResolver: TargetResolving {
         return nil
     }
     
+    /// True when [view] is a Flutter render surface or sits inside one, meaning the embedder owns
+    /// everything drawn there.
+    ///
+    /// In add-to-app hosts that subtree can be nested anywhere, so climb the ancestors rather than
+    /// testing the hit view alone. Matched by class name - like the React Native handling elsewhere in
+    /// this file - so no Flutter dependency is introduced.
+    private func isEmbedderSurface(_ view: UIView) -> Bool {
+        var current: UIView? = view
+        while let cur = current {
+            if Self.embedderSurfaceClassNames.contains(String(describing: type(of: cur))) {
+                return true
+            }
+            current = cur.superview
+        }
+        return false
+    }
+
     private func nearestSemanticView(view: UIView) -> UIView {
         var v: UIView? = view
         while let cur = v {

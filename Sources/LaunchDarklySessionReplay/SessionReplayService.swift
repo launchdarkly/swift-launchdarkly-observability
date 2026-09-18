@@ -381,6 +381,24 @@ final class SessionReplayService: SessionReplayServicing {
             }
             .store(in: &cancellables)
 
+        // Mirror the web SDK's `Click` custom event: emit one per recorded click, from the
+        // observability click funnel. This covers automatic tap detection and the manual
+        // `LDObserve.trackClick` API, which an embedder (Flutter) uses to report the element it
+        // resolved itself — the only side that can see past its single native render surface.
+        observabilityContext.clicks
+            .sink { [transportService, observabilityContext] click in
+                let sessionId = observabilityContext.sessionManager.sessionInfo.id
+                let payload = ClickItemPayload(
+                    click: click,
+                    timestamp: click.timestamp,
+                    sessionId: sessionId
+                )
+                Task {
+                    await transportService.eventQueue.send(payload)
+                }
+            }
+            .store(in: &cancellables)
+
         // Record a `Track` event for every track path (`LDClient.track` and the manual
         // `LDObserve.track` API, including standalone init without `LDClient`), which the LD
         // client hook alone misses.

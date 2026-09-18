@@ -26,6 +26,39 @@ struct ClickAttributesTests {
         #expect(attrs[SemanticConvention.eventY] == .int(818))
     }
 
+    @Test("an embedder-resolved click carries its element path and class name")
+    func includesFunnelFields() {
+        // Flutter's shape: the widget type it resolved in its own tree plus the ancestry path that
+        // locates it, which no native hit-test could have produced.
+        let attrs = ClickAttributes.build(
+            click: ClickEvent(
+                tag: "ElevatedButton",
+                classname: "PrimaryButton",
+                id: "checkout.pay",
+                text: "Pay",
+                xpath: "Scaffold/Column/ElevatedButton#checkout.pay",
+                screenId: "cart-1",
+                screenName: "Cart",
+                x: 120,
+                y: 480
+            )
+        )
+
+        #expect(attrs[SemanticConvention.eventType] == .string("click"))
+        #expect(attrs[SemanticConvention.eventTag] == .string("ElevatedButton"))
+        #expect(attrs[SemanticConvention.eventClassname] == .string("PrimaryButton"))
+        #expect(attrs[SemanticConvention.eventId] == .string("checkout.pay"))
+        #expect(attrs[SemanticConvention.eventText] == .string("Pay"))
+        #expect(
+            attrs[SemanticConvention.eventXpath]
+                == .string("Scaffold/Column/ElevatedButton#checkout.pay")
+        )
+        #expect(attrs[SemanticConvention.eventScreenId] == .string("cart-1"))
+        #expect(attrs[SemanticConvention.eventScreenName] == .string("Cart"))
+        #expect(attrs[SemanticConvention.eventX] == .int(120))
+        #expect(attrs[SemanticConvention.eventY] == .int(480))
+    }
+
     @Test("optional fields are omitted when nil")
     func omitsNilFields() {
         let attrs = ClickAttributes.build(

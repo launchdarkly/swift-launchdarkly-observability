@@ -16,6 +16,11 @@ public class ObservabilityContext {
     /// Ordered stream of recorded screen views (first screen and every change),
     /// used by Session Replay to emit `Navigate` events.
     public let screenViews: AnyPublisher<ScreenViewEvent, Never>
+    /// Ordered stream of recorded clicks from the single emitter, used by Session Replay to emit
+    /// `Click` events for every click path (automatic tap detection and the manual
+    /// `LDObserve.trackClick` API, which embedders such as Flutter use to report taps resolved in
+    /// their own widget tree).
+    public let clicks: AnyPublisher<ClickEvent, Never>
     /// Ordered stream of `track` events from the single emitter, used by Session Replay to emit
     /// `Track` events for every track path (`LDClient.track` and the manual `LDObserve.track` API).
     public let tracks: AnyPublisher<TrackEvent, Never>
@@ -45,6 +50,7 @@ public class ObservabilityContext {
         transportService: TransportServicing,
         sessionAttributes: [String: AttributeValue],
         screenViews: AnyPublisher<ScreenViewEvent, Never>,
+        clicks: AnyPublisher<ClickEvent, Never>,
         tracks: AnyPublisher<TrackEvent, Never>,
         identifies: AnyPublisher<IdentifyEvent, Never>,
         appLifecycleEvents: AnyPublisher<AppLifecycleSignal, Never>) {
@@ -55,6 +61,7 @@ public class ObservabilityContext {
             self.transportService = transportService
             self.sessionAttributes = sessionAttributes
             self.screenViews = screenViews
+            self.clicks = clicks
             self.tracks = tracks
             self.identifies = identifies
             self.appLifecycleEvents = appLifecycleEvents

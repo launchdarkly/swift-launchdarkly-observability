@@ -40,6 +40,10 @@ public protocol ObservabilityRuntime: AnyObject {
     /// Routes a detected screen into the pipeline's single `screen_view` emitter, so
     /// automatic and manual capture share `previous_screen` resolution and context-key merging.
     func recordScreenView(_ screen: ScreenView)
+    /// Routes a detected tap into the pipeline's single `click` emitter, so automatic and manual
+    /// capture (including an embedder reporting taps it resolved itself) share the same fan-out to
+    /// the `click` span and the Session Replay `Click` event.
+    func recordClick(_ click: ClickEvent)
     /// Routes a lifecycle transition into the pipeline's single app-lifecycle emitter.
     func recordAppLifecycleSignal(_ signal: AppLifecycleSignal)
     /// Routes the one-shot process-launch signal into the pipeline's `app_launch` emitter.

@@ -27,26 +27,32 @@ final class DefaultInstrumentation: ObservabilityInstrumenting {
 
     func makeUserInteractionManager(runtime: ObservabilityRuntime) -> UserInteractionManaging? {
         let options = runtime.options
-        // `instrumentation.userTaps` enables the tap-detection machinery (issuing tap events);
-        // `analytics.taps` governs whether a detected tap is published as an OTel `click` span.
-        // Capture still flows to Session Replay regardless of either flag.
+        // `instrumentation.userTaps` enables the tap-detection machinery (issuing tap events); the
+        // `click` span is gated separately by `analytics.taps`, inside the emitter below. Capture
+        // still flows to Session Replay regardless of either flag.
         let userTapsEnabled = options.instrumentation.userTaps.isEnabled
-        let publishTaps = options.analytics.taps.isEnabled
-        let tracer = runtime.tracer
 
         let manager = UserInteractionManager(
             options: options,
             sessionManaging: runtime.session,
+            // Tap detection is the only consumer of the resolved target, so don't hit-test the view
+            // hierarchy on every touch just to record pointer trails for Session Replay.
+            resolveTouchTargets: userTapsEnabled,
             // The active screen is read once at tap time and stamped onto the interaction, so the
             // OTel span here and the Session Replay click event report the identical screen.
             screenInfoProvider: { [weak runtime] in
                 let screen = runtime?.currentScreen
                 return (screen?.id, screen?.name)
             }
-        ) { interaction in
-            guard userTapsEnabled, publishTaps else { return }
-            // Correlate the tap with the active screen (taxonomy §4.1 `event.screen_id`).
-            interaction.startEndSpan(tracer: tracer, screenId: interaction.screenId, screenName: interaction.screenName)
+        ) { [weak runtime] interaction in
+            guard userTapsEnabled else { return }
+            // Correlate the tap with the active screen (taxonomy §4.1 `event.screen_id`), then hand
+            // it to the single click emitter, which fans it out to the span and to Session Replay.
+            guard let click = interaction.clickEvent(
+                screenId: interaction.screenId,
+                screenName: interaction.screenName
+            ) else { return }
+            runtime?.recordClick(click)
         }
         userInteractionManager = manager
         return manager
