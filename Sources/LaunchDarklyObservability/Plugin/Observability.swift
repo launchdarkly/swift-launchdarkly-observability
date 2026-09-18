@@ -14,7 +14,7 @@ import OSLog
 public final class Observability: ObservabilityPlugin {
     static let SDK_NAME = "swift-launchdarkly-observability"
 
-    public init(options: ObservabilityOptions) {
+    public init(options: ObservabilityOptions, customSessionId: String? = nil) {
         if options.crashReporting.source == .KSCrash {
             /// Very first thing to do, if crash reporting is enabled and it is KSCrash
             /// Then, try to install before doing anything else
@@ -27,7 +27,8 @@ public final class Observability: ObservabilityPlugin {
         super.init(
             options: options,
             distroName: Observability.SDK_NAME,
-            instrumenting: DefaultInstrumentation()
+            instrumenting: DefaultInstrumentation(),
+            customSessionId: customSessionId
         )
     }
 }

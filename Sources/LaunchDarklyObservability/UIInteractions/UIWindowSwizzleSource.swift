@@ -29,7 +29,7 @@ final class UIWindowSwizzleSource: UIEventSource, AnyObject {
                 let castedIMP = unsafeBitCast(originalIMP, to: SendEventRef.self)
                 castedIMP(window, UIWindowSwizzleSource.sendEvenSelector, event)
             }
-            
+                
             handler(event, window, dispatchOriginal)
         }
         

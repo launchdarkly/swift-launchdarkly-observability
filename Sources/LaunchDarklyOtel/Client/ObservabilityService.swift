@@ -60,6 +60,9 @@ public final class ObservabilityService: InternalObserve {
     /// Broadcasts each `track` event so Session Replay can emit a `Track` event regardless of the
     /// entry path (`LDClient.track` or the manual `LDObserve.track` API).
     private let trackSubject = PassthroughSubject<TrackEvent, Never>()
+    /// Broadcasts each identified context so Session Replay can identify the session regardless of
+    /// the entry path (`LDClient.identify` or the manual `LDObserve.identify` API).
+    private let identifySubject = PassthroughSubject<IdentifyEvent, Never>()
     /// Broadcasts each app-lifecycle signal so Session Replay can emit an `Open`/`Foreground`/
     /// `Background` breadcrumb, independent of the `analytics.appLifecycle` span flag.
     private let appLifecycleSubject = PassthroughSubject<AppLifecycleSignal, Never>()
@@ -223,6 +226,7 @@ public final class ObservabilityService: InternalObserve {
             screenViews: screenViewSubject.eraseToAnyPublisher(),
             clicks: clickSubject.eraseToAnyPublisher(),
             tracks: trackSubject.eraseToAnyPublisher(),
+            identifies: identifySubject.eraseToAnyPublisher(),
             appLifecycleEvents: appLifecycleSubject.eraseToAnyPublisher()
         )
         self.context = context
@@ -412,6 +416,13 @@ extension ObservabilityService: Observe {
               contextKeyAttributes: nil)
     }
 
+    public func identify(contextKeys: [String: String], canonicalKey: String, attributes: [String: Any]?) {
+        hookExporter.sendAfterIdentify(
+            contextKeys: contextKeys,
+            canonicalKey: canonicalKey,
+            attributes: attributes?.toOtelAttributes() ?? [:]
+        )
+    }
     public func trackScreenView(name: String, screenClass: String?, screenId: String?, category: String?, properties: [String: Any]?) {
         recordScreenView(
             ScreenView(
@@ -530,7 +541,7 @@ extension ObservabilityService: TrackEmitting {
     ) {
         // Broadcast so Session Replay can record a `Track` event for every track path, independent
         // of the trackEvents span flag below (mirrors the `Navigate` broadcast in recordScreenView).
-        // Carries only user-supplied track data, matching the previous SessionReplayHook payload.
+        // Carries only user-supplied track data, matching the cross-platform bridge's payload.
         trackSubject.send(
             TrackEvent(
                 name: name,
@@ -720,11 +731,29 @@ extension ObservabilityService: TrackEmitting {
         span.end(time: launchTime)
     }
 
-    func updateCachedContextKeys(_ contextKeys: [String: String]) {
-        var attributes = [String: AttributeValue]()
+    /// Single emitter for identifies. Both the LD `afterIdentify` hook and the manual
+    /// `LDObserve.identify` path funnel through here (via the hook exporter, which owns the
+    /// identify log).
+    ///
+    /// Caches the context keys so later `track`/`screen_view`/`click` spans are attributed to this
+    /// context, then broadcasts so Session Replay can identify the session for every identify path
+    /// (mirroring the `Track` broadcast in `track`). Caller-supplied identity attributes are
+    /// deliberately not cached: they describe the identity, not every subsequent event.
+    func recordIdentify(contextKeys: [String: String], canonicalKey: String,
+                        attributes: [String: AttributeValue]) {
+        var contextKeyAttributes = [String: AttributeValue]()
         for (k, v) in contextKeys {
-            attributes[k] = .string(v)
+            contextKeyAttributes[k] = .string(v)
         }
-        cachedContextKeyAttributes = attributes
+        cachedContextKeyAttributes = contextKeyAttributes
+
+        identifySubject.send(
+            IdentifyEvent(
+                contextKeys: contextKeys,
+                canonicalKey: canonicalKey,
+                attributes: attributes,
+                timestamp: Date().timeIntervalSince1970
+            )
+        )
     }
 }

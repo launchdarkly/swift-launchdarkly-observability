@@ -24,6 +24,10 @@ public class ObservabilityContext {
     /// Ordered stream of `track` events from the single emitter, used by Session Replay to emit
     /// `Track` events for every track path (`LDClient.track` and the manual `LDObserve.track` API).
     public let tracks: AnyPublisher<TrackEvent, Never>
+    /// Ordered stream of identified contexts from the single identify funnel, used by Session Replay
+    /// to identify the session for every path (`LDClient.identify` and the manual
+    /// `LDObserve.identify` API).
+    public let identifies: AnyPublisher<IdentifyEvent, Never>
     /// Ordered stream of app-lifecycle signals, used by Session Replay to emit
     /// `Open` / `Foreground` / `Background` breadcrumbs.
     public let appLifecycleEvents: AnyPublisher<AppLifecycleSignal, Never>
@@ -48,6 +52,7 @@ public class ObservabilityContext {
         screenViews: AnyPublisher<ScreenViewEvent, Never>,
         clicks: AnyPublisher<ClickEvent, Never>,
         tracks: AnyPublisher<TrackEvent, Never>,
+        identifies: AnyPublisher<IdentifyEvent, Never>,
         appLifecycleEvents: AnyPublisher<AppLifecycleSignal, Never>) {
             self.sdkKey = sdkKey
             self.options = options
@@ -58,6 +63,7 @@ public class ObservabilityContext {
             self.screenViews = screenViews
             self.clicks = clicks
             self.tracks = tracks
+            self.identifies = identifies
             self.appLifecycleEvents = appLifecycleEvents
         }
 
