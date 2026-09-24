@@ -4,8 +4,8 @@ import PackageDescription
 let package = Package(
     name: "swift-launchdarkly-observability",
     platforms: [
-        .iOS(.v13),
-        .tvOS(.v13)
+        .iOS(.v15),
+        .tvOS(.v15)
     ],
     products: [
         // OpenTelemetry pipeline only: records what the app asks it to and exports it,
