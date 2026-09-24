@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.55.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.54.0...0.55.0) (2026-09-24)
+
+
+### Features
+
+* add LDReplay.flush() to export queued replay events on demand ([#276](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/276)) ([9439eff](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/9439efff2e67886e680fac07d0fd999467d993e1))
+
+
+### Bug Fixes
+
+* float ios-client-sdk within 11.x and raise minimum targets to iOS 15, tvOS 15 ([#277](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/277)) ([4e4d3d5](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/4e4d3d587d8fc2719c0cc24b20781bf2712a912d))
+
 ## [0.54.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.53.1...0.54.0) (2026-09-15)
 
 
