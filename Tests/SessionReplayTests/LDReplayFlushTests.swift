@@ -30,10 +30,15 @@ struct LDReplayFlushTests {
 
     @Test("Is a no-op before Session Replay is initialized")
     func noOpWithoutService() async {
+        let detached = RecordingReplayService()
         let previous = LDReplay.shared.client
+        LDReplay.shared.client = detached
         LDReplay.shared.client = nil
         defer { LDReplay.shared.client = previous }
 
         await LDReplay.shared.flush()
+
+        #expect(LDReplay.shared.client == nil)
+        #expect(detached.flushCount == 0)
     }
 }
