@@ -20,6 +20,8 @@ protocol SessionReplayServicing: AnyObject {
 
     @MainActor
     var isRunning: Bool { get }
+
+    func flush() async
     
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool)
 
@@ -437,6 +439,12 @@ final class SessionReplayService: SessionReplayServicing {
         internalStop()
     }
     
+    /// Replay shares the observability transport, so this also exports queued logs, traces and
+    /// metrics.
+    func flush() async {
+        await transportService.batchWorker.flush()
+    }
+
     @MainActor
     private func internalStop() {
         cancellables.removeAll()
