@@ -16,7 +16,7 @@ same OTLP pipeline, and differ only in how much they hook into your app.
 | Flag evaluation, identify and track hooks | yes | yes |
 | Session management | yes | yes |
 | Automatic instrumentation | yes | none |
-| Crash reporting (KSCrash / MetricKit) | opt-in | none |
+| Crash reporting (KSCrash / MetricKit) | opt-in (KSCrash needs `LaunchDarklyCrashReporting`) | none |
 
 Pick `LaunchDarklyOtel` when your app already runs another observability SDK. It installs no
 method swizzling and no crash handlers, so the two can't fight over the same hooks — it records
@@ -31,7 +31,7 @@ Pick `LaunchDarklyObservability` otherwise, for the automatic instrumentation be
 The iOS observability plugin automatically instruments:
 - **Activity Lifecycle**: `app_foreground` / `app_background` spans on lifecycle transitions, plus matching Session Replay `Foreground` / `Background` breadcrumbs
 - **HTTP Requests**: URLSession requests
-- **Crash Reporting**: Opt-in through `crashReporting`, symbolicated for released builds (see [Symbolicating Crashes](#symbolicating-crashes))
+- **Crash Reporting**: Opt-in through `crashReporting`, symbolicated for released builds (see [Crash Reporting](#crash-reporting))
 - **Feature Flag Evaluations**: Evaluation events added to your spans.
 - **Session Management**: User session tracking and background timeout handling
 - **Taps**: A `click` span for each tap interaction
@@ -53,13 +53,16 @@ Add the Swift Package dependency in Xcode or add it to your `Package.swift`:
 .package(url: "https://github.com/launchdarkly/swift-launchdarkly-observability", branch: "main"),
 ```
 
+Then add the products you use to your target: `LaunchDarklyObservability`, plus `LaunchDarklySessionReplay` for Session Replay and `LaunchDarklyCrashReporting` for KSCrash crash reporting.
+
 ### CocoaPods
 
 Add the pods to your `Podfile`:
 
 ```ruby
 pod 'LaunchDarklyObservability'
-pod 'LaunchDarklySessionReplay'   # optional, only if using Session Replay
+pod 'LaunchDarklySessionReplay'    # optional, only if using Session Replay
+pod 'LaunchDarklyCrashReporting'   # optional, only if using KSCrash crash reporting
 ```
 
 Some transitive dependencies (e.g. LDSwiftEventSource) still declare an iOS 11.0 deployment target, which is below the minimum required by recent Xcode SDKs. Add the following `post_install` hook to your `Podfile` to raise their deployment target automatically:
@@ -622,6 +625,25 @@ LDObserve.shared.trackScreenView(name: "Profile", category: "Account", propertie
 
 Manual `trackScreenView(...)` calls work even when automatic detection (`instrumentation.screens`) is disabled. The emitted `screen_view` span is still gated by `analytics.screenViews`.
 
+### Crash Reporting
+
+Crash reporting is off by default. Crash reporters install process-wide signal and exception
+handlers, so enable one only if your app doesn't already run another crash reporter.
+
+For KSCrash, add the `LaunchDarklyCrashReporting` product (or pod) and select it:
+
+```swift
+import LaunchDarklyObservability
+import LaunchDarklyCrashReporting
+
+Observability(options: .init(crashReporting: .ksCrash))
+```
+
+KSCrash lives in its own product so that apps which don't opt in never link it.
+
+For Apple's MetricKit diagnostics, which need no extra dependency, use
+`crashReporting: .metricKit`.
+
 ### Symbolicating Crashes
 
 A crash in a released build reports each frame as a binary and an address, because
@@ -629,11 +651,10 @@ the names and line numbers live in the dSYM Xcode set aside at build time and ne
 ship with the app. Upload that dSYM and LaunchDarkly turns those addresses back into
 functions, `file:line`, and the frames the optimizer inlined away.
 
-Crash reporting is off by default, so set `crashReporting: .enabled` on
-`ObservabilityOptions` to install KSCrash. Nothing else is needed: a frame is
-matched to its dSYM by the binary's build UUID, so there is no version or identifier
-to keep in step. What is needed is that the dSYM gets uploaded, which is worth doing
-from the build that produced it.
+With `crashReporting: .ksCrash` (see [Crash Reporting](#crash-reporting)), nothing else is
+needed in code: a frame is matched to its dSYM by the binary's build UUID, so there is no
+version or identifier to keep in step. What is needed is that the dSYM gets uploaded, which is
+worth doing from the build that produced it.
 
 #### Upload from the build
 

@@ -119,20 +119,28 @@ public struct ObservabilityOptions {
         case enabled, disabled
     }
     public enum CrashReportingSource {
-        case KSCrash
+        /// Apple's MetricKit crash diagnostics. Needs no extra dependency.
         case metricKit
+        /// A crash reporter from another product, such as KSCrash from
+        /// `LaunchDarklyCrashReporting`.
+        case provider(CrashReportingProvider)
         case none
     }
     public struct CrashReporting {
         public let source: CrashReportingSource
-        public static var enabled: Self {
-            .init()
-        }
         public static var disabled: Self {
             .init(source: .none)
         }
-        
-        public init(source: CrashReportingSource = .KSCrash) {
+        public static var metricKit: Self {
+            .init(source: .metricKit)
+        }
+
+        @available(*, unavailable, message: "KSCrash moved to the LaunchDarklyCrashReporting product. Add it and use `.ksCrash`.")
+        public static var enabled: Self {
+            .init(source: .none)
+        }
+
+        public init(source: CrashReportingSource) {
             self.source = source
         }
     }
@@ -312,11 +320,11 @@ public struct ObservabilityOptions {
     ///     off. Defaults to ``AppMetrics/enabled``.
     ///   - log: The `OSLog` used for the plugin's own diagnostic output. Defaults to a logger
     ///     under subsystem `"com.launchdarkly"` and category `"LaunchDarklyObservabilityPlugin"`.
-    ///   - crashReporting: Crash-reporting configuration, including which provider to use
-    ///     (KSCrash or MetricKit). Defaults to ``CrashReporting/disabled``, since the providers
-    ///     install process-wide handlers that another crash reporter in the app would contend
-    ///     with. Pass ``CrashReporting/enabled`` for KSCrash, or `.init(source: .metricKit)` for
-    ///     MetricKit.
+    ///   - crashReporting: Crash-reporting configuration, including which provider to use.
+    ///     Defaults to ``CrashReporting/disabled``, since crash reporters install process-wide
+    ///     handlers that another crash reporter in the app would contend with. Pass
+    ///     ``CrashReporting/metricKit`` for MetricKit, or `.ksCrash` after adding the
+    ///     `LaunchDarklyCrashReporting` product for KSCrash.
     ///   - instrumentation: Per-feature toggles for automatic instrumentation (URLSession,
     ///     user taps, memory, CPU, launch times, …). Defaults to all features disabled
     ///     except user-tap detection, which is enabled.

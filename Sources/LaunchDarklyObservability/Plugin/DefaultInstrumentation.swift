@@ -147,10 +147,12 @@ final class DefaultInstrumentation: ObservabilityInstrumenting {
         let options = runtime.options
         let reporting: CrashReporting?
         switch options.crashReporting.source {
-        case .KSCrash:
-            reporting = try? KSCrashReportService(logsApi: runtime.logs, log: options.log)
-            if reporting == nil {
-                os_log("Crash reporting is disabled, the KSCrash report store is unavailable.", log: options.log, type: .error)
+        case .provider(let provider):
+            do {
+                reporting = try provider.makeCrashReporting(runtime: runtime)
+            } catch {
+                reporting = nil
+                os_log("%{public}@", log: options.log, type: .error, "Crash reporting is disabled, the crash reporter failed to start: \(error)")
             }
         case .metricKit:
             #if os(iOS)

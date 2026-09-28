@@ -2,6 +2,7 @@ import UIKit
 import LaunchDarkly
 import LaunchDarklyObservability
 import LaunchDarklySessionReplay
+import LaunchDarklyCrashReporting
 
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
@@ -28,7 +29,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     backendUrl: backendUrl,
                     resourceAttributes: ["test-options-attribute": .string("ios-test-app")],
                     sessionBackgroundTimeout: 3,
-                    crashReporting: .enabled
+                    crashReporting: .ksCrash
                    )),
                 SessionReplay(options: .init(
                     isEnabled: true,

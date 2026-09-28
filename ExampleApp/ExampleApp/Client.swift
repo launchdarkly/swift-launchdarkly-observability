@@ -1,6 +1,7 @@
 import UIKit
 import LaunchDarklyObservability
 import LaunchDarklySessionReplay
+import LaunchDarklyCrashReporting
 
 struct Client {
     let config = { () -> LDConfig in
@@ -18,7 +19,7 @@ struct Client {
                     logsApiLevel: .info,
                     tracesApi: .enabled,
                     metricsApi: .enabled,
-                    crashReporting: .enabled,
+                    crashReporting: .ksCrash,
                     instrumentation: .init(
                         urlSession: .enabled,
                         memory: .enabled,
