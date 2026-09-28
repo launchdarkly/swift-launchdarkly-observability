@@ -23,6 +23,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AA00000000000000000002 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Secrets.xcconfig; path = ../TestAppShared/Secrets.xcconfig; sourceTree = "<group>"; };
 		6564E23D2368955400E9AF7C /* CatsOverviewViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatsOverviewViewController.swift; sourceTree = "<group>"; };
 		6564E23F2368975400E9AF7C /* CatSceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatSceneDelegate.swift; sourceTree = "<group>"; };
 		6564E2412368978300E9AF7C /* CatDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatDetailViewController.swift; sourceTree = "<group>"; };
@@ -54,6 +55,7 @@
 		65E1708B23632ABC00F5FDA1 = {
 			isa = PBXGroup;
 			children = (
+				AA00000000000000000002 /* Secrets.xcconfig */,
 				65E1709623632ABC00F5FDA1 /* MultiwindowPad */,
 				65E1709523632ABC00F5FDA1 /* Products */,
 			);
@@ -305,6 +307,7 @@
 		};
 		65E170A923632ABD00F5FDA1 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA00000000000000000002 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -325,6 +328,7 @@
 		};
 		65E170AA23632ABD00F5FDA1 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA00000000000000000002 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
