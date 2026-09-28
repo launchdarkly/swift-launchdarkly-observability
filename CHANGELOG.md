@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.56.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.55.1...0.56.0) (2026-09-28)
+
+
+### Features
+
+* disable crash reporting by default ([#281](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/281)) ([219cd79](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/219cd7914f9180e3d4559a6334e403ae5d3abc77))
+
 ## [0.55.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.55.0...0.55.1) (2026-09-28)
 
 
