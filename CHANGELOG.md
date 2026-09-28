@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.55.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.55.0...0.55.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **deps:** relax KSCrash requirement to 2.5.0..&lt;3.0.0 ([#279](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/279)) ([94593a8](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/94593a818f5a3731305bf1db68324723d5c23b17))
+
 ## [0.55.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.54.0...0.55.0) (2026-09-24)
 
 
