@@ -128,6 +128,9 @@ public struct ObservabilityOptions {
         public static var enabled: Self {
             .init()
         }
+        public static var disabled: Self {
+            .init(source: .none)
+        }
         
         public init(source: CrashReportingSource = .KSCrash) {
             self.source = source
@@ -310,7 +313,10 @@ public struct ObservabilityOptions {
     ///   - log: The `OSLog` used for the plugin's own diagnostic output. Defaults to a logger
     ///     under subsystem `"com.launchdarkly"` and category `"LaunchDarklyObservabilityPlugin"`.
     ///   - crashReporting: Crash-reporting configuration, including which provider to use
-    ///     (KSCrash or MetricKit). Defaults to ``CrashReporting/enabled`` (KSCrash).
+    ///     (KSCrash or MetricKit). Defaults to ``CrashReporting/disabled``, since the providers
+    ///     install process-wide handlers that another crash reporter in the app would contend
+    ///     with. Pass ``CrashReporting/enabled`` for KSCrash, or `.init(source: .metricKit)` for
+    ///     MetricKit.
     ///   - instrumentation: Per-feature toggles for automatic instrumentation (URLSession,
     ///     user taps, memory, CPU, launch times, …). Defaults to all features disabled
     ///     except user-tap detection, which is enabled.
@@ -334,7 +340,7 @@ public struct ObservabilityOptions {
         tracesApi: AppTracing = .enabled,
         metricsApi: AppMetrics = .enabled,
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
-        crashReporting: CrashReporting = .enabled,
+        crashReporting: CrashReporting = .disabled,
         instrumentation: Instrumentation = .init(),
         analytics: Analytics = .init()
     ) {
