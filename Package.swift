@@ -24,10 +24,9 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", exact: "2.3.0"),
         .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", from: "11.5.0"),
-        // Pinned to 2.6.0-beta.3 for iOS 26+ __crash_info parsing (so Swift
-        // runtime trap messages like "Fatal error: Index out of range" are
-        // captured). SwiftPM ignores pre-releases with `from:`, so pin exactly.
-        .package(url: "https://github.com/kstenerud/KSCrash.git", exact: "2.6.0-beta.3"),
+        // Accept any 2.x from 2.5.0 so apps that also depend on KSCrash through
+        // another library (some still require 2.5.x) can resolve a single version.
+        .package(url: "https://github.com/kstenerud/KSCrash.git", "2.5.0"..<"3.0.0"),
     ],
     targets: [
         // C target (no Swift files here)
