@@ -20,11 +20,12 @@ let package = Package(
         .library(
             name: "LaunchDarklySessionReplay",
             targets: ["LaunchDarklySessionReplay"]),
-        // KSCrash crash reporting, kept out of LaunchDarklyObservability so apps that don't opt
-        // in never link KSCrash or its process-wide handlers.
+        // KSCrash crash reporting, kept out of LaunchDarklyObservability because KSCrash is heavy
+        // and prone to version conflicts; apps that don't opt in never link it. MetricKit crash
+        // reporting stays in LaunchDarklyObservability.
         .library(
-            name: "LaunchDarklyCrashReporting",
-            targets: ["LaunchDarklyCrashReporting"]),
+            name: "LaunchDarklyKSCrash",
+            targets: ["LaunchDarklyKSCrash"]),
     ],
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", exact: "2.3.0"),
@@ -71,17 +72,17 @@ let package = Package(
             ]
         ),
         .target(
-            name: "LaunchDarklyCrashReporting",
+            name: "LaunchDarklyKSCrash",
             dependencies: [
                 "LaunchDarklyOtel",
                 .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),
             ]
         ),
         .testTarget(
-            name: "CrashReportingTests",
+            name: "LaunchDarklyKSCrashTests",
             dependencies: [
                 "LaunchDarklyOtel",
-                "LaunchDarklyCrashReporting",
+                "LaunchDarklyKSCrash",
             ]
         ),
         .testTarget(

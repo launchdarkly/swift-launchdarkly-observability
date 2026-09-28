@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		5006D6B52EEB4D460081FEA5 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B42EEB4D460081FEA5 /* LaunchDarklySessionReplay */; };
-		5006D6B72EEB4D460081FEA5 /* LaunchDarklyCrashReporting in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B62EEB4D460081FEA5 /* LaunchDarklyCrashReporting */; };
+		5006D6B72EEB4D460081FEA5 /* LaunchDarklyKSCrash in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B62EEB4D460081FEA5 /* LaunchDarklyKSCrash */; };
 		503DA8C82F31678400E7E47F /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = 5006D6B22EEB4D460081FEA5 /* LaunchDarklyObservability */; };
 		50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = 50C584C92EE23723006A0045 /* LaunchDarkly */; };
 		50FD5D662FCE26D7008B9E06 /* LaunchDarkly in Frameworks */ = {isa = PBXBuildFile; productRef = 50FD5D652FCE26D7008B9E06 /* LaunchDarkly */; };
@@ -48,7 +48,7 @@
 			files = (
 				503DA8C82F31678400E7E47F /* LaunchDarklyObservability in Frameworks */,
 				5006D6B52EEB4D460081FEA5 /* LaunchDarklySessionReplay in Frameworks */,
-				5006D6B72EEB4D460081FEA5 /* LaunchDarklyCrashReporting in Frameworks */,
+				5006D6B72EEB4D460081FEA5 /* LaunchDarklyKSCrash in Frameworks */,
 				E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */,
 				50FD5D662FCE26D7008B9E06 /* LaunchDarkly in Frameworks */,
 				50C584CA2EE23723006A0045 /* LaunchDarkly in Frameworks */,
@@ -107,7 +107,7 @@
 				50C584C92EE23723006A0045 /* LaunchDarkly */,
 				5006D6B22EEB4D460081FEA5 /* LaunchDarklyObservability */,
 				5006D6B42EEB4D460081FEA5 /* LaunchDarklySessionReplay */,
-				5006D6B62EEB4D460081FEA5 /* LaunchDarklyCrashReporting */,
+				5006D6B62EEB4D460081FEA5 /* LaunchDarklyKSCrash */,
 				50FD5D652FCE26D7008B9E06 /* LaunchDarkly */,
 			);
 			productName = ExampleApp;
@@ -400,9 +400,9 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = LaunchDarklySessionReplay;
 		};
-		5006D6B62EEB4D460081FEA5 /* LaunchDarklyCrashReporting */ = {
+		5006D6B62EEB4D460081FEA5 /* LaunchDarklyKSCrash */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = LaunchDarklyCrashReporting;
+			productName = LaunchDarklyKSCrash;
 		};
 		50C584C92EE23723006A0045 /* LaunchDarkly */ = {
 			isa = XCSwiftPackageProductDependency;

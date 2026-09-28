@@ -1,7 +1,7 @@
 import UIKit
 import LaunchDarklyObservability
 import LaunchDarklySessionReplay
-import LaunchDarklyCrashReporting
+import LaunchDarklyKSCrash
 
 struct Client {
     let config = { () -> LDConfig in

@@ -25,7 +25,7 @@ public protocol CrashReporting {
 /// ``ObservabilityOptions/CrashReportingSource/provider(_:)``.
 ///
 /// Crash reporters install process-wide handlers and often bring a third-party dependency, so
-/// they live in their own product (KSCrash in `LaunchDarklyCrashReporting`) and an app that
+/// they live in their own product (KSCrash in `LaunchDarklyKSCrash`) and an app that
 /// doesn't opt in never links them.
 public protocol CrashReportingProvider {
     /// Installs the process-wide crash handlers. Called once, before the rest of the pipeline

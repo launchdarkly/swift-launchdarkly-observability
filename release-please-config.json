@@ -12,7 +12,7 @@
 				"LaunchDarklyOtel.podspec",
 				"LaunchDarklyObservability.podspec",
 				"LaunchDarklySessionReplay.podspec",
-				"LaunchDarklyCrashReporting.podspec"
+				"LaunchDarklyKSCrash.podspec"
 			]
 		}
 	}

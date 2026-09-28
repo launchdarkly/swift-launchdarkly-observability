@@ -122,7 +122,7 @@ public struct ObservabilityOptions {
         /// Apple's MetricKit crash diagnostics. Needs no extra dependency.
         case metricKit
         /// A crash reporter from another product, such as KSCrash from
-        /// `LaunchDarklyCrashReporting`.
+        /// `LaunchDarklyKSCrash`.
         case provider(CrashReportingProvider)
         case none
     }
@@ -135,7 +135,7 @@ public struct ObservabilityOptions {
             .init(source: .metricKit)
         }
 
-        @available(*, unavailable, message: "KSCrash moved to the LaunchDarklyCrashReporting product. Add it and use `.ksCrash`.")
+        @available(*, unavailable, message: "KSCrash moved to the LaunchDarklyKSCrash product. Add it and use `.ksCrash`.")
         public static var enabled: Self {
             .init(source: .none)
         }
@@ -324,7 +324,7 @@ public struct ObservabilityOptions {
     ///     Defaults to ``CrashReporting/disabled``, since crash reporters install process-wide
     ///     handlers that another crash reporter in the app would contend with. Pass
     ///     ``CrashReporting/metricKit`` for MetricKit, or `.ksCrash` after adding the
-    ///     `LaunchDarklyCrashReporting` product for KSCrash.
+    ///     `LaunchDarklyKSCrash` product for KSCrash.
     ///   - instrumentation: Per-feature toggles for automatic instrumentation (URLSession,
     ///     user taps, memory, CPU, launch times, …). Defaults to all features disabled
     ///     except user-tap detection, which is enabled.

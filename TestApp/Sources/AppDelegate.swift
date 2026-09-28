@@ -2,7 +2,7 @@ import UIKit
 import LaunchDarkly
 import LaunchDarklyObservability
 import LaunchDarklySessionReplay
-import LaunchDarklyCrashReporting
+import LaunchDarklyKSCrash
 
 
 final class AppDelegate: NSObject, UIApplicationDelegate {

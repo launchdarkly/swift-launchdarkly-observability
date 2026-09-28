@@ -24,7 +24,7 @@ runs:
       shell: bash
       run: ${{ github.action_path }}/publish-pod.sh LaunchDarklySessionReplay.podspec
 
-    - name: Push LaunchDarklyCrashReporting to CocoaPods
+    - name: Push LaunchDarklyKSCrash to CocoaPods
       if: ${{ inputs.dry_run == 'false' }}
       shell: bash
-      run: ${{ github.action_path }}/publish-pod.sh LaunchDarklyCrashReporting.podspec
+      run: ${{ github.action_path }}/publish-pod.sh LaunchDarklyKSCrash.podspec

@@ -1,5 +1,5 @@
 Pod::Spec.new do |s|
-  s.name             = "LaunchDarklyCrashReporting"
+  s.name             = "LaunchDarklyKSCrash"
   s.version          = "0.55.1" # x-release-please-version
   s.summary          = "KSCrash crash reporting for the LaunchDarkly iOS Observability Plugin."
   s.description      = <<-DESC
@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
                          :tag => s.version.to_s }
   s.swift_version    = "5.9"
 
-  s.source_files     = "Sources/LaunchDarklyCrashReporting/**/*.{swift,h,m}"
+  s.source_files     = "Sources/LaunchDarklyKSCrash/**/*.{swift,h,m}"
 
   s.pod_target_xcconfig = {
     'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited) LD_COCOAPODS'

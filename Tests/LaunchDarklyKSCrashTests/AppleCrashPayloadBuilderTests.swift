@@ -1,7 +1,7 @@
 import Testing
 import Foundation
 @testable import LaunchDarklyOtel
-@testable import LaunchDarklyCrashReporting
+@testable import LaunchDarklyKSCrash
 
 @Suite
 struct AppleCrashPayloadBuilderTests {

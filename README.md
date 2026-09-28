@@ -16,7 +16,7 @@ same OTLP pipeline, and differ only in how much they hook into your app.
 | Flag evaluation, identify and track hooks | yes | yes |
 | Session management | yes | yes |
 | Automatic instrumentation | yes | none |
-| Crash reporting (KSCrash / MetricKit) | opt-in (KSCrash needs `LaunchDarklyCrashReporting`) | none |
+| Crash reporting (KSCrash / MetricKit) | opt-in (KSCrash needs `LaunchDarklyKSCrash`) | none |
 
 Pick `LaunchDarklyOtel` when your app already runs another observability SDK. It installs no
 method swizzling and no crash handlers, so the two can't fight over the same hooks — it records
@@ -53,7 +53,7 @@ Add the Swift Package dependency in Xcode or add it to your `Package.swift`:
 .package(url: "https://github.com/launchdarkly/swift-launchdarkly-observability", branch: "main"),
 ```
 
-Then add the products you use to your target: `LaunchDarklyObservability`, plus `LaunchDarklySessionReplay` for Session Replay and `LaunchDarklyCrashReporting` for KSCrash crash reporting.
+Then add the products you use to your target: `LaunchDarklyObservability`, plus `LaunchDarklySessionReplay` for Session Replay and `LaunchDarklyKSCrash` for KSCrash crash reporting.
 
 ### CocoaPods
 
@@ -62,7 +62,7 @@ Add the pods to your `Podfile`:
 ```ruby
 pod 'LaunchDarklyObservability'
 pod 'LaunchDarklySessionReplay'    # optional, only if using Session Replay
-pod 'LaunchDarklyCrashReporting'   # optional, only if using KSCrash crash reporting
+pod 'LaunchDarklyKSCrash'          # optional, only if using KSCrash crash reporting
 ```
 
 Some transitive dependencies (e.g. LDSwiftEventSource) still declare an iOS 11.0 deployment target, which is below the minimum required by recent Xcode SDKs. Add the following `post_install` hook to your `Podfile` to raise their deployment target automatically:
@@ -630,19 +630,20 @@ Manual `trackScreenView(...)` calls work even when automatic detection (`instrum
 Crash reporting is off by default. Crash reporters install process-wide signal and exception
 handlers, so enable one only if your app doesn't already run another crash reporter.
 
-For KSCrash, add the `LaunchDarklyCrashReporting` product (or pod) and select it:
+For KSCrash, add the `LaunchDarklyKSCrash` product (or pod) and select it:
 
 ```swift
 import LaunchDarklyObservability
-import LaunchDarklyCrashReporting
+import LaunchDarklyKSCrash
 
 Observability(options: .init(crashReporting: .ksCrash))
 ```
 
-KSCrash lives in its own product so that apps which don't opt in never link it.
+KSCrash lives in its own product because it adds noticeably to the app binary and can conflict
+with other libraries that bundle KSCrash, so apps that don't opt in never link it.
 
-For Apple's MetricKit diagnostics, which need no extra dependency, use
-`crashReporting: .metricKit`.
+For Apple's MetricKit diagnostics, use `crashReporting: .metricKit`. MetricKit is a system
+framework, so it is built into `LaunchDarklyObservability` and needs no extra product.
 
 ### Symbolicating Crashes
 
