@@ -32,7 +32,7 @@ struct Client {
             ),
             SessionReplay(
                 options: .init(
-                    isEnabled: false,
+                    isEnabled: start,
                     privacy: .init(
                         maskTextInputs: true,
                         maskWebViews: false,
