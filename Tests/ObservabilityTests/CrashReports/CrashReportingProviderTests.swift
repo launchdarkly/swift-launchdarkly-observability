@@ -36,10 +36,8 @@ struct CrashReportingProviderTests {
     @Test("crash reporting is off by default")
     func disabledByDefault() {
         let options = ObservabilityOptions()
-        guard case .none = options.crashReporting.source else {
-            Issue.record("expected crash reporting to be disabled by default")
-            return
-        }
+        let isDisabled = if case .none = options.crashReporting.source { true } else { false }
+        #expect(isDisabled, "expected crash reporting to be disabled by default")
     }
 
     @Test("the default instrumentation hands the pipeline the provider's reporter")
