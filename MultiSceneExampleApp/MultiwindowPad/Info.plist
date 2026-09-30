@@ -2,16 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>mobileKey</key>
-	<string>$(mobileKey)</string>
-	<key>otlpEndpoint</key>
-	<string>$(otlpEndpoint)</string>
-	<key>backendUrl</key>
-	<string>$(backendUrl)</string>
-	<key>NSUserActivityTypes</key>
-	<array>
-		<string>com.donnywals.viewCat</string>
-	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -30,6 +20,10 @@
 	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.donnywals.viewCat</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -45,10 +39,10 @@
 					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
 				</dict>
 				<dict>
-					<key>UISceneDelegateClassName</key>
-					<string>$(PRODUCT_MODULE_NAME).CatSceneDelegate</string>
 					<key>UISceneConfigurationName</key>
 					<string>Cat Detail</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).CatSceneDelegate</string>
 				</dict>
 			</array>
 		</dict>
@@ -72,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>backendUrl</key>
+	<string>$(backendUrl)</string>
+	<key>mobileKey</key>
+	<string>$(mobileKey)</string>
+	<key>otlpEndpoint</key>
+	<string>$(otlpEndpoint)</string>
 </dict>
 </plist>
