@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     mobileKey: mobileKey,
                     autoEnvAttributes: .enabled
                 )
+            config.eventPersistence = .immediate
             config.plugins = [
                 Observability(options: .init(
                     isEnabled: true,

@@ -297,11 +297,37 @@ struct MainMenuView: View {
                     .buttonStyle(.borderedProminent)
                     .ldClick("track.nested")
             }
-            Button("Eval+Track+Kill (5s)") { viewModel.evalTrackFlushThenKill() }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                .ldClick("track.eval_track_kill")
-                .accessibilityIdentifier("track.eval_track_kill_button")
+            HStack {
+                Button("Eval Kill (5s)") { viewModel.evalTrackFlushThenKill() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    .ldClick("track.eval_track_kill")
+                    .accessibilityIdentifier("track.eval_track_kill_button")
+                Button("Eval+Kill (now)") { viewModel.evalTrackThenKillNow() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    .ldClick("track.eval_track_kill_now")
+                    .accessibilityIdentifier("track.eval_track_kill_now_button")
+                Button("Eval+Fatal (now)") { viewModel.evalTrackThenFatalErrorNow() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    .ldClick("track.eval_track_fatal_now")
+                    .accessibilityIdentifier("track.eval_track_fatal_now_button")
+            }
+
+            HStack {
+                Button("Over-Refresh Eval") { viewModel.overRefreshEval() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                    .ldClick("track.over_refresh_eval")
+                    .accessibilityIdentifier("track.over_refresh_eval_button")
+            }
+            if let overRefreshResult = viewModel.overRefreshResult {
+                Text(overRefreshResult)
+                    .font(.caption)
+                    .monospacedDigit()
+                    .accessibilityIdentifier("track.over_refresh_eval_result")
+            }
 
             Text("Error")
                 .fontWeight(.bold)

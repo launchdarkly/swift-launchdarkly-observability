@@ -5,7 +5,17 @@ import LaunchDarklyObservability
 
 final class MainMenuViewModel: ObservableObject {
 	@Published var isNetworkInProgress: Bool = false
+	/// What the last over-refresh run measured, or nil before one has been done.
+	@Published var overRefreshResult: String?
 	private var screenViewCounter = 0
+
+	/// `LDConfig.eventCapacity`'s default. Past this the event store is full until a flush empties it, so every
+	/// further full event is dropped.
+	private static let eventCapacity = 100
+
+	/// Enough evaluations past capacity for the average to settle, and few enough that even a slow device finishes
+	/// the tap promptly.
+	private static let overCapacityEvaluations = 900
 	
 	func recordError() {
 		LDObserve.shared.recordError(Failure.crash, attributes: [:])
@@ -118,6 +128,37 @@ final class MainMenuViewModel: ObservableObject {
 		)
 	}
 	
+	/// Reproduces the over-refresh pathology: a UI that re-evaluates one flag far more often than anything about it
+	/// changed -- a layout or state-observation loop -- against a flag whose events LaunchDarkly is tracking. Runs on
+	/// the main thread, because that is where the loop it stands in for runs.
+	///
+	/// The comparison between the two phases is the point rather than either number on its own. The first
+	/// `eventCapacity` evaluations have room in the event store; every one after that is dropped, because nothing
+	/// empties it until a flush. So the two phases costing the same per evaluation means the SDK is serializing events
+	/// it then discards, which is the whole of the waste. A cost of a couple of microseconds instead means the flag has
+	/// event tracking off, and this measured the summary counters rather than the thing in question.
+	func overRefreshEval() {
+		let client = LDClient.get()
+		let evaluate = { _ = client?.boolVariation(forKey: "trackevents-test", defaultValue: false) }
+
+		let filling = Self.averageNanoseconds(over: Self.eventCapacity, evaluate)
+		let overCapacity = Self.averageNanoseconds(over: Self.overCapacityEvaluations, evaluate)
+
+		overRefreshResult = String(
+			format: "%d filling: %.0f µs/eval\n%d over capacity: %.0f µs/eval",
+			Self.eventCapacity, filling / 1000,
+			Self.overCapacityEvaluations, overCapacity / 1000
+		)
+	}
+
+	private static func averageNanoseconds(over iterations: Int, _ body: () -> Void) -> Double {
+		let start = DispatchTime.now().uptimeNanoseconds
+		for _ in 0..<iterations {
+			body()
+		}
+		return Double(DispatchTime.now().uptimeNanoseconds - start) / Double(iterations)
+	}
+
 	/// Reproduces in-memory event loss: evaluate (exposure) and track (stand-in
 	/// for an error), flush, wait 65s, then SIGKILL. Backgrounding the app would
 	/// run the SDK's background flush, so this kills the process instead.
@@ -129,6 +170,32 @@ final class MainMenuViewModel: ObservableObject {
 		DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
 			kill(getpid(), SIGKILL)
 		}
+	}
+
+	/// The same sequence with nothing at all between the track and the process dying: no flush to deliver the events, no
+	/// delay for a timer to fire in, and SIGKILL, which cannot be caught, so no part of the SDK or the crash reporter
+	/// gets to run on the way out.
+	///
+	/// Whether the exposure and the track are reported therefore says exactly one thing: whether recording them had
+	/// already put them on disk. They should arrive on the next launch of the app, not this one.
+	func evalTrackThenKillNow() {
+		let client = LDClient.get()
+		_ = client?.boolVariation(forKey: "kill-flag", defaultValue: false)
+		client?.track(key: "$ld:telemetry:error")
+		kill(getpid(), SIGKILL)
+	}
+
+	/// The same again, ending in a Swift runtime trap instead of a signal the process never sees.
+	///
+	/// This is the shape the customer report takes: app code hits a fatal error immediately after reporting it. Unlike
+	/// SIGKILL, the trap is catchable, so the installed crash reporter does run -- which makes this the variant that
+	/// shows whether the events were already on disk *before* another SDK started doing work in the crash handler,
+	/// rather than merely before the process ended.
+	func evalTrackThenFatalErrorNow() {
+		let client = LDClient.get()
+		_ = client?.boolVariation(forKey: "kill-flag", defaultValue: false)
+		client?.track(key: "$ld:telemetry:error")
+		fatalError("Eval+Fatal: deliberate fatalError immediately after track, to test event persistence")
 	}
 
 	func trackViaLDClient() {

@@ -302,6 +302,9 @@
 				"EXCLUDED_SOURCE_FILE_NAMES[sdk=appletv*]" = "**/Fruits/**";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Used to present the system camera UI to reproduce the CameraUI.ModeLoupeLayer Session Replay crash.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used by the system camera UI when capturing video.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Used by the system camera UI to save or pick captured media.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -336,6 +339,9 @@
 				"EXCLUDED_SOURCE_FILE_NAMES[sdk=appletv*]" = "**/Fruits/**";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Used to present the system camera UI to reproduce the CameraUI.ModeLoupeLayer Session Replay crash.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used by the system camera UI when capturing video.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Used by the system camera UI to save or pick captured media.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
