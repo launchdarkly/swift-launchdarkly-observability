@@ -8,7 +8,7 @@
 
 import UIKit
 
-class CatSceneDelegate: UIResponder, UISceneDelegate {
+class CatSceneDelegate: UIResponder, UIWindowSceneDelegate {
   var window: UIWindow?
 
   func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
@@ -16,6 +16,9 @@ class CatSceneDelegate: UIResponder, UISceneDelegate {
     if let activity = connectionOptions.userActivities.first ?? session.stateRestorationActivity,
       let identifier = activity.targetContentIdentifier {
       detail = CatDetailViewController(catName: identifier)
+      // The overview finds an already-open window for a cat through this activity, and
+      // state restoration saves it; without it every tap opens another window.
+      scene.userActivity = activity
     } else {
       detail = CatDetailViewController(catName: "default")
     }

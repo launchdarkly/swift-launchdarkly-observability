@@ -21,6 +21,21 @@ public protocol CrashReporting {
     func logPendingCrashReports()
 }
 
+/// A crash reporter that ships outside the core packages, selected through
+/// ``ObservabilityOptions/CrashReportingSource/provider(_:)``.
+///
+/// Crash reporters install process-wide handlers and often bring a third-party dependency, so
+/// they live in their own product (KSCrash in `LaunchDarklyKSCrash`) and an app that
+/// doesn't opt in never links them.
+public protocol CrashReportingProvider {
+    /// Installs the process-wide crash handlers. Called once, before the rest of the pipeline
+    /// is built, so a crash during SDK startup is still captured.
+    func install(options: ObservabilityOptions) throws
+
+    /// Creates the reporter that delivers crash reports collected by previous processes.
+    func makeCrashReporting(runtime: ObservabilityRuntime) throws -> CrashReporting
+}
+
 /// The touch-capture pipeline. Declared here rather than in the instrumentation package
 /// because ``ObservabilityContext`` carries it to Session Replay, which drives capture
 /// independently of whether tap analytics are enabled.

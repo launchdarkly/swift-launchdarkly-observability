@@ -89,10 +89,25 @@ class CatDetailViewController: UIViewController {
   }
 
   @objc func close() {
-    if let session = self.view.window?.windowScene?.session {
-      let options = UIWindowSceneDestructionRequestOptions()
-      options.windowDismissalAnimation = .commit
-      UIApplication.shared.requestSceneSessionDestruction(session, options: options, errorHandler: nil)
+    guard let scene = view.window?.windowScene else { return }
+
+    // Destroying the app's only visible scene sends the user to the home screen, and iOS then
+    // terminates the process (SIGKILL). Bring the overview back first when nothing else is
+    // on screen.
+    let otherSceneVisible = UIApplication.shared.connectedScenes.contains { other in
+      other !== scene && (other.activationState == .foregroundActive || other.activationState == .foregroundInactive)
+    }
+    if !otherSceneVisible {
+      let overview = UIApplication.shared.openSessions.first { $0.configuration.name == "Default Configuration" }
+      UIApplication.shared.requestSceneSessionActivation(overview, userActivity: nil, options: nil) { error in
+        print("Reopening the overview failed: \(error)")
+      }
+    }
+
+    let options = UIWindowSceneDestructionRequestOptions()
+    options.windowDismissalAnimation = .commit
+    UIApplication.shared.requestSceneSessionDestruction(scene.session, options: options) { error in
+      print("Closing the cat window failed: \(error)")
     }
   }
 }

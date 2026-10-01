@@ -70,7 +70,13 @@ class CatsOverviewViewController: UIViewController {
       return targetContentIdentifier == activity.targetContentIdentifier
     }
 
-    UIApplication.shared.requestSceneSessionActivation(session, userActivity: activity, options: nil, errorHandler: nil)
+    // Naming the requesting scene lets iPad open the detail beside this window instead of
+    // replacing it.
+    let options = UIScene.ActivationRequestOptions()
+    options.requestingScene = view.window?.windowScene
+    UIApplication.shared.requestSceneSessionActivation(session, userActivity: activity, options: options) { error in
+      print("Opening the cat window failed: \(error)")
+    }
   }
 }
 

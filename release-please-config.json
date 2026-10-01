@@ -11,7 +11,8 @@
 				"Sources/LaunchDarklyOtel/Version.swift",
 				"LaunchDarklyOtel.podspec",
 				"LaunchDarklyObservability.podspec",
-				"LaunchDarklySessionReplay.podspec"
+				"LaunchDarklySessionReplay.podspec",
+				"LaunchDarklyKSCrash.podspec"
 			]
 		}
 	}

@@ -15,11 +15,10 @@ public final class Observability: ObservabilityPlugin {
     static let SDK_NAME = "swift-launchdarkly-observability"
 
     public init(options: ObservabilityOptions) {
-        if options.crashReporting.source == .KSCrash {
-            /// Very first thing to do, if crash reporting is enabled and it is KSCrash
-            /// Then, try to install before doing anything else
+        if case .provider(let provider) = options.crashReporting.source {
+            // Installed before anything else so a crash during SDK startup is captured.
             do {
-                try KSCrashReportService.install()
+                try provider.install(options: options)
             } catch {
                 os_log("%{public}@", log: options.log, type: .error, "Observability crash reporting service initialization failed with error: \(error)")
             }

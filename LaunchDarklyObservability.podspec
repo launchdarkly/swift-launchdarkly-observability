@@ -19,12 +19,6 @@ Pod::Spec.new do |s|
     'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited) LD_COCOAPODS'
   }
 
-  # KSCrash ships resource bundles inside its framework. Xcode's user script
-  # sandboxing blocks the CocoaPods embed script from copying them at build time,
-  # causing rsync "Operation not permitted" errors. Disabling it on the consumer
-  # target is the standard workaround until KSCrash resolves this upstream.
-  s.user_target_xcconfig = { 'ENABLE_USER_SCRIPT_SANDBOXING' => 'NO' }
-
   # --- LaunchDarklyObservability (main target) ---
   # CocoaPods builds the OTel pipeline and the instrumentation as one module (the
   # `import LaunchDarklyOtel` lines are compiled out under LD_COCOAPODS), so both source
@@ -42,7 +36,6 @@ Pod::Spec.new do |s|
     ss.dependency "LaunchDarklyObservability/URLSessionInstrumentation"
     ss.dependency "LaunchDarklyObservability/SDKResourceExtension"
     ss.dependency "LaunchDarklyObservability/OpenTelemetry"
-    ss.dependency "LaunchDarklyObservability/Misc"
     ss.dependency 'LaunchDarkly', '~> 11.5'
   end
 
@@ -85,10 +78,4 @@ Pod::Spec.new do |s|
     ss.dependency 'OpenTelemetry-Swift-Api', '~> 2.3.0'
     ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.3.0'
   end
-
-  # KSCrash (Installations product maps to the KSCrash pod)
-  s.subspec 'Misc' do |ss|
-    ss.dependency 'KSCrash'
-  end
-
 end

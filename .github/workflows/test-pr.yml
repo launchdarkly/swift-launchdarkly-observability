@@ -36,3 +36,9 @@ jobs:
           pod lib lint LaunchDarklySessionReplay.podspec \
             --allow-warnings \
             --include-podspecs=LaunchDarklyObservability.podspec
+
+      - name: Lint LaunchDarklyKSCrash podspec
+        run: |
+          pod lib lint LaunchDarklyKSCrash.podspec \
+            --allow-warnings \
+            --include-podspecs=LaunchDarklyObservability.podspec
