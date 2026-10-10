@@ -18,4 +18,14 @@ struct MouseInteractionData: EventDataProtocol {
         self.x = x
         self.y = y
     }
+    
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.writeIfPresent("source", source)
+        writer.writeIfPresent("type", type)
+        writer.writeIfPresent("id", id)
+        writer.writeIfPresent("x", x)
+        writer.writeIfPresent("y", y)
+        writer.endObject()
+    }
 }

@@ -143,6 +143,7 @@ let package = Package(
         .testTarget(
             name: "SessionReplayTests",
             dependencies: [
+                "Common",
                 "LaunchDarklySessionReplay",
                 "LaunchDarklyOtel",
                 "LaunchDarklyObservability",

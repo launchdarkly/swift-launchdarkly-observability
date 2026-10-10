@@ -14,7 +14,33 @@ struct Event: Codable {
     }	
 }
 
-protocol EventDataProtocol: Codable {
+extension Event: JSONStreamWritable {
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write("type", type)
+        writer.write("data", data)
+        writer.write("timestamp", timestamp)
+        writer.write("_sid", _sid)
+        writer.endObject()
+    }
+
+    /// Room to reserve for this event in the payload buffer. Only the images are worth estimating: everything else is
+    /// a few hundred bytes, while one frame can be megabytes.
+    var estimatedJSONByteCount: Int {
+        data.value.estimatedJSONByteCount + Event.nonImageByteCountEstimate
+    }
+
+    private static let nonImageByteCountEstimate = 512
+}
+
+protocol EventDataProtocol: Codable, JSONStreamWritable {
+    /// The size of the image payload this carries, if any. Already tracked for the player's canvas budget, and reused
+    /// to size the output buffer up front so a multi-megabyte payload is not grown (and copied) a dozen times.
+    var estimatedJSONByteCount: Int { get }
+}
+
+extension EventDataProtocol {
+    var estimatedJSONByteCount: Int { 0 }
 }
 
 struct AnyEventData: Codable {
@@ -67,5 +93,11 @@ struct AnyEventData: Codable {
     func encode(to encoder: Encoder) throws {
         // Delegate to the concrete payload; it must include "source" in its encoding.
         try value.encode(to: encoder)
+    }
+}
+
+extension AnyEventData: JSONStreamWritable {
+    func writeJSON(to writer: JSONWriter) {
+        value.writeJSON(to: writer)
     }
 }

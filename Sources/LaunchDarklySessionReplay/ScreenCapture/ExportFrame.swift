@@ -12,23 +12,27 @@ struct ExportFrame {
         let rect: CGRect
         let imageSignature: ImageSignature?
         
-        /// Creates an EventNode for a tile image (positioned absolutely on top of main canvas)
-        func tileEventNode(id: Int, rr_dataURL: String) -> EventNode {
+        /// Creates an EventNode for a tile image (positioned absolutely on top of main canvas).
+        ///
+        /// The image goes in as bytes: it is base64-encoded straight into the payload when the node is written, so the
+        /// tile is never held as a `data:` URL string as well.
+        func tileEventNode(id: Int, mimeType: String) -> EventNode {
             let style = "position:absolute;left:\(Int(rect.minX))px;top:\(Int(rect.minY))px;pointer-events:none;"
             return EventNode(
                 id: id,
                 type: .Element,
                 tagName: "img",
                 attributes: [
-                    "src": rr_dataURL,
+                    "src": .imageDataURL(mimeType: mimeType, data: data),
                     "width": "\(Int(rect.width))",
                     "height": "\(Int(rect.height))",
-                    "style": style]
+                    "style": .text(style)]
             )
         }
         
-        func base64DataURL(mimeType: String) -> String {
-            "data:\(mimeType);base64,\(data.base64EncodedString())"
+        /// The length of this tile's `data:` URL once written, which is what the player's canvas budget counts.
+        func dataURLByteCount(mimeType: String) -> Int {
+            JSONWriter.base64DataURLByteCount(mimeType: mimeType, byteCount: data.count)
         }
     }
     

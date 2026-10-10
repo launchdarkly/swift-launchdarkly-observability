@@ -395,8 +395,8 @@ actor RRWebEventGenerator {
         if let imageSignature = image.imageSignature {
             nodeIds[imageSignature] = tileCanvasId
         }
-        let base64DataURL = image.base64DataURL(mimeType: exportFrame.mimeType)
-        return (image.tileEventNode(id: tileCanvasId, rr_dataURL: base64DataURL), base64DataURL.count)
+        return (image.tileEventNode(id: tileCanvasId, mimeType: exportFrame.mimeType),
+                image.dataURLByteCount(mimeType: exportFrame.mimeType))
     }
     
     private func addCommandNodes(exportFrame: ExportFrame, timestamp: TimeInterval, bodyId: Int) -> [Event] {
@@ -469,10 +469,10 @@ actor RRWebEventGenerator {
             return node
         }
         let bodyNode = EventNode(id: currentBodyId, type: .Element, tagName: Dom.body,
-                                 attributes: [Dom.style: Dom.bodyStyle],
+                                 attributes: [Dom.style: .text(Dom.bodyStyle)],
                                  childNodes: tileNodes)
         let htmlNode = EventNode(id: nextId, type: .Element, tagName: Dom.html,
-                                 attributes: [Dom.lang: Dom.en],
+                                 attributes: [Dom.lang: .text(Dom.en)],
                                  childNodes: [headNode, bodyNode])
         imageId = tileNodes.first?.id
         bodyId = currentBodyId

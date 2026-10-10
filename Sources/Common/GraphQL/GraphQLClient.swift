@@ -31,11 +31,24 @@ public final class GraphQLClient {
         headers: [String: String] = [:]
     ) async throws -> Output {
         let gqlRequest = GraphQLRequest(query: query, variables: variables, operationName: operationName)
+        return try await execute(body: try gqlRequest.httpBody(), headers: headers)
+    }
+
+    /// Execute a GraphQL operation whose body the caller has already encoded.
+    ///
+    /// For requests where `JSONEncoder`'s intermediate object tree is itself the problem — Session Replay's
+    /// `pushPayload`, which carries screenshots — the caller writes the body straight into a byte buffer and sends it
+    /// through here.
+    /// - Parameters:
+    ///   - body: The complete request body: `{ query, variables, operationName }`, as ``GraphQLRequest`` encodes it
+    ///   - headers: Extra headers (merged over defaultHeaders)
+    public func execute<Output: Decodable>(
+        body rawData: Data,
+        headers: [String: String] = [:]
+    ) async throws -> Output {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
-        
-        let rawData = try gqlRequest.httpBody()
-        
+
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if isCompressed, let compressedData = rawData.ld_gzip() {

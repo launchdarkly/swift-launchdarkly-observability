@@ -22,4 +22,22 @@ struct MouseMoveEventData: EventDataProtocol {
         self.source = source
         self.positions = positions
     }
+    
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write("source", source)
+        writer.write("positions", positions)
+        writer.endObject()
+    }
+}
+
+extension MouseMoveEventData.Position: JSONStreamWritable {
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write("x", x)
+        writer.write("y", y)
+        writer.writeIfPresent("id", id)
+        writer.write("timeOffset", timeOffset)
+        writer.endObject()
+    }
 }
