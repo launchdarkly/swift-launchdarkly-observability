@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklyObservability"
-  s.version          = "0.53.1" # x-release-please-version
+  s.version          = "0.56.0" # x-release-please-version
   s.summary          = "iOS Observability Plugin for LaunchDarkly."
   s.description      = <<-DESC
                         LaunchDarkly is the feature management platform that software teams use to build better software, faster.
@@ -8,7 +8,7 @@ Pod::Spec.new do |s|
   s.homepage         = "https://github.com/launchdarkly/swift-launchdarkly-observability"
   s.license          = { :type => "Apache License, Version 2.0", :file => "LICENSE.txt" }
   s.author           = { "LaunchDarkly" => "sdks@launchdarkly.com" }
-  s.platforms        = { :ios => "13.0" }
+  s.platforms        = { :ios => "15.0" }
   s.source           = { :git => "https://github.com/launchdarkly/swift-launchdarkly-observability.git",
                          :tag => s.version.to_s }
   s.swift_version    = "5.9"
@@ -18,12 +18,6 @@ Pod::Spec.new do |s|
   s.pod_target_xcconfig = {
     'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited) LD_COCOAPODS'
   }
-
-  # KSCrash ships resource bundles inside its framework. Xcode's user script
-  # sandboxing blocks the CocoaPods embed script from copying them at build time,
-  # causing rsync "Operation not permitted" errors. Disabling it on the consumer
-  # target is the standard workaround until KSCrash resolves this upstream.
-  s.user_target_xcconfig = { 'ENABLE_USER_SCRIPT_SANDBOXING' => 'NO' }
 
   # --- LaunchDarklyObservability (main target) ---
   # CocoaPods builds the OTel pipeline and the instrumentation as one module (the
@@ -42,7 +36,6 @@ Pod::Spec.new do |s|
     ss.dependency "LaunchDarklyObservability/URLSessionInstrumentation"
     ss.dependency "LaunchDarklyObservability/SDKResourceExtension"
     ss.dependency "LaunchDarklyObservability/OpenTelemetry"
-    ss.dependency "LaunchDarklyObservability/Misc"
     ss.dependency 'LaunchDarkly', '~> 11.5'
   end
 
@@ -85,10 +78,4 @@ Pod::Spec.new do |s|
     ss.dependency 'OpenTelemetry-Swift-Api', '~> 2.3.0'
     ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.3.0'
   end
-
-  # KSCrash (Installations product maps to the KSCrash pod)
-  s.subspec 'Misc' do |ss|
-    ss.dependency 'KSCrash'
-  end
-
 end

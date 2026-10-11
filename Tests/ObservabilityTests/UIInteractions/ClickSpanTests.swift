@@ -1,33 +1,15 @@
 #if canImport(UIKit)
 import Foundation
 import Testing
-@testable import OpenTelemetrySdk
-import OpenTelemetryApi
 @testable import LaunchDarklyOtel
 @testable import LaunchDarklyObservability
 
+/// Tests the `TouchInteraction` -> `ClickEvent` mapping that feeds the click funnel. The funnel then
+/// renders the event through `ClickAttributes` (covered by `ClickAttributesTests`) for the span and
+/// through Session Replay for the `Click` event, so both pipelines describe the same tap.
 struct ClickSpanTests {
-    private final class CapturingSpanProcessor: SpanProcessor {
-        let isStartRequired = false
-        let isEndRequired = true
-        private(set) var ended: [SpanData] = []
-
-        func onStart(parentContext: SpanContext?, span: any ReadableSpan) {}
-        func onEnd(span: any ReadableSpan) { ended.append(span.toSpanData()) }
-        func shutdown(explicitTimeout: TimeInterval?) {}
-        func forceFlush(timeout: TimeInterval?) {}
-    }
-
-    private func makeTracer() -> (any Tracer, CapturingSpanProcessor) {
-        let processor = CapturingSpanProcessor()
-        let provider = TracerProviderBuilder().add(spanProcessor: processor).build()
-        let tracer = provider.get(instrumentationName: "click-tests", instrumentationVersion: "1.0")
-        return (tracer, processor)
-    }
-
-    @Test("click span uses the event.* taxonomy attributes")
-    func clickSpanAttributes() {
-        let (tracer, processor) = makeTracer()
+    @Test("click event carries the event.* taxonomy fields")
+    func clickEventFields() throws {
         let target = TouchTarget(
             className: "UIButton",
             accessibilityIdentifier: "save_profile_btn",
@@ -47,22 +29,20 @@ struct ClickSpanTests {
             sessionId: "session-1"
         )
 
-        interaction.startEndSpan(tracer: tracer)
+        let click = try #require(interaction.clickEvent())
 
-        #expect(processor.ended.count == 1)
-        let span = processor.ended[0]
-        #expect(span.name == SemanticConvention.clickSpanName)
-        #expect(span.attributes[SemanticConvention.eventType] == .string("click"))
-        #expect(span.attributes[SemanticConvention.eventTag] == .string("UIButton"))
-        #expect(span.attributes[SemanticConvention.eventId] == .string("save_profile_btn"))
-        #expect(span.attributes[SemanticConvention.eventText] == .string("Save"))
-        #expect(span.attributes[SemanticConvention.eventX] == .int(12))
-        #expect(span.attributes[SemanticConvention.eventY] == .int(34))
+        #expect(click.tag == "UIButton")
+        #expect(click.id == "save_profile_btn")
+        #expect(click.text == "Save")
+        #expect(click.x == 12)
+        #expect(click.y == 34)
+        // The span covers the whole press, so both ends of the gesture travel with the event.
+        #expect(click.startTimestamp == 1000)
+        #expect(click.timestamp == 1001)
     }
 
-    @Test("click span omits optional fields when target data is missing")
-    func clickSpanOmitsOptionalFields() {
-        let (tracer, processor) = makeTracer()
+    @Test("click event omits optional fields when target data is missing")
+    func clickEventOmitsOptionalFields() throws {
         let interaction = TouchInteraction(
             id: 2,
             kind: .touchUp(CGPoint(x: 5, y: 6)),
@@ -72,22 +52,18 @@ struct ClickSpanTests {
             sessionId: "session-2"
         )
 
-        interaction.startEndSpan(tracer: tracer)
+        let click = try #require(interaction.clickEvent())
 
-        #expect(processor.ended.count == 1)
-        let span = processor.ended[0]
-        #expect(span.attributes[SemanticConvention.eventType] == .string("click"))
         // Required tag falls back to "unknown" when no target is resolved.
-        #expect(span.attributes[SemanticConvention.eventTag] == .string("unknown"))
-        #expect(span.attributes[SemanticConvention.eventId] == nil)
-        #expect(span.attributes[SemanticConvention.eventText] == nil)
-        #expect(span.attributes[SemanticConvention.eventX] == .int(5))
-        #expect(span.attributes[SemanticConvention.eventY] == .int(6))
+        #expect(click.tag == "unknown")
+        #expect(click.id == nil)
+        #expect(click.text == nil)
+        #expect(click.x == 5)
+        #expect(click.y == 6)
     }
 
-    @Test("click span includes event.screen_id when a current screen is known")
-    func clickSpanIncludesScreenId() {
-        let (tracer, processor) = makeTracer()
+    @Test("click event includes the screen when a current screen is known")
+    func clickEventIncludesScreen() throws {
         let target = TouchTarget(
             className: "UITabBarButton",
             accessibilityIdentifier: "tab.search",
@@ -107,19 +83,18 @@ struct ClickSpanTests {
             sessionId: "session-4"
         )
 
-        interaction.startEndSpan(tracer: tracer, screenId: "MyApp.MainTabViewController", screenName: "Home")
+        let click = try #require(
+            interaction.clickEvent(screenId: "MyApp.MainTabViewController", screenName: "Home")
+        )
 
-        #expect(processor.ended.count == 1)
-        let span = processor.ended[0]
-        #expect(span.attributes[SemanticConvention.eventScreenId] == .string("MyApp.MainTabViewController"))
-        #expect(span.attributes[SemanticConvention.eventScreenName] == .string("Home"))
-        #expect(span.attributes[SemanticConvention.eventId] == .string("tab.search"))
-        #expect(span.attributes[SemanticConvention.eventTag] == .string("UITabBarButton"))
+        #expect(click.screenId == "MyApp.MainTabViewController")
+        #expect(click.screenName == "Home")
+        #expect(click.id == "tab.search")
+        #expect(click.tag == "UITabBarButton")
     }
 
-    @Test("click span omits event.screen_id and event.screen_name when no current screen is known")
-    func clickSpanOmitsScreenId() {
-        let (tracer, processor) = makeTracer()
+    @Test("click event omits the screen when no current screen is known")
+    func clickEventOmitsScreen() throws {
         let interaction = TouchInteraction(
             id: 5,
             kind: .touchUp(CGPoint(x: 1, y: 2)),
@@ -129,17 +104,14 @@ struct ClickSpanTests {
             sessionId: "session-5"
         )
 
-        interaction.startEndSpan(tracer: tracer, screenId: nil, screenName: nil)
+        let click = try #require(interaction.clickEvent(screenId: nil, screenName: nil))
 
-        #expect(processor.ended.count == 1)
-        let span = processor.ended[0]
-        #expect(span.attributes[SemanticConvention.eventScreenId] == nil)
-        #expect(span.attributes[SemanticConvention.eventScreenName] == nil)
+        #expect(click.screenId == nil)
+        #expect(click.screenName == nil)
     }
 
-    @Test("click span prefers ldId over accessibilityIdentifier for event.id")
-    func clickSpanPrefersLdId() {
-        let (tracer, processor) = makeTracer()
+    @Test("click event prefers ldId over accessibilityIdentifier for event.id")
+    func clickEventPrefersLdId() throws {
         let target = TouchTarget(
             className: "UIButton",
             accessibilityIdentifier: "save_profile_btn",
@@ -160,16 +132,13 @@ struct ClickSpanTests {
             sessionId: "session-6"
         )
 
-        interaction.startEndSpan(tracer: tracer)
+        let click = try #require(interaction.clickEvent())
 
-        #expect(processor.ended.count == 1)
-        let span = processor.ended[0]
-        #expect(span.attributes[SemanticConvention.eventId] == .string("profile.save"))
+        #expect(click.id == "profile.save")
     }
 
-    @Test("click span falls back to accessibilityIdentifier when ldId is absent")
-    func clickSpanFallsBackToAccessibilityIdentifier() {
-        let (tracer, processor) = makeTracer()
+    @Test("click event falls back to accessibilityIdentifier when ldId is absent")
+    func clickEventFallsBackToAccessibilityIdentifier() throws {
         let target = TouchTarget(
             className: "UIButton",
             accessibilityIdentifier: "save_profile_btn",
@@ -190,16 +159,40 @@ struct ClickSpanTests {
             sessionId: "session-7"
         )
 
-        interaction.startEndSpan(tracer: tracer)
+        let click = try #require(interaction.clickEvent())
 
-        #expect(processor.ended.count == 1)
-        let span = processor.ended[0]
-        #expect(span.attributes[SemanticConvention.eventId] == .string("save_profile_btn"))
+        #expect(click.id == "save_profile_btn")
     }
 
-    @Test("non-tap interactions do not emit a click span")
-    func nonTapInteractionEmitsNothing() {
-        let (tracer, processor) = makeTracer()
+    @Test("a tap the embedder resolves itself is not a click here")
+    func embedderOwnedTapIsNotAClick() {
+        // Flutter draws its whole UI into one `FlutterView`, so this tap has already been described
+        // in Dart and reported through `trackClick`. Reporting it again would duplicate the click as
+        // an unhelpful `FlutterView`.
+        let target = TouchTarget(
+            className: nil,
+            accessibilityIdentifier: nil,
+            isAccessibilityElement: nil,
+            rectInWindow: .zero,
+            rectOnScreen: .zero,
+            rowIndex: nil,
+            sceneId: nil,
+            embedderOwned: true
+        )
+        let interaction = TouchInteraction(
+            id: 8,
+            kind: .touchUp(CGPoint(x: 1, y: 2)),
+            startTimestamp: 8000,
+            timestamp: 8001,
+            target: target,
+            sessionId: "session-8"
+        )
+
+        #expect(interaction.clickEvent() == nil)
+    }
+
+    @Test("non-tap interactions are not clicks")
+    func nonTapInteractionIsNotAClick() {
         let interaction = TouchInteraction(
             id: 3,
             kind: .touchDown(CGPoint(x: 1, y: 2)),
@@ -209,9 +202,7 @@ struct ClickSpanTests {
             sessionId: "session-3"
         )
 
-        interaction.startEndSpan(tracer: tracer)
-
-        #expect(processor.ended.isEmpty)
+        #expect(interaction.clickEvent() == nil)
     }
 }
 #endif

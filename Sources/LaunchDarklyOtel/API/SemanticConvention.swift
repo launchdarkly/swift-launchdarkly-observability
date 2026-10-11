@@ -38,8 +38,11 @@ public enum SemanticConvention {
     public static let eventCategory = "event.category"
     public static let eventType = "event.type"
     public static let eventTag = "event.tag"
+    public static let eventClassname = "event.classname"
     public static let eventId = "event.id"
     public static let eventText = "event.text"
+    /// Path of the element within its UI hierarchy: an XPath on web, a view path on mobile.
+    public static let eventXpath = "event.xpath"
     public static let eventX = "event.x"
     public static let eventY = "event.y"
 }

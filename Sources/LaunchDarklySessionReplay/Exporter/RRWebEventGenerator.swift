@@ -169,6 +169,9 @@ actor RRWebEventGenerator {
             
         case let navigateItem as NavigateItemPayload:
             events.append(navigateEvent(itemPayload: navigateItem))
+
+        case let clickItem as ClickItemPayload:
+            events.append(clickEvent(itemPayload: clickItem))
             
         case let lifecycleItem as AppLifecycleItemPayload:
             if let event = appLifecycleEvent(itemPayload: lifecycleItem) {
@@ -224,9 +227,9 @@ actor RRWebEventGenerator {
             events.append(event)
         }
         
-        if let clickEvent = clickEvent(interaction: interaction) {
-            events.append(clickEvent)
-        }
+        // No `Click` event here: this stream carries only where the pointer went, and cannot see
+        // clicks an embedder resolved in its own UI tree. Clicks arrive from the observability click
+        // funnel instead — see `clickEvent(itemPayload:)`.
     }
     
     private func appendPressInteraction(payload: PressInteractionPayload, events: inout [Event]) {
@@ -256,29 +259,27 @@ actor RRWebEventGenerator {
         events.append(event)
     }
     
-    func clickEvent(interaction: TouchInteraction) -> Event? {
-        // Resolve on touch-up: the SwiftUI `.ldClick(_:)` tap gesture fires on release, so the
-        // developer-supplied `ldId` is only available on the touch-up target (matching the `click`
-        // span, which is also emitted on touch-up).
-        guard case .touchUp = interaction.kind else { return nil }
-        
+    /// Builds a `Click` custom event from the observability click funnel, which covers automatically
+    /// detected taps as well as clicks reported through `LDObserve.trackClick` (the path embedders
+    /// such as Flutter use, since a native hit-test only ever finds their render surface).
+    func clickEvent(itemPayload: ClickItemPayload) -> Event {
         // Mirror the web `Click` payload (`highlight-run` ClickListener):
         // - clickTarget: element identifier (web: full CSS selector path; iOS analog: class name)
         // - clickTextContent: the element's visible text (web: `target.textContent`)
         // - clickSelector: simple selector (web: `#id` else tag; iOS analog: ldId else a11y id else class name)
-        let target = interaction.target
-        // `screenId`/`screenName` are stamped onto the interaction at tap time from the live
-        // `ScreenStack`, the same source the OTel `click` span and manual `trackClick` read, so replay
-        // clicks correlate to the same stable screen and never lag an export-time Navigate.
+        let click = itemPayload.click
+        // `screenId`/`screenName` are resolved by the funnel from the same `ScreenStack` the OTel
+        // `click` span reads, so replay clicks correlate to the same stable screen and never lag an
+        // export-time Navigate.
         let eventData = CustomEventData(tag: .click, payload: ClickPayload(
-            clickTarget: target?.className ?? "",
-            clickTextContent: target?.text ?? "",
-            clickSelector: target?.ldId ?? target?.accessibilityIdentifier ?? target?.className ?? "view",
-            screenId: interaction.screenId,
-            screenName: interaction.screenName))
+            clickTarget: click.tag ?? click.classname ?? "",
+            clickTextContent: click.text ?? "",
+            clickSelector: click.id ?? click.tag ?? click.classname ?? "view",
+            screenId: click.screenId,
+            screenName: click.screenName))
         let event = Event(type: .Custom,
                           data: AnyEventData(eventData),
-                          timestamp: interaction.timestamp,
+                          timestamp: itemPayload.timestamp,
                           _sid: nextSid)
         return event
     }

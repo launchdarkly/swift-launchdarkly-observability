@@ -39,5 +39,12 @@ public final class LDReplay {
     public func stop() {
         client?.stop()
     }
+
+    /// Starts exporting queued replay events now instead of at the next export interval, for
+    /// example before the app tears the SDK down. Returns once the export pass is scheduled,
+    /// without waiting for uploads to finish. No-op before Session Replay is initialized.
+    public func flush() async {
+        await client?.flush()
+    }
 }
 

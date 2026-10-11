@@ -2,6 +2,7 @@ import UIKit
 import LaunchDarkly
 import LaunchDarklyObservability
 import LaunchDarklySessionReplay
+import LaunchDarklyKSCrash
 
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
@@ -20,7 +21,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     mobileKey: mobileKey,
                     autoEnvAttributes: .enabled
                 )
-            config.eventPersistence = .immediate
+            //config.eventPersistence = .immediate
             config.plugins = [
                 Observability(options: .init(
                     isEnabled: true,
@@ -29,7 +30,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                     backendUrl: backendUrl,
                     resourceAttributes: ["test-options-attribute": .string("ios-test-app")],
                     sessionBackgroundTimeout: 3,
-                    crashReporting: .enabled
+                    crashReporting: .ksCrash
                    )),
                 SessionReplay(options: .init(
                     isEnabled: true,

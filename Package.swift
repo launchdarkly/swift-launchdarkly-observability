@@ -4,8 +4,8 @@ import PackageDescription
 let package = Package(
     name: "swift-launchdarkly-observability",
     platforms: [
-        .iOS(.v13),
-        .tvOS(.v13)
+        .iOS(.v15),
+        .tvOS(.v15)
     ],
     products: [
         // OpenTelemetry pipeline only: records what the app asks it to and exports it,
@@ -20,16 +20,21 @@ let package = Package(
         .library(
             name: "LaunchDarklySessionReplay",
             targets: ["LaunchDarklySessionReplay"]),
+        // KSCrash crash reporting, kept out of LaunchDarklyObservability because KSCrash is heavy
+        // and prone to version conflicts; apps that don't opt in never link it. MetricKit crash
+        // reporting stays in LaunchDarklyObservability.
+        .library(
+            name: "LaunchDarklyKSCrash",
+            targets: ["LaunchDarklyKSCrash"]),
     ],
     dependencies: [
         .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", exact: "2.3.0"),
         // Local checkout while the SDK's event persistence is being tested from this app. Restore
-        // `.package(url: "https://github.com/launchdarkly/ios-client-sdk.git", exact: "11.5.0")` before committing.
+        // `.package(url: "https://github.com/launchdarkly/ios-client-sdk.git", from: "11.5.0")` before committing.
         .package(path: "../ios-client-sdk"),
-        // Pinned to 2.6.0-beta.3 for iOS 26+ __crash_info parsing (so Swift
-        // runtime trap messages like "Fatal error: Index out of range" are
-        // captured). SwiftPM ignores pre-releases with `from:`, so pin exactly.
-        .package(url: "https://github.com/kstenerud/KSCrash.git", exact: "2.6.0-beta.3"),
+        // Accept any 2.x from 2.5.0 so apps that also depend on KSCrash through
+        // another library (some still require 2.5.x) can resolve a single version.
+        .package(url: "https://github.com/kstenerud/KSCrash.git", "2.5.0"..<"3.0.0"),
     ],
     targets: [
         // C target (no Swift files here)
@@ -66,7 +71,20 @@ let package = Package(
                 .product(name: "LaunchDarkly", package: "ios-client-sdk", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
                 .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core", condition: .when(platforms: [.iOS, .tvOS])),
+            ]
+        ),
+        .target(
+            name: "LaunchDarklyKSCrash",
+            dependencies: [
+                "LaunchDarklyOtel",
                 .product(name: "Installations", package: "KSCrash", condition: .when(platforms: [.iOS, .tvOS])),
+            ]
+        ),
+        .testTarget(
+            name: "LaunchDarklyKSCrashTests",
+            dependencies: [
+                "LaunchDarklyOtel",
+                "LaunchDarklyKSCrash",
             ]
         ),
         .testTarget(

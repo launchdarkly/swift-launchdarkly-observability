@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklyOtel"
-  s.version          = "0.53.1" # x-release-please-version
+  s.version          = "0.56.0" # x-release-please-version
   s.summary          = "iOS OpenTelemetry Plugin for LaunchDarkly."
   s.description      = <<-DESC
                         Records logs, spans, metrics and track events through LDObserve and exports
@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.homepage         = "https://github.com/launchdarkly/swift-launchdarkly-observability"
   s.license          = { :type => "Apache License, Version 2.0", :file => "LICENSE.txt" }
   s.author           = { "LaunchDarkly" => "sdks@launchdarkly.com" }
-  s.platforms        = { :ios => "13.0" }
+  s.platforms        = { :ios => "15.0" }
   s.source           = { :git => "https://github.com/launchdarkly/swift-launchdarkly-observability.git",
                          :tag => s.version.to_s }
   s.swift_version    = "5.9"

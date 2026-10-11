@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */ = {isa = PBXBuildFile; productRef = E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */; };
 		E7E464C82F3A9DFF0080DEF9 /* LaunchDarklySessionReplay in Frameworks */ = {isa = PBXBuildFile; productRef = E7E464C72F3A9DFF0080DEF9 /* LaunchDarklySessionReplay */; };
+		E7E464CA2F3A9DFF0080DEF9 /* LaunchDarklyKSCrash in Frameworks */ = {isa = PBXBuildFile; productRef = E7E464C92F3A9DFF0080DEF9 /* LaunchDarklyKSCrash */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E7E464C82F3A9DFF0080DEF9 /* LaunchDarklySessionReplay in Frameworks */,
+				E7E464CA2F3A9DFF0080DEF9 /* LaunchDarklyKSCrash in Frameworks */,
 				E7904AD72E6A52CE00A15337 /* LaunchDarklyObservability in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -82,6 +84,7 @@
 			packageProductDependencies = (
 				E7904AD62E6A52CE00A15337 /* LaunchDarklyObservability */,
 				E7E464C72F3A9DFF0080DEF9 /* LaunchDarklySessionReplay */,
+				E7E464C92F3A9DFF0080DEF9 /* LaunchDarklyKSCrash */,
 			);
 			productName = ExampleApp;
 			productReference = E7904AC42E6A523D00A15337 /* ExampleApp.app */;
@@ -363,6 +366,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E7904AD52E6A52CE00A15337 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */;
 			productName = LaunchDarklySessionReplay;
+		};
+		E7E464C92F3A9DFF0080DEF9 /* LaunchDarklyKSCrash */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E7904AD52E6A52CE00A15337 /* XCLocalSwiftPackageReference "../../swift-launchdarkly-observability" */;
+			productName = LaunchDarklyKSCrash;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

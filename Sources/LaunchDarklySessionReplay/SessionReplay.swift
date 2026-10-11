@@ -76,5 +76,10 @@ public final class SessionReplay: Plugin {
     public func stop() {
         sessionReplayService?.stop()
     }
+
+    /// Starts exporting queued replay events now. See ``LDReplay/flush()``.
+    public func flush() async {
+        await sessionReplayService?.flush()
+    }
 }
 

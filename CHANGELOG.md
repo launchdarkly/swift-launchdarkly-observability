@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.56.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.55.1...0.56.0) (2026-09-28)
+
+
+### Features
+
+* disable crash reporting by default ([#281](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/281)) ([219cd79](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/219cd7914f9180e3d4559a6334e403ae5d3abc77))
+
+## [0.55.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.55.0...0.55.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **deps:** relax KSCrash requirement to 2.5.0..&lt;3.0.0 ([#279](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/279)) ([94593a8](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/94593a818f5a3731305bf1db68324723d5c23b17))
+
+## [0.55.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.54.0...0.55.0) (2026-09-24)
+
+
+### Features
+
+* add LDReplay.flush() to export queued replay events on demand ([#276](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/276)) ([9439eff](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/9439efff2e67886e680fac07d0fd999467d993e1))
+
+
+### Bug Fixes
+
+* float ios-client-sdk within 11.x and raise minimum targets to iOS 15, tvOS 15 ([#277](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/277)) ([4e4d3d5](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/4e4d3d587d8fc2719c0cc24b20781bf2712a912d))
+
+## [0.54.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.53.1...0.54.0) (2026-09-15)
+
+
+### Features
+
+* emit every click through one funnel and let embedders report their own targets ([#274](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/274)) ([c991330](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/c9913304ac45d4eae6ffbe50b9661b6f4c6ac05f))
+
 ## [0.53.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.53.0...0.53.1) (2026-08-19)
 
 
