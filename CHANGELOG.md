@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.56.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.56.0...0.56.1) (2026-10-13)
+
+
+### Performance Improvements
+
+* encode session replay payloads with a streaming JSON writer ([#285](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/285)) ([49a55b8](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/49a55b818f08f52a5cc5c380305f2b4b84d24930))
+
 ## [0.56.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.55.1...0.56.0) (2026-09-28)
 
 
