@@ -53,10 +53,63 @@ struct PushPayloadVariables: Codable {
     }
 }
 
+extension PushPayloadVariables: JSONStreamWritable {
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write(CodingKeys.sessionSecureId.rawValue, sessionSecureId)
+        writer.write(CodingKeys.payloadId.rawValue, payloadId)
+        writer.key(CodingKeys.events.rawValue)
+        writer.beginObject()
+        writer.write(CodingKeys.events.rawValue, events.events)
+        writer.endObject()
+        writer.write(CodingKeys.messages.rawValue, messages)
+        writer.write(CodingKeys.resources.rawValue, resources)
+        writer.write(CodingKeys.webSocketEvents.rawValue, webSocketEvents)
+        writer.key(CodingKeys.errors.rawValue)
+        writer.beginArray()
+        for _ in errors {
+            writer.beginObject()
+            writer.endObject()
+        }
+        writer.endArray()
+        writer.writeIfPresent(CodingKeys.isBeacon.rawValue, isBeacon)
+        writer.writeIfPresent(CodingKeys.hasSessionUnloaded.rawValue, hasSessionUnloaded)
+        writer.writeIfPresent(CodingKeys.highlightLogs.rawValue, highlightLogs)
+        writer.endObject()
+    }
+
+    /// What to reserve for the payload buffer, so a batch of screenshots is not grown and copied as it is written.
+    var estimatedJSONByteCount: Int {
+        events.events.reduce(0) { $0 + $1.estimatedJSONByteCount }
+    }
+}
+
 extension SessionReplayAPIService {
+    /// The GraphQL body for `pushPayload`, written straight into a byte buffer.
+    ///
+    /// This is the one request that carries screenshots, and `JSONEncoder` would box the whole batch — every tile as
+    /// its own base64 `String` — before writing a byte of it. `PushPayloadEncodingTests` pins the result to what
+    /// `GraphQLRequest` would have produced.
+    static func pushPayloadBody(_ variables: PushPayloadVariables) -> Data {
+        let writer = JSONWriter(reservingCapacity: variables.estimatedJSONByteCount + pushPayloadEnvelopeByteCount)
+        writer.beginObject()
+        writer.write("query", pushPayloadQuery)
+        writer.write("variables", variables)
+        writer.write("operationName", pushPayloadOperationName)
+        writer.endObject()
+        return writer.data
+    }
+
+    /// The query, the field names and the fixed string fields, rounded up.
+    private static let pushPayloadEnvelopeByteCount = pushPayloadQuery.utf8.count + 1024
+
+    private static let pushPayloadOperationName = "PushPayload"
+
     func pushPayload(_ variables: PushPayloadVariables) async throws {
-        let _: GraphQLEmptyData = try await gqlClient.execute(
-            query: """
+        let _: GraphQLEmptyData = try await gqlClient.execute(body: Self.pushPayloadBody(variables))
+    }
+
+    private static let pushPayloadQuery = """
                     mutation PushPayload(
                         $session_secure_id: String!
                         $payload_id: ID!
@@ -82,8 +135,5 @@ extension SessionReplayAPIService {
                             highlight_logs: $highlight_logs
                         )
                     }
-            """,
-            variables: variables,
-            operationName: "PushPayload")
-    }
+            """
 }

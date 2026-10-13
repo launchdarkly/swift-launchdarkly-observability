@@ -1,5 +1,7 @@
 import Foundation
 
+/// The canvas form of a frame, which the SDK no longer emits — tiles are sent as DOM mutations instead. Kept so a
+/// payload recorded in the old shape still decodes.
 struct CanvasDrawData: EventDataProtocol {
     public struct Command<ArgType: Codable>: Codable {
         var property: String
@@ -14,14 +16,25 @@ struct CanvasDrawData: EventDataProtocol {
     var canvasSize: Int {
         commands.reduce(0) { $0 + $1.canvasSize }
     }
+    
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write("source", source)
+        writer.write("id", id)
+        writer.write("type", type)
+        writer.write("commands", commands)
+        writer.endObject()
+    }
+    
+    var estimatedJSONByteCount: Int { canvasSize }
 }
 
-enum CommandName: String, Codable {
+enum CommandName: String, Codable, JSONStreamWritable {
     case clearRect
     case drawImage
 }
 
-protocol CommandPayload: Codable {
+protocol CommandPayload: Codable, JSONStreamWritable {
     static var property: CommandName { get }
     var property: CommandName { get }
 }
@@ -56,6 +69,12 @@ struct AnyCommand: Codable {
 
     func encode(to encoder: Encoder) throws {
         try value.encode(to: encoder) // concrete type encodes "property" + args
+    }
+}
+
+extension AnyCommand: JSONStreamWritable {
+    func writeJSON(to writer: JSONWriter) {
+        value.writeJSON(to: writer)
     }
 }
 
@@ -95,6 +114,13 @@ struct ClearRect: CommandPayload {
         try a.encode(y)
         try a.encode(width)
         try a.encode(height)
+    }
+
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write(K.property.rawValue, Self.property)
+        writer.write(K.args.rawValue, [x, y, width, height])
+        writer.endObject()
     }
 }
 
@@ -139,9 +165,25 @@ struct DrawImage: CommandPayload {
             try a.encode(dh)
         }
     }
+
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write(K.property.rawValue, Self.property)
+        writer.key(K.args.rawValue)
+        writer.beginArray()
+        writer.write(image)
+        writer.write(dx)
+        writer.write(dy)
+        if dx > 0 || dy > 0 {
+            writer.write(dw)
+            writer.write(dh)
+        }
+        writer.endArray()
+        writer.endObject()
+    }
 }
 
-protocol RRNode: Codable {
+protocol RRNode: Codable, JSONStreamWritable {
     static var rrType: String { get }
 }
 
@@ -173,6 +215,12 @@ struct AnyRRNode: Codable {
     }
 }
 
+extension AnyRRNode: JSONStreamWritable {
+    func writeJSON(to writer: JSONWriter) {
+        value.writeJSON(to: writer)
+    }
+}
+
 struct RRImageBitmap: RRNode {
     static let rrType = "ImageBitmap"
     let args: [AnyRRNode] // typically one Blob
@@ -192,6 +240,13 @@ struct RRImageBitmap: RRNode {
         var c = encoder.container(keyedBy: K.self)
         try c.encode(Self.rrType, forKey: .rr_type)
         try c.encode(args, forKey: .args)
+    }
+
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write(K.rr_type.rawValue, Self.rrType)
+        writer.write(K.args.rawValue, args)
+        writer.endObject()
     }
 }
 
@@ -217,6 +272,14 @@ struct RRBlob: RRNode {
         try c.encode(data, forKey: .data)
         try c.encode(type, forKey: .type)
     }
+
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write(K.rr_type.rawValue, Self.rrType)
+        writer.write(K.data.rawValue, data)
+        writer.write(K.type.rawValue, type)
+        writer.endObject()
+    }
 }
 
 struct RRArrayBuffer: RRNode {
@@ -237,5 +300,12 @@ struct RRArrayBuffer: RRNode {
         var c = encoder.container(keyedBy: K.self)
         try c.encode(Self.rrType, forKey: .rr_type)
         try c.encode(base64, forKey: .base64)
+    }
+
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write(K.rr_type.rawValue, Self.rrType)
+        writer.write(K.base64.rawValue, base64)
+        writer.endObject()
     }
 }

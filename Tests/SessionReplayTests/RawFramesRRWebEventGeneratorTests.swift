@@ -338,7 +338,7 @@ struct RawFramesRRWebEventGeneratorTests {
                 colors.append(contentsOf: colorsFromNodes(domData.node.childNodes))
             } else if let mutationData = event.data.value as? MutationData {
                 for add in mutationData.adds {
-                    if let color = colorFromDataURL(add.node.attributes?["src"]) {
+                    if let color = colorFromDataURL(add.node.attributes?["src"]?.stringValue) {
                         colors.append(color)
                     }
                 }
@@ -370,7 +370,7 @@ struct RawFramesRRWebEventGeneratorTests {
                 scales.append(contentsOf: scalesFromNodes(domData.node.childNodes))
             } else if let mutationData = event.data.value as? MutationData {
                 for add in mutationData.adds {
-                    if let scale = imageScaleFromDataURL(add.node.attributes?["src"]) {
+                    if let scale = imageScaleFromDataURL(add.node.attributes?["src"]?.stringValue) {
                         scales.append(scale)
                     }
                 }
@@ -417,7 +417,7 @@ struct RawFramesRRWebEventGeneratorTests {
     private func colorsFromNodes(_ nodes: [EventNode]) -> [UIColor] {
         var colors = [UIColor]()
         for node in nodes {
-            if node.tagName == "img", let color = colorFromDataURL(node.attributes?["src"]) {
+            if node.tagName == "img", let color = colorFromDataURL(node.attributes?["src"]?.stringValue) {
                 colors.append(color)
             }
             colors.append(contentsOf: colorsFromNodes(node.childNodes))
@@ -450,7 +450,7 @@ struct RawFramesRRWebEventGeneratorTests {
     private func scalesFromNodes(_ nodes: [EventNode]) -> [CGFloat] {
         var scales = [CGFloat]()
         for node in nodes {
-            if node.tagName == "img", let scale = imageScaleFromDataURL(node.attributes?["src"]) {
+            if node.tagName == "img", let scale = imageScaleFromDataURL(node.attributes?["src"]?.stringValue) {
                 scales.append(scale)
             }
             scales.append(contentsOf: scalesFromNodes(node.childNodes))
@@ -461,8 +461,8 @@ struct RawFramesRRWebEventGeneratorTests {
     private func sizeFromNode(_ node: EventNode) -> CGSize? {
         guard node.tagName == "img",
               let attributes = node.attributes,
-              let widthString = attributes["width"],
-              let heightString = attributes["height"],
+              let widthString = attributes["width"]?.stringValue,
+              let heightString = attributes["height"]?.stringValue,
               let width = Double(widthString),
               let height = Double(heightString) else {
             return nil

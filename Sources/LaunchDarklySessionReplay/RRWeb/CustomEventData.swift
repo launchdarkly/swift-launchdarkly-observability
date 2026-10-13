@@ -1,8 +1,15 @@
 import Foundation
 
-struct CustomEventData<PayloadType: Codable>: EventDataProtocol {
+struct CustomEventData<PayloadType: Codable & JSONStreamWritable>: EventDataProtocol {
     var tag: CustomDataTag
     var payload: PayloadType
+    
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write("tag", tag)
+        writer.write("payload", payload)
+        writer.endObject()
+    }
 }
 
 struct ViewportPayload: Codable {
@@ -13,6 +20,20 @@ struct ViewportPayload: Codable {
     var colorDepth: Int
     var pixelDepth: Int
     var orientation: Int
+}
+
+extension ViewportPayload: JSONStreamWritable {
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write("width", width)
+        writer.write("height", height)
+        writer.write("availWidth", availWidth)
+        writer.write("availHeight", availHeight)
+        writer.write("colorDepth", colorDepth)
+        writer.write("pixelDepth", pixelDepth)
+        writer.write("orientation", orientation)
+        writer.endObject()
+    }
 }
 
 struct ClickPayload: Codable {
@@ -28,6 +49,18 @@ struct ClickPayload: Codable {
     /// analog), stamped onto the interaction at tap time from the shared `ScreenStack`. Omitted when
     /// unknown.
     var screenName: String?
+}
+
+extension ClickPayload: JSONStreamWritable {
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write("clickTarget", clickTarget)
+        writer.write("clickTextContent", clickTextContent)
+        writer.write("clickSelector", clickSelector)
+        writer.writeIfPresent("screenId", screenId)
+        writer.writeIfPresent("screenName", screenName)
+        writer.endObject()
+    }
 }
 
 /// Mirrors the web `Track` custom-event payload (`{ ...metadata, event }`) emitted by
@@ -46,4 +79,15 @@ struct PressPayload: Codable, Equatable {
     var pressType: String?
     var pressTypeSystemRaw: Int?
     var target: String?
+}
+
+extension PressPayload: JSONStreamWritable {
+    func writeJSON(to writer: JSONWriter) {
+        writer.beginObject()
+        writer.write("source", source)
+        writer.writeIfPresent("pressType", pressType)
+        writer.writeIfPresent("pressTypeSystemRaw", pressTypeSystemRaw)
+        writer.writeIfPresent("target", target)
+        writer.endObject()
+    }
 }

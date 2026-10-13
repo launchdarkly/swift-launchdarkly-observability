@@ -1,5 +1,12 @@
 import Foundation
 
+/// The wire enums all carry an `Int` or `String` raw value, which is exactly what goes in the JSON.
+extension EventType: JSONStreamWritable {}
+extension NodeType: JSONStreamWritable {}
+extension IncrementalSource: JSONStreamWritable {}
+extension MouseInteractions: JSONStreamWritable {}
+extension CustomDataTag: JSONStreamWritable {}
+
 enum EventType: Int, Codable {
     case DomContentLoaded = 0,
          Load = 1,
