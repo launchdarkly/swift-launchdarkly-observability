@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.56.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.56.1...0.56.2) (2026-10-20)
+
+
+### Bug Fixes
+
+* **deps:** require OpenTelemetry-Swift 2.5.0 or higher ([#287](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/287)) ([2b5bfc3](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2b5bfc39b3151872b631fbd4ae816b7553ca80c7))
+
 ## [0.56.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.56.0...0.56.1) (2026-10-13)
 
 
