@@ -28,7 +28,7 @@ let package = Package(
             targets: ["LaunchDarklyKSCrash"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", exact: "2.3.0"),
+        .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", from: "2.5.0"),
         .package(url: "https://github.com/launchdarkly/ios-client-sdk.git", from: "11.5.0"),
         // Accept any 2.x from 2.5.0 so apps that also depend on KSCrash through
         // another library (some still require 2.5.x) can resolve a single version.
