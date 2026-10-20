@@ -41,8 +41,8 @@ Pod::Spec.new do |s|
   # JSONExporters subspec — OTLP/JSON wire-format models and adapters
   s.subspec "JSONExporters" do |ss|
     ss.source_files = "Sources/OpenTelemetry/JSONExporters/**/*.{swift,h,m}"
-    ss.dependency 'OpenTelemetry-Swift-Api', '~> 2.3.0'
-    ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.3.0'
+    ss.dependency 'OpenTelemetry-Swift-Api', '~> 2.5'
+    ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.5'
   end
 
   # SDKResourceExtension subspec
@@ -54,8 +54,8 @@ Pod::Spec.new do |s|
 
   # OpenTelemetry API + SDK
   s.subspec 'OpenTelemetry' do |ss|
-    ss.dependency 'OpenTelemetry-Swift-Api', '~> 2.3.0'
-    ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.3.0'
+    ss.dependency 'OpenTelemetry-Swift-Api', '~> 2.5'
+    ss.dependency 'OpenTelemetry-Swift-Sdk', '~> 2.5'
   end
 
 end
