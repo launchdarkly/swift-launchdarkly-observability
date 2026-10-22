@@ -321,12 +321,22 @@ struct MainMenuView: View {
                     .tint(.orange)
                     .ldClick("track.over_refresh_eval")
                     .accessibilityIdentifier("track.over_refresh_eval_button")
+                Button("Fill 3 Batches") { viewModel.fillBatches() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                    .ldClick("track.fill_batches")
+                    .accessibilityIdentifier("track.fill_batches_button")
             }
             if let overRefreshResult = viewModel.overRefreshResult {
                 Text(overRefreshResult)
                     .font(.caption)
                     .monospacedDigit()
                     .accessibilityIdentifier("track.over_refresh_eval_result")
+            }
+            if let fillBatchesResult = viewModel.fillBatchesResult {
+                Text(fillBatchesResult)
+                    .font(.caption)
+                    .accessibilityIdentifier("track.fill_batches_result")
             }
 
             Text("Error")

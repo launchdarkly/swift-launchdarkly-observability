@@ -7,6 +7,8 @@ final class MainMenuViewModel: ObservableObject {
 	@Published var isNetworkInProgress: Bool = false
 	/// What the last over-refresh run measured, or nil before one has been done.
 	@Published var overRefreshResult: String?
+	/// What the last fill-batches tap recorded, or nil before one.
+	@Published var fillBatchesResult: String?
 	private var screenViewCounter = 0
 
 	/// `LDConfig.eventCapacity`'s default. Past this the event store is full until a flush empties it, so every
@@ -16,6 +18,13 @@ final class MainMenuViewModel: ObservableObject {
 	/// Enough evaluations past capacity for the average to settle, and few enough that even a slow device finishes
 	/// the tap promptly.
 	private static let overCapacityEvaluations = 900
+
+	/// A batch holds at most 2 MiB, so seven of these fit in one and an eighth does not. Large events rather than many
+	/// small ones, because the event capacity is reached long before small events fill a batch.
+	private static let largeEventDataCharacters = 256 * 1024
+
+	/// Seven, seven and six: three batches, the last of them not full.
+	private static let largeEvents = 20
 	
 	func recordError() {
 		LDObserve.shared.recordError(Failure.crash, attributes: [:])
@@ -149,6 +158,23 @@ final class MainMenuViewModel: ObservableObject {
 			Self.eventCapacity, filling / 1000,
 			Self.overCapacityEvaluations, overCapacity / 1000
 		)
+	}
+
+	/// Records more events than one batch holds, so a flush sends several requests, each with a payload ID of its own.
+	/// Offline, or followed by a kill, it leaves several `ready-` files on disk for the next launch to deliver. Each
+	/// event's index is in its data, so the dashboard shows whether all of them arrived and none twice.
+	func fillBatches() {
+		guard let client = LDClient.get() else { return }
+		let padding = LDValue.string(String(repeating: "x", count: Self.largeEventDataCharacters))
+		for index in 1...Self.largeEvents {
+			client.track(key: "fill-batches", data: [
+				"index": .number(Double(index)),
+				"of": .number(Double(Self.largeEvents)),
+				"padding": padding,
+			])
+		}
+		fillBatchesResult = "Recorded \(Self.largeEvents) events of \(Self.largeEventDataCharacters / 1024) KiB: "
+			+ "three batches of at most 2 MiB"
 	}
 
 	private static func averageNanoseconds(over iterations: Int, _ body: () -> Void) -> Double {
