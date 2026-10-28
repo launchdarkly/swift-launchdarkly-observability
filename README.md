@@ -526,52 +526,6 @@ LDObserve.shared.removeAttributes(["tenant.id"])
 - **Before initialization:** calls made before the plugin is registered take effect as soon as the
   SDK starts recording.
 
-### Custom Span and Log Processors
-
-Pass OpenTelemetry processors in `ObservabilityOptions` to observe or enrich telemetry before it is
-exported. They apply to everything the SDK records, including automatic instrumentation, and run in
-order after global attributes are applied and before the SDK's own export.
-
-```swift
-import LaunchDarklyObservability
-import OpenTelemetrySdk
-
-final class ScreenTagProcessor: SpanProcessor {
-    let isStartRequired = true
-    let isEndRequired = false
-
-    func onStart(parentContext: SpanContext?, span: any ReadableSpan) {
-        span.setAttribute(key: "app.screen", value: CurrentScreen.name)
-    }
-    func onEnd(span: any ReadableSpan) {}
-    func shutdown(explicitTimeout: TimeInterval?) {}
-    func forceFlush(timeout: TimeInterval?) {}
-}
-
-final class AuditLogProcessor: LogRecordProcessor {
-    func onEmit(logRecord: ReadableLogRecord) {
-        AuditTrail.append(logRecord)
-    }
-    func forceFlush(explicitTimeout: TimeInterval?) -> ExportResult { .success }
-    func shutdown(explicitTimeout: TimeInterval?) -> ExportResult { .success }
-}
-
-let options = ObservabilityOptions(
-    serviceName: "ios-app",
-    spanProcessors: [ScreenTagProcessor()],
-    logProcessors: [AuditLogProcessor()]
-)
-```
-
-- Attributes a span processor sets in `onStart` are exported with the span.
-- Log processors observe each record but can't change it: OpenTelemetry-Swift passes
-  `ReadableLogRecord` to `onEmit` by value, so edits made there are not exported. Use
-  `setAttributes` or per-call attributes to add data to logs.
-- Processors see every span and log record before export sampling, so they may receive telemetry
-  that is not exported.
-- Processors are configured at initialization only. Their `forceFlush` is called when the app
-  resigns active or terminates.
-
 ### Tracking Screen Views
 
 A `screen_view` event captures when a screen is shown, using the `event.*` attribute namespace (`event.name`, `event.screen_class`, `event.screen_id`, `event.previous_screen`, `event.category`). `previous_screen` is resolved automatically from a shared screen stack, so it stays correct regardless of whether a screen was captured automatically or manually.

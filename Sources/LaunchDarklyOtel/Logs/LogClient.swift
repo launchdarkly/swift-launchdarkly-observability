@@ -20,11 +20,6 @@ final class AppLogBuilder {
         self.globalAttributes = globalAttributes
     }
     
-    /// Builds the record, hands it to the user ``ObservabilityOptions/logProcessors`` and then
-    /// applies export sampling. Returns `nil` when the record is sampled out.
-    ///
-    /// `ReadableLogRecord` is a value type, so processors observe the record but can't change
-    /// what is exported.
     public func buildLog(message: String,
                          severity: Severity,
                          attributes: [String: AttributeValue],
@@ -50,18 +45,7 @@ final class AppLogBuilder {
         if let spanContext {
             recordBuilder = recordBuilder.setSpanContext(spanContext)
         }
-        let log = recordBuilder.unsampledLogRecord()
-        for processor in options.logProcessors {
-            processor.onEmit(logRecord: log)
-        }
-        return recordBuilder.sample(log)
-    }
-
-    /// Flushes the user ``ObservabilityOptions/logProcessors``.
-    func forceFlushProcessors(timeout: TimeInterval) {
-        for processor in options.logProcessors {
-            _ = processor.forceFlush(explicitTimeout: timeout)
-        }
+        return recordBuilder.readableLogRecord()
     }
 }
 

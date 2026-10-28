@@ -31,26 +31,19 @@ final class LDLogRecordBuilder {
     }
     
     public func readableLogRecord() -> ReadableLogRecord? {
-        sample(unsampledLogRecord())
-    }
-
-    /// The record as emitted, before the export sampler decides whether to keep it.
-    func unsampledLogRecord() -> ReadableLogRecord {
         let attrs = attributes.reduce(into: [String: OpenTelemetryApi.AttributeValue]()) { result, element in
             result[element.0] = element.1
         }
         
-        return ReadableLogRecord(resource: resource,
-                                 instrumentationScopeInfo: instrumentationScope,
-                                 timestamp: timestamp ?? clock.now,
-                                 observedTimestamp: observedTimestamp,
-                                 spanContext: spanContext,
-                                 severity: severity,
-                                 body: body,
-                                 attributes: attrs)
-    }
-
-    func sample(_ log: ReadableLogRecord) -> ReadableLogRecord? {
+        let log = ReadableLogRecord(resource: resource,
+                                    instrumentationScopeInfo: instrumentationScope,
+                                    timestamp: timestamp ?? clock.now,
+                                    observedTimestamp: observedTimestamp,
+                                    spanContext: spanContext,
+                                    severity: severity,
+                                    body: body,
+                                    attributes: attrs)
+        
         guard let sampledLog = sampler.sampledLog(log) else {
             return nil
         }

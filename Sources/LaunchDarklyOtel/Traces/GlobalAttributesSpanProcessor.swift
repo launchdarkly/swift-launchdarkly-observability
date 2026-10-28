@@ -3,7 +3,7 @@ import OpenTelemetryApi
 import OpenTelemetrySdk
 
 /// Stamps the global attributes onto every span at start, filling only keys the span doesn't
-/// already carry. Registered ahead of the user processors so they observe the globals.
+/// already carry.
 final class GlobalAttributesSpanProcessor: SpanProcessor {
     private let store: GlobalAttributesStore
     let isStartRequired = true

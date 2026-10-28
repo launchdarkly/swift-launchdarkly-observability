@@ -82,7 +82,6 @@ public final class ObservabilityService: InternalObserve {
     }
 
     private let globalAttributes: GlobalAttributesStore
-    private let processorFlushQueue = DispatchQueue(label: "com.launchdarkly.observability.service.processorFlush", qos: .utility)
 
     public convenience init(
         options: ObservabilityOptions,
@@ -262,26 +261,6 @@ public final class ObservabilityService: InternalObserve {
         // Route the afterTrack hook and identify context keys back into this service,
         // so it remains the single emitter of track spans.
         self.hookExporter.trackEmitter = self
-
-        flushUserProcessorsWhenLeavingForeground()
-    }
-
-    /// User processors may buffer (e.g. a `BatchSpanProcessor` for another backend), so give them
-    /// the same chance to drain as the SDK's own exporters get when the app leaves the foreground.
-    /// Runs on a dedicated queue because `forceFlush` blocks its caller.
-    private func flushUserProcessorsWhenLeavingForeground() {
-        guard !options.spanProcessors.isEmpty || !options.logProcessors.isEmpty else { return }
-
-        appLifecycleManager
-            .publisher()
-            .filter { $0 == .willResignActive || $0 == .willTerminate }
-            .receive(on: processorFlushQueue)
-            .sink { [weak self] _ in
-                guard let self else { return }
-                self.tracerDecorator.forceFlushProcessors(timeout: CommonOTelConfiguration.flushTimeout)
-                self.appLogBuilder.forceFlushProcessors(timeout: CommonOTelConfiguration.flushTimeout)
-            }
-            .store(in: &cancellables)
     }
 
     /// Attaches the automatic instrumentation. Must be called before ``start()``, and before
