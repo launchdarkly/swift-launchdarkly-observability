@@ -4,19 +4,27 @@ import OpenTelemetrySdk
 
 final class AppLogBuilder {
     private let options: ObservabilityOptions
-    private let sessionManager: SessionManager
+    private let sessionManager: SessionManaging
     private let sampler: ExportSampler
+    private let globalAttributes: GlobalAttributesStore
     
     init(
         options: ObservabilityOptions,
-        sessionManager: SessionManager,
-        sampler: ExportSampler
+        sessionManager: SessionManaging,
+        sampler: ExportSampler,
+        globalAttributes: GlobalAttributesStore = .shared
     ) {
         self.options = options
         self.sessionManager = sessionManager
         self.sampler = sampler
+        self.globalAttributes = globalAttributes
     }
     
+    /// Builds the record, hands it to the user ``ObservabilityOptions/logProcessors`` and then
+    /// applies export sampling. Returns `nil` when the record is sampled out.
+    ///
+    /// `ReadableLogRecord` is a value type, so processors observe the record but can't change
+    /// what is exported.
     public func buildLog(message: String,
                          severity: Severity,
                          attributes: [String: AttributeValue],
@@ -26,6 +34,7 @@ final class AppLogBuilder {
         if !sessionId.isEmpty {
             attributes[SemanticConvention.sessionId] = .string(sessionId)
         }
+        attributes = globalAttributes.filling(attributes)
         
         let logBuilder = LDLogRecordBuilder(
             sampler: sampler,
@@ -41,7 +50,18 @@ final class AppLogBuilder {
         if let spanContext {
             recordBuilder = recordBuilder.setSpanContext(spanContext)
         }
-        return recordBuilder.readableLogRecord()
+        let log = recordBuilder.unsampledLogRecord()
+        for processor in options.logProcessors {
+            processor.onEmit(logRecord: log)
+        }
+        return recordBuilder.sample(log)
+    }
+
+    /// Flushes the user ``ObservabilityOptions/logProcessors``.
+    func forceFlushProcessors(timeout: TimeInterval) {
+        for processor in options.logProcessors {
+            _ = processor.forceFlush(explicitTimeout: timeout)
+        }
     }
 }
 

@@ -81,12 +81,30 @@ public final class ObservabilityService: InternalObserve {
         set { contextKeysQueue.sync { _cachedContextKeyAttributes = newValue } }
     }
 
-    public init(
+    private let globalAttributes: GlobalAttributesStore
+    private let processorFlushQueue = DispatchQueue(label: "com.launchdarkly.observability.service.processorFlush", qos: .utility)
+
+    public convenience init(
         options: ObservabilityOptions,
         mobileKey: String,
         sessionAttributes: [String: AttributeValue]
     ) throws {
+        try self.init(
+            options: options,
+            mobileKey: mobileKey,
+            sessionAttributes: sessionAttributes,
+            globalAttributes: .shared
+        )
+    }
+
+    init(
+        options: ObservabilityOptions,
+        mobileKey: String,
+        sessionAttributes: [String: AttributeValue],
+        globalAttributes: GlobalAttributesStore
+    ) throws {
         self.options = options
+        self.globalAttributes = globalAttributes
 
         // MARK: - Sampling
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
@@ -137,7 +155,12 @@ public final class ObservabilityService: InternalObserve {
             throw InstrumentationError.invalidLogExporterUrl
         }
 
-        let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
+        let appLogBuilder = AppLogBuilder(
+            options: options,
+            sessionManager: sessionManager,
+            sampler: sampler,
+            globalAttributes: globalAttributes
+        )
         let logClient = LogClient(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
         self.loggerClient = logClient
         let appLogClient = AppLogClient(logLevel: options.logsApiLevel, logger: logClient)
@@ -168,7 +191,8 @@ public final class ObservabilityService: InternalObserve {
 
         let metricsClient = MetricsApiFactory.make(
             options: options,
-            reader: reader
+            reader: reader,
+            globalAttributes: globalAttributes
         )
         self.metricsClient = metricsClient
 
@@ -196,7 +220,8 @@ public final class ObservabilityService: InternalObserve {
             options: options,
             sessionManager: sessionManager,
             sampler: sampler,
-            eventQueue: eventQueue
+            eventQueue: eventQueue,
+            globalAttributes: globalAttributes
         )
         self.tracerDecorator = tracerDecorator
         let traceClient = TraceClient(
@@ -237,6 +262,26 @@ public final class ObservabilityService: InternalObserve {
         // Route the afterTrack hook and identify context keys back into this service,
         // so it remains the single emitter of track spans.
         self.hookExporter.trackEmitter = self
+
+        flushUserProcessorsWhenLeavingForeground()
+    }
+
+    /// User processors may buffer (e.g. a `BatchSpanProcessor` for another backend), so give them
+    /// the same chance to drain as the SDK's own exporters get when the app leaves the foreground.
+    /// Runs on a dedicated queue because `forceFlush` blocks its caller.
+    private func flushUserProcessorsWhenLeavingForeground() {
+        guard !options.spanProcessors.isEmpty || !options.logProcessors.isEmpty else { return }
+
+        appLifecycleManager
+            .publisher()
+            .filter { $0 == .willResignActive || $0 == .willTerminate }
+            .receive(on: processorFlushQueue)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.tracerDecorator.forceFlushProcessors(timeout: CommonOTelConfiguration.flushTimeout)
+                self.appLogBuilder.forceFlushProcessors(timeout: CommonOTelConfiguration.flushTimeout)
+            }
+            .store(in: &cancellables)
     }
 
     /// Attaches the automatic instrumentation. Must be called before ``start()``, and before
@@ -362,6 +407,14 @@ extension ObservabilityService: ObservabilityRuntime {
 }
 
 extension ObservabilityService: Observe {
+    public func setAttributes(_ attributes: [String: AttributeValue]) {
+        globalAttributes.set(attributes)
+    }
+
+    public func removeAttributes(_ keys: [String]) {
+        globalAttributes.remove(keys)
+    }
+
     public func recordLog(
         message: String,
         severity: Severity,

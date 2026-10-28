@@ -1,6 +1,7 @@
 import Foundation
 import OSLog
 @_exported import OpenTelemetryApi
+import OpenTelemetrySdk
 
 /// Configuration options for the LaunchDarkly Observability plugin.
 ///
@@ -284,6 +285,13 @@ public struct ObservabilityOptions {
     public var crashReporting: CrashReporting
     public var instrumentation: Instrumentation
     public var analytics: Analytics
+    /// Extra span processors, run in order after the global attributes are applied and before the
+    /// SDK's export. Mutations made in `onStart` are exported.
+    public var spanProcessors: [SpanProcessor]
+    /// Extra log record processors, run in order after the global attributes are applied and
+    /// before the SDK's export. They observe each record; `ReadableLogRecord` is a value type, so
+    /// changes made to it in `onEmit` are not exported.
+    public var logProcessors: [LogRecordProcessor]
     
     /// Creates a configuration for the Observability plugin.
     ///
@@ -331,6 +339,12 @@ public struct ObservabilityOptions {
     ///     Automatic screen detection (`screens`), which is enabled.
     ///   - analytics: Toggles for analytics telemetry (taps, track events).
     ///     Defaults to taps enabled and track events enabled.
+    ///   - spanProcessors: Extra OpenTelemetry span processors for every span the SDK records,
+    ///     including automatically instrumented ones. They run after the global attributes are
+    ///     applied and before export. Defaults to an empty array.
+    ///   - logProcessors: Extra OpenTelemetry log record processors for every log the SDK records.
+    ///     They run after the global attributes are applied and before export sampling, and
+    ///     observe records without being able to change them. Defaults to an empty array.
     public init(
         isEnabled: Bool = true,
         serviceName: String = "observability-swift",
@@ -350,7 +364,9 @@ public struct ObservabilityOptions {
         log: OSLog = OSLog(subsystem: "com.launchdarkly", category: "LaunchDarklyObservabilityPlugin"),
         crashReporting: CrashReporting = .disabled,
         instrumentation: Instrumentation = .init(),
-        analytics: Analytics = .init()
+        analytics: Analytics = .init(),
+        spanProcessors: [SpanProcessor] = [],
+        logProcessors: [LogRecordProcessor] = []
     ) {
         self.serviceName = serviceName
         self.serviceVersion = serviceVersion
@@ -370,6 +386,8 @@ public struct ObservabilityOptions {
         self.crashReporting = crashReporting
         self.instrumentation = instrumentation
         self.analytics = analytics
+        self.spanProcessors = spanProcessors
+        self.logProcessors = logProcessors
         self.isEnabled = isEnabled
     }
 }

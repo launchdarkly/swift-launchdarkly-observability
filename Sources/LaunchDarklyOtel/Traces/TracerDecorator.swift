@@ -4,15 +4,25 @@ import OpenTelemetrySdk
 final class TracerDecorator: Tracer {
     private let options: ObservabilityOptions
     private let sessionManager: SessionManaging
-    private let tracerProvider: any TracerProvider
+    private let tracerProvider: TracerProviderSdk
     private let tracer: any Tracer
     private var activeSpan: Span?
     
-    init(options: ObservabilityOptions, sessionManager: SessionManaging, sampler: ExportSampler, eventQueue: EventQueue) {
+    init(
+        options: ObservabilityOptions,
+        sessionManager: SessionManaging,
+        sampler: ExportSampler,
+        eventQueue: EventQueue,
+        globalAttributes: GlobalAttributesStore = .shared
+    ) {
         self.options = options
         self.sessionManager = sessionManager
         let processor = EventSpanProcessor(eventQueue: eventQueue, sampler: sampler)
+        // Order matters: globals first so user processors see them, export last so it sees
+        // whatever the user processors changed.
         let provider = TracerProviderBuilder()
+            .add(spanProcessor: GlobalAttributesSpanProcessor(store: globalAttributes))
+            .add(spanProcessors: options.spanProcessors)
             .add(spanProcessor: processor)
             .with(resource: Resource(attributes: options.resourceAttributes))
             .build()
@@ -23,6 +33,13 @@ final class TracerDecorator: Tracer {
             schemaUrl: nil,
             attributes: options.resourceAttributes
         )
+    }
+
+    /// Flushes the span processors supplied in ``ObservabilityOptions/spanProcessors``. The SDK's
+    /// own processors don't buffer, so this is a no-op without user processors.
+    func forceFlushProcessors(timeout: TimeInterval) {
+        guard !options.spanProcessors.isEmpty else { return }
+        tracerProvider.forceFlush(timeout: timeout)
     }
     
     func spanBuilder(spanName: String) -> any SpanBuilder {
