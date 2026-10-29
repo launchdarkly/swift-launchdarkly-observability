@@ -487,6 +487,10 @@ LDObserve.shared.track(
     properties: ["currency": "USD"],
     metricValue: 42.0
 )
+
+// Attach attributes to everything recorded from now on (see Global Attributes below).
+LDObserve.shared.setAttributes(["utm_campaign": .string("spring_promo")])
+LDObserve.shared.removeAttributes(["utm_campaign"])
 ```
 
 `recordLog`, `startSpan`, and `track` accept attributes/data as a plain Swift
