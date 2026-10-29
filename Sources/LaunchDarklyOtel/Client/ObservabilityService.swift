@@ -132,6 +132,8 @@ public final class ObservabilityService: InternalObserve {
                                                 appLifecycleManager: appLifecycleManager)
         self.transportService = transportService
 
+        let otlpConfiguration = OtlpConfiguration(headers: options.customHeaders.map { ($0.key, $0.value) })
+
         // MARK: - Logging
         guard let url = URL(string: options.otlpEndpoint)?.appendingPathComponent(OTelPath.logsPath) else {
             throw InstrumentationError.invalidLogExporterUrl
@@ -141,7 +143,7 @@ public final class ObservabilityService: InternalObserve {
         let logClient = LogClient(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
         self.loggerClient = logClient
         let appLogClient = AppLogClient(logLevel: options.logsApiLevel, logger: logClient)
-        let logExporter = OtlpLogExporter(endpoint: url)
+        let logExporter = OtlpLogExporter(endpoint: url, config: otlpConfiguration)
         Task {
             await batchWorker.addExporter(logExporter)
         }
@@ -154,10 +156,7 @@ public final class ObservabilityService: InternalObserve {
             throw InstrumentationError.invalidMetricExporterUrl
         }
 
-        let metricsEventExporter = OtlpMetricEventExporter(
-            endpoint: url,
-            config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
-        )
+        let metricsEventExporter = OtlpMetricEventExporter(endpoint: url, config: otlpConfiguration)
         Task {
             await batchWorker.addExporter(metricsEventExporter)
         }
@@ -184,10 +183,7 @@ public final class ObservabilityService: InternalObserve {
         }
 
         // MARK: - OtlpTraceEventExporter
-        let traceEventExporter = OtlpTraceEventExporter(
-            endpoint: url,
-            config: .init(headers: options.customHeaders.map({ ($0.key, $0.value) }))
-        )
+        let traceEventExporter = OtlpTraceEventExporter(endpoint: url, config: otlpConfiguration)
         Task {
             await batchWorker.addExporter(traceEventExporter)
         }

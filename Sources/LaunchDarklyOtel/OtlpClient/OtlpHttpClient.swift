@@ -89,6 +89,10 @@ public final class OtlpHttpClient: @unchecked Sendable {
         } else {
             request.httpBody = rawData
         }
+
+        config.headers?.forEach { key, value in
+            request.setValue(value, forHTTPHeaderField: key)
+        }
         return request
     }
 
