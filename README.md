@@ -487,6 +487,10 @@ LDObserve.shared.track(
     properties: ["currency": "USD"],
     metricValue: 42.0
 )
+
+// Attach attributes to everything recorded from now on (see Global Attributes below).
+LDObserve.shared.setAttributes(["utm_campaign": .string("spring_promo")])
+LDObserve.shared.removeAttributes(["utm_campaign"])
 ```
 
 `recordLog`, `startSpan`, and `track` accept attributes/data as a plain Swift
@@ -495,6 +499,36 @@ arrays, and nested dictionaries directly, with no need to import `OpenTelemetryA
 or build `AttributeValue`s. The `attributes:` (`AttributeValue`) overloads remain
 available when you need precise OpenTelemetry typing (as shown for `recordError`
 above).
+
+### Global Attributes
+
+Use `setAttributes` to attach attributes to everything the SDK records from then on: every span
+(manual and automatic, including URLSession network spans, app lifecycle, and errors), every log
+record, and every metric data point. `removeAttributes` stops attaching the given keys.
+
+```swift
+import LaunchDarklyObservability
+
+LDObserve.shared.setAttributes([
+    "tenant.id": .string("acme"),
+    "app.flavor": .string("beta")
+])
+
+// Later calls merge by key.
+LDObserve.shared.setAttributes(["app.flavor": .string("ga")])
+
+LDObserve.shared.removeAttributes(["tenant.id"])
+```
+
+- **Precedence:** attributes passed on the call (or set on a span builder) win over global
+  attributes, which win over `resourceAttributes`. Globals only fill keys a signal doesn't already
+  carry.
+- **Spans** take the global values current when the span starts.
+- **Reserved keys:** `session.id` is managed by the SDK and is ignored by `setAttributes`.
+- **Lifetime:** global attributes are kept in memory for the life of the process. They aren't
+  persisted, and they survive session changes.
+- **Before initialization:** calls made before the plugin is registered take effect as soon as the
+  SDK starts recording.
 
 ### Tracking Screen Views
 

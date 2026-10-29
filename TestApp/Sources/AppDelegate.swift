@@ -45,6 +45,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             
             return config
         }()
+        GlobalAttributesRepro.applyGlobalAttributes()
 //        
 //        let config = { () -> LDConfig in
 //            var config = LDConfig(

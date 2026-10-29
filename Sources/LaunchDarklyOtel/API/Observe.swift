@@ -4,7 +4,7 @@ import Foundation
 
 /// Interface for observability operations in the LaunchDarkly iOS SDK.
 /// Provides methods for recording various types of information.
-public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, ObserveContext {
+public protocol Observe: AnyObject, MetricsApi, LogsApi, TracesApi, GlobalAttributesApi, ObserveContext {
     func start(sessionId: String)
     func start()
     /// Record a custom track event as a `track` span.

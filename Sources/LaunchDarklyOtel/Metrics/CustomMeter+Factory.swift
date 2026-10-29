@@ -2,7 +2,12 @@ import OpenTelemetryApi
 import OpenTelemetrySdk
 
 struct MetricsApiFactory {
-    static func make(options: ObservabilityOptions, namespace: String? = nil, reader: MetricReader) -> MetricsApi {
+    static func make(
+        options: ObservabilityOptions,
+        namespace: String? = nil,
+        reader: MetricReader,
+        globalAttributes: GlobalAttributesStore = .shared
+    ) -> MetricsApi {
         var resourceAttributes = options.resourceAttributes
         if let namespace {
             resourceAttributes[SemanticConvention.serviceNamespace] = .string(namespace)
@@ -28,6 +33,7 @@ struct MetricsApiFactory {
         return MetricsClient(
             options: options,
             meter: meter,
+            globalAttributes: globalAttributes,
             flush: {
                 reader.forceFlush() == .success
             }
