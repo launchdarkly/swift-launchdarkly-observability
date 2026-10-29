@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.56.3](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.56.2...0.56.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* apply customHeaders to OTLP exports ([#289](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/289)) ([e42fedb](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/e42fedb5ecb29c4079d5015fd67bbe0f2a1ac266))
+
 ## [0.56.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.56.1...0.56.2) (2026-10-20)
 
 
