@@ -56,15 +56,11 @@ open class ObservabilityPlugin: Plugin {
 
         var options = options
         var resourceAttributes = options.resourceAttributes
-        var customHeaders = options.customHeaders
 
         add(metadata: metadata, into: &resourceAttributes)
         let sessionAttributes = makeSessionAttributes()
 
-        customHeaders[SemanticConvention.highlightProjectId] = mobileKey
-
         options.resourceAttributes = resourceAttributes
-        options.customHeaders = customHeaders
 
         do {
             guard LDObserve.shared.client === NoOpObservabilityService.shared else {
