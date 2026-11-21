@@ -14,7 +14,7 @@ import Common
 /// (`ObservabilityService`) can produce `track` spans and cache context keys.
 protocol TrackEmitting: AnyObject {
     func track(name: String, metricValue: Double?, attributes: [String: AttributeValue],
-               contextKeyAttributes: [String: AttributeValue]?)
+               contextKeyAttributes: [String: AttributeValue]?, environmentCredential: String?)
     func updateCachedContextKeys(_ contextKeys: [String: String])
 }
 
@@ -158,7 +158,8 @@ extension ObservabilityHookExporter: ObservabilityHookExporting {
     }
 
     func afterTrack(eventKey: String, metricValue: Double?,
-                    attributes: [String: AttributeValue], contextKeys: [String: String]) {
+                    attributes: [String: AttributeValue], contextKeys: [String: String],
+                    environmentCredential: String) {
         var contextKeyAttributes = [String: AttributeValue]()
         for (k, v) in contextKeys {
             contextKeyAttributes[k] = .string(v)
@@ -167,7 +168,8 @@ extension ObservabilityHookExporter: ObservabilityHookExporting {
         trackEmitter?.track(name: eventKey,
                             metricValue: metricValue,
                             attributes: attributes,
-                            contextKeyAttributes: contextKeyAttributes)
+                            contextKeyAttributes: contextKeyAttributes,
+                            environmentCredential: environmentCredential)
     }
 }
 

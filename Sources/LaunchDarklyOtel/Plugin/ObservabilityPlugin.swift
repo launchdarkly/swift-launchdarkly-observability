@@ -23,7 +23,10 @@ open class ObservabilityPlugin: Plugin {
 
     private let options: ObservabilityOptions
     private let instrumenting: ObservabilityInstrumenting?
-    let observabilityHook = ObservabilityHook()
+    /// One hook per environment's client, all wired to the same pipeline. Each tells the pipeline
+    /// which environment an event came from, so Session Replay can keep to the primary one.
+    private(set) var observabilityHooks = [ObservabilityHook]()
+    private let hooksLock = NSLock()
     public private(set) var observabilityService: ObservabilityService?
     public var distroAttributes: [String: String]
 
@@ -80,11 +83,14 @@ open class ObservabilityPlugin: Plugin {
             if let instrumenting {
                 service.install(instrumenting: instrumenting, appStartEndUptime: appStartEndUptime)
             }
+            hooksLock.lock()
             observabilityService = service
+            for hook in observabilityHooks {
+                hook.delegate = service.hookExporter
+            }
+            hooksLock.unlock()
             LDObserve.shared.client = service
             LDObserve.shared.context = service.context
-
-            observabilityHook.delegate = service.hookExporter
 
             if options.isEnabled {
                 service.start()
@@ -97,7 +103,12 @@ open class ObservabilityPlugin: Plugin {
     open func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
         // Deduplicate repeated identical evaluations (default 10-minute window).
         // Resets after identify or when the evaluation result changes.
-        return [DedupingHook(observabilityHook)]
+        let hook = ObservabilityHook(environmentCredential: metadata.credential)
+        hooksLock.lock()
+        hook.delegate = observabilityService?.hookExporter
+        observabilityHooks.append(hook)
+        hooksLock.unlock()
+        return [DedupingHook(hook)]
     }
 }
 

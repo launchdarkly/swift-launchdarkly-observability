@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import Testing
 import LaunchDarkly
@@ -16,7 +17,7 @@ extension SharedStateTests {
             "secondary-d": "mob-secondary-d",
         ]
 
-        @Test("Observability and Session Replay bind to the primary environment, and only Session Replay's hooks are limited to it")
+        @Test("Observability observes every environment; Session Replay records the primary one only")
         @MainActor
         func attachToPrimaryOnly() async throws {
             let otel = Otel(options: ObservabilityOptions(
@@ -42,14 +43,25 @@ extension SharedStateTests {
             }
 
             #expect(LDObserve.shared.context?.sdkKey == Self.primaryKey)
-            // Every environment's client shares this hook, so Observability records all of them.
-            #expect(otel.observabilityHook.delegate != nil)
+            // Every environment's client has a wired hook, so Observability records all of them.
+            #expect(otel.observabilityHooks.count == Self.secondaryKeys.count + 1)
+            #expect(otel.observabilityHooks.allSatisfy { $0.delegate != nil })
             #expect(replay.sessionReplayService != nil)
             #expect(replay.sessionReplayHooks[Self.primaryKey]?.delegate != nil)
             for secondaryKey in Self.secondaryKeys.values {
                 #expect(replay.sessionReplayHooks[secondaryKey] != nil)
                 #expect(replay.sessionReplayHooks[secondaryKey]?.delegate == nil)
             }
+
+            // Session Replay records `Track` events from the broadcast it subscribes to.
+            var replayTracks = [String]()
+            let subscription = try #require(LDObserve.shared.context).tracks.sink { replayTracks.append($0.name) }
+            defer { subscription.cancel() }
+            for name in Self.secondaryKeys.keys {
+                LDClient.get(environment: name)?.track(key: "secondary-event")
+            }
+            LDClient.get()?.track(key: "primary-event")
+            #expect(replayTracks == ["primary-event"])
         }
     }
 }
