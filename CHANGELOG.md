@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.57.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.56.2...0.57.0) (2026-11-21)
+
+
+### Features
+
+* add setAttributes and removeAttributes ([#290](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/290)) ([07d49b2](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/07d49b2e880176ed099b655c377de67ec89a82da))
+
+
+### Bug Fixes
+
+* apply customHeaders to OTLP exports ([#289](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/289)) ([e42fedb](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/e42fedb5ecb29c4079d5015fd67bbe0f2a1ac266))
+* Bind Observability to the primary environment and run Session Replay on it only ([#294](https://github.com/launchdarkly/swift-launchdarkly-observability/issues/294)) ([2b439f3](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2b439f379092310bcae1d35076a93bf6d379a4b1))
+
 ## [0.56.2](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.56.1...0.56.2) (2026-10-20)
 
 
