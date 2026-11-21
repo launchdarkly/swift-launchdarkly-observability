@@ -7,7 +7,9 @@ import OSLog
 #endif
 
 public final class SessionReplay: Plugin {
-    let sessionReplayHook = SessionReplayHook()
+    /// One hook per environment, keyed by mobile key. Only the primary environment's hook is given a
+    /// delegate, so the hooks of `LDConfig.secondaryMobileKeys` clients record nothing.
+    let sessionReplayHooks = AtomicDictionary<String, SessionReplayHook>()
     let options: SessionReplayOptions
     let imageCaptureService: ImageCaptureServicing?
     var sessionReplayService: SessionReplayService?
@@ -26,6 +28,8 @@ public final class SessionReplay: Plugin {
     }
     
     public func register(client: LaunchDarkly.LDClient, metadata: LaunchDarkly.EnvironmentMetadata) {
+        // Secondary environments are registered too; see `ObservabilityPlugin.register`.
+        guard LaunchDarkly.LDClient.get() === client else { return }
         guard let context = LDObserve.shared.context else {
             os_log("%{public}@", log: options.log, type: .error, "Session Replay Service could not find Observability Service")
             return
@@ -46,7 +50,7 @@ public final class SessionReplay: Plugin {
             )
             LDReplay.shared.client = sessionReplayService
             self.sessionReplayService = sessionReplayService
-            sessionReplayHook.delegate = sessionReplayService
+            sessionReplayHooks[metadata.credential]?.delegate = sessionReplayService
             if options.isEnabled {
                 Task { @MainActor in
                     sessionReplayService.isEnabled = true
@@ -62,7 +66,9 @@ public final class SessionReplay: Plugin {
     // DedupingHook always forwards. Evaluation spans come from ObservabilityHook, which is
     // wrapped there instead.
     public func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
-        return [sessionReplayHook]
+        let hook = SessionReplayHook()
+        sessionReplayHooks.setValue(hook, forKey: metadata.credential)
+        return [hook]
     }
     
     /// Starts Session Replay. Set `ignoreSampling` to `true` to force start for debugging.

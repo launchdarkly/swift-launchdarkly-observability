@@ -24,6 +24,7 @@ public final class ObservabilityService: InternalObserve {
     private let appTracer: TracesApi
     public let options: ObservabilityOptions
     public var context: ObservabilityContext?
+    private let mobileKey: String
 
     private let transportService: TransportService
     private let sessionManager: SessionManager
@@ -103,6 +104,7 @@ public final class ObservabilityService: InternalObserve {
         globalAttributes: GlobalAttributesStore
     ) throws {
         self.options = options
+        self.mobileKey = mobileKey
         self.globalAttributes = globalAttributes
 
         // MARK: - Sampling
@@ -550,23 +552,31 @@ extension ObservabilityService: Observe {
 extension ObservabilityService: TrackEmitting {
     /// Single emitter for `track` spans. Both the LD `afterTrack` hook and the
     /// manual `LDObserve.track` path funnel through here.
+    ///
+    /// - Parameter environmentCredential: Mobile key of the client that tracked the event, when it
+    ///   came through the LD hook. `nil` for the manual paths.
     func track(
         name: String,
         metricValue: Double?,
         attributes: [String: AttributeValue],
-        contextKeyAttributes: [String: AttributeValue]?
+        contextKeyAttributes: [String: AttributeValue]?,
+        environmentCredential: String? = nil
     ) {
         // Broadcast so Session Replay can record a `Track` event for every track path, independent
         // of the trackEvents span flag below (mirrors the `Navigate` broadcast in recordScreenView).
         // Carries only user-supplied track data, matching the previous SessionReplayHook payload.
-        trackSubject.send(
-            TrackEvent(
-                name: name,
-                metricValue: metricValue,
-                attributes: attributes,
-                timestamp: Date().timeIntervalSince1970
+        // Session Replay records this service's environment only, so tracks from the clients of
+        // `LDConfig.secondaryMobileKeys` get a span but no replay event.
+        if environmentCredential == nil || environmentCredential == mobileKey {
+            trackSubject.send(
+                TrackEvent(
+                    name: name,
+                    metricValue: metricValue,
+                    attributes: attributes,
+                    timestamp: Date().timeIntervalSince1970
+                )
             )
-        )
+        }
 
         guard options.analytics.trackEvents.isEnabled else { return }
         guard options.tracesApi.includeSpans else { return }

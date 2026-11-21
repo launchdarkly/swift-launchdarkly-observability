@@ -10,15 +10,20 @@ protocol ObservabilityHookExporting: AnyObject {
                          value: LDValue, variationIndex: Int?, reason: [String: LDValue]?)
     func afterIdentify(contextKeys: [String: String], canonicalKey: String, completed: Bool)
     func afterTrack(eventKey: String, metricValue: Double?,
-                    attributes: [String: AttributeValue], contextKeys: [String: String])
+                    attributes: [String: AttributeValue], contextKeys: [String: String],
+                    environmentCredential: String)
 }
 
 /// Hook protocol adapter for native Swift SDK usage.
 /// Extracts data from SDK types and delegates to `ObservabilityHookExporting`.
 final class ObservabilityHook: Hook {
     weak var delegate: ObservabilityHookExporting?
+    /// Mobile key of the environment whose client runs this hook.
+    let environmentCredential: String
 
-    init() {}
+    init(environmentCredential: String) {
+        self.environmentCredential = environmentCredential
+    }
 
     public func metadata() -> Metadata {
         return Metadata(name: "Observability")
@@ -73,6 +78,7 @@ final class ObservabilityHook: Hook {
         delegate?.afterTrack(eventKey: seriesContext.key,
                              metricValue: seriesContext.metricValue,
                              attributes: seriesContext.data?.toAttributes() ?? [:],
-                             contextKeys: seriesContext.context.contextKeys())
+                             contextKeys: seriesContext.context.contextKeys(),
+                             environmentCredential: environmentCredential)
     }
 }
