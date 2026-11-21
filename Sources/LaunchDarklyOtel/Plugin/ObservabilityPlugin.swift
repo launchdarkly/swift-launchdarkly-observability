@@ -3,6 +3,7 @@ import OSLog
 @_exported import LaunchDarkly
 import OpenTelemetrySdk
 #if !LD_COCOAPODS
+import Common
 import SDKResourceExtension
 #endif
 #if !os(macOS)
@@ -23,7 +24,9 @@ open class ObservabilityPlugin: Plugin {
 
     private let options: ObservabilityOptions
     private let instrumenting: ObservabilityInstrumenting?
-    let observabilityHook = ObservabilityHook()
+    /// One hook per environment, keyed by mobile key. Only the primary environment's hook is given a
+    /// delegate, so the hooks of `LDConfig.secondaryMobileKeys` clients record nothing.
+    let observabilityHooks = AtomicDictionary<String, ObservabilityHook>()
     public private(set) var observabilityService: ObservabilityService?
     public var distroAttributes: [String: String]
 
@@ -52,6 +55,9 @@ open class ObservabilityPlugin: Plugin {
     }
 
     open func register(client: LDClient, metadata: EnvironmentMetadata) {
+        // The SDK registers plugins once per environment, in no fixed order, after publishing that
+        // environment's client, so only the primary environment's client is the one `get()` returns.
+        guard LDClient.get() === client else { return }
         let mobileKey = metadata.credential
 
         var options = options
@@ -80,7 +86,7 @@ open class ObservabilityPlugin: Plugin {
             LDObserve.shared.client = service
             LDObserve.shared.context = service.context
 
-            observabilityHook.delegate = service.hookExporter
+            observabilityHooks[mobileKey]?.delegate = service.hookExporter
 
             if options.isEnabled {
                 service.start()
@@ -93,7 +99,9 @@ open class ObservabilityPlugin: Plugin {
     open func getHooks(metadata: EnvironmentMetadata) -> [any Hook] {
         // Deduplicate repeated identical evaluations (default 10-minute window).
         // Resets after identify or when the evaluation result changes.
-        return [DedupingHook(observabilityHook)]
+        let hook = ObservabilityHook()
+        observabilityHooks.setValue(hook, forKey: metadata.credential)
+        return [DedupingHook(hook)]
     }
 }
 
