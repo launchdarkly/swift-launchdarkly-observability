@@ -8,11 +8,18 @@ final class TracerDecorator: Tracer {
     private let tracer: any Tracer
     private var activeSpan: Span?
     
-    init(options: ObservabilityOptions, sessionManager: SessionManaging, sampler: ExportSampler, eventQueue: EventQueue) {
+    init(
+        options: ObservabilityOptions,
+        sessionManager: SessionManaging,
+        sampler: ExportSampler,
+        eventQueue: EventQueue,
+        globalAttributes: GlobalAttributesStore = .shared
+    ) {
         self.options = options
         self.sessionManager = sessionManager
         let processor = EventSpanProcessor(eventQueue: eventQueue, sampler: sampler)
         let provider = TracerProviderBuilder()
+            .add(spanProcessor: GlobalAttributesSpanProcessor(store: globalAttributes))
             .add(spanProcessor: processor)
             .with(resource: Resource(attributes: options.resourceAttributes))
             .build()

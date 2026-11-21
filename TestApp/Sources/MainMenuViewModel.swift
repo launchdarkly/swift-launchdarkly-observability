@@ -21,6 +21,7 @@ final class MainMenuViewModel: ObservableObject {
 		)
         
 		span.end()
+		GlobalAttributesRepro.printSpanExpectation()
 	}
 
 	func triggerNestedSpans() {
@@ -112,9 +113,11 @@ final class MainMenuViewModel: ObservableObject {
 				"test-long": 9_000_000_000,
 				"test-double": 3.14,
 				"test-array": [3.14],
-				"test-nested": ["array": [1]]
+				"test-nested": ["array": [1]],
+				"utm_source": GlobalAttributesRepro.perCallUtmSource
 			]
 		)
+		GlobalAttributesRepro.printLogExpectation()
 	}
 	
 	func trackViaLDClient() {

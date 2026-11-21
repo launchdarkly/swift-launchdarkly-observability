@@ -4,17 +4,20 @@ import OpenTelemetrySdk
 
 final class AppLogBuilder {
     private let options: ObservabilityOptions
-    private let sessionManager: SessionManager
+    private let sessionManager: SessionManaging
     private let sampler: ExportSampler
+    private let globalAttributes: GlobalAttributesStore
     
     init(
         options: ObservabilityOptions,
-        sessionManager: SessionManager,
-        sampler: ExportSampler
+        sessionManager: SessionManaging,
+        sampler: ExportSampler,
+        globalAttributes: GlobalAttributesStore = .shared
     ) {
         self.options = options
         self.sessionManager = sessionManager
         self.sampler = sampler
+        self.globalAttributes = globalAttributes
     }
     
     public func buildLog(message: String,
@@ -26,6 +29,7 @@ final class AppLogBuilder {
         if !sessionId.isEmpty {
             attributes[SemanticConvention.sessionId] = .string(sessionId)
         }
+        attributes = globalAttributes.filling(attributes)
         
         let logBuilder = LDLogRecordBuilder(
             sampler: sampler,
