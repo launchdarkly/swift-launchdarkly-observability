@@ -16,7 +16,7 @@ extension SharedStateTests {
             "secondary-d": "mob-secondary-d",
         ]
 
-        @Test("Observability and Session Replay attach to the primary environment only")
+        @Test("Observability and Session Replay bind to the primary environment, and only Session Replay's hooks are limited to it")
         @MainActor
         func attachToPrimaryOnly() async throws {
             let otel = Otel(options: ObservabilityOptions(
@@ -42,12 +42,11 @@ extension SharedStateTests {
             }
 
             #expect(LDObserve.shared.context?.sdkKey == Self.primaryKey)
+            // Every environment's client shares this hook, so Observability records all of them.
+            #expect(otel.observabilityHook.delegate != nil)
             #expect(replay.sessionReplayService != nil)
-            #expect(otel.observabilityHooks[Self.primaryKey]?.delegate != nil)
             #expect(replay.sessionReplayHooks[Self.primaryKey]?.delegate != nil)
             for secondaryKey in Self.secondaryKeys.values {
-                #expect(otel.observabilityHooks[secondaryKey] != nil)
-                #expect(otel.observabilityHooks[secondaryKey]?.delegate == nil)
                 #expect(replay.sessionReplayHooks[secondaryKey] != nil)
                 #expect(replay.sessionReplayHooks[secondaryKey]?.delegate == nil)
             }
