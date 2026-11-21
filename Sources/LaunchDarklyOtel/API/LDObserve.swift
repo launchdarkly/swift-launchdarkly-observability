@@ -70,6 +70,21 @@ extension LDObserve {
 }
 
 extension LDObserve: Observe {
+
+    /// Merges `attributes` into the process-wide global attributes stamped onto every span, log
+    /// record and metric data point recorded afterwards, filling only keys the signal doesn't
+    /// already carry. See ``GlobalAttributesApi/setAttributes(_:)``.
+    ///
+    /// Safe to call before the plugin is registered: the map lives outside the client, so values
+    /// set early apply as soon as telemetry starts flowing.
+    public func setAttributes(_ attributes: [String: AttributeValue]) {
+        client.setAttributes(attributes)
+    }
+
+    /// Removes `keys` from the global attributes. See ``GlobalAttributesApi/removeAttributes(_:)``.
+    public func removeAttributes(_ keys: [String]) {
+        client.removeAttributes(keys)
+    }
     
     public func recordMetric(metric: Metric) {
         client.recordMetric(metric: metric)

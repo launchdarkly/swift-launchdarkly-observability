@@ -81,12 +81,29 @@ public final class ObservabilityService: InternalObserve {
         set { contextKeysQueue.sync { _cachedContextKeyAttributes = newValue } }
     }
 
-    public init(
+    private let globalAttributes: GlobalAttributesStore
+
+    public convenience init(
         options: ObservabilityOptions,
         mobileKey: String,
         sessionAttributes: [String: AttributeValue]
     ) throws {
+        try self.init(
+            options: options,
+            mobileKey: mobileKey,
+            sessionAttributes: sessionAttributes,
+            globalAttributes: .shared
+        )
+    }
+
+    init(
+        options: ObservabilityOptions,
+        mobileKey: String,
+        sessionAttributes: [String: AttributeValue],
+        globalAttributes: GlobalAttributesStore
+    ) throws {
         self.options = options
+        self.globalAttributes = globalAttributes
 
         // MARK: - Sampling
         let sampler = CustomSampler(sampler: ThreadSafeSampler.shared.sample(_:))
@@ -139,7 +156,12 @@ public final class ObservabilityService: InternalObserve {
             throw InstrumentationError.invalidLogExporterUrl
         }
 
-        let appLogBuilder = AppLogBuilder(options: options, sessionManager: sessionManager, sampler: sampler)
+        let appLogBuilder = AppLogBuilder(
+            options: options,
+            sessionManager: sessionManager,
+            sampler: sampler,
+            globalAttributes: globalAttributes
+        )
         let logClient = LogClient(eventQueue: eventQueue, appLogBuilder: appLogBuilder)
         self.loggerClient = logClient
         let appLogClient = AppLogClient(logLevel: options.logsApiLevel, logger: logClient)
@@ -167,7 +189,8 @@ public final class ObservabilityService: InternalObserve {
 
         let metricsClient = MetricsApiFactory.make(
             options: options,
-            reader: reader
+            reader: reader,
+            globalAttributes: globalAttributes
         )
         self.metricsClient = metricsClient
 
@@ -192,7 +215,8 @@ public final class ObservabilityService: InternalObserve {
             options: options,
             sessionManager: sessionManager,
             sampler: sampler,
-            eventQueue: eventQueue
+            eventQueue: eventQueue,
+            globalAttributes: globalAttributes
         )
         self.tracerDecorator = tracerDecorator
         let traceClient = TraceClient(
@@ -358,6 +382,14 @@ extension ObservabilityService: ObservabilityRuntime {
 }
 
 extension ObservabilityService: Observe {
+    public func setAttributes(_ attributes: [String: AttributeValue]) {
+        globalAttributes.set(attributes)
+    }
+
+    public func removeAttributes(_ keys: [String]) {
+        globalAttributes.remove(keys)
+    }
+
     public func recordLog(
         message: String,
         severity: Severity,
