@@ -197,10 +197,10 @@ extension SessionReplayAPIService {
                    firstloadVersion: sdkVersion,
                    clientConfig: clientConfigString,
                    environment: "production",
-                   id: "31MMpqmDG2DsZvbxo0Lzx4xelbt7",
+                   id: "",
                    appVersion: nil,
                    serviceName: context.serviceName,
-                   clientId: "31MMpqmDG2DsZvbxo0Lzx4xelbt7",
+                   clientId: "",
                    networkRecordingDomains: [],
                    disableSessionRecording: nil
             ),
