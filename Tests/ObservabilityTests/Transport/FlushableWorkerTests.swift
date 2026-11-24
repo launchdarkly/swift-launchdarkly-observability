@@ -67,6 +67,11 @@ struct FlushableWorkerTests {
     /// is meaningful.
     private let settleTime: UInt64 = 200_000_000
 
+    /// Interval for tests that expect no ticks. It must outlast the whole test, not just its
+    /// intended duration: on a loaded CI machine a test can stall for longer than `waitUntil`'s
+    /// nominal 10s budget, and a 10s interval then ticks and fails the `ticks == 0` assertions.
+    private let neverTicksInterval: TimeInterval = 3600
+
     @Test
     func ticksOccurOnInterval() async throws {
         let recorder = Recorder()
@@ -89,7 +94,7 @@ struct FlushableWorkerTests {
     @Test
     func flushEmitsImmediatelyAndOnlyOnceWithLargeInterval() async throws {
         let recorder = Recorder()
-        let worker = FlushableWorker(interval: 10.0) { isFlushing in
+        let worker = FlushableWorker(interval: neverTicksInterval) { isFlushing in
             await recorder.add(isFlushing)
         }
         
@@ -111,7 +116,7 @@ struct FlushableWorkerTests {
         // work can finish - clearing the pending flag - before the second flush is issued, which is a
         // legitimate non-coalesced outcome and is what made this test flaky under load.
         let gate = Gate()
-        let worker = FlushableWorker(interval: 10.0) { isFlushing in
+        let worker = FlushableWorker(interval: neverTicksInterval) { isFlushing in
             await recorder.add(isFlushing)
             if isFlushing { await gate.wait() }
         }
@@ -184,7 +189,7 @@ struct FlushableWorkerTests {
     @Test
     func flushImmediatelyAfterStartIsNotDropped() async throws {
         let recorder = Recorder()
-        let worker = FlushableWorker(interval: 10.0) { isFlushing in
+        let worker = FlushableWorker(interval: neverTicksInterval) { isFlushing in
             await recorder.add(isFlushing)
         }
         
