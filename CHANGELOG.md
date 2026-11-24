@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.57.1](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.57.0...0.57.1) (2026-11-24)
+
+
+### Bug Fixes
+
+* **deps:** Bump ios-client-sdk to 11.8.1 ([2c9b3a7](https://github.com/launchdarkly/swift-launchdarkly-observability/commit/2c9b3a7630dd56a21e654c48de16e09136bd3a36))
+
 ## [0.57.0](https://github.com/launchdarkly/swift-launchdarkly-observability/compare/0.56.2...0.57.0) (2026-11-21)
 
 

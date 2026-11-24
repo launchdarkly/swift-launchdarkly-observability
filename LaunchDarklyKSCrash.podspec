@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "LaunchDarklyKSCrash"
-  s.version          = "0.57.0" # x-release-please-version
+  s.version          = "0.57.1" # x-release-please-version
   s.summary          = "KSCrash crash reporting for the LaunchDarkly iOS Observability Plugin."
   s.description      = <<-DESC
                         LaunchDarkly is the feature management platform that software teams use to build better software, faster.
